@@ -106,7 +106,7 @@ def read_changes(ds, **kwargs):
     return timestamp
 
 
-run_this = ShortCircuitOperator(
+read_changes_task = ShortCircuitOperator(
     task_id="read_changes_task",
     provide_context=True,
     python_callable=read_changes,
@@ -114,16 +114,86 @@ run_this = ShortCircuitOperator(
 )
 
 
-def register_since(ds, **kwargs):
+def register_journals(ds, **kwargs):
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
     return tasks
 
 
-register_since_task = PythonOperator(
-    task_id="register_since_task",
+register_journals_task = PythonOperator(
+    task_id="register_journals_task",
     provide_context=True,
-    python_callable=register_since,
+    python_callable=register_journals,
     dag=dag,
 )
 
-register_since_task << run_this
+
+def register_issues(ds, **kwargs):
+    tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
+    return tasks
+
+
+register_issues_task = PythonOperator(
+    task_id="register_issues_task",
+    provide_context=True,
+    python_callable=register_issues,
+    dag=dag,
+)
+
+
+def register_documents(ds, **kwargs):
+    tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
+    return tasks
+
+
+register_documents_task = PythonOperator(
+    task_id="register_documents_task",
+    provide_context=True,
+    python_callable=register_documents,
+    dag=dag,
+)
+
+
+def delete_documents(ds, **kwargs):
+    tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
+    return tasks
+
+
+delete_documents_task = PythonOperator(
+    task_id="delete_documents_task",
+    provide_context=True,
+    python_callable=delete_documents,
+    dag=dag,
+)
+
+
+def delete_issues(ds, **kwargs):
+    tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
+    return tasks
+
+
+delete_issues_task = PythonOperator(
+    task_id="delete_issues_task",
+    provide_context=True,
+    python_callable=delete_issues,
+    dag=dag,
+)
+
+
+def delete_journals(ds, **kwargs):
+    tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
+    return tasks
+
+
+delete_journals_task = PythonOperator(
+    task_id="delete_journals_task",
+    provide_context=True,
+    python_callable=delete_journals,
+    dag=dag,
+)
+
+register_journals_task << read_changes_task
+register_issues_task << register_journals_task
+register_documents_task << register_issues_task
+delete_documents_task << read_changes_task
+delete_issues_task << delete_documents_task
+delete_journals_task << delete_issues_task
