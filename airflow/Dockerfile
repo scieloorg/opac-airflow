@@ -15,7 +15,7 @@ RUN apk add --no-cache --virtual .build-deps \
     && pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir numpy==1.16.2 \
     && pip install --no-cache-dir pandas==0.24.1 \
-    && pip install --no-cache-dir airflow=01.10.2 \
+    && pip install --no-cache-dir apache-airflow==01.10.2 \
     && addgroup -S airflow \
     && adduser -S airflow -G airflow -h ${AIRFLOW_HOME} \
     && apk --purge del .build-deps
