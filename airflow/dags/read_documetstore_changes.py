@@ -1,3 +1,4 @@
+import os
 from datetime import timedelta
 
 import airflow
@@ -74,7 +75,9 @@ class Reader:
         return entities, last_timestamp
 
 
-CHANGES_URL = "http://0.0.0.0:6543/changes?since=%s"
+CHANGES_URL = os.environ.get(
+    "DOCUMENTSTORE_URL", "http://host.docker.internal:6543/changes?since=%s"
+)
 
 
 def changes(since=""):
@@ -191,9 +194,8 @@ delete_journals_task = PythonOperator(
     dag=dag,
 )
 
-register_journals_task << read_changes_task
+read_changes_task >> [register_journals_task, delete_documents_task]
 register_issues_task << register_journals_task
 register_documents_task << register_issues_task
-delete_documents_task << read_changes_task
 delete_issues_task << delete_documents_task
 delete_journals_task << delete_issues_task
