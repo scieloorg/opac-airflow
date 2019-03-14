@@ -22,9 +22,9 @@ RUN apk add --no-cache --virtual .build-deps \
 
 EXPOSE 8080
 
-COPY . /app/airflow
+COPY . /usr/local/airflow
 RUN chown -R airflow:airflow ${AIRFLOW_HOME}
 
 USER airflow
 
-ENTRYPOINT ["/app/airflow/.docker/entrypoint.sh"]
+ENTRYPOINT ["/usr/local/airflow/.docker/entrypoint.sh"]
