@@ -10,7 +10,7 @@ WORKDIR ${AIRFLOW_HOME}
 RUN apk add --no-cache --virtual .build-deps \
         make gcc libxml2-dev libxslt-dev musl-dev g++ \
         python3-dev libstdc++ linux-headers \
-    && apk add libxml2 libxslt \
+    && apk add libxml2 libxslt sudo bash \
     && ln -s /usr/include/locale.h /usr/include/xlocale.h \
     && pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir numpy==1.16.2 \
@@ -22,7 +22,7 @@ RUN apk add --no-cache --virtual .build-deps \
 
 EXPOSE 8080
 
-COPY . /usr/local/airflow
+COPY . ${AIRFLOW_HOME}
 RUN chown -R airflow:airflow ${AIRFLOW_HOME}
 
 USER airflow
