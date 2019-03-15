@@ -1,0 +1,12 @@
+version: '2'
+
+services:
+    opac-airflow:
+        build:
+            context: ./airflow
+        ports:
+          - "8080:8080"
+        command: webserver
+        environment:
+          - AIRFLOW_HOME=/usr/local/airflow
+          - DOCUMENTSTORE_URL=${DOCUMENTSTORE_URL}
