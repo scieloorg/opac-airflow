@@ -1,11 +1,17 @@
 import os
 from datetime import timedelta
+from urllib.parse import urljoin
 
 import airflow
 from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
+
 import requests
+
+from mongoengine import connect
+
+from opac_schema.v1.models import Journal, JounalMetrics
 
 
 default_args = {
@@ -18,6 +24,24 @@ dag = DAG(
     "documentstore_changes",
     default_args=default_args,
     schedule_interval=timedelta(minutes=1),
+)
+
+KERNEL_URL = os.environ.get("KERNEL_URL", "http://0.0.0.0:6543")
+
+OPAC_MONGODB_NAME = os.environ.get("OPAC_MONGODB_NAME", "opac")
+
+OPAC_MONGODB_HOSTNAME = os.environ.get("OPAC_MONGODB_HOSTNAME", "localhost")
+
+OPAC_MONGODB_USERNAME = os.environ.get("OPAC_MONGODB_USERNAME", "")
+
+OPAC_MONGODB_PASS = os.environ.get("OPAC_MONGODB_PASS", "")
+
+connect(
+    db=OPAC_MONGODB_NAME,
+    host=OPAC_MONGODB_HOSTNAME,
+    username=OPAC_MONGODB_USERNAME,
+    password=OPAC_MONGODB_PASS,
+    authentication_source="admin",
 )
 
 
@@ -75,15 +99,11 @@ class Reader:
         return entities, last_timestamp
 
 
-CHANGES_URL = os.environ.get(
-    "DOCUMENTSTORE_URL", "http://host.docker.internal:6543/changes?since=%s"
-)
-
-
 def changes(since=""):
     last_yielded = None
     while True:
-        with requests.get(CHANGES_URL % since) as f:
+        url = urljoin(KERNEL_URL, "changes?since=%s" % since)
+        with requests.get(url) as f:
             response = f.json()
             for result in response["results"]:
                 if result != last_yielded:
@@ -109,6 +129,48 @@ def read_changes(ds, **kwargs):
     return timestamp
 
 
+def filter_changes(tasks, entity, action):
+    """
+    Filter changes
+
+    Return a list of items that matched by criteria ``entity`` and ``action``
+    """
+
+    for task in tasks:
+        _, _entity, __ = task["id"].split("/")
+        if _entity == entity and task.get("task") == action:
+            yield task
+
+
+def transform_journal(data):
+    metadata = data["metadata"]
+
+    journal = Journal()
+    journal._id = journal.jid = data.get("id")
+    journal.title = metadata.get("title", "")
+    journal.title_iso = metadata.get("title_iso", "")
+    journal.short_title = metadata.get("short_title", "")
+    journal.acronym = metadata.get("acronym", "")
+    journal.scielo_issn = metadata.get("scielo_issn", "")
+    journal.print_issn = metadata.get("print_issn", "")
+    journal.eletronic_issn = metadata.get("electronic_issn", "")
+
+    # Subject_categories
+    journal.subject_categories = metadata.get("subject_categories", [])
+
+    # Métricas
+    journal.metrics = JounalMetrics(**metadata.get("metrics", {}))
+
+    journal.online_submission_url = metadata.get("online_submission_url", "")
+    journal.logo_url = metadata.get("logo_url", "")
+    journal.current_status = metadata.get("status").get("status")
+
+    journal.created = metadata.get("created")
+    journal.created = metadata.get("updated")
+
+    return journal
+
+
 read_changes_task = ShortCircuitOperator(
     task_id="read_changes_task",
     provide_context=True,
@@ -119,6 +181,17 @@ read_changes_task = ShortCircuitOperator(
 
 def register_journals(ds, **kwargs):
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
+
+    journal_changes = filter_changes(tasks, "journals", "get")
+
+    for journal in journal_changes:
+        j_url = urljoin(KERNEL_URL, journal.get("id"))
+
+        with requests.get(j_url) as f:
+            response = f.json()
+            journal = transform_journal(response)
+            journal.save()
+
     return tasks
 
 
@@ -193,6 +266,7 @@ delete_journals_task = PythonOperator(
     python_callable=delete_journals,
     dag=dag,
 )
+
 
 read_changes_task >> [register_journals_task, delete_documents_task]
 register_issues_task << register_journals_task
