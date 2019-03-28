@@ -9,4 +9,8 @@ services:
         command: webserver
         environment:
           - AIRFLOW_HOME=/usr/local/airflow
-          - DOCUMENTSTORE_URL=${DOCUMENTSTORE_URL}
+          - KERNEL_URL=${KERNEL_URL}
+          - OPAC_MONGODB_NAME = ${OPAC_MONGODB_NAME}
+          - OPAC_MONGODB_HOSTNAME = ${OPAC_MONGODB_HOSTNAME}
+          - OPAC_MONGODB_USERNAME = ${OPAC_MONGODB_USERNAME}
+          - OPAC_MONGODB_PASS = ${OPAC_MONGODB_PASS}
