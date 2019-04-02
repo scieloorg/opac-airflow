@@ -3,7 +3,10 @@ from datetime import timedelta
 from urllib.parse import urljoin
 
 import airflow
+import tenacity
+from tenacity import retry
 from airflow import DAG
+from airflow.hooks.http_hook import HttpHook
 from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
 
@@ -14,14 +17,21 @@ from mongoengine import connect
 from opac_schema.v1.models import Journal, JounalMetrics
 
 
+failure_recipients = os.environ.get('EMIAL_ON_FAILURE_RECIPIENTS', None)
+EMIAL_ON_FAILURE_RECIPIENTS = failure_recipients.split(',') if failure_recipients else []
+
 default_args = {
     "owner": "airflow",
     "start_date": airflow.utils.dates.days_ago(2),
     "provide_context": True,
+    "email_on_failure": True,
+    "email_on_retry": True,
+    "depends_on_past": False,
+    "email": EMIAL_ON_FAILURE_RECIPIENTS,
 }
 
 dag = DAG(
-    "documentstore_changes",
+    dag_id="documentstore_changes",
     default_args=default_args,
     schedule_interval=timedelta(minutes=1),
 )
@@ -99,18 +109,26 @@ class Reader:
         return entities, last_timestamp
 
 
+@retry(wait=tenacity.wait_exponential(),
+       stop=tenacity.stop_after_attempt(10),
+       retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError))
 def changes(since=""):
     last_yielded = None
+
+    api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
+
     while True:
-        url = urljoin(KERNEL_URL, "changes?since=%s" % since)
-        with requests.get(url) as f:
-            response = f.json()
-            for result in response["results"]:
-                if result != last_yielded:
-                    last_yielded = result
-                    yield result
-                else:
-                    continue
+
+        url = "changes?since=%s" % since
+
+        resp_json = api_hook.run(endpoint=url).json()
+
+        for result in resp_json["results"]:
+            if result != last_yielded:
+                last_yielded = result
+                yield result
+            else:
+                continue
 
         if since == last_yielded["timestamp"]:
             return
@@ -179,18 +197,22 @@ read_changes_task = ShortCircuitOperator(
 )
 
 
+@retry(wait=tenacity.wait_exponential(),
+       stop=tenacity.stop_after_attempt(10),
+       retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError))
 def register_journals(ds, **kwargs):
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
     journal_changes = filter_changes(tasks, "journals", "get")
 
-    for journal in journal_changes:
-        j_url = urljoin(KERNEL_URL, journal.get("id"))
+    api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
 
-        with requests.get(j_url) as f:
-            response = f.json()
-            journal = transform_journal(response)
-            journal.save()
+    for journal in journal_changes:
+        resp_json = api_hook.run(endpoint=journal.get("id")).json()
+
+        response = resp_json
+        journal = transform_journal(response)
+        journal.save()
 
     return tasks
 
@@ -266,7 +288,6 @@ delete_journals_task = PythonOperator(
     python_callable=delete_journals,
     dag=dag,
 )
-
 
 read_changes_task >> [register_journals_task, delete_documents_task]
 register_issues_task << register_journals_task
