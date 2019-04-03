@@ -9,11 +9,7 @@ services:
         command: webserver
         environment:
           - AIRFLOW_HOME=/usr/local/airflow
-          - EMIAL_ON_FAILURE_RECIPIENTS=atta.jamil@gmail.com,jamil.atta@gmail.com
-          - OPAC_MONGODB_NAME = ${OPAC_MONGODB_NAME}
-          - OPAC_MONGODB_HOSTNAME = ${OPAC_MONGODB_HOSTNAME}
-          - OPAC_MONGODB_USERNAME = ${OPAC_MONGODB_USERNAME}
-          - OPAC_MONGODB_PASS = ${OPAC_MONGODB_PASS}
+          - EMIAL_ON_FAILURE_RECIPIENTS=infra@scielo.org
           - AIRFLOW__SMTP__SMTP_HOST = ${AIRFLOW__SMTP__SMTP_HOST}
           - AIRFLOW__SMTP__SMTP_USER = ${AIRFLOW__SMTP__SMTP_USER}
           - AIRFLOW__SMTP__SMTP_PASSWORD = ${AIRFLOW__SMTP__SMTP_PASSWORD}
