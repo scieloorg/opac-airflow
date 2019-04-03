@@ -1,12 +1,13 @@
 import os
 from datetime import timedelta
-from urllib.parse import urljoin
 
-import airflow
 import tenacity
 from tenacity import retry
+
+import airflow
 from airflow import DAG
 from airflow.hooks.http_hook import HttpHook
+from airflow.hooks.base_hook import BaseHook
 from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
 
@@ -31,27 +32,26 @@ default_args = {
 }
 
 dag = DAG(
-    dag_id="documentstore_changes",
+    dag_id="kernel_changes",
     default_args=default_args,
     schedule_interval=timedelta(minutes=1),
 )
 
-KERNEL_URL = os.environ.get("KERNEL_URL", "http://0.0.0.0:6543")
+conn = BaseHook.get_connection("opac_conn")
 
-OPAC_MONGODB_NAME = os.environ.get("OPAC_MONGODB_NAME", "opac")
+uri = 'mongodb://{creds}{host}{port}/{database}'.format(
+    creds='{}:{}@'.format(
+        conn.login, conn.password
+    ) if conn.login else '',
 
-OPAC_MONGODB_HOSTNAME = os.environ.get("OPAC_MONGODB_HOSTNAME", "localhost")
-
-OPAC_MONGODB_USERNAME = os.environ.get("OPAC_MONGODB_USERNAME", "")
-
-OPAC_MONGODB_PASS = os.environ.get("OPAC_MONGODB_PASS", "")
+    host=conn.host,
+    port='' if conn.port is None else ':{}'.format(conn.port),
+    database=conn.schema
+)
 
 connect(
-    db=OPAC_MONGODB_NAME,
-    host=OPAC_MONGODB_HOSTNAME,
-    username=OPAC_MONGODB_USERNAME,
-    password=OPAC_MONGODB_PASS,
-    authentication_source="admin",
+    host=uri,
+    **conn.extra_dejson
 )
 
 
@@ -138,12 +138,12 @@ def changes(since=""):
 
 def read_changes(ds, **kwargs):
     reader = Reader()
-    variable_timestamp = Variable.get("documentstore_timestamp", "")
+    variable_timestamp = Variable.get("change_timestamp", "")
     tasks, timestamp = reader.read(changes(since=variable_timestamp))
     if timestamp == variable_timestamp:
         return False
     kwargs["ti"].xcom_push(key="tasks", value=tasks)
-    Variable.set("documentstore_timestamp", timestamp)
+    Variable.set("change_timestamp", timestamp)
     return timestamp
 
 
