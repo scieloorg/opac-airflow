@@ -15,7 +15,7 @@ import requests
 
 from mongoengine import connect
 
-from opac_schema.v1.models import Journal, JounalMetrics
+from opac_schema.v1.models import Journal, JounalMetrics, Issue, Article
 
 
 failure_recipients = os.environ.get('EMIAL_ON_FAILURE_RECIPIENTS', None)
@@ -225,8 +225,43 @@ register_journals_task = PythonOperator(
 )
 
 
+def transform_issue(data):
+    metadata = data["metadata"]
+
+    issue = Issue()
+    issue._id = issue.jid = data.get("id")
+    issue.journal = ""  # TODO: Necessário obtermos o periódico
+    issue.volume = metadata.get("volume", "")
+    issue.number = metadata.get("number", "")
+    issue.type = metadata.get("type", "")
+    issue.spe_text = metadata.get("spe_text", "")
+    issue.start_month = metadata.get("start_month", "")
+    issue.end_month = metadata.get("end_month", "")
+    issue.year = metadata.get("year", "")
+    issue.label = metadata.get("label", "")
+    issue.order = metadata.get("order", "")
+    issue.pid = metadata.get("pid", "")
+
+    return issue
+
+
+@retry(wait=tenacity.wait_exponential(),
+       stop=tenacity.stop_after_attempt(10),
+       retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError))
 def register_issues(ds, **kwargs):
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
+
+    issue_changes = filter_changes(tasks, "issue", "get")
+
+    api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
+
+    for issue in issue_changes:
+        resp_json = api_hook.run(endpoint=issue.get("id")).json()
+
+        response = resp_json
+        issue = transform_issue(response)
+        issue.save()
+
     return tasks
 
 
@@ -238,8 +273,46 @@ register_issues_task = PythonOperator(
 )
 
 
+def transform_document(data):
+    # TODO: Necessário discutirmos iremos extrair os metadados do periódico.
+    # Nesse primeiro momento estou considerando o padrão através da chave ``metadata``
+
+    metadata = data["metadata"]
+
+    document = Article()
+    document.xml = data.get("data")
+    document.issue = metadata.get("issue", "")
+    document.journal = metadata.get("journal", "")
+    document.title = metadata.get("title", "")
+    document.order = metadata.get("order", "")
+    document.pid = metadata.get("pid", "")
+    document.doi = metadata.get("doi", "")
+
+    document.elocation = metadata.get("elocation", "")
+    document.fpage = metadata.get("fpage", "")
+    document.fpage_sequence = metadata.get("fpage_sequence", "")
+    document.lpage = metadata.get("lpage", "")
+
+    return document
+
+
+@retry(wait=tenacity.wait_exponential(),
+       stop=tenacity.stop_after_attempt(10),
+       retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError))
 def register_documents(ds, **kwargs):
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
+
+    document_changes = filter_changes(tasks, "document", "get")
+
+    api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
+
+    for document in document_changes:
+        resp_json = api_hook.run(endpoint=document.get("id")).json()
+
+        response = resp_json
+        document = transform_document(response)
+        document.save()
+
     return tasks
 
 
