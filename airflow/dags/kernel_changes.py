@@ -37,22 +37,25 @@ dag = DAG(
     schedule_interval=timedelta(minutes=1),
 )
 
-conn = BaseHook.get_connection("opac_conn")
 
-uri = 'mongodb://{creds}{host}{port}/{database}'.format(
-    creds='{}:{}@'.format(
-        conn.login, conn.password
-    ) if conn.login else '',
+def mongo_connect():
+    # TODO: Necessário adicionar um commando para adicionar previamente uma conexão, ver: https://github.com/puckel/docker-airflow/issues/75
+    conn = BaseHook.get_connection("opac_conn")
 
-    host=conn.host,
-    port='' if conn.port is None else ':{}'.format(conn.port),
-    database=conn.schema
-)
+    uri = 'mongodb://{creds}{host}{port}/{database}'.format(
+        creds='{}:{}@'.format(
+            conn.login, conn.password
+        ) if conn.login else '',
 
-connect(
-    host=uri,
-    **conn.extra_dejson
-)
+        host=conn.host,
+        port='' if conn.port is None else ':{}'.format(conn.port),
+        database=conn.schema
+    )
+
+    connect(
+        host=uri,
+        **conn.extra_dejson
+    )
 
 
 class EnqueuedState:
@@ -147,6 +150,46 @@ def read_changes(ds, **kwargs):
     return timestamp
 
 
+def get_entity(endpoint):
+    """
+    Return the entity of a kernel endpoint
+
+    Example param: /journals/8767-8766-12-32-2
+
+    Return: journals
+    """
+    _entity, _id = parser_endpoint(endpoint)
+
+    return _entity
+
+
+def get_id(endpoint):
+    """
+    Return the id of a kernel endpoint
+
+    Example param: /journals/8767-9988-01-02-2
+
+    Return: 8767-9988-01-02-2
+    """
+    _entity, _id = parser_endpoint(endpoint)
+
+    return _id
+
+
+def parser_endpoint(endpoint):
+    """
+    Parser the endpoint:
+
+    Example param: /journals/0000-0000-00-00-2
+
+    Return: (journals, 0000-0000-00-00-2)
+
+    """
+    _, _entity, _id = endpoint.split("/")
+
+    return (_entity, _id)
+
+
 def filter_changes(tasks, entity, action):
     """
     Filter changes
@@ -155,7 +198,7 @@ def filter_changes(tasks, entity, action):
     """
 
     for task in tasks:
-        _, _entity, __ = task["id"].split("/")
+        _entity = get_entity(task["id"])
         if _entity == entity and task.get("task") == action:
             yield task
 
@@ -201,18 +244,25 @@ read_changes_task = ShortCircuitOperator(
        stop=tenacity.stop_after_attempt(10),
        retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError))
 def register_journals(ds, **kwargs):
+    mongo_connect()
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
     journal_changes = filter_changes(tasks, "journals", "get")
 
     api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
 
+    # Dictionary with id of journal and list of issues, something like: j_issues[journal_id] = [issue_id, issue_id, ....]
+    j_issues = {}
+
     for journal in journal_changes:
         resp_json = api_hook.run(endpoint=journal.get("id")).json()
 
-        response = resp_json
-        journal = transform_journal(response)
-        journal.save()
+        t_journal = transform_journal(resp_json)
+        t_journal.save()
+
+        j_issues[get_id(journal.get("id"))] = resp_json.get('items', [])
+
+    kwargs["ti"].xcom_push(key="j_issues", value=j_issues)
 
     return tasks
 
@@ -229,17 +279,16 @@ def transform_issue(data):
     metadata = data["metadata"]
 
     issue = Issue()
-    issue._id = issue.jid = data.get("id")
-    issue.journal = ""  # TODO: Necessário obtermos o periódico
-    issue.volume = metadata.get("volume", "")
-    issue.number = metadata.get("number", "")
+    issue._id = issue.iid = data.get("id")
     issue.type = metadata.get("type", "")
     issue.spe_text = metadata.get("spe_text", "")
-    issue.start_month = metadata.get("start_month", "")
-    issue.end_month = metadata.get("end_month", "")
-    issue.year = metadata.get("year", "")
+    issue.start_month = metadata.get("start_month", 0)
+    issue.end_month = metadata.get("end_month", 0)
+    issue.year = metadata.get("publication_year", )
+    issue.volume = metadata.get("volume", "")
+    issue.number = metadata.get("number", "")
     issue.label = metadata.get("label", "")
-    issue.order = metadata.get("order", "")
+    issue.order = metadata.get("order", 0)
     issue.pid = metadata.get("pid", "")
 
     return issue
@@ -249,18 +298,37 @@ def transform_issue(data):
        stop=tenacity.stop_after_attempt(10),
        retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError))
 def register_issues(ds, **kwargs):
+    mongo_connect()
+
+    def get_journal(j_issues, issue_id):
+        """
+        Return issue`s journal
+        """
+        for j, i in j_issues.items():
+            if issue_id in i:
+                return Journal.objects.get(_id=j)
+
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
-    issue_changes = filter_changes(tasks, "issue", "get")
+    j_issues = kwargs["ti"].xcom_pull(key="j_issues", task_ids="register_journals_task")
+
+    # Dictionary with id of issue and a list of documents, something like: i_documents[issue_id] = [document_id, document_id, ....]
+    i_documents = {}
+
+    issue_changes = filter_changes(tasks, "bundles", "get")
 
     api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
 
     for issue in issue_changes:
         resp_json = api_hook.run(endpoint=issue.get("id")).json()
 
-        response = resp_json
-        issue = transform_issue(response)
-        issue.save()
+        t_issue = transform_issue(resp_json)
+        t_issue.journal = get_journal(j_issues, get_id(issue.get("id")))
+        t_issue.save()
+
+        i_documents[get_id(issue.get("id"))] = resp_json.get('items', [])
+
+    kwargs["ti"].xcom_push(key="i_documents", value=i_documents)
 
     return tasks
 
@@ -274,24 +342,22 @@ register_issues_task = PythonOperator(
 
 
 def transform_document(data):
-    # TODO: Necessário discutirmos iremos extrair os metadados do periódico.
-    # Nesse primeiro momento estou considerando o padrão através da chave ``metadata``
 
-    metadata = data["metadata"]
+    article_meta = data.get("article-meta")
 
     document = Article()
-    document.xml = data.get("data")
-    document.issue = metadata.get("issue", "")
-    document.journal = metadata.get("journal", "")
-    document.title = metadata.get("title", "")
-    document.order = metadata.get("order", "")
-    document.pid = metadata.get("pid", "")
-    document.doi = metadata.get("doi", "")
+    document.title = article_meta.get("article_title", "")
+    document.pid = article_meta.get("article_publishe_id", "")
+    document.doi = article_meta.get("article_doi", "")
 
-    document.elocation = metadata.get("elocation", "")
-    document.fpage = metadata.get("fpage", "")
-    document.fpage_sequence = metadata.get("fpage_sequence", "")
-    document.lpage = metadata.get("lpage", "")
+    document.elocation = article_meta.get("pub_elocation", "")
+    document.fpage = article_meta.get("pub_fpage", "")
+    document.lpage = article_meta.get("pub_lpage", "")
+    document.fpage_sequence = article_meta.get("pub_fpage_seq", "")
+    # document.xml = ??
+    # document.issue = ??
+    # document.journal = ??
+    # document.order = ??
 
     return document
 
@@ -300,18 +366,31 @@ def transform_document(data):
        stop=tenacity.stop_after_attempt(10),
        retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError))
 def register_documents(ds, **kwargs):
+    mongo_connect()
+
+    def get_issue(i_documents, document_id):
+        """
+        Return document`s issue
+        """
+        for i, d in i_documents.items():
+            if document_id in d:
+                return Issue.objects.get(_id=i)
+
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
-    document_changes = filter_changes(tasks, "document", "get")
+    i_documents = kwargs["ti"].xcom_pull(key="i_documents", task_ids="register_issues_task")
+
+    document_changes = filter_changes(tasks, "documents", "get")
 
     api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
 
     for document in document_changes:
-        resp_json = api_hook.run(endpoint=document.get("id")).json()
+        resp_json = api_hook.run("%s/front" % document.get("id")).json()
 
-        response = resp_json
-        document = transform_document(response)
-        document.save()
+        t_document = transform_document(resp_json)
+
+        t_document.issue = get_issue(i_documents, get_id(document.get("id")))
+        t_document.save()
 
     return tasks
 
