@@ -33,14 +33,27 @@ contento:
 
 ## Implantação local
 
-Variáveis de ambiente:
+### Conexões do airflow:
 
-```
-OPAC_MONGODB_NAME
-OPAC_MONGODB_HOSTNAME
-OPAC_MONGODB_USERNAME
-OPAC_MONGODB_PASS
-```
+
+#### Conexão com OPAC:
+
+* Conn Id: opac_conn
+* Conn Type: MongoDB
+* Host: localhost
+* Schema: opac
+* Port: 27017
+* Extra: {"authentication_source": "admin"}
+
+#### Conexão com Kernel:
+
+* Conn Id: kernel_conn
+* Conn Type: HTTP
+* Host: http://0.0.0.0
+* Port: 6543
+
+
+### Variáveis de ambiente:
 
 ```
 export AIRFLOW_HOME="$(pwd)"
