@@ -112,9 +112,6 @@ class Reader:
         return entities, last_timestamp
 
 
-@retry(wait=tenacity.wait_exponential(),
-       stop=tenacity.stop_after_attempt(10),
-       retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError))
 def changes(since=""):
     last_yielded = None
 
@@ -139,6 +136,9 @@ def changes(since=""):
             since = last_yielded["timestamp"]
 
 
+@retry(wait=tenacity.wait_exponential(),
+       stop=tenacity.stop_after_attempt(10),
+       retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError))
 def read_changes(ds, **kwargs):
     reader = Reader()
     variable_timestamp = Variable.get("change_timestamp", "")
@@ -450,6 +450,15 @@ register_documents_task = PythonOperator(
 
 def delete_documents(ds, **kwargs):
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
+
+    document_changes = filter_changes(tasks, "documents", "delete")
+
+    for document in document_changes:
+
+        article = Article.objects.get(_id=get_id(document.get("id")))
+        article.is_public = False
+        article.save()
+
     return tasks
 
 
@@ -486,8 +495,9 @@ delete_journals_task = PythonOperator(
     dag=dag,
 )
 
-read_changes_task >> [register_journals_task, delete_documents_task]
+read_changes_task >> register_journals_task
 register_issues_task << register_journals_task
 register_documents_task << register_issues_task
-delete_issues_task << delete_documents_task
-delete_journals_task << delete_issues_task
+delete_journals_task << register_documents_task
+delete_issues_task << delete_journals_task
+delete_documents_task << delete_issues_task
