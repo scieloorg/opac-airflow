@@ -287,6 +287,7 @@ def transform_issue(data):
     issue.year = metadata.get("publication_year", )
     issue.volume = metadata.get("volume", "")
     issue.number = metadata.get("number", "")
+
     issue.label = metadata.get("label", "")
     issue.order = metadata.get("order", 0)
     issue.pid = metadata.get("pid", "")
@@ -343,21 +344,61 @@ register_issues_task = PythonOperator(
 
 def transform_document(data):
 
-    article_meta = data.get("article-meta")
+    def atrib_val(root_node, atrib):
+        return root_node.get(atrib)[0] if root_node.get(atrib) else None
+
+    article = data.get("article")[0]
+    article_meta = data.get("article-meta")[0]
+    # journal_meta = data.get("journal-meta")
+    pub_date = data.get("pub-date")[0]
+    # history_date = data.get("history-date")
+    # kwd_group = data.get("kwd-group")
+    # trans_abstract = data.get("trans-abstract")
+    sub_articles = data.get("sub-article")
+    contribs = data.get("contrib")
 
     document = Article()
-    document.title = article_meta.get("article_title", "")
-    document.pid = article_meta.get("article_publishe_id", "")
-    document.doi = article_meta.get("article_doi", "")
 
-    document.elocation = article_meta.get("pub_elocation", "")
-    document.fpage = article_meta.get("pub_fpage", "")
-    document.lpage = article_meta.get("pub_lpage", "")
-    document.fpage_sequence = article_meta.get("pub_fpage_seq", "")
-    # document.xml = ??
-    # document.issue = ??
-    # document.journal = ??
-    # document.order = ??
+    document.title = atrib_val(article_meta, "article_title")
+    document.section = atrib_val(article_meta, "pub_subject")
+
+    authors = []
+
+    valid_contrib_types = ["author", "editor", "organizer", "translator", "autor", "compiler"]
+
+    for contrib in contribs:
+
+        if contrib.get("contrib_type")[0] in valid_contrib_types:
+            authors.append("%s, %s" % (contrib.get("contrib_surname", "")[0], contrib.get("contrib_given_names", "")[0]))
+
+    document.authors = authors
+
+    document.abstract = atrib_val(article_meta, "abstract")
+
+    publisher_id = atrib_val(article_meta, "article_publisher_id")
+
+    document._id = publisher_id
+    document.aid = publisher_id
+    document.pid = publisher_id
+    document.doi = atrib_val(article_meta, "article_doi")
+
+    original_lang = article.get("lang")[0]
+    languages = [original_lang]
+
+    for sub in sub_articles:
+        languages.append(atrib_val(sub['article'][0], "lang"))
+
+    document.languages = languages
+
+    document.original_language = original_lang
+
+    document.publication_date = atrib_val(pub_date, "text")
+
+    document.type = atrib_val(article, "type")
+    document.elocation = atrib_val(article_meta, "pub_elocation")
+    document.fpage = atrib_val(article_meta, "pub_fpage")
+    document.fpage_sequence = atrib_val(article_meta, "pub_fpage_seq")
+    document.lpage = atrib_val(article_meta, "pub_lpage")
 
     return document
 
@@ -389,7 +430,11 @@ def register_documents(ds, **kwargs):
 
         t_document = transform_document(resp_json)
 
-        t_document.issue = get_issue(i_documents, get_id(document.get("id")))
+        issue = get_issue(i_documents, get_id(document.get("id")))
+
+        t_document.issue = issue
+        t_document.journal = issue.journal
+
         t_document.save()
 
     return tasks
