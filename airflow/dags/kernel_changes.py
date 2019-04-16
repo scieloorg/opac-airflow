@@ -463,6 +463,15 @@ delete_documents_task = PythonOperator(
 
 def delete_issues(ds, **kwargs):
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
+
+    issue_changes = filter_changes(tasks, "bundles", "delete")
+
+    for issue in issue_changes:
+
+        issue = Issue.objects.get(_id=get_id(issue.get("id")))
+        issue.is_public = False
+        issue.save()
+
     return tasks
 
 
