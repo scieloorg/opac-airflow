@@ -476,8 +476,16 @@ delete_issues_task = PythonOperator(
 
 def delete_journals(ds, **kwargs):
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
-    return tasks
 
+    journal_changes = filter_changes(tasks, "journals", "delete")
+
+    for journal in journal_changes:
+
+        journal = Journal.objects.get(_id=get_id(journal.get("id")))
+        journal.is_public = False
+        journal.save()
+
+    return tasks
 
 delete_journals_task = PythonOperator(
     task_id="delete_journals_task",
