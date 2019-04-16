@@ -1,0 +1,28 @@
+version: '2'
+
+services:
+
+    mailhog:
+        image: mailhog/mailhog:latest
+        hostname: mailhog
+        ports:
+            - "8025:8025"
+
+    opac-airflow:
+        build:
+            context: ./airflow
+            dockerfile: ./Dockerfile-dev
+        ports:
+          - "8080:8080"
+        command: webserver
+        volumes:
+            - ./airflow:/usr/local/airflow
+        environment:
+          - AIRFLOW_HOME=/usr/local/airflow
+          - EMIAL_ON_FAILURE_RECIPIENTS=infra@scielo.org
+          - AIRFLOW__SMTP__SMTP_HOST = ${AIRFLOW__SMTP__SMTP_HOST}
+          - AIRFLOW__SMTP__SMTP_USER = ${AIRFLOW__SMTP__SMTP_USER}
+          - AIRFLOW__SMTP__SMTP_PASSWORD = ${AIRFLOW__SMTP__SMTP_PASSWORD}
+          - AIRFLOW__SMTP__SMTP_MAIL_FROM = ${AIRFLOW__SMTP__SMTP_MAIL_FROM}
+          - AIRFLOW__SMTP__SMTP_SSL = ${AIRFLOW__SMTP__SMTP_SSL}
+          - AIRFLOW__SMTP__SMTP_PORT = ${AIRFLOW__SMTP__SMTP_PORT}
