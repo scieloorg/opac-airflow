@@ -323,8 +323,12 @@ def register_issues(ds, **kwargs):
     for issue in issue_changes:
         resp_json = api_hook.run(endpoint=issue.get("id")).json()
 
+        issue_id = get_id(issue.get("id"))
+        journal = get_journal(j_issues, issue_id)
+
         t_issue = transform_issue(resp_json)
-        t_issue.journal = get_journal(j_issues, get_id(issue.get("id")))
+        t_issue.journal = journal
+        t_issue.order = j_issues.get(journal.id).index(issue_id)
         t_issue.save()
 
         i_documents[get_id(issue.get("id"))] = resp_json.get('items', [])
