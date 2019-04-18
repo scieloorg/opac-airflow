@@ -1,4 +1,5 @@
 import os
+import logging
 from datetime import timedelta
 
 import tenacity
@@ -15,11 +16,13 @@ import requests
 
 from mongoengine import connect
 
-from opac_schema.v1.models import Journal, JounalMetrics, Issue, Article
+from opac_schema.v1.models import Journal, JounalMetrics, Issue, Article, LastIssue
 
 
-failure_recipients = os.environ.get('EMIAL_ON_FAILURE_RECIPIENTS', None)
-EMIAL_ON_FAILURE_RECIPIENTS = failure_recipients.split(',') if failure_recipients else []
+failure_recipients = os.environ.get("EMIAL_ON_FAILURE_RECIPIENTS", None)
+EMIAL_ON_FAILURE_RECIPIENTS = (
+    failure_recipients.split(",") if failure_recipients else []
+)
 
 default_args = {
     "owner": "airflow",
@@ -42,20 +45,14 @@ def mongo_connect():
     # TODO: Necessário adicionar um commando para adicionar previamente uma conexão, ver: https://github.com/puckel/docker-airflow/issues/75
     conn = BaseHook.get_connection("opac_conn")
 
-    uri = 'mongodb://{creds}{host}{port}/{database}'.format(
-        creds='{}:{}@'.format(
-            conn.login, conn.password
-        ) if conn.login else '',
-
+    uri = "mongodb://{creds}{host}{port}/{database}".format(
+        creds="{}:{}@".format(conn.login, conn.password) if conn.login else "",
         host=conn.host,
-        port='' if conn.port is None else ':{}'.format(conn.port),
-        database=conn.schema
+        port="" if conn.port is None else ":{}".format(conn.port),
+        database=conn.schema,
     )
 
-    connect(
-        host=uri,
-        **conn.extra_dejson
-    )
+    connect(host=uri, **conn.extra_dejson)
 
 
 class EnqueuedState:
@@ -136,9 +133,11 @@ def changes(since=""):
             since = last_yielded["timestamp"]
 
 
-@retry(wait=tenacity.wait_exponential(),
-       stop=tenacity.stop_after_attempt(10),
-       retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError))
+@retry(
+    wait=tenacity.wait_exponential(),
+    stop=tenacity.stop_after_attempt(10),
+    retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError),
+)
 def read_changes(ds, **kwargs):
     reader = Reader()
     variable_timestamp = Variable.get("change_timestamp", "")
@@ -240,9 +239,11 @@ read_changes_task = ShortCircuitOperator(
 )
 
 
-@retry(wait=tenacity.wait_exponential(),
-       stop=tenacity.stop_after_attempt(10),
-       retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError))
+@retry(
+    wait=tenacity.wait_exponential(),
+    stop=tenacity.stop_after_attempt(10),
+    retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError),
+)
 def register_journals(ds, **kwargs):
     mongo_connect()
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
@@ -260,7 +261,7 @@ def register_journals(ds, **kwargs):
         t_journal = transform_journal(resp_json)
         t_journal.save()
 
-        j_issues[get_id(journal.get("id"))] = resp_json.get('items', [])
+        j_issues[get_id(journal.get("id"))] = resp_json.get("items", [])
 
     kwargs["ti"].xcom_push(key="j_issues", value=j_issues)
 
@@ -284,7 +285,7 @@ def transform_issue(data):
     issue.spe_text = metadata.get("spe_text", "")
     issue.start_month = metadata.get("start_month", 0)
     issue.end_month = metadata.get("end_month", 0)
-    issue.year = metadata.get("publication_year", )
+    issue.year = metadata.get("publication_year")
     issue.volume = metadata.get("volume", "")
     issue.number = metadata.get("number", "")
 
@@ -295,9 +296,11 @@ def transform_issue(data):
     return issue
 
 
-@retry(wait=tenacity.wait_exponential(),
-       stop=tenacity.stop_after_attempt(10),
-       retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError))
+@retry(
+    wait=tenacity.wait_exponential(),
+    stop=tenacity.stop_after_attempt(10),
+    retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError),
+)
 def register_issues(ds, **kwargs):
     mongo_connect()
 
@@ -331,7 +334,7 @@ def register_issues(ds, **kwargs):
         t_issue.order = j_issues.get(journal.id).index(issue_id)
         t_issue.save()
 
-        i_documents[get_id(issue.get("id"))] = resp_json.get('items', [])
+        i_documents[get_id(issue.get("id"))] = resp_json.get("items", [])
 
     kwargs["ti"].xcom_push(key="i_documents", value=i_documents)
 
@@ -347,7 +350,6 @@ register_issues_task = PythonOperator(
 
 
 def transform_document(data):
-
     def atrib_val(root_node, atrib):
         return root_node.get(atrib)[0] if root_node.get(atrib) else None
 
@@ -368,12 +370,25 @@ def transform_document(data):
 
     authors = []
 
-    valid_contrib_types = ["author", "editor", "organizer", "translator", "autor", "compiler"]
+    valid_contrib_types = [
+        "author",
+        "editor",
+        "organizer",
+        "translator",
+        "autor",
+        "compiler",
+    ]
 
     for contrib in contribs:
 
         if contrib.get("contrib_type")[0] in valid_contrib_types:
-            authors.append("%s, %s" % (contrib.get("contrib_surname", "")[0], contrib.get("contrib_given_names", "")[0]))
+            authors.append(
+                "%s, %s"
+                % (
+                    contrib.get("contrib_surname", "")[0],
+                    contrib.get("contrib_given_names", "")[0],
+                )
+            )
 
     document.authors = authors
 
@@ -390,7 +405,7 @@ def transform_document(data):
     languages = [original_lang]
 
     for sub in sub_articles:
-        languages.append(atrib_val(sub['article'][0], "lang"))
+        languages.append(atrib_val(sub["article"][0], "lang"))
 
     document.languages = languages
 
@@ -407,9 +422,11 @@ def transform_document(data):
     return document
 
 
-@retry(wait=tenacity.wait_exponential(),
-       stop=tenacity.stop_after_attempt(10),
-       retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError))
+@retry(
+    wait=tenacity.wait_exponential(),
+    stop=tenacity.stop_after_attempt(10),
+    retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError),
+)
 def register_documents(ds, **kwargs):
     mongo_connect()
 
@@ -423,7 +440,9 @@ def register_documents(ds, **kwargs):
 
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
-    i_documents = kwargs["ti"].xcom_pull(key="i_documents", task_ids="register_issues_task")
+    i_documents = kwargs["ti"].xcom_pull(
+        key="i_documents", task_ids="register_issues_task"
+    )
 
     document_changes = filter_changes(tasks, "documents", "get")
 
@@ -509,6 +528,7 @@ def delete_journals(ds, **kwargs):
 
     return tasks
 
+
 delete_journals_task = PythonOperator(
     task_id="delete_journals_task",
     provide_context=True,
@@ -516,9 +536,68 @@ delete_journals_task = PythonOperator(
     dag=dag,
 )
 
+
+def register_last_issues(ds, **kwargs):
+    mongo_connect()
+
+    for journal in Journal.objects.all():
+        try:
+            logging.info("Id do journal: %s" % journal._id)
+            last_j_issue = (
+                Issue.objects.filter(journal=journal._id)
+                .order_by("-year", "-order")
+                .first()
+                .select_related()
+            )
+
+            l_issue_sec = []
+            if hasattr(last_j_issue, "sections"):
+                l_issue_sec = last_j_issue.sections
+
+            last_issue = {"sections": l_issue_sec}
+
+            if hasattr(last_j_issue, "volume"):
+                last_issue["volume"] = last_j_issue.volume
+
+            if hasattr(last_j_issue, "number"):
+                last_issue["number"] = last_j_issue.number
+
+            if hasattr(last_j_issue, "start_month"):
+                last_issue["start_month"] = last_j_issue.start_month
+
+            if hasattr(last_j_issue, "end_month"):
+                last_issue["end_month"] = last_j_issue.end_month
+
+            if hasattr(last_j_issue, "label"):
+                last_issue["label"] = last_j_issue.label
+
+            if hasattr(last_j_issue, "year"):
+                last_issue["year"] = last_j_issue.year
+
+            if hasattr(last_j_issue, "type"):
+                last_issue["type"] = last_j_issue.type
+
+            if hasattr(last_j_issue, "suppl_text"):
+                last_issue["suppl_text"] = last_j_issue.suppl_text
+
+            journal.last_issue = LastIssue(**last_issue)
+            journal.save()
+        except AttributeError:
+            logging.info("No issues are registered to Journal: %s " % journal)
+
+
+register_last_issues_task = PythonOperator(
+    task_id="register_last_issues",
+    provide_context=True,
+    python_callable=register_last_issues,
+    dag=dag,
+)
+
+
 read_changes_task >> register_journals_task
 register_issues_task << register_journals_task
 register_documents_task << register_issues_task
 delete_journals_task << register_documents_task
 delete_issues_task << delete_journals_task
 delete_documents_task << delete_issues_task
+register_last_issues_task << delete_documents_task
