@@ -215,11 +215,29 @@ def transform_journal(data):
     journal.print_issn = metadata.get("print_issn", "")
     journal.eletronic_issn = metadata.get("electronic_issn", "")
 
-    # Subject_categories
+    # Subject Categories
     journal.subject_categories = metadata.get("subject_categories", [])
 
     # Métricas
     journal.metrics = models.JounalMetrics(**metadata.get("metrics", {}))
+
+    # Issue count
+    journal.issue_count = len(data.get("items", []))
+
+    # Mission
+    journal.mission = [Mission(**{'language': m['language'], 'description': m['value']}) for m in metadata.get("mission", [])]
+
+    # Study Area
+    journal.study_areas = metadata.get('subject_areas', [])
+
+    # Sponsors
+    journal.sponsors = metadata.get('sponsors', [])
+
+    # TODO: Verificar se esse e-mail é o que deve ser colocado no editor.
+    # Editor mail
+    if metadata.get('contact', ''):
+        contact = metadata.get('contact')
+        journal.editor_email = contact.get('email', '')
 
     journal.online_submission_url = metadata.get("online_submission_url", "")
     journal.logo_url = metadata.get("logo_url", "")
