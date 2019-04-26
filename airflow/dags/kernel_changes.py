@@ -16,7 +16,7 @@ import requests
 
 from mongoengine import connect
 
-from opac_schema.v1.models import Journal, JounalMetrics, Issue, Article, LastIssue, Mission
+from opac_schema.v1 import models
 
 
 failure_recipients = os.environ.get("EMIAL_ON_FAILURE_RECIPIENTS", None)
@@ -205,7 +205,7 @@ def filter_changes(tasks, entity, action):
 def transform_journal(data):
     metadata = data["metadata"]
 
-    journal = Journal()
+    journal = models.Journal()
     journal._id = journal.jid = data.get("id")
     journal.title = metadata.get("title", "")
     journal.title_iso = metadata.get("title_iso", "")
@@ -219,7 +219,7 @@ def transform_journal(data):
     journal.subject_categories = metadata.get("subject_categories", [])
 
     # Métricas
-    journal.metrics = JounalMetrics(**metadata.get("metrics", {}))
+    journal.metrics = models.JounalMetrics(**metadata.get("metrics", {}))
 
     # Issue count
     journal.issue_count = len(data.get("items", []))
@@ -297,7 +297,7 @@ register_journals_task = PythonOperator(
 def transform_issue(data):
     metadata = data["metadata"]
 
-    issue = Issue()
+    issue = models.Issue()
     issue._id = issue.iid = data.get("id")
     issue.type = metadata.get("type", "")
     issue.spe_text = metadata.get("spe_text", "")
@@ -328,7 +328,7 @@ def register_issues(ds, **kwargs):
         """
         for j, i in j_issues.items():
             if issue_id in i:
-                return Journal.objects.get(_id=j)
+                return models.Journal.objects.get(_id=j)
 
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
@@ -373,15 +373,11 @@ def transform_document(data):
 
     article = data.get("article")[0]
     article_meta = data.get("article-meta")[0]
-    # journal_meta = data.get("journal-meta")
     pub_date = data.get("pub-date")[0]
-    # history_date = data.get("history-date")
-    # kwd_group = data.get("kwd-group")
-    # trans_abstract = data.get("trans-abstract")
     sub_articles = data.get("sub-article")
     contribs = data.get("contrib")
 
-    document = Article()
+    document = models.Article()
 
     document.title = atrib_val(article_meta, "article_title")
     document.section = atrib_val(article_meta, "pub_subject")
@@ -420,12 +416,61 @@ def transform_document(data):
     document.doi = atrib_val(article_meta, "article_doi")
 
     original_lang = article.get("lang")[0]
-    languages = [original_lang]
+    languages = []
+    trans_titles = []
+    trans_sections = []
+    trans_abstracts = []
+    keywords = []
 
     for sub in sub_articles:
-        languages.append(atrib_val(sub["article"][0], "lang"))
+        lang = atrib_val(sub["article"][0], "lang")
+
+        languages.append(lang)
+
+        trans_titles.append(
+            models.TranslatedTitle(
+                **{
+                    "name": atrib_val(sub["article-meta"][0], "article_title"),
+                    "language": lang,
+                }
+            )
+        )
+
+        trans_sections.append(
+            models.TranslatedSection(
+                **{
+                    "name": atrib_val(sub["article-meta"][0], "pub_subject"),
+                    "language": lang,
+                }
+            )
+        )
+
+        trans_abstracts.append(
+            models.Abstract(
+                **{
+                    "text": atrib_val(sub["article-meta"][0], "abstract_p"),
+                    "language": lang,
+                }
+            )
+        )
+
+    if data.get("kwd-group"):
+        kwd_group = data.get("kwd-group")[0]
+
+        keywords.append(
+            models.ArticleKeyword(
+                **{
+                    "keywords": kwd_group.get("kwd", []),
+                    "language": kwd_group.get("lang", "")[0],
+                }
+            )
+        )
 
     document.languages = languages
+    document.translated_titles = trans_titles
+    document.sections = trans_sections
+    document.abstracts = trans_abstracts
+    document.keywords = keywords
 
     document.original_language = original_lang
 
@@ -454,7 +499,7 @@ def register_documents(ds, **kwargs):
         """
         for i, d in i_documents.items():
             if document_id in d:
-                return Issue.objects.get(_id=i)
+                return models.Issue.objects.get(_id=i)
 
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
@@ -471,10 +516,14 @@ def register_documents(ds, **kwargs):
 
         t_document = transform_document(resp_json)
 
-        issue = get_issue(i_documents, get_id(document.get("id")))
+        document_id = get_id(document.get("id"))
+        issue = get_issue(i_documents, document_id)
 
         t_document.issue = issue
         t_document.journal = issue.journal
+
+        t_document.order = i_documents.get(issue.id).index(document_id)
+        t_document.xml = "%s%s" % (api_hook.base_url, document.get("id"))
 
         t_document.save()
 
@@ -496,7 +545,7 @@ def delete_documents(ds, **kwargs):
 
     for document in document_changes:
 
-        article = Article.objects.get(_id=get_id(document.get("id")))
+        article = models.Article.objects.get(_id=get_id(document.get("id")))
         article.is_public = False
         article.save()
 
@@ -518,7 +567,7 @@ def delete_issues(ds, **kwargs):
 
     for issue in issue_changes:
 
-        issue = Issue.objects.get(_id=get_id(issue.get("id")))
+        issue = models.Issue.objects.get(_id=get_id(issue.get("id")))
         issue.is_public = False
         issue.save()
 
@@ -540,7 +589,7 @@ def delete_journals(ds, **kwargs):
 
     for journal in journal_changes:
 
-        journal = Journal.objects.get(_id=get_id(journal.get("id")))
+        journal = models.Journal.objects.get(_id=get_id(journal.get("id")))
         journal.is_public = False
         journal.save()
 
@@ -558,11 +607,11 @@ delete_journals_task = PythonOperator(
 def register_last_issues(ds, **kwargs):
     mongo_connect()
 
-    for journal in Journal.objects.all():
+    for journal in models.Journal.objects.all():
         try:
             logging.info("Id do journal: %s" % journal._id)
             last_j_issue = (
-                Issue.objects.filter(journal=journal._id)
+                models.Issue.objects.filter(journal=journal._id)
                 .order_by("-year", "-order")
                 .first()
                 .select_related()
@@ -598,10 +647,10 @@ def register_last_issues(ds, **kwargs):
             if hasattr(last_j_issue, "suppl_text"):
                 last_issue["suppl_text"] = last_j_issue.suppl_text
 
-            journal.last_issue = LastIssue(**last_issue)
+            journal.last_issue = models.LastIssue(**last_issue)
             journal.save()
         except AttributeError:
-            logging.info("No issues are registered to Journal: %s " % journal)
+            logging.info("No issues are registered to models.Journal: %s " % journal)
 
 
 register_last_issues_task = PythonOperator(
