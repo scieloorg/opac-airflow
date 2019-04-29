@@ -225,19 +225,23 @@ def transform_journal(data):
     journal.issue_count = len(data.get("items", []))
 
     # Mission
-    journal.mission = [Mission(**{'language': m['language'], 'description': m['value']}) for m in metadata.get("mission", [])]
+    journal.mission = [
+        models.Mission(**{"language": m["language"], "description": m["value"]})
+        for m in metadata.get("mission", [])
+    ]
 
     # Study Area
-    journal.study_areas = metadata.get('subject_areas', [])
+    journal.study_areas = metadata.get("subject_areas", [])
 
     # Sponsors
-    journal.sponsors = metadata.get('sponsors', [])
+    sponsors = metadata.get("sponsors", [])
+    journal.sponsors = [s['name'] for s in sponsors if sponsors]
 
     # TODO: Verificar se esse e-mail é o que deve ser colocado no editor.
     # Editor mail
-    if metadata.get('contact', ''):
-        contact = metadata.get('contact')
-        journal.editor_email = contact.get('email', '')
+    if metadata.get("contact", ""):
+        contact = metadata.get("contact")
+        journal.editor_email = contact.get("email", "").split(";")[0].strip()
 
     journal.online_submission_url = metadata.get("online_submission_url", "")
     journal.logo_url = metadata.get("logo_url", "")
@@ -299,15 +303,18 @@ def transform_issue(data):
 
     issue = models.Issue()
     issue._id = issue.iid = data.get("id")
-    issue.type = metadata.get("type", "")
+    issue._id = issue.iid = data.get("id")
+    issue.type = metadata.get("type", "regular")
     issue.spe_text = metadata.get("spe_text", "")
-    issue.start_month = metadata.get("start_month", 0)
-    issue.end_month = metadata.get("end_month", 0)
+    issue.start_month = metadata.get("publication_month", 0)
+    issue.end_month = metadata.get("publication_season", [0])[-1]
     issue.year = metadata.get("publication_year")
     issue.volume = metadata.get("volume", "")
     issue.number = metadata.get("number", "")
 
-    issue.label = metadata.get("label", "")
+    issue.label = metadata.get(
+        "label", "%s%s" % ("v" + issue.volume, "n" + issue.number)
+    )
     issue.order = metadata.get("order", 0)
     issue.pid = metadata.get("pid", "")
 
@@ -471,6 +478,7 @@ def transform_document(data):
     document.sections = trans_sections
     document.abstracts = trans_abstracts
     document.keywords = keywords
+    document.abstract_languages = [abstr["language"] for abstr in trans_abstracts]
 
     document.original_language = original_lang
 
@@ -625,6 +633,9 @@ def register_last_issues(ds, **kwargs):
 
             if hasattr(last_j_issue, "volume"):
                 last_issue["volume"] = last_j_issue.volume
+
+            if hasattr(last_j_issue, "iid"):
+                last_issue["iid"] = last_j_issue.iid
 
             if hasattr(last_j_issue, "number"):
                 last_issue["number"] = last_j_issue.number
