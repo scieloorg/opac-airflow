@@ -663,8 +663,8 @@ register_last_issues_task = PythonOperator(
 
 read_changes_task >> register_journals_task
 register_issues_task << register_journals_task
-register_documents_task << register_issues_task
+register_last_issues_task << register_issues_task
+register_documents_task << register_last_issues_task
 delete_journals_task << register_documents_task
 delete_issues_task << delete_journals_task
 delete_documents_task << delete_issues_task
-register_last_issues_task << delete_documents_task
