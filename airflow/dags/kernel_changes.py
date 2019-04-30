@@ -235,7 +235,7 @@ def transform_journal(data):
 
     # Sponsors
     sponsors = metadata.get("sponsors", [])
-    journal.sponsors = [s['name'] for s in sponsors if sponsors]
+    journal.sponsors = [s["name"] for s in sponsors if sponsors]
 
     # TODO: Verificar se esse e-mail é o que deve ser colocado no editor.
     # Editor mail
@@ -423,10 +423,25 @@ def transform_document(data):
     document.doi = atrib_val(article_meta, "article_doi")
 
     original_lang = article.get("lang")[0]
-    languages = []
+    # article.languages contém todas as traduções do artigo e o idioma original
+    languages = [original_lang]
     trans_titles = []
     trans_sections = []
+
     trans_abstracts = []
+    trans_abstracts.append(
+        models.Abstract(**{"text": document.abstract, "language": original_lang})
+    )
+
+    if data.get("trans-abstract"):
+
+        for trans_abs in data.get("trans-abstract"):
+            trans_abstracts.append(
+                models.Abstract(
+                    **{"text": trans_abs["text"][0], "language": trans_abs["lang"][0]}
+                )
+            )
+
     keywords = []
 
     for sub in sub_articles:
@@ -478,7 +493,7 @@ def transform_document(data):
     document.sections = trans_sections
     document.abstracts = trans_abstracts
     document.keywords = keywords
-    document.abstract_languages = [abstr["language"] for abstr in trans_abstracts]
+    document.abstract_languages = [trans_abs["language"] for trans_abs in trans_abstracts]
 
     document.original_language = original_lang
 
