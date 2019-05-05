@@ -375,19 +375,28 @@ register_issues_task = PythonOperator(
 
 
 def transform_document(data):
-    def atrib_val(root_node, atrib):
-        return root_node.get(atrib)[0] if root_node.get(atrib) else None
 
-    article = data.get("article")[0]
-    article_meta = data.get("article-meta")[0]
-    pub_date = data.get("pub-date")[0]
-    sub_articles = data.get("sub-article")
-    contribs = data.get("contrib")
+    def nestget(data, *path, default=''):
+        """
+        Obtém valores de list ou dicionários.
+        """
+        for key_or_index in path:
+            try:
+                data = data[key_or_index]
+            except (KeyError, IndexError):
+                return default
+        return data
+
+    article = nestget(data, "article", 0)
+    article_meta = nestget(data, "article_meta", 0)
+    pub_date = nestget(data, "pub_date", 0)
+    sub_articles = nestget(data, "sub_article")
+    contribs = nestget(data, "contrib")
 
     document = models.Article()
 
-    document.title = atrib_val(article_meta, "article_title")
-    document.section = atrib_val(article_meta, "pub_subject")
+    document.title = nestget(article_meta, "article_title", 0)
+    document.section = nestget(article_meta, "pub_subject", 0)
 
     authors = []
 
@@ -402,57 +411,66 @@ def transform_document(data):
 
     for contrib in contribs:
 
-        if contrib.get("contrib_type")[0] in valid_contrib_types:
+        if nestget(contrib, "contrib_type", 0) in valid_contrib_types:
             authors.append(
                 "%s, %s"
                 % (
-                    contrib.get("contrib_surname", "")[0],
-                    contrib.get("contrib_given_names", "")[0],
+                    nestget(contrib, "contrib_surname", 0),
+                    nestget(contrib, "contrib_given_names", 0),
                 )
             )
 
     document.authors = authors
 
-    document.abstract = atrib_val(article_meta, "abstract")
+    document.abstract = nestget(article_meta, "abstract", 0)
 
-    publisher_id = atrib_val(article_meta, "article_publisher_id")
+    publisher_id = nestget(article_meta, "article_publisher_id", 0)
 
     document._id = publisher_id
     document.aid = publisher_id
-    document.pid = publisher_id
-    document.doi = atrib_val(article_meta, "article_doi")
+    document.pid = nestget(article_meta, "article_publisher_id", 1)
+    document.doi = nestget(article_meta, "article_doi", 0)
 
-    original_lang = article.get("lang")[0]
+    original_lang = nestget(article, "lang", 0)
+
     # article.languages contém todas as traduções do artigo e o idioma original
     languages = [original_lang]
     trans_titles = []
     trans_sections = []
-
     trans_abstracts = []
+
+    trans_sections.append(
+        models.TranslatedSection(
+                **{
+                    "name": nestget(article_meta, "pub_subject", 0),
+                    "language": original_lang,
+                }
+            )
+        )
+
     trans_abstracts.append(
         models.Abstract(**{"text": document.abstract, "language": original_lang})
     )
 
-    if data.get("trans-abstract"):
+    if data.get("trans_abstract"):
 
-        for trans_abs in data.get("trans-abstract"):
+        for trans_abs in data.get("trans_abstract"):
             trans_abstracts.append(
                 models.Abstract(
-                    **{"text": trans_abs["text"][0], "language": trans_abs["lang"][0]}
+                    **{"text": nestget(trans_abs, "text", 0), "language": nestget(trans_abs, "lang", 0)}
                 )
             )
 
     keywords = []
-
     for sub in sub_articles:
-        lang = atrib_val(sub["article"][0], "lang")
+        lang = nestget(sub, "article", 0, "lang", 0)
 
         languages.append(lang)
 
         trans_titles.append(
             models.TranslatedTitle(
                 **{
-                    "name": atrib_val(sub["article-meta"][0], "article_title"),
+                    "name": nestget(sub, "article_meta", 0, "article_title", 0),
                     "language": lang,
                 }
             )
@@ -461,7 +479,7 @@ def transform_document(data):
         trans_sections.append(
             models.TranslatedSection(
                 **{
-                    "name": atrib_val(sub["article-meta"][0], "pub_subject"),
+                    "name": nestget(sub, "article_meta", 0, "pub_subject", 0),
                     "language": lang,
                 }
             )
@@ -470,23 +488,24 @@ def transform_document(data):
         trans_abstracts.append(
             models.Abstract(
                 **{
-                    "text": atrib_val(sub["article-meta"][0], "abstract_p"),
+                    "text": nestget(sub, "article_meta", 0, "abstract_p", 0),
                     "language": lang,
                 }
             )
         )
 
-    if data.get("kwd-group"):
-        kwd_group = data.get("kwd-group")[0]
+    if data.get("kwd_group"):
 
-        keywords.append(
-            models.ArticleKeyword(
-                **{
-                    "keywords": kwd_group.get("kwd", []),
-                    "language": kwd_group.get("lang", "")[0],
-                }
+        for kwd_group in nestget(data, "kwd_group"):
+
+            keywords.append(
+                models.ArticleKeyword(
+                    **{
+                        "keywords": nestget(kwd_group, "kwd", default=[]),
+                        "language": nestget(kwd_group, "lang", 0),
+                    }
+                )
             )
-        )
 
     document.languages = languages
     document.translated_titles = trans_titles
@@ -497,13 +516,13 @@ def transform_document(data):
 
     document.original_language = original_lang
 
-    document.publication_date = atrib_val(pub_date, "text")
+    document.publication_date = nestget(pub_date, "text", 0)
 
-    document.type = atrib_val(article, "type")
-    document.elocation = atrib_val(article_meta, "pub_elocation")
-    document.fpage = atrib_val(article_meta, "pub_fpage")
-    document.fpage_sequence = atrib_val(article_meta, "pub_fpage_seq")
-    document.lpage = atrib_val(article_meta, "pub_lpage")
+    document.type = nestget(article, "type", 0)
+    document.elocation = nestget(article_meta, "pub_elocation", 0)
+    document.fpage = nestget(article_meta, "pub_fpage", 0)
+    document.fpage_sequence = nestget(article_meta, "pub_fpage_seq", 0)
+    document.lpage = nestget(article_meta, "pub_lpage", 0)
 
     return document
 
