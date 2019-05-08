@@ -7,6 +7,7 @@ from tenacity import retry
 
 import airflow
 from airflow import DAG
+from airflow.sensors.http_sensor import HttpSensor
 from airflow.hooks.http_hook import HttpHook
 from airflow.hooks.base_hook import BaseHook
 from airflow.models import Variable
@@ -211,6 +212,16 @@ def filter_changes(tasks, entity, action):
         _entity = get_entity(task["id"])
         if _entity == entity and task.get("task") == action:
             yield task
+
+
+http_kernel_check = HttpSensor(
+    task_id='http_kernel_check',
+    http_conn_id='kernel_conn',
+    endpoint='/changes',
+    request_params={},
+    poke_interval=5,
+    dag=dag,
+)
 
 
 read_changes_task = ShortCircuitOperator(
@@ -742,8 +753,9 @@ register_last_issues_task = PythonOperator(
     dag=dag,
 )
 
+http_kernel_check >> read_changes_task
 
-read_changes_task >> register_journals_task
+register_journals_task << read_changes_task
 
 register_orphan_issues_task << register_journals_task
 
