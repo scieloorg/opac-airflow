@@ -40,7 +40,13 @@ dag = DAG(
     schedule_interval=timedelta(minutes=1),
 )
 
+api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
 
+
+@retry(
+    wait=tenacity.wait_exponential(),
+    stop=tenacity.stop_after_attempt(10)
+)
 def mongo_connect():
     # TODO: Necessário adicionar um commando para adicionar previamente uma conexão, ver: https://github.com/puckel/docker-airflow/issues/75
     conn = BaseHook.get_connection("opac_conn")
@@ -109,16 +115,26 @@ class Reader:
         return entities, last_timestamp
 
 
+@retry(
+    wait=tenacity.wait_exponential(),
+    stop=tenacity.stop_after_attempt(10),
+    retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError),
+)
+def fetch_data(endpoint):
+    """
+    Obtém o JSON do endpoint do Kernel
+    """
+    return api_hook.run(endpoint=endpoint).json()
+
+
 def changes(since=""):
     last_yielded = None
-
-    api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
 
     while True:
 
         url = "changes?since=%s" % since
 
-        resp_json = api_hook.run(endpoint=url).json()
+        resp_json = fetch_data(endpoint=url)
 
         for result in resp_json["results"]:
             if result != last_yielded:
@@ -133,11 +149,6 @@ def changes(since=""):
             since = last_yielded["timestamp"]
 
 
-@retry(
-    wait=tenacity.wait_exponential(),
-    stop=tenacity.stop_after_attempt(10),
-    retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError),
-)
 def read_changes(ds, **kwargs):
     reader = Reader()
     variable_timestamp = Variable.get("change_timestamp", "")
@@ -202,6 +213,14 @@ def filter_changes(tasks, entity, action):
             yield task
 
 
+read_changes_task = ShortCircuitOperator(
+    task_id="read_changes_task",
+    provide_context=True,
+    python_callable=read_changes,
+    dag=dag,
+)
+
+
 def transform_journal(data):
     metadata = data["metadata"]
 
@@ -253,32 +272,17 @@ def transform_journal(data):
     return journal
 
 
-read_changes_task = ShortCircuitOperator(
-    task_id="read_changes_task",
-    provide_context=True,
-    python_callable=read_changes,
-    dag=dag,
-)
-
-
-@retry(
-    wait=tenacity.wait_exponential(),
-    stop=tenacity.stop_after_attempt(10),
-    retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError),
-)
 def register_journals(ds, **kwargs):
     mongo_connect()
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
     journal_changes = filter_changes(tasks, "journals", "get")
 
-    api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
-
     # Dictionary with id of journal and list of issues, something like: j_issues[journal_id] = [issue_id, issue_id, ....]
     j_issues = {}
 
     for journal in journal_changes:
-        resp_json = api_hook.run(endpoint=journal.get("id")).json()
+        resp_json = fetch_data(endpoint=journal.get("id"))
 
         t_journal = transform_journal(resp_json)
         t_journal.save()
@@ -337,23 +341,9 @@ def register_issue(data, journal_id, issue_id, j_issues):
     return t_issue
 
 
-@retry(
-    wait=tenacity.wait_exponential(),
-    stop=tenacity.stop_after_attempt(10),
-    retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError),
-)
-def get_issue(issue_id):
+def register_orphan_issues(ds, **kwargs):
     """
-    Obtém o JSON do fascículo no Kernel
-    """
-    api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
-
-    return api_hook.run(endpoint=issue_id).json()
-
-
-def try_register_orphan_issues(ds, **kwargs):
-    """
-    Tenta registrar os fascículos orfãos.
+    Registrar os fascículos orfãos.
     """
 
     j_issues = kwargs["ti"].xcom_pull(key="j_issues", task_ids="register_journals_task")
@@ -362,7 +352,7 @@ def try_register_orphan_issues(ds, **kwargs):
 
     for issue_id in orphan_issues:
 
-        resp_json = get_issue(issue_id)
+        resp_json = fetch_data(issue_id)
 
         journal_id = [j for j, i in j_issues.items() if issue_id in i]
 
@@ -373,10 +363,10 @@ def try_register_orphan_issues(ds, **kwargs):
     Variable.set("orphan_issues", orphan_issues)
 
 
-try_register_orphan_issues_task = PythonOperator(
-    task_id="try_register_orphan_issues",
+register_orphan_issues_task = PythonOperator(
+    task_id="register_orphan_issues",
     provide_context=True,
-    python_callable=try_register_orphan_issues,
+    python_callable=register_orphan_issues,
     dag=dag,
 )
 
@@ -399,7 +389,7 @@ def register_issues(ds, **kwargs):
 
         issue_endpoint = issue.get("id")
 
-        resp_json = get_issue(issue_endpoint)
+        resp_json = fetch_data(issue_endpoint)
 
         issue_id = get_id(issue_endpoint)  # obtém somente o id
 
@@ -580,11 +570,6 @@ def transform_document(data):
     return document
 
 
-@retry(
-    wait=tenacity.wait_exponential(),
-    stop=tenacity.stop_after_attempt(10),
-    retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError),
-)
 def register_documents(ds, **kwargs):
     mongo_connect()
 
@@ -604,10 +589,9 @@ def register_documents(ds, **kwargs):
 
     document_changes = filter_changes(tasks, "documents", "get")
 
-    api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
-
     for document in document_changes:
-        resp_json = api_hook.run("%s/front" % document.get("id")).json()
+
+        resp_json = fetch_data("%s/front" % document.get("id"))
 
         t_document = transform_document(resp_json)
 
@@ -761,9 +745,9 @@ register_last_issues_task = PythonOperator(
 
 read_changes_task >> register_journals_task
 
-try_register_orphan_issues_task << register_journals_task
+register_orphan_issues_task << register_journals_task
 
-register_issues_task << try_register_orphan_issues_task
+register_issues_task << register_orphan_issues_task
 
 register_last_issues_task << register_issues_task
 
