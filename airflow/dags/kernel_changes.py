@@ -321,47 +321,100 @@ def transform_issue(data):
     return issue
 
 
+def register_issue(data, journal_id, issue_id, j_issues):
+    """
+    Realiza o registro fascículo utilizando o opac schema.
+    """
+    mongo_connect()
+
+    journal = models.Journal.objects.get(_id=journal_id)
+
+    t_issue = transform_issue(data)
+    t_issue.journal = journal
+    t_issue.order = j_issues.get(journal.id).index(issue_id)
+    t_issue.save()
+
+    return t_issue
+
+
 @retry(
     wait=tenacity.wait_exponential(),
     stop=tenacity.stop_after_attempt(10),
     retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError),
 )
+def get_issue(issue_id):
+    """
+    Obtém o JSON do fascículo no Kernel
+    """
+    api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
+
+    return api_hook.run(endpoint=issue_id).json()
+
+
+def try_register_orphan_issues(ds, **kwargs):
+    """
+    Tenta registrar os fascículos orfãos.
+    """
+
+    j_issues = kwargs["ti"].xcom_pull(key="j_issues", task_ids="register_journals_task")
+
+    orphan_issues = Variable.get("orphan_issues", [])
+
+    for issue_id in orphan_issues:
+
+        resp_json = get_issue(issue_id)
+
+        journal_id = [j for j, i in j_issues.items() if issue_id in i]
+
+        if journal_id:
+            register_issue(resp_json, journal_id[0], issue_id, j_issues)
+            orphan_issues.remove(issue_id)
+
+    Variable.set("orphan_issues", orphan_issues)
+
+
+try_register_orphan_issues_task = PythonOperator(
+    task_id="try_register_orphan_issues",
+    provide_context=True,
+    python_callable=try_register_orphan_issues,
+    dag=dag,
+)
+
+
 def register_issues(ds, **kwargs):
-    mongo_connect()
-
-    def get_journal(j_issues, issue_id):
-        """
-        Return issue`s journal
-        """
-        for j, i in j_issues.items():
-            if issue_id in i:
-                return models.Journal.objects.get(_id=j)
-
+    """
+    Realiza o registro fascículos.
+    """
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
     j_issues = kwargs["ti"].xcom_pull(key="j_issues", task_ids="register_journals_task")
 
-    # Dictionary with id of issue and a list of documents, something like: i_documents[issue_id] = [document_id, document_id, ....]
+    # Dict with key of issue_id and value a list of document id.
     i_documents = {}
+    orphan_issues = []
 
     issue_changes = filter_changes(tasks, "bundles", "get")
 
-    api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
-
     for issue in issue_changes:
-        resp_json = api_hook.run(endpoint=issue.get("id")).json()
 
-        issue_id = get_id(issue.get("id"))
-        journal = get_journal(j_issues, issue_id)
+        issue_endpoint = issue.get("id")
 
-        t_issue = transform_issue(resp_json)
-        t_issue.journal = journal
-        t_issue.order = j_issues.get(journal.id).index(issue_id)
-        t_issue.save()
+        resp_json = get_issue(issue_endpoint)
 
-        i_documents[get_id(issue.get("id"))] = resp_json.get("items", [])
+        issue_id = get_id(issue_endpoint)  # obtém somente o id
+
+        journal_id = [j for j, i in j_issues.items() if issue_id in i]
+
+        if journal_id:
+            register_issue(resp_json, journal_id[0], issue_id, j_issues)
+        else:
+            orphan_issues.append(issue_id)
+
+        i_documents[issue_id] = resp_json.get("items", [])
 
     kwargs["ti"].xcom_push(key="i_documents", value=i_documents)
+
+    Variable.set("orphan_issues", orphan_issues)
 
     return tasks
 
@@ -707,9 +760,17 @@ register_last_issues_task = PythonOperator(
 
 
 read_changes_task >> register_journals_task
-register_issues_task << register_journals_task
+
+try_register_orphan_issues_task << register_journals_task
+
+register_issues_task << try_register_orphan_issues_task
+
 register_last_issues_task << register_issues_task
+
 register_documents_task << register_last_issues_task
+
 delete_journals_task << register_documents_task
+
 delete_issues_task << delete_journals_task
+
 delete_documents_task << delete_issues_task
