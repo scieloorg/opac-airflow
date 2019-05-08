@@ -313,7 +313,14 @@ register_journals_task = PythonOperator(
 )
 
 
-def transform_issue(data):
+def register_issue(data, journal_id, issue_id, j_issues):
+    """
+    Realiza o registro fascículo utilizando o opac schema.
+    """
+    mongo_connect()
+
+    journal = models.Journal.objects.get(_id=journal_id)
+
     metadata = data["metadata"]
 
     issue = models.Issue()
@@ -333,23 +340,11 @@ def transform_issue(data):
     issue.order = metadata.get("order", 0)
     issue.pid = metadata.get("pid", "")
 
+    issue.journal = journal
+    issue.order = j_issues.get(journal.id).index(issue_id)
+    issue.save()
+
     return issue
-
-
-def register_issue(data, journal_id, issue_id, j_issues):
-    """
-    Realiza o registro fascículo utilizando o opac schema.
-    """
-    mongo_connect()
-
-    journal = models.Journal.objects.get(_id=journal_id)
-
-    t_issue = transform_issue(data)
-    t_issue.journal = journal
-    t_issue.order = j_issues.get(journal.id).index(issue_id)
-    t_issue.save()
-
-    return t_issue
 
 
 def register_orphan_issues(ds, **kwargs):
@@ -400,13 +395,12 @@ def register_issues(ds, **kwargs):
 
         issue_endpoint = issue.get("id")
 
-        resp_json = fetch_data(issue_endpoint)
-
         issue_id = get_id(issue_endpoint)  # obtém somente o id
 
         journal_id = [j for j, i in j_issues.items() if issue_id in i]
 
         if journal_id:
+            resp_json = fetch_data(issue_endpoint)
             register_issue(resp_json, journal_id[0], issue_id, j_issues)
         else:
             orphan_issues.append(issue_id)
@@ -428,7 +422,7 @@ register_issues_task = PythonOperator(
 )
 
 
-def transform_document(data):
+def register_document(data, issue_id, document_id, i_documents):
 
     def nestget(data, *path, default=''):
         """
@@ -578,19 +572,50 @@ def transform_document(data):
     document.fpage_sequence = nestget(article_meta, "pub_fpage_seq", 0)
     document.lpage = nestget(article_meta, "pub_lpage", 0)
 
+    issue = models.Issue.objects.get(_id=issue_id)
+
+    document.issue = issue
+    document.journal = issue.journal
+
+    document.order = i_documents.get(issue.id).index(document_id)
+    document.xml = "%s%s" % (api_hook.base_url, document.get("id"))
+
+    document.save()
+
     return document
+
+
+def register_orphan_documents(ds, **kwargs):
+    """
+    Registrar os documentos orfãos.
+    """
+
+    i_documents = kwargs["ti"].xcom_pull(
+        key="i_documents", task_ids="register_issues_task"
+    )
+
+    orphan_documents = Variable.get("orphan_documents", [])
+
+    for document_id in orphan_documents:
+
+        issue_id = [i for i, d in i_documents.items() if document_id in d]
+
+        if issue_id:
+            resp_json = fetch_data("%s/front" % document.get("id"))
+            register_document(resp_json, issue_id[0], document_id, i_documents)
+            orphan_documents.remove(issue_id)
+
+
+register_orphan_documents_task = PythonOperator(
+    task_id="register_orphan_documents",
+    provide_context=True,
+    python_callable=register_orphan_documents,
+    dag=dag,
+)
 
 
 def register_documents(ds, **kwargs):
     mongo_connect()
-
-    def get_issue(i_documents, document_id):
-        """
-        Return document`s issue
-        """
-        for i, d in i_documents.items():
-            if document_id in d:
-                return models.Issue.objects.get(_id=i)
 
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
@@ -598,24 +623,22 @@ def register_documents(ds, **kwargs):
         key="i_documents", task_ids="register_issues_task"
     )
 
+    orphan_documents = []
+
     document_changes = filter_changes(tasks, "documents", "get")
 
     for document in document_changes:
-
-        resp_json = fetch_data("%s/front" % document.get("id"))
-
-        t_document = transform_document(resp_json)
-
         document_id = get_id(document.get("id"))
-        issue = get_issue(i_documents, document_id)
 
-        t_document.issue = issue
-        t_document.journal = issue.journal
+        issue_id = [i for i, d in i_documents.items() if document_id in d]
 
-        t_document.order = i_documents.get(issue.id).index(document_id)
-        t_document.xml = "%s%s" % (api_hook.base_url, document.get("id"))
+        if issue_id:
+            resp_json = fetch_data("%s/front" % document.get("id"))
+            register_document(resp_json, issue_id[0], document_id, i_documents)
+        else:
+            orphan_documents.append(document_id)
 
-        t_document.save()
+    Variable.set("orphan_documents", orphan_documents)
 
     return tasks
 
