@@ -578,7 +578,7 @@ def register_document(data, issue_id, document_id, i_documents):
     document.journal = issue.journal
 
     document.order = i_documents.get(issue.id).index(document_id)
-    document.xml = "%s%s" % (api_hook.base_url, document.get("id"))
+    document.xml = "%s%s" % (api_hook.base_url, document._id)
 
     document.save()
 
@@ -786,7 +786,9 @@ register_issues_task << register_orphan_issues_task
 
 register_last_issues_task << register_issues_task
 
-register_documents_task << register_last_issues_task
+register_orphan_documents_task << register_last_issues_task
+
+register_documents_task << register_orphan_documents_task
 
 delete_journals_task << register_documents_task
 
