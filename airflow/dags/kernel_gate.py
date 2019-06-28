@@ -4,9 +4,12 @@ em uma REST-API que implementa a específicação do SciELO Kernel"""
 import os
 import requests
 import json
+import http.client
 from airflow import DAG
+from airflow import exceptions
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
+from airflow.hooks.http_hook import HttpHook
 from xylose.scielodocument import Journal, Issue
 from datetime import datetime, timedelta
 from deepdiff import DeepDiff
@@ -47,6 +50,9 @@ JAVA_LIBS_PATH = [
 CLASSPATH = ":".join(JAVA_LIBS_PATH)
 
 ISIS2JSON_PATH = os.path.join(BASE_PATH, "utils/isis2json/isis2json.py")
+
+KERNEL_API_JOURNAL_ENDPOINT = "/journals/"
+KERNEL_API_BUNDLES_ENDPOINT = "/bundles/"
 
 default_args = {
     "owner": "airflow",
@@ -107,11 +113,12 @@ def get_journal_kernel_payload(journal: dict) -> dict:
     _payload["_id"] = _id
 
     if journal.mission:
-
         _payload["mission"] = [
             {"language": lang, "value": value}
             for lang, value in journal.mission.items()
         ]
+    else:
+        _payload["mission"] = []
 
     if journal.title:
         _payload["title"] = journal.title
@@ -151,6 +158,8 @@ def get_journal_kernel_payload(journal: dict) -> dict:
     if journal.sponsors:
         _sponsors = [{"name": sponsor} for sponsor in journal.sponsors]
         _payload["sponsors"] = _sponsors
+    else:
+        _payload["sponsors"] = [] # faz sentido isso?
 
     if journal.wos_subject_areas:
         _payload["subject_categories"] = journal.wos_subject_areas
@@ -177,28 +186,37 @@ def get_journal_kernel_payload(journal: dict) -> dict:
     if _contact:
         _payload["contact"] = _contact
 
+    # Se o dado for removido é preciso alterar na API
+    # precisamos enviar a chave com o dado em branco
+
     return _payload
-
-
-# Este DNS é referente a um container docker que foi iniciado
-# para realizarmos os testes de cadastro/update no Kernel
-KERNEL_API_JOURNAL_URL = "http://document-store_webapp_1:6543/journals/"
 
 
 def register_or_update(_id: str, payload: dict, entity_url: str):
     """Cadastra ou atualiza uma entidade no Kernel a partir de um payload"""
-    response = requests.get("{}{}".format(entity_url, _id))
 
-    if response.status_code == 404:
-        response = requests.put(
-            "{}{}".format(entity_url, _id), data=json.dumps(payload)
+    api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
+
+    response = api_hook.run(
+        endpoint="{}{}".format(entity_url, _id), extra_options={"check_response": False}
+    )
+
+    if response.status_code == http.client.NOT_FOUND:
+        api_hook = HttpHook(http_conn_id="kernel_conn", method="PUT")
+        response = api_hook.run(
+            endpoint="{}{}".format(entity_url, _id),
+            data=json.dumps(payload),
+            extra_options={"check_response": False},
         )
-    elif response.status_code == 200:
+    elif response.status_code == http.client.OK:
         _metadata = response.json()["metadata"]
 
         if DeepDiff(_metadata, payload, ignore_order=True):
-            response = requests.patch(
-                "{}{}".format(entity_url, _id), data=json.dumps(payload)
+            api_hook = HttpHook(http_conn_id="kernel_conn", method="PATCH")
+            response = api_hook.run(
+                endpoint="{}{}".format(entity_url, _id),
+                data=json.dumps(payload),
+                extra_options={"check_response": False},
             )
 
     return response
@@ -212,15 +230,16 @@ def work_on_mst_output(**context):
     for journal_data in json.loads(title_data):
         payload = get_journal_kernel_payload(journal_data)
         _id = payload.pop("_id")
-        response = register_or_update(_id, payload, KERNEL_API_JOURNAL_URL)
-        
+
+        response = register_or_update(_id, payload, KERNEL_API_JOURNAL_ENDPOINT)
+
         if response.status_code == 201:
-            print("Created {}{}".format(KERNEL_API_JOURNAL_URL, _id))
+            print("Created {}{}".format(KERNEL_API_JOURNAL_ENDPOINT, _id))
         elif response.status_code == 204:
-            print("Updated {}{}".format(KERNEL_API_JOURNAL_URL, _id))
+            print("Updated {}{}".format(KERNEL_API_JOURNAL_ENDPOINT, _id))
         elif response.status_code == 400:
             # TODO: Em caso de erro nós deveriamos parar a task?
-            print("Error on {}{}".format(KERNEL_API_JOURNAL_URL, _id))
+            print("Error on {}{}".format(KERNEL_API_JOURNAL_ENDPOINT, _id))
 
 
 work_on_journals = PythonOperator(
