@@ -119,36 +119,24 @@ def journal_as_kernel(journal: Journal) -> dict:
     else:
         _payload["mission"] = []
 
-    if journal.title:
-        _payload["title"] = journal.title
+    _payload["title"] = journal.title or ""
+    _payload["title_iso"] = journal.abbreviated_iso_title or ""
+    _payload["short_title"] = journal.abbreviated_title or ""
+    _payload["acronym"] = journal.acronym or ""
+    _payload["scielo_issn"] = journal.scielo_issn or ""
+    _payload["print_issn"] = journal.print_issn or ""
+    _payload["electronic_issn"] = journal.electronic_issn or ""
 
-    if journal.abbreviated_iso_title:
-        _payload["title_iso"] = journal.abbreviated_iso_title
-
-    if journal.abbreviated_title:
-        _payload["short_title"] = journal.abbreviated_title
-
-    _payload["acronym"] = journal.acronym
-
-    if journal.scielo_issn:
-        _payload["scielo_issn"] = journal.scielo_issn
-
-    if journal.print_issn:
-        _payload["print_issn"] = journal.print_issn
-
-    if journal.electronic_issn:
-        _payload["print_issn"] = journal.electronic_issn
-
+    _payload["status"] = {}
     if journal.status_history:
-        _payload["status"] = {}
         _status = journal.status_history[-1]
         _payload["status"]["status"] = _status[1]
 
         if _status[2]:
             _payload["status"]["reason"] = _status[2]
 
+    _payload["subject_areas"] = []
     if journal.subject_areas:
-        _payload["subject_areas"] = []
 
         for subject_area in journal.subject_areas:
             # TODO: Algumas áreas estão em caixa baixa, o que devemos fazer?
@@ -160,39 +148,27 @@ def journal_as_kernel(journal: Journal) -> dict:
 
             _payload["subject_areas"].append(subject_area.upper())
 
+    _payload["sponsors"] = []
     if journal.sponsors:
-        _sponsors = [{"name": sponsor} for sponsor in journal.sponsors]
-        _payload["sponsors"] = _sponsors
-    else:
-        _payload["sponsors"] = []  # faz sentido isso?
+        _payload["sponsors"] = [{"name": sponsor} for sponsor in journal.sponsors]
 
-    if journal.wos_subject_areas:
-        _payload["subject_categories"] = journal.wos_subject_areas
+    _payload["subject_categories"] = journal.wos_subject_areas or []
+    _payload["online_submission_url"] = journal.submission_url or ""
 
-    if journal.submission_url:
-        _payload["online_submission_url"] = journal.submission_url
-
+    _payload["next_journal"] = {}
     if journal.next_title:
-        _next_journal = {"name": journal.next_title}
-        _payload["next_journal"] = _next_journal
+        _payload["next_journal"]["name"] = journal.next_title
 
+    _payload["previous_journal"] = {}
     if journal.previous_title:
-        _previous_journal = {"name": journal.previous_title}
-        _payload["previous_journal"] = _previous_journal
+        _payload["previous_journal"]["name"] = journal.previous_title
 
-    _contact = {}
-
+    _payload["contact"] = {}
     if journal.editor_email:
-        _contact["email"] = journal.editor_email
+        _payload["contact"]["email"] = journal.editor_email
 
     if journal.editor_address:
-        _contact["address"] = journal.editor_address
-
-    if _contact:
-        _payload["contact"] = _contact
-
-    # Se o dado for removido é preciso alterar na API
-    # precisamos enviar a chave com o dado em branco
+        _payload["contact"]["address"] = journal.editor_address
 
     return _payload
 
@@ -241,38 +217,37 @@ def issue_as_kernel(issue: dict) -> dict:
         return _date
 
     _payload = {}
-
-    if issue.volume:
-        _payload["volume"] = issue.volume
-
-    if issue.number:
-        _payload["number"] = issue.number
-
-    _supplement = None
+    _payload["volume"] = issue.volume or ""
+    _payload["number"] = issue.number or ""
 
     if issue.type is "supplement":
-        _supplement = "0"
-        if issue.supplement_volume:
-            _supplement = issue.supplement_volume
-        elif issue.supplement_number:
-            _supplement = issue.supplement_number
-        _payload["supplement"] = _supplement
+        _payload["supplement"] = (
+            issue.supplement_volume or issue.supplement_number or "0"
+        )
 
     if issue.titles:
         _titles = [
             {"language": lang, "value": value} for lang, value in issue.titles.items()
         ]
         _payload["titles"] = _titles
+    else:
+        _payload["titles"] = []
 
     if issue.start_month and issue.end_month:
         _publication_season = [int(issue.start_month), int(issue.end_month)]
         _payload["publication_season"] = sorted(set(_publication_season))
+    else:
+        _payload["publication_season"] = []
 
     issn_id = issue.data.get("issue").get("v35")[0]["_"]
     _creation_date = parse_date(issue.publication_date)
 
     _payload["_id"] = issue_id(
-        issn_id, str(_creation_date.year), issue.volume, issue.number, _supplement
+        issn_id,
+        str(_creation_date.year),
+        issue.volume,
+        issue.number,
+        _payload.get("supplement"),
     )
 
     return _payload
@@ -288,6 +263,7 @@ def register_or_update(_id: str, payload: dict, entity_url: str):
     )
 
     if response.status_code == http.client.NOT_FOUND:
+        payload = {k: v for k, v in payload.items() if v}
         api_hook = HttpHook(http_conn_id="kernel_conn", method="PUT")
         response = api_hook.run(
             endpoint="{}{}".format(entity_url, _id),
@@ -296,6 +272,12 @@ def register_or_update(_id: str, payload: dict, entity_url: str):
         )
     elif response.status_code == http.client.OK:
         _metadata = response.json()["metadata"]
+
+        payload = {
+            k: v
+            for k, v in payload.items()
+            if _metadata.get(k) or _metadata.get(k) == v or v
+        }
 
         if DeepDiff(_metadata, payload, ignore_order=True):
             api_hook = HttpHook(http_conn_id="kernel_conn", method="PATCH")
@@ -312,7 +294,7 @@ def process_journals(**context):
     """Processa uma lista de journals carregados a partir do resultado
     de leitura da base MST"""
 
-    journals = title_data = context["ti"].xcom_pull(task_ids="read_title_mst")
+    journals = context["ti"].xcom_pull(task_ids="read_title_mst")
     journals = json.loads(journals)
     journals_as_kernel = [journal_as_kernel(Journal(journal)) for journal in journals]
 
