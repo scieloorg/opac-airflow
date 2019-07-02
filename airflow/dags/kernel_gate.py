@@ -5,6 +5,7 @@ import os
 import requests
 import json
 import http.client
+from typing import List
 from airflow import DAG
 from airflow import exceptions
 from airflow.operators.bash_operator import BashOperator
@@ -98,11 +99,9 @@ read_issue_mst = BashOperator(
 )
 
 
-def get_journal_kernel_payload(journal: dict) -> dict:
+def journal_as_kernel(journal: Journal) -> dict:
     """Gera um dicionário com a estrutura esperada pela API do Kernel a
     partir da estrutura gerada pelo isis2json"""
-
-    journal = Journal(journal)
 
     _payload = {}
     _id = journal.any_issn()
@@ -153,13 +152,19 @@ def get_journal_kernel_payload(journal: dict) -> dict:
 
         for subject_area in journal.subject_areas:
             # TODO: Algumas áreas estão em caixa baixa, o que devemos fazer?
+
+            # A Base MST possui uma grande área que é considerada errada
+            # é preciso normalizar o valor
+            if subject_area.upper() == "LINGUISTICS, LETTERS AND ARTS":
+                subject_area = "LINGUISTIC, LITERATURE AND ARTS"
+
             _payload["subject_areas"].append(subject_area.upper())
 
     if journal.sponsors:
         _sponsors = [{"name": sponsor} for sponsor in journal.sponsors]
         _payload["sponsors"] = _sponsors
     else:
-        _payload["sponsors"] = [] # faz sentido isso?
+        _payload["sponsors"] = []  # faz sentido isso?
 
     if journal.wos_subject_areas:
         _payload["subject_categories"] = journal.wos_subject_areas
@@ -188,6 +193,87 @@ def get_journal_kernel_payload(journal: dict) -> dict:
 
     # Se o dado for removido é preciso alterar na API
     # precisamos enviar a chave com o dado em branco
+
+    return _payload
+
+
+def issue_id(issn_id, year, volume=None, number=None, supplement=None):
+    """Reproduz ID gerado para os documents bundle utilizado na ferramenta
+    de migração"""
+
+    labels = ["issn_id", "year", "volume", "number", "supplement"]
+    values = [issn_id, year, volume, number, supplement]
+
+    data = dict([(label, value) for label, value in zip(labels, values)])
+
+    labels = ["issn_id", "year"]
+    _id = []
+    for label in labels:
+        value = data.get(label)
+        if value:
+            _id.append(value)
+
+    labels = [("volume", "v"), ("number", "n"), ("supplement", "s")]
+    for label, prefix in labels:
+        value = data.get(label)
+        if value:
+            if value.isdigit():
+                value = str(int(value))
+            _id.append(prefix + value)
+
+    return "-".join(_id)
+
+
+def issue_as_kernel(issue: dict) -> dict:
+    def parse_date(date: str) -> str:
+        """Traduz datas em formato simples ano-mes-dia, ano-mes para
+        o formato iso utilizado durantr a persistência do Kernel"""
+
+        _date = None
+        try:
+            _date = datetime.strptime(date, "%Y-%m-%d")
+        except ValueError:
+            try:
+                _date = datetime.strptime(date, "%Y-%m")
+            except ValueError:
+                _date = datetime.strptime(date, "%Y")
+
+        return _date
+
+    _payload = {}
+
+    if issue.volume:
+        _payload["volume"] = issue.volume
+
+    if issue.number:
+        _payload["number"] = issue.number
+
+    _supplement = None
+
+    if issue.type is "supplement":
+        _supplement = "0"
+        if issue.supplement_volume:
+            _supplement = issue.supplement_volume
+        elif issue.supplement_number:
+            _supplement = issue.supplement_number
+        _payload["supplement"] = _supplement
+
+    if issue.titles:
+        _titles = [
+            {"language": lang, "value": value} for lang, value in issue.titles.items()
+        ]
+        _payload["titles"] = _titles
+
+    if issue.start_month and issue.end_month:
+        _publication_season = [int(issue.start_month), int(issue.end_month)]
+        _payload["publication_season"] = sorted(set(_publication_season))
+
+    issn_id = issue.data.get("issue").get("v35")[0]["_"]
+    _creation_date = parse_date(issue.publication_date)
+
+    _payload["_id"] = issue_id(
+        issn_id, str(_creation_date.year), issue.volume, issue.number, _supplement
+    )
 
     return _payload
 
@@ -222,32 +308,63 @@ def register_or_update(_id: str, payload: dict, entity_url: str):
     return response
 
 
-def work_on_mst_output(**context):
-    """Função responsável por ler o output do isis2json, transformar o dado
-    em um payload no formato Kernel e submeter o seu envio para a API"""
-    title_data = context["ti"].xcom_pull(task_ids="read_title_mst")
+def process_journals(**context):
+    """Processa uma lista de journals carregados a partir do resultado
+    de leitura da base MST"""
 
-    for journal_data in json.loads(title_data):
-        payload = get_journal_kernel_payload(journal_data)
-        _id = payload.pop("_id")
+    journals = title_data = context["ti"].xcom_pull(task_ids="read_title_mst")
+    journals = json.loads(journals)
+    journals_as_kernel = [journal_as_kernel(Journal(journal)) for journal in journals]
 
-        response = register_or_update(_id, payload, KERNEL_API_JOURNAL_ENDPOINT)
+    for journal in journals_as_kernel:
+        _id = journal.pop("_id")
+        response = register_or_update(_id, journal, KERNEL_API_JOURNAL_ENDPOINT)
 
-        if response.status_code == 201:
-            print("Created {}{}".format(KERNEL_API_JOURNAL_ENDPOINT, _id))
-        elif response.status_code == 204:
-            print("Updated {}{}".format(KERNEL_API_JOURNAL_ENDPOINT, _id))
-        elif response.status_code == 400:
-            # TODO: Em caso de erro nós deveriamos parar a task?
-            print("Error on {}{}".format(KERNEL_API_JOURNAL_ENDPOINT, _id))
+
+def process_issues(**context):
+    """Processa uma lista de issues carregadas a partir do resultado
+    de leitura da base MST"""
+
+    def filter_issues(issues: List[Issue]) -> List[Issue]:
+        """Filtra as issues em formato xylose sempre removendo
+        os press releases e ahead of print"""
+
+        filters = [
+            lambda issue: not issue.type == "pressrelease",
+            lambda issue: not issue.type == "ahead",
+        ]
+
+        for f in filters:
+            issues = list(filter(f, issues))
+
+        return issues
+
+    issues = context["ti"].xcom_pull(task_ids="read_issue_mst")
+    issues = json.loads(issues)
+    issues = [Issue({"issue": data}) for data in issues]
+    issues = filter_issues(issues)
+    issues_as_kernel = [issue_as_kernel(issue) for issue in issues]
+
+    for issue in issues_as_kernel:
+        _id = issue.pop("_id")
+        response = register_or_update(_id, issue, KERNEL_API_BUNDLES_ENDPOINT)
 
 
 work_on_journals = PythonOperator(
     task_id="work_on_journals",
-    python_callable=work_on_mst_output,
+    python_callable=process_journals,
+    dag=dag,
+    provide_context=True,
+    params={"process_journals": True},
+)
+
+work_on_issues = PythonOperator(
+    task_id="work_on_issues",
+    python_callable=process_issues,
     dag=dag,
     provide_context=True,
 )
 
 read_title_mst >> read_issue_mst
 read_issue_mst >> work_on_journals
+work_on_journals >> work_on_issues
