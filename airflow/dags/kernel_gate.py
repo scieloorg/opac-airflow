@@ -8,6 +8,7 @@ import http.client
 from typing import List
 from airflow import DAG
 from airflow import exceptions
+from airflow.models import Variable
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.hooks.http_hook import HttpHook
@@ -77,7 +78,7 @@ read_title_mst = BashOperator(
     task_id="read_title_mst",
     bash_command=jython_command_template,
     params={
-        "file": "/usr/local/airflow/bases/scl/title/title.mst",
+        "file": Variable.get("BASE_TITLE"),
         "classpath": CLASSPATH,
         "isis2json": ISIS2JSON_PATH,
     },
@@ -85,12 +86,11 @@ read_title_mst = BashOperator(
     xcom_push=True,
 )
 
-
 read_issue_mst = BashOperator(
     task_id="read_issue_mst",
     bash_command=jython_command_template,
     params={
-        "file": "/usr/local/airflow/bases/scl/issue/issue.mst",
+        "file": Variable.get("BASE_ISSUE"),
         "classpath": CLASSPATH,
         "isis2json": ISIS2JSON_PATH,
     },
