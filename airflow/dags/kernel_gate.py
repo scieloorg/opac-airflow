@@ -32,10 +32,11 @@ de execução são às seguintes:
 3.1) Itera entre os periódicos lidos da base TITLE
 3.2) Converte o periódico para o formato JSON aceito pelo Kernel
 3.3) Verifica se o Journal já existe na API Kernel
-3.3.1) Se o Journal já existir verifica o md5 entre o dado lido e o dado existente
-3.3.2) Se o hash for igual passa-se para o próximo
-3.3.3) Se o hash for diferente faz-ze um PATCH para atualizar o registro
-3.4) Se o Journal não existir faz-se um PUT para criar o registro
+3.3.1) Faz o diff do entre o payload gerado e os metadados vindos do Kernel
+3.3.2) Se houver diferenças faz-ze um PATCH para atualizar o registro
+3.4) Se o Journal não existir
+3.4.1) Remove as chaves nulas
+3.4.2) Faz-se um PUT para criar o registro
 3.5) Dispara o DAG subsequente.
 """
 
