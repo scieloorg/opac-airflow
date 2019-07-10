@@ -129,33 +129,43 @@ def fetch_data(endpoint):
 
 
 def changes(since=""):
+    """Verifies if change's endpoint has new modifications.
+    If none modification was found returns an empty generator. If
+    modifications are found returns a generator that produces
+    a list with every modification as dictionary
+    {'id: '...', 'timestamp': '..'}"""
+
     last_yielded = None
 
     while True:
-
         url = "changes?since=%s" % since
-
         resp_json = fetch_data(endpoint=url)
+        has_changes = False
 
         for result in resp_json["results"]:
-            if result != last_yielded:
-                last_yielded = result
-                yield result
-            else:
-                continue
+            last_yielded = result
+            has_changes = True
+            yield result
 
-        if since == last_yielded["timestamp"]:
+        if not has_changes:
             return
         else:
             since = last_yielded["timestamp"]
 
 
 def read_changes(ds, **kwargs):
+    """Looks for newly modifications since `change timestamp`.
+    If modifications are found this function push a list of task
+    to `xcom` workspace. If none modifications are found the
+    change_timestamp variable would not be updated."""
+
     reader = Reader()
     variable_timestamp = Variable.get("change_timestamp", "")
     tasks, timestamp = reader.read(changes(since=variable_timestamp))
-    if timestamp == variable_timestamp:
+
+    if timestamp is None or timestamp == variable_timestamp:
         return False
+
     kwargs["ti"].xcom_push(key="tasks", value=tasks)
     Variable.set("change_timestamp", timestamp)
     return timestamp
