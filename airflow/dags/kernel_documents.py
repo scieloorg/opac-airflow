@@ -1,11 +1,19 @@
 # conding: utf-8
 import logging
 import os
+import http.client
 import shutil
 from datetime import timedelta
 from pathlib import Path
 from zipfile import ZipFile
 
+from tenacity import (
+    retry,
+    wait_exponential,
+    stop_after_attempt,
+    retry_if_exception_type
+)
+from requests import exceptions
 from lxml import etree
 from airflow import DAG
 from airflow import utils as airflow_utils
@@ -48,6 +56,15 @@ dag = DAG(
     default_args=default_args,
     schedule_interval=timedelta(days=1),
 )
+
+@retry(
+    wait=wait_exponential(),
+    stop=stop_after_attempt(4),
+    retry=retry_if_exception_type(exceptions.ConnectionError),
+)
+def kernel_connect(endpoint, method):
+    api_hook = HttpHook(http_conn_id="kernel_conn", method=method)
+    return api_hook.run(endpoint=endpoint)
 
 
 def get_sps_packages(**kwargs):
@@ -163,9 +180,23 @@ def read_xmls(**kwargs):
 
 
 def delete_documents(**kwargs):
-    print("delete_documents IN")
-    print("Deleta documentos informados do Kernel")
-    print("delete_documents OUT")
+    """
+    Deleta documentos informados do Kernel
+
+    list docs_to_delete: lista de XMLs para deletar do Kernel
+    """
+    logging.debug("delete_documents IN")
+    docs_to_delete = kwargs["ti"].xcom_pull(
+        key="docs_to_delete",
+        task_id="read_xmls_id"
+    )
+    for doc_to_delete in docs_to_delete or []:
+        response = kernel_connect("/documents/" + doc_to_delete, "DELETE")
+        message = "Document %s deleted from kernel status: %d"
+        if response.status_code == http.client.NOT_FOUND:
+            message = "Document %s not found in kernel: %d"
+        logging.info(message % (doc_to_delete, response.status_code))
+    logging.debug("delete_documents OUT")
 
 
 def register_documents(**kwargs):

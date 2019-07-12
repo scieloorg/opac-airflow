@@ -1,15 +1,21 @@
 import os
+import http.client
 import shutil
 import tempfile
 from io import BytesIO
 from datetime import datetime
 from unittest import TestSuite, TestCase, TestLoader, TextTestRunner
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, Mock, MagicMock
 
 from airflow import DAG
 from lxml import etree
 
-from kernel_documents import get_sps_packages, list_documents, read_xmls
+from kernel_documents import (
+    get_sps_packages,
+    list_documents,
+    read_xmls,
+    delete_documents,
+)
 
 
 XML_FILE_CONTENT = b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -297,6 +303,78 @@ class TestReadXML(TestCase):
         kwargs["ti"].xcom_push.assert_called_once_with(
             key="docs_to_preserve",
             value=["FX6F3cbyYmmwvtGmMB7WCgr"]   # SciELO ID de XML_FILE_CONTENT
+        )
+
+
+class TestDeleteDocuments(TestCase):
+    def test_delete_documents_gets_ti_xcom_info(self):
+        kwargs = {"ti": MagicMock()}
+        delete_documents(**kwargs)
+        kwargs["ti"].xcom_pull.assert_called_once_with(
+            key="docs_to_delete",
+            task_id="read_xmls_id"
+        )
+
+    @patch('kernel_documents.kernel_connect')
+    def test_delete_documents_empty_ti_xcom_info(
+        self, mk_kernel_connect
+    ):
+        kwargs = {"ti": MagicMock()}
+        kwargs["ti"].xcom_pull.return_value = None
+        delete_documents(**kwargs)
+        mk_kernel_connect.assert_not_called()
+
+    @patch('kernel_documents.kernel_connect')
+    def test_delete_documents_calls_kernel_connect_with_docs_to_delete(
+        self, mk_kernel_connect
+    ):
+        docs_to_delete = [
+            "FX6F3cbyYmmwvtGmMB7WCgr",
+            "GZ5K2cbyYmmwvtGmMB71243",
+            "KU890cbyYmmwvtGmMB7JUk4",
+        ]
+        kwargs = {"ti": MagicMock()}
+        kwargs["ti"].xcom_pull.return_value = docs_to_delete
+        delete_documents(**kwargs)
+        for doc_to_delete in docs_to_delete:
+            with self.subTest(doc_to_delete=doc_to_delete):
+                mk_kernel_connect.assert_any_call(
+                    "/documents/" + doc_to_delete,
+                    "DELETE"
+                )
+
+    @patch('kernel_documents.kernel_connect')
+    @patch('kernel_documents.logging')
+    def test_delete_documents_calls_kernel_connect_with_docs_to_delete(
+        self, mk_logging, mk_kernel_connect
+    ):
+        docs_to_delete = [
+            "FX6F3cbyYmmwvtGmMB7WCgr",
+            "GZ5K2cbyYmmwvtGmMB71243",
+            "KU890cbyYmmwvtGmMB7JUk4",
+        ]
+        kwargs = {"ti": MagicMock()}
+        kwargs["ti"].xcom_pull.return_value = docs_to_delete
+        mk_response_ok = Mock(status_code=http.client.NO_CONTENT)
+        mk_response_error = Mock(status_code=http.client.NOT_FOUND)
+        kernel_conn_status = [
+            mk_response_ok,
+            mk_response_error,
+            mk_response_ok,
+        ]
+        mk_kernel_connect.side_effect = kernel_conn_status
+        delete_documents(**kwargs)
+        mk_logging.info.assert_any_call(
+            "Document %s deleted from kernel status: %d"
+            % (docs_to_delete[0], http.client.NO_CONTENT)
+        )
+        mk_logging.info.assert_any_call(
+            "Document %s not found in kernel: %d"
+            % (docs_to_delete[1], http.client.NOT_FOUND)
+        )
+        mk_logging.info.assert_any_call(
+            "Document %s deleted from kernel status: %d"
+            % (docs_to_delete[2], http.client.NO_CONTENT)
         )
 
 
