@@ -17,6 +17,7 @@ services:
         command: webserver
         volumes:
             - ./airflow:/usr/local/airflow
+            - ./fixtures:/usr/local/fixtures
         environment:
           - AIRFLOW_HOME=/usr/local/airflow
           - EMIAL_ON_FAILURE_RECIPIENTS=infra@scielo.org
