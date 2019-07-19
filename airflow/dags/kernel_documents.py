@@ -84,8 +84,8 @@ def get_sps_packages(**kwargs):
                 shutil.move(str(source), str(destination))
                 sps_packages_list.append(str(destination))
 
-    if sps_packages_list:
-        kwargs["ti"].xcom_push(key="sps_packages", value=sorted(sps_packages_list))
+    kwargs["ti"].xcom_push(key="sps_packages", value=sorted(sps_packages_list))
+
     logging.debug("get_sps_packages OUT")
 
 
@@ -99,7 +99,7 @@ def list_documents(**kwargs):
     logging.debug("list_documents IN")
     sps_packages_list = kwargs["ti"].xcom_pull(
         key="sps_packages",
-        task_id="get_sps_packages_id"
+        task_ids="get_sps_packages_id"
     )
     xmls_filenames = []
     for sps_package in sps_packages_list:
@@ -152,6 +152,7 @@ get_sps_packages_task = PythonOperator(
 
 list_documents_task = PythonOperator(
     task_id="list_documents_id",
+    provide_context=True,
     python_callable=list_documents,
     dag=dag,
 )

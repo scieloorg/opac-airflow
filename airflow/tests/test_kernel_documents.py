@@ -25,7 +25,10 @@ class TestGetSPSPackages(TestCase):
         mk_variable_get.side_effect = ["dir/path/scilista.lst",
                                        "dir/source",
                                        "dir/destination"]
-        get_sps_packages()
+        kwargs = {
+            "ti": MagicMock(),
+        }
+        get_sps_packages(**kwargs)
         MockPath.assert_any_call("dir/source")
         MockPath.assert_any_call("dir/destination")
 
@@ -37,7 +40,10 @@ class TestGetSPSPackages(TestCase):
                                                                     mk_variable_get,
                                                                     mk_shutil):
         mk_variable_get.return_value = ""
-        get_sps_packages()
+        kwargs = {
+            "ti": MagicMock(),
+        }
+        get_sps_packages(**kwargs)
         mk_shutil.move.assert_not_called()
 
     @patch('kernel_documents.shutil')
@@ -74,7 +80,7 @@ class TestGetSPSPackages(TestCase):
     @patch('kernel_documents.os.path.exists')
     @patch('kernel_documents.Variable.get')
     @patch('kernel_documents.open')
-    def test_get_sps_packages_doesnt_call_ti_xcom_push_if_no_sps_packages_list(
+    def test_get_sps_packages_calls_ti_xcom_push_with_empty_list(
         self, mk_open, mk_variable_get, mk_path_exists, mk_shutil
     ):
         mk_path_exists.return_value = False
@@ -84,7 +90,10 @@ class TestGetSPSPackages(TestCase):
             "ti": MagicMock(),
         }
         get_sps_packages(**kwargs)
-        kwargs["ti"].xcom_push.assert_not_called()
+        kwargs["ti"].xcom_push.assert_called_once_with(
+            key="sps_packages",
+            value=[]
+        )
 
     @patch('kernel_documents.shutil')
     @patch('kernel_documents.os.path.exists')
@@ -119,7 +128,10 @@ class TestGetSPSPackages(TestCase):
     @patch('kernel_documents.Variable.get')
     def test_read_scilista_from_file(self, mk_variable_get, mk_open):
         mk_variable_get.return_value = "dir/path/scilista.lst"
-        get_sps_packages()
+        kwargs = {
+            "ti": MagicMock()
+        }
+        get_sps_packages(**kwargs)
         mk_open.assert_called_once_with("dir/path/scilista.lst")
 
 
@@ -129,7 +141,7 @@ class TestListDocuments(TestCase):
         list_documents(**kwargs)
         kwargs["ti"].xcom_pull.assert_called_once_with(
             key="sps_packages",
-            task_id="get_sps_packages_id"
+            task_ids="get_sps_packages_id"
         )
 
     @patch('kernel_documents.ZipFile')
