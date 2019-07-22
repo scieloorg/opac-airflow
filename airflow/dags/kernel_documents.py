@@ -4,6 +4,7 @@ import os
 import shutil
 from datetime import timedelta
 from pathlib import Path
+from zipfile import ZipFile
 
 from airflow import DAG
 from airflow.models import Variable
@@ -52,7 +53,8 @@ dag = DAG(
 def get_sps_packages(**kwargs):
     """
     Obtém Pacotes SPS através da Scilista, movendo os pacotes para o diretório de
-    processamento do Airflow.
+    processamento do Airflow e gera lista dos paths dos pacotes SPS no diretório de
+    processamento.
 
     list scilista: lista com as linhas do arquivo scilista.lst
         rsp v10n4
@@ -82,21 +84,38 @@ def get_sps_packages(**kwargs):
                 shutil.move(str(source), str(destination))
                 sps_packages_list.append(str(destination))
 
-    if sps_packages_list:
-        kwargs["ti"].xcom_push(key="sps_packages", value=sorted(sps_packages_list))
+    kwargs["ti"].xcom_push(key="sps_packages", value=sorted(sps_packages_list))
+
     logging.debug("get_sps_packages OUT")
 
 
 def list_documents(**kwargs):
     """
-    Lista todos os XMLs do diretório de processamento.
+    Lista todos os XMLs dos SPS Packages da lista obtida do diretório do XC.
 
-    dict scilista: dicionário onde a chave é o acrônimo do periódico e o valor é
-        o fascículo.
-        rsp v10n4 => {"rsp": "v10n4"}
+    list sps_packages: lista com os paths dos pacotes SPS no diretório de processamento
+    list sps_xmls_list: lista com os nomes dos arquivos XML existentes nos pacotes SPS
     """
-    print("list_documents IN")
-    print("list_documents OUT")
+    logging.debug("list_documents IN")
+    sps_packages_list = kwargs["ti"].xcom_pull(
+        key="sps_packages",
+        task_ids="get_sps_packages_id"
+    )
+    xmls_filenames = []
+    for sps_package in sps_packages_list:
+        logging.info("Reading sps_package: %s" % sps_package)
+        with ZipFile(sps_package) as zf:
+            xmls_filenames += [
+                xml_filename
+                for xml_filename in zf.namelist()
+                if os.path.splitext(xml_filename)[-1] == '.xml'
+            ]
+    if xmls_filenames:
+        kwargs["ti"].xcom_push(
+            key="sps_xmls_list",
+            value=xmls_filenames
+        )
+    logging.debug("list_documents OUT")
 
 
 def read_xmls(**kwargs):
@@ -133,6 +152,7 @@ get_sps_packages_task = PythonOperator(
 
 list_documents_task = PythonOperator(
     task_id="list_documents_id",
+    provide_context=True,
     python_callable=list_documents,
     dag=dag,
 )
