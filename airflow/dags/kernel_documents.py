@@ -1,16 +1,4 @@
 # conding: utf-8
-import logging
-import os
-import shutil
-from datetime import timedelta
-from pathlib import Path
-from zipfile import ZipFile
-
-from airflow import DAG
-from airflow.models import Variable
-from airflow import utils as airflow_utils
-from airflow.operators.python_operator import PythonOperator
-
 """
     DAG responsável adicionar/atualizar os pacotes SPS no Kernel.
 
@@ -23,10 +11,11 @@ from airflow.operators.python_operator import PythonOperator
             outros ativos digitais.
 
             Para cada um dos XMLs
-                1. Verificar XMLs para deleção
+                1. Obter SciELO ID no XML
+                2. Verificar XMLs para deletar
                    (/article-meta/article-id/@specific-use="delete")
                    I. DELETE documentos no Kernel
-                2. Obter SciELO ID no XML
+                3. Verificar XMLs para preservar
                     I. PUT pacotes SPS no Minio
                     II. PUT/PATCH XML no Kernel
                     III. PUT PDF no Kernel
@@ -37,17 +26,50 @@ from airflow.operators.python_operator import PythonOperator
         d. Deleta fascículos de acordo com a Scilista
             1. Deletar o bundle no Kernel
 """
+import logging
+import os
+import http.client
+import shutil
+from datetime import datetime
+from pathlib import Path
+from zipfile import ZipFile
+
+from tenacity import (
+    retry,
+    wait_exponential,
+    stop_after_attempt,
+    retry_if_exception_type
+)
+from requests import exceptions
+from lxml import etree
+from airflow import DAG
+from airflow.models import Variable
+from airflow import utils as airflow_utils
+from airflow.operators.python_operator import PythonOperator
+from airflow.hooks.http_hook import HttpHook
+
+
 default_args = {
     "owner": "airflow",
-    "start_date": airflow_utils.dates.days_ago(2),
+    "depends_on_past": False,
+    "start_date": datetime(2019, 7, 22),
 }
 
 
 dag = DAG(
     dag_id="kernel_documents",
     default_args=default_args,
-    schedule_interval=timedelta(days=1),
+    schedule_interval=None,
 )
+
+@retry(
+    wait=wait_exponential(),
+    stop=stop_after_attempt(4),
+    retry=retry_if_exception_type(exceptions.ConnectionError),
+)
+def kernel_connect(endpoint, method):
+    api_hook = HttpHook(http_conn_id="kernel_conn", method=method)
+    return api_hook.run(endpoint=endpoint)
 
 
 def get_sps_packages(**kwargs):
@@ -94,40 +116,99 @@ def list_documents(**kwargs):
     Lista todos os XMLs dos SPS Packages da lista obtida do diretório do XC.
 
     list sps_packages: lista com os paths dos pacotes SPS no diretório de processamento
-    list sps_xmls_list: lista com os nomes dos arquivos XML existentes nos pacotes SPS
+    dict sps_packages_xmls: dict com os paths dos pacotes SPS e os respectivos nomes dos
+        arquivos XML.
     """
     logging.debug("list_documents IN")
     sps_packages_list = kwargs["ti"].xcom_pull(
         key="sps_packages",
         task_ids="get_sps_packages_id"
     )
-    xmls_filenames = []
-    for sps_package in sps_packages_list:
+    sps_packages_xmls = {}
+    for sps_package in sps_packages_list or []:
         logging.info("Reading sps_package: %s" % sps_package)
         with ZipFile(sps_package) as zf:
-            xmls_filenames += [
+            xmls_filenames = [
                 xml_filename
                 for xml_filename in zf.namelist()
                 if os.path.splitext(xml_filename)[-1] == '.xml'
             ]
-    if xmls_filenames:
+            if xmls_filenames:
+                sps_packages_xmls[sps_package] = xmls_filenames
+    if sps_packages_xmls:
         kwargs["ti"].xcom_push(
-            key="sps_xmls_list",
-            value=xmls_filenames
+            key="sps_packages_xmls",
+            value=sps_packages_xmls
         )
     logging.debug("list_documents OUT")
 
 
 def read_xmls(**kwargs):
-    print("read_xmls IN")
-    print("Lê XMLs para tratar documentos (Deletar, Registrar ou Atualizar) e gera listas")
-    print("read_xmls OUT")
+    """
+    Lê XMLs para tratar documentos (Deletar, Registrar ou Atualizar) e gera listas
+
+    dict sps_packages_xmls: dict com os paths dos pacotes SPS e os respectivos nomes dos
+        arquivos XML.
+    list docs_to_delete: lista de XMLs para deletar do Kernel
+    list docs_to_preserve: lista de XMLs para manter no Kernel (Registrar ou atualizar)
+    """
+    logging.debug("read_xmls IN")
+    sps_packages_xmls = kwargs["ti"].xcom_pull(key="sps_packages_xmls", task_ids="list_documents_id")
+
+    docs_to_delete = []
+    docs_to_preserve = []
+    for sps_package, sps_xml_files in (sps_packages_xmls or {}).items():
+        logging.info("Reading sps_package: %s" % sps_package)
+        with ZipFile(sps_package) as zf:
+            for sps_xml_file in sps_xml_files:
+                logging.info("Reading XML file: %s" % sps_xml_file)
+                xml_content = zf.read(sps_xml_file)
+                if len(xml_content) > 0:
+                    xml_file = etree.XML(xml_content)
+                    scielo_id = xml_file.find(".//article-id[@specific-use='scielo']")
+                    if scielo_id is not None:
+                        logging.info("  SciELO ID: %s" % scielo_id.text)
+                        delete_tag = scielo_id.getparent().find(
+                            "./article-id[@specific-use='delete']"
+                        )
+                        if delete_tag is not None:
+                            docs_to_delete.append(scielo_id.text)
+                        else:
+                            docs_to_preserve.append(scielo_id.text)
+
+    if docs_to_delete:
+        logging.info("Document to delete: %s" % docs_to_delete)
+        kwargs["ti"].xcom_push(
+            key="docs_to_delete",
+            value=docs_to_delete
+        )
+    if docs_to_preserve:
+        logging.info("Document to preserve: %s" % docs_to_preserve)
+        kwargs["ti"].xcom_push(
+            key="docs_to_preserve",
+            value=docs_to_preserve
+        )
+    logging.debug("read_xmls OUT")
 
 
 def delete_documents(**kwargs):
-    print("delete_documents IN")
-    print("Deleta documentos informados do Kernel")
-    print("delete_documents OUT")
+    """
+    Deleta documentos informados do Kernel
+
+    list docs_to_delete: lista de XMLs para deletar do Kernel
+    """
+    logging.debug("delete_documents IN")
+    docs_to_delete = kwargs["ti"].xcom_pull(
+        key="docs_to_delete",
+        task_ids="read_xmls_id"
+    )
+    for doc_to_delete in docs_to_delete or []:
+        response = kernel_connect("/documents/" + doc_to_delete, "DELETE")
+        message = "Document %s deleted from kernel status: %d"
+        if response.status_code == http.client.NOT_FOUND:
+            message = "Document %s not found in kernel: %d"
+        logging.info(message % (doc_to_delete, response.status_code))
+    logging.debug("delete_documents OUT")
 
 
 def register_documents(**kwargs):
@@ -160,6 +241,7 @@ list_documents_task = PythonOperator(
 
 read_xmls_task = PythonOperator(
     task_id="read_xmls_id",
+    provide_context=True,
     python_callable=read_xmls,
     dag=dag,
 )
