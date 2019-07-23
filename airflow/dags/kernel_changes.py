@@ -163,8 +163,7 @@ def changes(since=""):
     last_yielded = None
 
     while True:
-        url = "changes?since=%s" % since
-        resp_json = fetch_data(endpoint=url)
+        resp_json = fetch_changes(since)
         has_changes = False
 
         for result in resp_json["results"]:
@@ -328,7 +327,7 @@ def register_journals(ds, **kwargs):
     j_issues = {}
 
     for journal in journal_changes:
-        resp_json = fetch_data(endpoint=journal.get("id"))
+        resp_json = fetch_journal(journal.get("id"))
 
         t_journal = transform_journal(resp_json)
         t_journal.save()
@@ -432,7 +431,7 @@ def register_issues(ds, **kwargs):
 
         issue_id = get_id(issue_endpoint)  # obtém somente o id
 
-        resp_json = fetch_data(issue_endpoint)
+        resp_json = fetch_bundles(issue_id)
 
         journal_id = [j for j, i in j_issues.items() if issue_id in i]
         if journal_id:
@@ -636,7 +635,7 @@ def register_orphan_documents(ds, **kwargs):
         issue_id = [i for i, d in i_documents.items() if document_id in d]
 
         if issue_id:
-            resp_json = fetch_data("documents/%s/front" % document.get("id"))
+            resp_json = fetch_documents_front(document.get("id"))
             register_document(resp_json, issue_id[0], document_id, i_documents)
             orphan_documents.remove(issue_id)
 
@@ -664,17 +663,15 @@ def register_documents(ds, **kwargs):
 
     for document in document_changes:
         document_id = get_id(document.get("id"))
-
         issue_id = [i for i, d in i_documents.items() if document_id in d]
 
         if issue_id:
-            resp_json = fetch_data("%s/front" % document.get("id"))
+            resp_json = fetch_documents_front(document_id)
             register_document(resp_json, issue_id[0], document_id, i_documents)
         else:
             orphan_documents.append(document_id)
 
     Variable.set("orphan_documents", json.dumps(orphan_documents))
-
     return tasks
 
 
