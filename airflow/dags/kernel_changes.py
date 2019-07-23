@@ -366,11 +366,11 @@ def register_orphan_issues(ds, **kwargs):
 
     j_issues = kwargs["ti"].xcom_pull(key="j_issues", task_ids="register_journals_task")
 
-    orphan_issues = json.loads(Variable.get("orphan_issues", []))
+    orphan_issues = json.loads(Variable.get("orphan_issues", "[]"))
 
     for issue_id in orphan_issues:
 
-        resp_json = fetch_data(issue_id)
+        resp_json = fetch_data("bundles/%s" % issue_id)
 
         journal_id = [j for j, i in j_issues.items() if issue_id in i]
 
@@ -378,7 +378,7 @@ def register_orphan_issues(ds, **kwargs):
             register_issue(resp_json, journal_id[0], issue_id, j_issues)
             orphan_issues.remove(issue_id)
 
-    Variable.set("orphan_issues", orphan_issues)
+    Variable.set("orphan_issues", json.dumps(orphan_issues))
 
 
 register_orphan_issues_task = PythonOperator(
@@ -409,10 +409,10 @@ def register_issues(ds, **kwargs):
 
         issue_id = get_id(issue_endpoint)  # obtém somente o id
 
-        journal_id = [j for j, i in j_issues.items() if issue_id in i]
+        resp_json = fetch_data(issue_endpoint)
 
+        journal_id = [j for j, i in j_issues.items() if issue_id in i]
         if journal_id:
-            resp_json = fetch_data(issue_endpoint)
             register_issue(resp_json, journal_id[0], issue_id, j_issues)
         else:
             orphan_issues.append(issue_id)
@@ -606,14 +606,14 @@ def register_orphan_documents(ds, **kwargs):
         key="i_documents", task_ids="register_issues_task"
     )
 
-    orphan_documents = json.loads(Variable.get("orphan_documents", []))
+    orphan_documents = json.loads(Variable.get("orphan_documents", "[]"))
 
     for document_id in orphan_documents:
 
         issue_id = [i for i, d in i_documents.items() if document_id in d]
 
         if issue_id:
-            resp_json = fetch_data("%s/front" % document.get("id"))
+            resp_json = fetch_data("documents/%s/front" % document.get("id"))
             register_document(resp_json, issue_id[0], document_id, i_documents)
             orphan_documents.remove(issue_id)
 
@@ -650,7 +650,7 @@ def register_documents(ds, **kwargs):
         else:
             orphan_documents.append(document_id)
 
-    Variable.set("orphan_documents", orphan_documents)
+    Variable.set("orphan_documents", json.dumps(orphan_documents))
 
     return tasks
 
