@@ -11,7 +11,7 @@ from lxml import etree
 from kernel_documents import (
     get_sps_packages,
     list_documents,
-    read_xmls,
+    documents_to_delete,
     delete_documents,
 )
 
@@ -247,38 +247,96 @@ class TestListDocuments(TestCase):
         kwargs["ti"].xcom_push.assert_not_called()
 
 
-class TestReadXML(TestCase):
-    def test_read_xmls_gets_ti_xcom_info(self):
+class TestDocumentsToDelete(TestCase):
+
+    @patch('kernel_documents.ZipFile')
+    def test_documents_to_delete_opens_zip(self, MockZipFile):
+        documents_to_delete('dir/destination/abc_v50.zip', [])
+        MockZipFile.assert_any_call('dir/destination/abc_v50.zip')
+
+    @patch('kernel_documents.ZipFile')
+    def test_documents_to_delete_reads_each_xml_from_each_zips(self, MockZipFile):
+        sps_xml_files = [
+            '0123-4567-abc-50-1-8.xml',
+            '0123-4567-abc-50-9-18.xml'
+        ]
+        MockZipFile.return_value.__enter__.return_value.read.return_value = b""
+        documents_to_delete('dir/destination/abc_v50.zip', sps_xml_files)
+        for sps_xml_file in sps_xml_files:
+            with self.subTest(sps_xml_file=sps_xml_file):
+                for sps_xml_file in sps_xml_files:
+                    MockZipFile.return_value.__enter__.return_value.read.assert_any_call(
+                        sps_xml_file
+                    )
+
+    @patch('kernel_documents.ZipFile')
+    def test_documents_to_delete_returns_empty_list_if_no_docs_to_delete(self, MockZipFile):
+        xml_file = etree.tostring(etree.XML(XML_FILE_CONTENT))
+        MockZipFile.return_value.__enter__.return_value.read.return_value = xml_file
+        result = documents_to_delete(
+            'dir/destination/abc_v50.zip', ['1806-907X-rba-53-01-1-8.xml']
+        )
+        self.assertEqual(result, [])
+
+    @patch('kernel_documents.ZipFile')
+    def test_documents_to_delete_returns_documents_id_to_delete(self, MockZipFile):
+        article_id = etree.Element("article-id")
+        article_id.set("specific-use", "delete")
+        xml_file = etree.XML(XML_FILE_CONTENT)
+        am_tag = xml_file.find(".//article-meta")
+        am_tag.append(article_id)
+        deleted_xml_file = etree.tostring(xml_file)
+        MockZipFile.return_value.__enter__.return_value.read.return_value = deleted_xml_file
+        result = documents_to_delete(
+            'dir/destination/abc_v50.zip', ['1806-907X-rba-53-01-1-8.xml']
+        )
+        self.assertEqual(result, ["FX6F3cbyYmmwvtGmMB7WCgr"])   # SciELO ID de XML_FILE_CONTENT
+
+    @patch('kernel_documents.logging')
+    @patch('kernel_documents.ZipFile')
+    def test_documents_to_delete_logs_error_if_no_scielo_id_in_doc_to_delete(
+        self, MockZipFile, mk_logging
+    ):
+        article_id = etree.Element("article-id")
+        article_id.set("specific-use", "delete")
+        xml_file = etree.XML(XML_FILE_CONTENT)
+        am_tag = xml_file.find(".//article-meta")
+        am_tag.append(article_id)
+        am_scielo_id = xml_file.find(".//article-id[@specific-use='scielo']")
+        am_tag.remove(am_scielo_id)
+        deleted_xml_file = etree.tostring(xml_file)
+        print('\n', deleted_xml_file, '\n')
+        MockZipFile.return_value.__enter__.return_value.read.return_value = deleted_xml_file
+        documents_to_delete(
+            'dir/destination/abc_v50.zip', ['1806-907X-rba-53-01-1-8.xml']
+        )
+        mk_logging.info.assert_any_call(
+            'Cannot read SciELO ID from "1806-907X-rba-53-01-1-8.xml": '
+            'missing element in XML'
+        )
+
+
+class TestDeleteDocuments(TestCase):
+    def test_delete_documents_gets_ti_xcom_info(self):
         kwargs = {"ti": MagicMock()}
-        read_xmls(**kwargs)
+        delete_documents(**kwargs)
         kwargs["ti"].xcom_pull.assert_called_once_with(
             key="sps_packages_xmls",
             task_ids="list_documents_id"
         )
 
-    @patch('kernel_documents.ZipFile')
-    def test_read_xmls_empty_ti_xcom_info(self, MockZipFile):
+    @patch('kernel_documents.documents_to_delete')
+    def test_delete_documents_empty_ti_xcom_info(self, mk_documents_to_delete):
         kwargs = {"ti": MagicMock()}
         kwargs["ti"].xcom_pull.return_value = None
-        read_xmls(**kwargs)
-        MockZipFile.assert_not_called()
+        delete_documents(**kwargs)
+        mk_documents_to_delete.assert_not_called()
         kwargs["ti"].xcom_push.assert_not_called()
 
-    @patch('kernel_documents.ZipFile')
-    def test_read_xmls_opens_all_zips(self, MockZipFile):
-        sps_packages_xmls = {
-            'dir/destination/abc_v50.zip': [],
-            'dir/destination/rba_v53n1.zip': []
-        }
-        kwargs = {"ti": MagicMock()}
-        kwargs["ti"].xcom_pull.return_value = sps_packages_xmls
-        read_xmls(**kwargs)
-        for sps_package in sps_packages_xmls.keys():
-            with self.subTest(sps_package=sps_package):
-                MockZipFile.assert_any_call(sps_package)
-
-    @patch('kernel_documents.ZipFile')
-    def test_read_xmls_reads_each_xml_from_each_zips(self, MockZipFile):
+    @patch('kernel_documents.documents_to_delete')
+    def test_delete_documents_calls_documents_to_delete(
+        self, mk_documents_to_delete
+    ):
         sps_packages_xmls = {
             'dir/destination/abc_v50.zip': [
                 '0123-4567-abc-50-1-8.xml',
@@ -291,90 +349,36 @@ class TestReadXML(TestCase):
         }
         kwargs = {"ti": MagicMock()}
         kwargs["ti"].xcom_pull.return_value = sps_packages_xmls
-        MockZipFile.return_value.__enter__.return_value.read.return_value = b""
-
-        read_xmls(**kwargs)
-        for sps_xml_files in sps_packages_xmls.values():
-            with self.subTest(sps_xml_files=sps_xml_files):
-                for sps_xml_file in sps_xml_files:
-                    MockZipFile.return_value.__enter__.return_value.read.assert_any_call(
-                        sps_xml_file
-                    )
-
-    @patch('kernel_documents.ZipFile')
-    def test_read_xmls_adds_scielo_id_from_deleted_xml_to_docs_to_delete(self, MockZipFile):
-        sps_packages_xmls = {
-            'dir/destination/rba_v53n1.zip': [
-                '1806-907X-rba-53-01-1-8.xml',
-            ]
-        }
-        kwargs = {"ti": MagicMock()}
-        kwargs["ti"].xcom_pull.return_value = sps_packages_xmls
-        article_id = etree.Element("article-id")
-        article_id.set("specific-use", "delete")
-        xml_file = etree.XML(XML_FILE_CONTENT)
-        am_tag = xml_file.find(".//article-meta")
-        am_tag.append(article_id)
-        deleted_xml_file = etree.tostring(xml_file)
-        MockZipFile.return_value.__enter__.return_value.read.return_value = deleted_xml_file
-
-        read_xmls(**kwargs)
-        kwargs["ti"].xcom_push.assert_called_once_with(
-            key="docs_to_delete",
-            value=["FX6F3cbyYmmwvtGmMB7WCgr"]   # SciELO ID de XML_FILE_CONTENT
-        )
-
-    @patch('kernel_documents.ZipFile')
-    def test_read_xmls_adds_scielo_id_from_xml_to_docs_to_preserve_if_it_isnt_doc_to_delete(
-        self, MockZipFile
-    ):
-        sps_packages_xmls = {
-            'dir/destination/rba_v53n1.zip': [
-                '1806-907X-rba-53-01-1-8.xml',
-            ]
-        }
-        kwargs = {"ti": MagicMock()}
-        kwargs["ti"].xcom_pull.return_value = sps_packages_xmls
-        xml_file = etree.XML(XML_FILE_CONTENT)
-        xml_file_to_preserve = etree.tostring(xml_file)
-        MockZipFile.return_value.__enter__.return_value.read.return_value = xml_file_to_preserve
-
-        read_xmls(**kwargs)
-        kwargs["ti"].xcom_push.assert_called_once_with(
-            key="docs_to_preserve",
-            value=["FX6F3cbyYmmwvtGmMB7WCgr"]   # SciELO ID de XML_FILE_CONTENT
-        )
-
-
-class TestDeleteDocuments(TestCase):
-    def test_delete_documents_gets_ti_xcom_info(self):
-        kwargs = {"ti": MagicMock()}
         delete_documents(**kwargs)
-        kwargs["ti"].xcom_pull.assert_called_once_with(
-            key="docs_to_delete",
-            task_ids="read_xmls_id"
-        )
+        for sps_package, sps_xml_files in sps_packages_xmls.items():
+            with self.subTest(sps_package=sps_package):
+                mk_documents_to_delete.assert_any_call(sps_package, sps_xml_files)
 
     @patch('kernel_documents.kernel_connect')
-    def test_delete_documents_empty_ti_xcom_info(
-        self, mk_kernel_connect
-    ):
-        kwargs = {"ti": MagicMock()}
-        kwargs["ti"].xcom_pull.return_value = None
-        delete_documents(**kwargs)
-        mk_kernel_connect.assert_not_called()
-
-    @patch('kernel_documents.kernel_connect')
+    @patch('kernel_documents.logging')
+    @patch('kernel_documents.documents_to_delete')
     def test_delete_documents_calls_kernel_connect_with_docs_to_delete(
-        self, mk_kernel_connect
+        self, mk_documents_to_delete, mk_logging, mk_kernel_connect
     ):
+        sps_packages_xmls = {
+            'dir/destination/abc_v50.zip': [
+                '0123-4567-abc-50-1-8.xml',
+                '0123-4567-abc-50-9-18.xml'
+            ],
+            'dir/destination/rba_v53n1.zip': [
+                '1806-907X-rba-53-01-1-8.xml',
+                '1806-907X-rba-53-01-9-18.xml',
+                '1806-907X-rba-53-01-19-25.xml']
+        }
         docs_to_delete = [
             "FX6F3cbyYmmwvtGmMB7WCgr",
             "GZ5K2cbyYmmwvtGmMB71243",
             "KU890cbyYmmwvtGmMB7JUk4",
         ]
         kwargs = {"ti": MagicMock()}
-        kwargs["ti"].xcom_pull.return_value = docs_to_delete
+        kwargs["ti"].xcom_pull.return_value = sps_packages_xmls
+        mk_documents_to_delete.side_effect = [[docs_to_delete[0]], docs_to_delete[1:]]
+        mk_kernel_connect.return_value = Mock(status_code=http.client.NO_CONTENT)
         delete_documents(**kwargs)
         for doc_to_delete in docs_to_delete:
             with self.subTest(doc_to_delete=doc_to_delete):
@@ -382,39 +386,30 @@ class TestDeleteDocuments(TestCase):
                     "/documents/" + doc_to_delete,
                     "DELETE"
                 )
+                mk_logging.info.assert_any_call(
+                    "Document %s deleted from kernel status: %d"
+                    % (doc_to_delete, http.client.NO_CONTENT)
+                )
 
     @patch('kernel_documents.kernel_connect')
     @patch('kernel_documents.logging')
-    def test_delete_documents_calls_kernel_connect_with_docs_to_delete(
-        self, mk_logging, mk_kernel_connect
+    @patch('kernel_documents.documents_to_delete')
+    def test_delete_documents_logs_error_if_kernel_connect_error(
+        self, mk_documents_to_delete, mk_logging, mk_kernel_connect
     ):
-        docs_to_delete = [
-            "FX6F3cbyYmmwvtGmMB7WCgr",
-            "GZ5K2cbyYmmwvtGmMB71243",
-            "KU890cbyYmmwvtGmMB7JUk4",
-        ]
+        sps_packages_xmls = {
+            'dir/destination/rba_v53n1.zip': [
+                '1806-907X-rba-53-01-1-8.xml',
+            ]
+        }
         kwargs = {"ti": MagicMock()}
-        kwargs["ti"].xcom_pull.return_value = docs_to_delete
-        mk_response_ok = Mock(status_code=http.client.NO_CONTENT)
-        mk_response_error = Mock(status_code=http.client.NOT_FOUND)
-        kernel_conn_status = [
-            mk_response_ok,
-            mk_response_error,
-            mk_response_ok,
-        ]
-        mk_kernel_connect.side_effect = kernel_conn_status
+        kwargs["ti"].xcom_pull.return_value = sps_packages_xmls
+        mk_documents_to_delete.return_value = ["FX6F3cbyYmmwvtGmMB7WCgr"]
+        mk_kernel_connect.return_value = Mock(status_code=http.client.NOT_FOUND)
         delete_documents(**kwargs)
         mk_logging.info.assert_any_call(
-            "Document %s deleted from kernel status: %d"
-            % (docs_to_delete[0], http.client.NO_CONTENT)
-        )
-        mk_logging.info.assert_any_call(
             "Document %s not found in kernel: %d"
-            % (docs_to_delete[1], http.client.NOT_FOUND)
-        )
-        mk_logging.info.assert_any_call(
-            "Document %s deleted from kernel status: %d"
-            % (docs_to_delete[2], http.client.NO_CONTENT)
+            % ("FX6F3cbyYmmwvtGmMB7WCgr", http.client.NOT_FOUND)
         )
 
 
