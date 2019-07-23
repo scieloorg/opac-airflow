@@ -1,4 +1,6 @@
+
 import os
+import json
 import logging
 from datetime import timedelta
 
@@ -364,7 +366,7 @@ def register_orphan_issues(ds, **kwargs):
 
     j_issues = kwargs["ti"].xcom_pull(key="j_issues", task_ids="register_journals_task")
 
-    orphan_issues = Variable.get("orphan_issues", [])
+    orphan_issues = json.loads(Variable.get("orphan_issues", []))
 
     for issue_id in orphan_issues:
 
@@ -419,7 +421,7 @@ def register_issues(ds, **kwargs):
 
     kwargs["ti"].xcom_push(key="i_documents", value=i_documents)
 
-    Variable.set("orphan_issues", orphan_issues)
+    Variable.set("orphan_issues", json.dumps(orphan_issues))
 
     return tasks
 
@@ -604,7 +606,7 @@ def register_orphan_documents(ds, **kwargs):
         key="i_documents", task_ids="register_issues_task"
     )
 
-    orphan_documents = Variable.get("orphan_documents", [])
+    orphan_documents = json.loads(Variable.get("orphan_documents", []))
 
     for document_id in orphan_documents:
 
