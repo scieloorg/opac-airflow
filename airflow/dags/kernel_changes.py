@@ -129,6 +129,29 @@ def fetch_data(endpoint):
     """
     return api_hook.run(endpoint=endpoint).json()
 
+def fetch_changes(since):
+    """
+         Obtém o JSON das mudanças do Kernel com base no parametro 'since'
+    """
+    return fetch_data("/changes?since=%s" % (since))
+
+def fetch_journal(journal_id):
+    """
+         Obtém o JSON do Journal do Kernel com base no parametro 'journal_id'
+    """
+    return fetch_data("/journals/%s" % (journal_id))
+
+def fetch_bundles(bundle_id):
+    """
+         Obtém o JSON do DocumentBundle do Kernel com base no parametro 'bundle_id'
+    """
+    return fetch_data("/bundles/%s" % (bundle_id))
+
+def fetch_documents_front(document_id):
+    """
+         Obtém o JSON do Document do Kernel com base no parametro 'document_id'
+    """
+    return fetch_data("/documents/%s/front" % (document_id))
 
 def changes(since=""):
     """Verifies if change's endpoint has new modifications.
