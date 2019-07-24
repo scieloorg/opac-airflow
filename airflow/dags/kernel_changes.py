@@ -455,6 +455,9 @@ register_issues_task = PythonOperator(
 
 
 def register_document(data, issue_id, document_id, i_documents):
+    """
+    Esta função pode lançar a exceção `models.Issue.DoesNotExist`.
+    """
 
     def nestget(data, *path, default=''):
         """
@@ -634,8 +637,12 @@ def register_orphan_documents(ds, **kwargs):
 
         if issue_id:
             resp_json = fetch_documents_front(document.get("id"))
-            register_document(resp_json, issue_id[0], document_id, i_documents)
-            orphan_documents.remove(issue_id)
+            try:
+                register_document(resp_json, issue_id[0], document_id, i_documents)
+            except models.Issue.DoesNotExist:
+                continue 
+            else:
+                orphan_documents.remove(issue_id)
 
 
 register_orphan_documents_task = PythonOperator(
@@ -665,7 +672,10 @@ def register_documents(ds, **kwargs):
 
         if issue_id:
             resp_json = fetch_documents_front(document_id)
-            register_document(resp_json, issue_id[0], document_id, i_documents)
+            try:
+                register_document(resp_json, issue_id[0], document_id, i_documents)
+            except models.Issue.DoesNotExist:
+                orphan_documents.append(document_id)
         else:
             orphan_documents.append(document_id)
 
