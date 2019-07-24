@@ -350,6 +350,8 @@ register_journals_task = PythonOperator(
 def register_issue(data, journal_id, issue_id, j_issues):
     """
     Realiza o registro fascículo utilizando o opac schema.
+
+    Esta função pode lançar a exceção `models.Journal.DoesNotExist`.
     """
     mongo_connect()
 
@@ -394,7 +396,10 @@ def register_orphan_issues(ds, **kwargs):
         journal_id = [j for j, i in j_issues.items() if issue_id in i]
 
         if journal_id:
-            register_issue(resp_json, journal_id[0], issue_id, j_issues)
+            try:
+                register_issue(resp_json, journal_id[0], issue_id, j_issues)
+            except models.Journal.DoesNotExist:
+                orphan_issues.append(issue_id)
         else:
             orphan_issues.append(issue_id)
 
@@ -433,7 +438,10 @@ def register_issues(ds, **kwargs):
 
         journal_id = [j for j, i in j_issues.items() if issue_id in i]
         if journal_id:
-            register_issue(resp_json, journal_id[0], issue_id, j_issues)
+            try:
+                register_issue(resp_json, journal_id[0], issue_id, j_issues)
+            except models.Journal.DoesNotExist:
+                orphan_issues.append(issue_id)
         else:
             orphan_issues.append(issue_id)
 
