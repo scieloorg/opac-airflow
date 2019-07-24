@@ -637,20 +637,22 @@ def register_orphan_documents(ds, **kwargs):
         key="i_documents", task_ids="register_issues_task"
     )
 
-    orphan_documents = json.loads(Variable.get("orphan_documents", "[]"))
+    orphan_documents = [] 
 
-    for document_id in orphan_documents:
+    for document_id in json.loads(Variable.get("orphan_documents", "[]")):
 
         issue_id = [i for i, d in i_documents.items() if document_id in d]
 
         if issue_id:
-            resp_json = fetch_documents_front(document.get("id"))
+            resp_json = fetch_documents_front(document_id)
             try:
                 register_document(resp_json, issue_id[0], document_id, i_documents)
             except models.Issue.DoesNotExist:
-                continue 
-            else:
-                orphan_documents.remove(issue_id)
+                orphan_documents.append(document_id)
+        else:
+            orphan_documents.append(document_id)
+
+    Variable.set("orphan_documents", json.dumps(orphan_documents))
 
 
 register_orphan_documents_task = PythonOperator(
