@@ -610,7 +610,7 @@ def register_document(data, issue_id, document_id, i_documents):
     document.journal = issue.journal
 
     document.order = i_documents.get(issue.id).index(document_id)
-    document.xml = "%s%s" % (api_hook.base_url, document._id)
+    document.xml = "%s/documents/%s" % (api_hook.base_url, document._id)
 
     document.save()
 
