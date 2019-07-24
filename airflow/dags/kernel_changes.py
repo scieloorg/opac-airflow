@@ -387,18 +387,16 @@ def register_orphan_issues(ds, **kwargs):
     """
 
     j_issues = kwargs["ti"].xcom_pull(key="j_issues", task_ids="register_journals_task")
+    orphan_issues = []
 
-    orphan_issues = json.loads(Variable.get("orphan_issues", "[]"))
-
-    for issue_id in orphan_issues:
-
-        resp_json = fetch_data("bundles/%s" % issue_id)
-
+    for issue_id in json.loads(Variable.get("orphan_issues", "[]")):
+        resp_json = fetch_bundles(issue_id)
         journal_id = [j for j, i in j_issues.items() if issue_id in i]
 
         if journal_id:
             register_issue(resp_json, journal_id[0], issue_id, j_issues)
-            orphan_issues.remove(issue_id)
+        else:
+            orphan_issues.append(issue_id)
 
     Variable.set("orphan_issues", json.dumps(orphan_issues))
 
