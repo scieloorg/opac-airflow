@@ -327,7 +327,7 @@ def register_journals(ds, **kwargs):
     j_issues = {}
 
     for journal in journal_changes:
-        resp_json = fetch_journal(journal.get("id"))
+        resp_json = fetch_journal(get_id(journal.get("id")))
 
         t_journal = transform_journal(resp_json)
         t_journal.save()
