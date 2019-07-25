@@ -53,3 +53,56 @@ def fetch_previous_context(**kwargs) -> None:
 
     if issues:
         kwargs["ti"].xcom_push(key="issues", value=issues)
+
+
+def prepare_journals_links_data(**kwargs) -> dict:
+    """Prepara a estrutura de dados onde os journals possuem uma
+    lista contendo os identificadores de bundles relacionados"""
+
+    journals_bundles = {}
+    return journals_bundles
+
+
+def update_journals_items(**kwargs) -> None:
+    """Atualiza a lista de `items` para cada journal_id recuperado
+    imediatamente da task anterior"""
+
+    journals_bundles = kwargs["ti"].xcom_pull(
+        task_ids="prepare_journals_links_data_task"
+    )
+
+    for journal_id, bundles in journals_bundles.items():
+        # GET /journals/:journal_id -> _metadata
+        # Atribui _metadata_items = _metadata["items"]
+        # Compara _metadata_items com bundles
+        # SE _metadata_items != bundles
+        # Envia HTTP PUT /journals/:journal_id/bundles -> bundles
+        # SE não -> continue
+        pass
+
+
+fetch_previous_context_task = PythonOperator(
+    task_id="fetch_previous_context_task",
+    python_callable=fetch_previous_context,
+    dag=dag,
+    provide_context=True,
+)
+
+prepare_journals_links_data_task = PythonOperator(
+    task_id="prepare_journals_links_data_task",
+    python_callable=prepare_journals_links_data,
+    dag=dag,
+    provide_context=True,
+)
+
+update_journals_items_task = PythonOperator(
+    task_id="update_journals_items_task",
+    python_callable=update_journals_items,
+    dag=dag,
+    provide_context=True,
+)
+
+
+fetch_previous_context_task >> [
+    prepare_journals_links_data_task >> update_journals_items_task
+]
