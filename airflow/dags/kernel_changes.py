@@ -1,8 +1,8 @@
-
 import os
 import json
 import logging
 from datetime import timedelta
+import itertools
 
 import tenacity
 from tenacity import retry
@@ -46,10 +46,7 @@ dag = DAG(
 api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
 
 
-@retry(
-    wait=tenacity.wait_exponential(),
-    stop=tenacity.stop_after_attempt(10)
-)
+@retry(wait=tenacity.wait_exponential(), stop=tenacity.stop_after_attempt(10))
 def mongo_connect():
     # TODO: Necessário adicionar um commando para adicionar previamente uma conexão, ver: https://github.com/puckel/docker-airflow/issues/75
     conn = BaseHook.get_connection("opac_conn")
@@ -129,11 +126,13 @@ def fetch_data(endpoint):
     """
     return api_hook.run(endpoint=endpoint).json()
 
+
 def fetch_changes(since):
     """
          Obtém o JSON das mudanças do Kernel com base no parametro 'since'
     """
     return fetch_data("/changes?since=%s" % (since))
+
 
 def fetch_journal(journal_id):
     """
@@ -141,17 +140,20 @@ def fetch_journal(journal_id):
     """
     return fetch_data("/journals/%s" % (journal_id))
 
+
 def fetch_bundles(bundle_id):
     """
          Obtém o JSON do DocumentBundle do Kernel com base no parametro 'bundle_id'
     """
     return fetch_data("/bundles/%s" % (bundle_id))
 
+
 def fetch_documents_front(document_id):
     """
          Obtém o JSON do Document do Kernel com base no parametro 'document_id'
     """
     return fetch_data("/documents/%s/front" % (document_id))
+
 
 def changes(since=""):
     """Verifies if change's endpoint has new modifications.
@@ -249,9 +251,9 @@ def filter_changes(tasks, entity, action):
 
 
 http_kernel_check = HttpSensor(
-    task_id='http_kernel_check',
-    http_conn_id='kernel_conn',
-    endpoint='/changes',
+    task_id="http_kernel_check",
+    http_conn_id="kernel_conn",
+    endpoint="/changes",
     request_params={},
     poke_interval=5,
     dag=dag,
@@ -409,49 +411,55 @@ def register_orphan_issues(ds, **kwargs):
     Variable.set("orphan_issues", json.dumps(orphan_issues))
 
 
-register_orphan_issues_task = PythonOperator(
-    task_id="register_orphan_issues",
-    provide_context=True,
-    python_callable=register_orphan_issues,
-    dag=dag,
-)
+# register_orphan_issues_task = PythonOperator(
+#    task_id="register_orphan_issues",
+#    provide_context=True,
+#    python_callable=register_orphan_issues,
+#    dag=dag,
+# )
 
 
 def register_issues(ds, **kwargs):
-    """
-    Realiza o registro fascículos.
+    """Registra ou atualiza todos os fascículos a partir do Kernel.
+
+    Fascículos de periódicos não encontrados são marcados como órfãos e 
+    armazenados em uma variável persistente para futuras tentativas.
     """
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
-
     j_issues = kwargs["ti"].xcom_pull(key="j_issues", task_ids="register_journals_task")
 
-    # Dict with key of issue_id and value a list of document id.
+    def _journal_id(issue_id):
+        """Obtém o identificador do periódico onde `issue_id` está contido."""
+        j = [
+            journal_id for journal_id, issues in j_issues.items() if issue_id in issues
+        ]
+        try:
+            return j[0]
+        except IndexError:
+            return None
+
+    def _load_orphans():
+        return json.loads(Variable.get("orphan_issues", "[]"))
+
     i_documents = {}
     orphan_issues = []
 
-    issue_changes = filter_changes(tasks, "bundles", "get")
-
-    for issue in issue_changes:
-
-        issue_endpoint = issue.get("id")
-
-        issue_id = get_id(issue_endpoint)  # obtém somente o id
-
-        resp_json = fetch_bundles(issue_id)
-
-        journal_id = [j for j, i in j_issues.items() if issue_id in i]
-        if journal_id:
+    for issue_id in itertools.chain(
+        _load_orphans(),
+        (get_id(task["id"]) for task in filter_changes(tasks, "bundles", "get")),
+    ):
+        if _journal_id(issue_id) is not None:
+            data = fetch_bundles(issue_id)
             try:
-                register_issue(resp_json, journal_id[0], issue_id, j_issues)
+                register_issue(data, _journal_id(issue_id), issue_id, j_issues)
             except models.Journal.DoesNotExist:
                 orphan_issues.append(issue_id)
+            else:
+                i_documents[issue_id] = data.get("items", [])
         else:
             orphan_issues.append(issue_id)
 
-        i_documents[issue_id] = resp_json.get("items", [])
-
     kwargs["ti"].xcom_push(key="i_documents", value=i_documents)
-
     Variable.set("orphan_issues", json.dumps(orphan_issues))
 
     return tasks
@@ -470,7 +478,7 @@ def register_document(data, issue_id, document_id, i_documents):
     Esta função pode lançar a exceção `models.Issue.DoesNotExist`.
     """
 
-    def nestget(data, *path, default=''):
+    def nestget(data, *path, default=""):
         """
         Obtém valores de list ou dicionários.
         """
@@ -535,12 +543,12 @@ def register_document(data, issue_id, document_id, i_documents):
 
     trans_sections.append(
         models.TranslatedSection(
-                **{
-                    "name": nestget(article_meta, "pub_subject", 0),
-                    "language": original_lang,
-                }
-            )
+            **{
+                "name": nestget(article_meta, "pub_subject", 0),
+                "language": original_lang,
+            }
         )
+    )
 
     trans_abstracts.append(
         models.Abstract(**{"text": document.abstract, "language": original_lang})
@@ -551,7 +559,10 @@ def register_document(data, issue_id, document_id, i_documents):
         for trans_abs in data.get("trans_abstract"):
             trans_abstracts.append(
                 models.Abstract(
-                    **{"text": nestget(trans_abs, "text", 0), "language": nestget(trans_abs, "lang", 0)}
+                    **{
+                        "text": nestget(trans_abs, "text", 0),
+                        "language": nestget(trans_abs, "lang", 0),
+                    }
                 )
             )
 
@@ -606,7 +617,9 @@ def register_document(data, issue_id, document_id, i_documents):
     document.sections = trans_sections
     document.abstracts = trans_abstracts
     document.keywords = keywords
-    document.abstract_languages = [trans_abs["language"] for trans_abs in trans_abstracts]
+    document.abstract_languages = [
+        trans_abs["language"] for trans_abs in trans_abstracts
+    ]
 
     document.original_language = original_lang
 
@@ -640,7 +653,7 @@ def register_orphan_documents(ds, **kwargs):
         key="i_documents", task_ids="register_issues_task"
     )
 
-    orphan_documents = [] 
+    orphan_documents = []
 
     for document_id in json.loads(Variable.get("orphan_documents", "[]")):
 
@@ -833,9 +846,11 @@ http_kernel_check >> read_changes_task
 
 register_journals_task << read_changes_task
 
-register_orphan_issues_task << register_journals_task
+# register_orphan_issues_task << register_journals_task
 
-register_issues_task << register_orphan_issues_task
+# register_issues_task << register_orphan_issues_task
+
+register_issues_task << register_journals_task  # pula o register orphan issues
 
 register_last_issues_task << register_issues_task
 
