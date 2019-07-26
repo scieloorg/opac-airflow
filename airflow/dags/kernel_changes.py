@@ -266,7 +266,10 @@ read_changes_task = ShortCircuitOperator(
 )
 
 
-def transform_journal(data):
+def JournalFactory(data):
+    """Produz instância de `models.Journal` a partir dos dados retornados do
+    endpoint `/journals/:journal_id` do Kernel.
+    """
     metadata = data["metadata"]
 
     journal = models.Journal()
@@ -309,10 +312,10 @@ def transform_journal(data):
 
     journal.online_submission_url = metadata.get("online_submission_url", "")
     journal.logo_url = metadata.get("logo_url", "")
-    journal.current_status = metadata.get("status").get("status")
+    journal.current_status = metadata.get("status", {}).get("status")
 
     journal.created = metadata.get("created")
-    journal.created = metadata.get("updated")
+    journal.updated = metadata.get("updated")
 
     return journal
 
@@ -329,7 +332,7 @@ def register_journals(ds, **kwargs):
     for journal in journal_changes:
         resp_json = fetch_journal(get_id(journal.get("id")))
 
-        t_journal = transform_journal(resp_json)
+        t_journal = JournalFactory(resp_json)
         t_journal.save()
 
         j_issues[get_id(journal.get("id"))] = resp_json.get("items", [])
