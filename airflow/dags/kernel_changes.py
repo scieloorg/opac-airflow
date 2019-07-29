@@ -352,7 +352,7 @@ register_journals_task = PythonOperator(
 )
 
 
-def register_issue(data, journal_id, issue_id, j_issues):
+def register_issue(data, journal_id, issue_order):
     """
     Realiza o registro fascículo utilizando o opac schema.
 
@@ -382,7 +382,7 @@ def register_issue(data, journal_id, issue_id, j_issues):
     issue.pid = metadata.get("pid", "")
 
     issue.journal = journal
-    issue.order = j_issues.get(journal.id).index(issue_id)
+    issue.order = issue_order
     issue.save()
 
     return issue
@@ -410,6 +410,9 @@ def register_issues(ds, **kwargs):
     def _load_orphans():
         return json.loads(Variable.get("orphan_issues", "[]"))
 
+    def _issue_order(issue_id, journal_id):
+        return j_issues.get(journal_id).index(issue_id)
+
     i_documents = {}
     orphan_issues = []
 
@@ -420,7 +423,11 @@ def register_issues(ds, **kwargs):
         if _journal_id(issue_id) is not None:
             data = fetch_bundles(issue_id)
             try:
-                register_issue(data, _journal_id(issue_id), issue_id, j_issues)
+                register_issue(
+                    data,
+                    _journal_id(issue_id),
+                    _issue_order(issue_id, _journal_id(issue_id)),
+                )
             except models.Journal.DoesNotExist:
                 orphan_issues.append(issue_id)
             else:
