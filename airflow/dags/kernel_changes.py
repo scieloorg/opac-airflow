@@ -388,37 +388,6 @@ def register_issue(data, journal_id, issue_id, j_issues):
     return issue
 
 
-def register_orphan_issues(ds, **kwargs):
-    """
-    Registrar os fascículos orfãos.
-    """
-
-    j_issues = kwargs["ti"].xcom_pull(key="j_issues", task_ids="register_journals_task")
-    orphan_issues = []
-
-    for issue_id in json.loads(Variable.get("orphan_issues", "[]")):
-        resp_json = fetch_bundles(issue_id)
-        journal_id = [j for j, i in j_issues.items() if issue_id in i]
-
-        if journal_id:
-            try:
-                register_issue(resp_json, journal_id[0], issue_id, j_issues)
-            except models.Journal.DoesNotExist:
-                orphan_issues.append(issue_id)
-        else:
-            orphan_issues.append(issue_id)
-
-    Variable.set("orphan_issues", json.dumps(orphan_issues))
-
-
-# register_orphan_issues_task = PythonOperator(
-#    task_id="register_orphan_issues",
-#    provide_context=True,
-#    python_callable=register_orphan_issues,
-#    dag=dag,
-# )
-
-
 def register_issues(ds, **kwargs):
     """Registra ou atualiza todos os fascículos a partir do Kernel.
 
@@ -846,11 +815,7 @@ http_kernel_check >> read_changes_task
 
 register_journals_task << read_changes_task
 
-# register_orphan_issues_task << register_journals_task
-
-# register_issues_task << register_orphan_issues_task
-
-register_issues_task << register_journals_task  # pula o register orphan issues
+register_issues_task << register_journals_task
 
 register_last_issues_task << register_issues_task
 
