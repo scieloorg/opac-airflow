@@ -328,8 +328,8 @@ def register_journals(ds, **kwargs):
 
     journal_changes = filter_changes(tasks, "journals", "get")
 
-    # Dictionary with id of journal and list of issues, something like: j_issues[journal_id] = [issue_id, issue_id, ....]
-    j_issues = {}
+    # Dictionary with id of journal and list of issues, something like: known_issues[journal_id] = [issue_id, issue_id, ....]
+    known_issues = {}
 
     for journal in journal_changes:
         resp_json = fetch_journal(get_id(journal.get("id")))
@@ -337,9 +337,9 @@ def register_journals(ds, **kwargs):
         t_journal = JournalFactory(resp_json)
         t_journal.save()
 
-        j_issues[get_id(journal.get("id"))] = resp_json.get("items", [])
+        known_issues[get_id(journal.get("id"))] = resp_json.get("items", [])
 
-    kwargs["ti"].xcom_push(key="j_issues", value=j_issues)
+    kwargs["ti"].xcom_push(key="known_issues", value=known_issues)
 
     return tasks
 
@@ -395,12 +395,12 @@ def register_issues(ds, **kwargs):
     armazenados em uma variável persistente para futuras tentativas.
     """
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
-    j_issues = kwargs["ti"].xcom_pull(key="j_issues", task_ids="register_journals_task")
+    known_issues = kwargs["ti"].xcom_pull(key="known_issues", task_ids="register_journals_task")
 
     def _journal_id(issue_id):
         """Obtém o identificador do periódico onde `issue_id` está contido."""
         j = [
-            journal_id for journal_id, issues in j_issues.items() if issue_id in issues
+            journal_id for journal_id, issues in known_issues.items() if issue_id in issues
         ]
         try:
             return j[0]
@@ -411,7 +411,7 @@ def register_issues(ds, **kwargs):
         return json.loads(Variable.get("orphan_issues", "[]"))
 
     def _issue_order(issue_id, journal_id):
-        return j_issues.get(journal_id).index(issue_id)
+        return known_issues.get(journal_id).index(issue_id)
 
     i_documents = {}
     orphan_issues = []
