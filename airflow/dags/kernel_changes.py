@@ -316,8 +316,8 @@ def JournalFactory(data):
     journal.logo_url = metadata.get("logo_url", "")
     journal.current_status = metadata.get("status", {}).get("status")
 
-    journal.created = metadata.get("created")
-    journal.updated = metadata.get("updated")
+    journal.created = data.get("created", "")
+    journal.updated = data.get("updated", "")
 
     return journal
 
