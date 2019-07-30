@@ -360,12 +360,9 @@ def IssueFactory(data, journal_id, issue_order):
     """
     mongo_connect()
 
-    journal = models.Journal.objects.get(_id=journal_id)
-
     metadata = data["metadata"]
 
     issue = models.Issue()
-    issue._id = issue.iid = data.get("id")
     issue._id = issue.iid = data.get("id")
     issue.type = metadata.get("type", "regular")
     issue.spe_text = metadata.get("spe_text", "")
@@ -374,14 +371,12 @@ def IssueFactory(data, journal_id, issue_order):
     issue.year = metadata.get("publication_year")
     issue.volume = metadata.get("volume", "")
     issue.number = metadata.get("number", "")
-
     issue.label = metadata.get(
         "label", "%s%s" % ("v" + issue.volume, "n" + issue.number)
     )
     issue.order = metadata.get("order", 0)
     issue.pid = metadata.get("pid", "")
-
-    issue.journal = journal
+    issue.journal = models.Journal.objects.get(_id=journal_id)
     issue.order = issue_order
 
     return issue
