@@ -387,6 +387,47 @@ def IssueFactory(data, journal_id, issue_order):
     return issue
 
 
+def try_register_issues(
+    issues, get_journal_id, get_issue_order, fetch_data, issue_factory
+):
+    """Registra uma coleção de fascículos.
+
+    Retorna a dupla: lista dos fascículos que não foram registrados por
+    serem órfãos, e dicionário com os documentos conhecidos.
+
+    :param issues: lista de identificadores dos fascículos a serem registrados.
+    :param get_journal_id: função que recebe o identificador de um fascículo no
+    Kernel e retorna o identificador do periódico que o contém.
+    :param get_issue_order: função que recebe o identificador de um fascículo e 
+    retorna um número inteiro referente a posição do fascículo em relação 
+    aos demais.
+    :param fetch_data: função que recebe o identificador de um fascículo e 
+    retorna seus dados, em estruturas do Python, conforme retornado pelo 
+    endpoint do Kernel.
+    :param issue_factory: função que recebe os dados retornados da função 
+    `fetch_data` e retorna uma instância da classe `Issue`, do `opac_schema`.
+    """
+    known_documents = {}
+    orphans = []
+
+    for issue_id in issues:
+        if get_journal_id(issue_id) is not None:
+            data = fetch_data(issue_id)
+            try:
+                issue = issue_factory(
+                    data, get_journal_id(issue_id), get_issue_order(issue_id)
+                )
+                issue.save()
+            except models.Journal.DoesNotExist:
+                orphan_issues.append(issue_id)
+            else:
+                known_documents[issue_id] = data.get("items", [])
+        else:
+            orphans.append(issue_id)
+
+    return orphans, known_documents
+
+
 def register_issues(ds, **kwargs):
     """Registra ou atualiza todos os fascículos a partir do Kernel.
 
@@ -394,12 +435,16 @@ def register_issues(ds, **kwargs):
     armazenados em uma variável persistente para futuras tentativas.
     """
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
-    known_issues = kwargs["ti"].xcom_pull(key="known_issues", task_ids="register_journals_task")
+    known_issues = kwargs["ti"].xcom_pull(
+        key="known_issues", task_ids="register_journals_task"
+    )
 
     def _journal_id(issue_id):
         """Obtém o identificador do periódico onde `issue_id` está contido."""
         j = [
-            journal_id for journal_id, issues in known_issues.items() if issue_id in issues
+            journal_id
+            for journal_id, issues in known_issues.items()
+            if issue_id in issues
         ]
         try:
             return j[0]
@@ -409,39 +454,24 @@ def register_issues(ds, **kwargs):
     def _load_orphans():
         return Variable.get("orphan_issues", default_var=[], deserialize_json=True)
 
-    def _issue_order(issue_id, journal_id):
+    def _issue_order(issue_id):
         """A posição em relação aos demais fascículos do periódico.
         
         Pode levantar `ValueError` caso `issue_id` não conste na relação de 
         fascículos do periódico `journal_id`.
         """
-        return known_issues.get(journal_id, []).index(issue_id)
+        return known_issues.get(_journal_id(issue_id), []).index(issue_id)
 
-    i_documents = {}
-    orphan_issues = []
-
-    for issue_id in itertools.chain(
+    issues_to_get = itertools.chain(
         _load_orphans(),
         (get_id(task["id"]) for task in filter_changes(tasks, "bundles", "get")),
-    ):
-        if _journal_id(issue_id) is not None:
-            data = fetch_bundles(issue_id)
-            try:
-                issue = IssueFactory(
-                    data,
-                    _journal_id(issue_id),
-                    _issue_order(issue_id, _journal_id(issue_id)),
-                )
-                issue.save()
-            except models.Journal.DoesNotExist:
-                orphan_issues.append(issue_id)
-            else:
-                i_documents[issue_id] = data.get("items", [])
-        else:
-            orphan_issues.append(issue_id)
+    )
+    orphans, known_documents = try_register_issues(
+        issues_to_get, _journal_id, _issue_order, fetch_bundles, IssueFactory
+    )
 
-    kwargs["ti"].xcom_push(key="i_documents", value=i_documents)
-    Variable.set("orphan_issues", orphan_issues, serialize_json=True)
+    kwargs["ti"].xcom_push(key="i_documents", value=known_documents)
+    Variable.set("orphan_issues", orphans, serialize_json=True)
 
     return tasks
 
