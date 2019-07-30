@@ -408,7 +408,7 @@ def register_issues(ds, **kwargs):
             return None
 
     def _load_orphans():
-        return json.loads(Variable.get("orphan_issues", "[]"))
+        return Variable.get("orphan_issues", default_var=[], deserialize_json=True)
 
     def _issue_order(issue_id, journal_id):
         """A posição em relação aos demais fascículos do periódico.
@@ -441,7 +441,7 @@ def register_issues(ds, **kwargs):
             orphan_issues.append(issue_id)
 
     kwargs["ti"].xcom_push(key="i_documents", value=i_documents)
-    Variable.set("orphan_issues", json.dumps(orphan_issues))
+    Variable.set("orphan_issues", orphan_issues, serialize_json=True)
 
     return tasks
 
