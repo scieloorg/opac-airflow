@@ -352,7 +352,7 @@ register_journals_task = PythonOperator(
 )
 
 
-def register_issue(data, journal_id, issue_order):
+def IssueFactory(data, journal_id, issue_order):
     """
     Realiza o registro fascículo utilizando o opac schema.
 
@@ -383,7 +383,6 @@ def register_issue(data, journal_id, issue_order):
 
     issue.journal = journal
     issue.order = issue_order
-    issue.save()
 
     return issue
 
@@ -428,11 +427,12 @@ def register_issues(ds, **kwargs):
         if _journal_id(issue_id) is not None:
             data = fetch_bundles(issue_id)
             try:
-                register_issue(
+                issue = IssueFactory(
                     data,
                     _journal_id(issue_id),
                     _issue_order(issue_id, _journal_id(issue_id)),
                 )
+                issue.save()
             except models.Journal.DoesNotExist:
                 orphan_issues.append(issue_id)
             else:
