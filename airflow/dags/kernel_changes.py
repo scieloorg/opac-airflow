@@ -411,7 +411,12 @@ def register_issues(ds, **kwargs):
         return json.loads(Variable.get("orphan_issues", "[]"))
 
     def _issue_order(issue_id, journal_id):
-        return known_issues.get(journal_id).index(issue_id)
+        """A posição em relação aos demais fascículos do periódico.
+        
+        Pode levantar `ValueError` caso `issue_id` não conste na relação de 
+        fascículos do periódico `journal_id`.
+        """
+        return known_issues.get(journal_id, []).index(issue_id)
 
     i_documents = {}
     orphan_issues = []
