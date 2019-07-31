@@ -415,20 +415,20 @@ extract_issue_task = BashOperator(
 )
 
 
-work_on_journals = PythonOperator(
-    task_id="work_on_journals",
+process_journals_task = PythonOperator(
+    task_id="process_journals_task",
     python_callable=process_journals,
     dag=dag,
     provide_context=True,
     params={"process_journals": True},
 )
 
-work_on_issues = PythonOperator(
-    task_id="work_on_issues",
+process_issues_task = PythonOperator(
+    task_id="process_issues_task",
     python_callable=process_issues,
     dag=dag,
     provide_context=True,
 )
 
 create_work_folders_task >> copy_mst_bases_to_work_folder_task >> extract_title_task
-extract_title_task >> extract_issue_task >> work_on_journals >> work_on_issues
+extract_title_task >> extract_issue_task >> process_journals_task >> process_issues_task
