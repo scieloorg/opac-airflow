@@ -24,22 +24,27 @@ Para o devido entendimento desta DAG pode-se ter como base a seguinte explicaç�
 Esta DAG possui tarefas que são iniciadas a partir de um TRIGGER externo. As fases
 de execução são às seguintes:
 
-1) Ler a base TITLE em formato MST
-1.1) Armazena output do isis2json na área de trabalho xcom
-
-2) Ler a base ISSUE em formato MST
-2.2) Armazena output do isis2json na área de trabalho xcom
-
-3) Envia os dados da base TITLE para a API do Kernel
-3.1) Itera entre os periódicos lidos da base TITLE
-3.2) Converte o periódico para o formato JSON aceito pelo Kernel
-3.3) Verifica se o Journal já existe na API Kernel
-3.3.1) Faz o diff do entre o payload gerado e os metadados vindos do Kernel
-3.3.2) Se houver diferenças faz-ze um PATCH para atualizar o registro
-3.4) Se o Journal não existir
-3.4.1) Remove as chaves nulas
-3.4.2) Faz-se um PUT para criar o registro
-3.5) Dispara o DAG subsequente.
+1) Cria as pastas temporárias de trabalho, sendo elas:
+    a) /airflow_home/{{ dag_run }}/isis
+    b) /airflow_home/{{ dag_run }}/json
+2) Faz uma cópia das bases MST:
+    a) A partir das variáveis `BASE_ISSUE_FOLDER_PATH` e `BASE_TITLE_FOLDER_PATH`
+    b) Retorna XCOM com os paths exatos de onde os arquivos MST estarão
+    c) Retorna XCOM com os paths exatos de onde os resultados da extração MST devem ser depositados  
+3) Ler a base TITLE em formato MST
+    a) Armazena output do isis2json no arquivo `/airflow_home/{{ dag_run }}/json/title.json`
+4) Ler a base ISSUE em formato MST
+    a) Armazena output do isis2json no arquivo `/airflow_home/{{ dag_run }}/json/issue.json`
+5) Envia os dados da base TITLE para a API do Kernel
+    a) Itera entre os periódicos lidos da base TITLE
+    b) Converte o periódico para o formato JSON aceito pelo Kernel
+    c) Verifica se o Journal já existe na API Kernel
+        I) Faz o diff do entre o payload gerado e os metadados vindos do Kernel
+        II) Se houver diferenças faz-ze um PATCH para atualizar o registro
+    d) Se o Journal não existir
+        I) Remove as chaves nulas
+        II) Faz-se um PUT para criar o registro
+6) Dispara o DAG subsequente.
 """
 
 BASE_PATH = os.path.dirname(os.path.dirname(__file__))
