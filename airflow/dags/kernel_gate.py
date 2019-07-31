@@ -333,6 +333,16 @@ def process_issues(**context):
         response = register_or_update(_id, issue, KERNEL_API_BUNDLES_ENDPOINT)
 
 
+CREATE_FOLDER_TEMPLATES = """
+    mkdir -p '{{ var.value.WORK_FOLDER_PATH }}/{{ run_id }}/isis' && \
+    mkdir -p '{{ var.value.WORK_FOLDER_PATH }}/{{ run_id }}/json'"""
+
+create_work_folders_task = BashOperator(
+    task_id="create_work_folders_task", bash_command=CREATE_FOLDER_TEMPLATES, dag=dag
+)
+
+
+
 work_on_journals = PythonOperator(
     task_id="work_on_journals",
     python_callable=process_journals,
