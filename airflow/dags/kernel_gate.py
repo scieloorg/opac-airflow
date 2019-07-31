@@ -2,6 +2,8 @@
 em uma REST-API que implementa a específicação do SciELO Kernel"""
 
 import os
+import shutil
+import logging
 import requests
 import json
 import http.client
@@ -333,6 +335,51 @@ def process_issues(**context):
         response = register_or_update(_id, issue, KERNEL_API_BUNDLES_ENDPOINT)
 
 
+def copy_mst_files_to_work_folder(**kwargs):
+    """Copia as bases MST para a área de trabalho da execução corrente.
+    
+    O resultado desta função gera cópias das bases title e issue para paths correspondentes aos:
+    title: /airflow_home/work_folder_path/{{ run_id }}/isis/title.*
+    issue: /airflow_home/work_folder_path/{{ run_id }}/isis/issue.*
+    """
+
+    WORK_PATH = Variable.get("WORK_FOLDER_PATH")
+    CURRENT_EXECUTION_FOLDER = os.path.join(WORK_PATH, kwargs["run_id"])
+    WORK_ISIS_FILES = os.path.join(CURRENT_EXECUTION_FOLDER, "isis")
+    WORK_JSON_FILES = os.path.join(CURRENT_EXECUTION_FOLDER, "json")
+
+    BASE_TITLE_FOLDER_PATH = Variable.get("BASE_TITLE_FOLDER_PATH")
+    BASE_ISSUE_FOLDER_PATH = Variable.get("BASE_ISSUE_FOLDER_PATH")
+
+    copying_paths = []
+
+    for path in [BASE_TITLE_FOLDER_PATH, BASE_ISSUE_FOLDER_PATH]:
+        files = [
+            f for f in os.listdir(path) if f.endswith(".xrf") or f.endswith(".mst")
+        ]
+
+        for file in files:
+            origin_path = os.path.join(path, file)
+            desatination_path = os.path.join(WORK_ISIS_FILES, file)
+            copying_paths.append([origin_path, desatination_path])
+
+    for origin, destination in copying_paths:
+        logging.info("copying file from %s to %s." % (origin, destination))
+        shutil.copy(origin, destination)
+
+        if "title.mst" in destination:
+            kwargs["ti"].xcom_push("title_mst_path", destination)
+            kwargs["ti"].xcom_push(
+                "title_json_path", os.path.join(WORK_JSON_FILES, "title.json")
+            )
+
+        if "issue.mst" in destination:
+            kwargs["ti"].xcom_push("issue_mst_path", destination)
+            kwargs["ti"].xcom_push(
+                "issue_json_path", os.path.join(WORK_JSON_FILES, "issue.json")
+            )
+
+
 CREATE_FOLDER_TEMPLATES = """
     mkdir -p '{{ var.value.WORK_FOLDER_PATH }}/{{ run_id }}/isis' && \
     mkdir -p '{{ var.value.WORK_FOLDER_PATH }}/{{ run_id }}/json'"""
@@ -342,6 +389,12 @@ create_work_folders_task = BashOperator(
 )
 
 
+copy_mst_bases_to_work_folder_task = PythonOperator(
+    task_id="copy_mst_bases_to_work_folder_task",
+    python_callable=copy_mst_files_to_work_folder,
+    dag=dag,
+    provide_context=True,
+)
 
 work_on_journals = PythonOperator(
     task_id="work_on_journals",
