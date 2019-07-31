@@ -73,35 +73,6 @@ default_args = {
 dag = DAG("kernel-gate", default_args=default_args, schedule_interval=None)
 
 
-jython_command_template = """java -cp {{ params.classpath}} org.python.util.jython \
-    {{ params.isis2json }} -t 3 -p 'v' --inline {{ params.file }}
-"""
-
-read_title_mst = BashOperator(
-    task_id="read_title_mst",
-    bash_command=jython_command_template,
-    params={
-        "file": Variable.get("BASE_TITLE"),
-        "classpath": CLASSPATH,
-        "isis2json": ISIS2JSON_PATH,
-    },
-    dag=dag,
-    xcom_push=True,
-)
-
-read_issue_mst = BashOperator(
-    task_id="read_issue_mst",
-    bash_command=jython_command_template,
-    params={
-        "file": Variable.get("BASE_ISSUE"),
-        "classpath": CLASSPATH,
-        "isis2json": ISIS2JSON_PATH,
-    },
-    dag=dag,
-    xcom_push=True,
-)
-
-
 def journal_as_kernel(journal: Journal) -> dict:
     """Gera um dicionário com a estrutura esperada pela API do Kernel a
     partir da estrutura gerada pelo isis2json"""
@@ -384,6 +355,13 @@ CREATE_FOLDER_TEMPLATES = """
     mkdir -p '{{ var.value.WORK_FOLDER_PATH }}/{{ run_id }}/isis' && \
     mkdir -p '{{ var.value.WORK_FOLDER_PATH }}/{{ run_id }}/json'"""
 
+EXCTRACT_MST_FILE_TEMPLATE = """
+{% set input_path = task_instance.xcom_pull(task_ids='copy_mst_bases_to_work_folder_task', key=params.input_file_key) %}
+{% set output_path = task_instance.xcom_pull(task_ids='copy_mst_bases_to_work_folder_task', key=params.output_file_key) %}
+
+java -cp {{ params.classpath}} org.python.util.jython {{ params.isis2json }} -t 3 -p 'v' --inline {{ input_path }} -o {{ output_path }}"""
+
+
 create_work_folders_task = BashOperator(
     task_id="create_work_folders_task", bash_command=CREATE_FOLDER_TEMPLATES, dag=dag
 )
@@ -395,6 +373,33 @@ copy_mst_bases_to_work_folder_task = PythonOperator(
     dag=dag,
     provide_context=True,
 )
+
+
+extract_title_task = BashOperator(
+    task_id="extract_title_task",
+    bash_command=EXCTRACT_MST_FILE_TEMPLATE,
+    params={
+        "classpath": CLASSPATH,
+        "isis2json": ISIS2JSON_PATH,
+        "input_file_key": "title_mst_path",
+        "output_file_key": "title_json_path",
+    },
+    dag=dag,
+)
+
+
+extract_issue_task = BashOperator(
+    task_id="extract_issue_task",
+    bash_command=EXCTRACT_MST_FILE_TEMPLATE,
+    params={
+        "classpath": CLASSPATH,
+        "isis2json": ISIS2JSON_PATH,
+        "input_file_key": "issue_mst_path",
+        "output_file_key": "issue_json_path",
+    },
+    dag=dag,
+)
+
 
 work_on_journals = PythonOperator(
     task_id="work_on_journals",
@@ -411,6 +416,5 @@ work_on_issues = PythonOperator(
     provide_context=True,
 )
 
-read_title_mst >> read_issue_mst
-read_issue_mst >> work_on_journals
-work_on_journals >> work_on_issues
+create_work_folders_task >> copy_mst_bases_to_work_folder_task >> extract_title_task
+extract_title_task >> extract_issue_task >> work_on_journals >> work_on_issues
