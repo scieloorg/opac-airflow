@@ -268,13 +268,20 @@ def process_journals(**context):
     """Processa uma lista de journals carregados a partir do resultado
     de leitura da base MST"""
 
-    journals = context["ti"].xcom_pull(task_ids="read_title_mst")
+    title_json_path = context["ti"].xcom_pull(
+        task_ids="copy_mst_bases_to_work_folder_task", key="title_json_path"
+    )
+
+    with open(title_json_path, "r") as f:
+        journals = f.read()
+        logging.info("reading file from %s." % (title_json_path))
+
     journals = json.loads(journals)
     journals_as_kernel = [journal_as_kernel(Journal(journal)) for journal in journals]
 
     for journal in journals_as_kernel:
         _id = journal.pop("_id")
-        response = register_or_update(_id, journal, KERNEL_API_JOURNAL_ENDPOINT)
+        register_or_update(_id, journal, KERNEL_API_JOURNAL_ENDPOINT)
 
 
 def process_issues(**context):
@@ -295,7 +302,14 @@ def process_issues(**context):
 
         return issues
 
-    issues = context["ti"].xcom_pull(task_ids="read_issue_mst")
+    issue_json_path = context["ti"].xcom_pull(
+        task_ids="copy_mst_bases_to_work_folder_task", key="issue_json_path"
+    )
+
+    with open(issue_json_path, "r") as f:
+        issues = f.read()
+        logging.info("reading file from %s." % (issue_json_path))
+
     issues = json.loads(issues)
     issues = [Issue({"issue": data}) for data in issues]
     issues = filter_issues(issues)
@@ -303,7 +317,7 @@ def process_issues(**context):
 
     for issue in issues_as_kernel:
         _id = issue.pop("_id")
-        response = register_or_update(_id, issue, KERNEL_API_BUNDLES_ENDPOINT)
+        register_or_update(_id, issue, KERNEL_API_BUNDLES_ENDPOINT)
 
 
 def copy_mst_files_to_work_folder(**kwargs):
