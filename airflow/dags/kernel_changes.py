@@ -446,9 +446,6 @@ def register_issues(ds, **kwargs):
         except IndexError:
             return None
 
-    def _load_orphans():
-        return Variable.get("orphan_issues", default_var=[], deserialize_json=True)
-
     def _issue_order(issue_id):
         """A posição em relação aos demais fascículos do periódico.
         
@@ -458,7 +455,7 @@ def register_issues(ds, **kwargs):
         return known_issues.get(_journal_id(issue_id), []).index(issue_id)
 
     issues_to_get = itertools.chain(
-        _load_orphans(),
+        Variable.get("orphan_issues", default_var=[], deserialize_json=True),
         (get_id(task["id"]) for task in filter_changes(tasks, "bundles", "get")),
     )
     orphans, known_documents = try_register_issues(
