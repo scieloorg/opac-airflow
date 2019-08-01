@@ -2,6 +2,8 @@
 em uma REST-API que implementa a específicação do SciELO Kernel"""
 
 import os
+import shutil
+import logging
 import requests
 import json
 import http.client
@@ -22,22 +24,27 @@ Para o devido entendimento desta DAG pode-se ter como base a seguinte explicaç�
 Esta DAG possui tarefas que são iniciadas a partir de um TRIGGER externo. As fases
 de execução são às seguintes:
 
-1) Ler a base TITLE em formato MST
-1.1) Armazena output do isis2json na área de trabalho xcom
-
-2) Ler a base ISSUE em formato MST
-2.2) Armazena output do isis2json na área de trabalho xcom
-
-3) Envia os dados da base TITLE para a API do Kernel
-3.1) Itera entre os periódicos lidos da base TITLE
-3.2) Converte o periódico para o formato JSON aceito pelo Kernel
-3.3) Verifica se o Journal já existe na API Kernel
-3.3.1) Faz o diff do entre o payload gerado e os metadados vindos do Kernel
-3.3.2) Se houver diferenças faz-ze um PATCH para atualizar o registro
-3.4) Se o Journal não existir
-3.4.1) Remove as chaves nulas
-3.4.2) Faz-se um PUT para criar o registro
-3.5) Dispara o DAG subsequente.
+1) Cria as pastas temporárias de trabalho, sendo elas:
+    a) /airflow_home/{{ dag_run }}/isis
+    b) /airflow_home/{{ dag_run }}/json
+2) Faz uma cópia das bases MST:
+    a) A partir das variáveis `BASE_ISSUE_FOLDER_PATH` e `BASE_TITLE_FOLDER_PATH`
+    b) Retorna XCOM com os paths exatos de onde os arquivos MST estarão
+    c) Retorna XCOM com os paths exatos de onde os resultados da extração MST devem ser depositados  
+3) Ler a base TITLE em formato MST
+    a) Armazena output do isis2json no arquivo `/airflow_home/{{ dag_run }}/json/title.json`
+4) Ler a base ISSUE em formato MST
+    a) Armazena output do isis2json no arquivo `/airflow_home/{{ dag_run }}/json/issue.json`
+5) Envia os dados da base TITLE para a API do Kernel
+    a) Itera entre os periódicos lidos da base TITLE
+    b) Converte o periódico para o formato JSON aceito pelo Kernel
+    c) Verifica se o Journal já existe na API Kernel
+        I) Faz o diff do entre o payload gerado e os metadados vindos do Kernel
+        II) Se houver diferenças faz-ze um PATCH para atualizar o registro
+    d) Se o Journal não existir
+        I) Remove as chaves nulas
+        II) Faz-se um PUT para criar o registro
+6) Dispara o DAG subsequente.
 """
 
 BASE_PATH = os.path.dirname(os.path.dirname(__file__))
@@ -69,35 +76,6 @@ default_args = {
 }
 
 dag = DAG("kernel-gate", default_args=default_args, schedule_interval=None)
-
-
-jython_command_template = """java -cp {{ params.classpath}} org.python.util.jython \
-    {{ params.isis2json }} -t 3 -p 'v' --inline {{ params.file }}
-"""
-
-read_title_mst = BashOperator(
-    task_id="read_title_mst",
-    bash_command=jython_command_template,
-    params={
-        "file": Variable.get("BASE_TITLE"),
-        "classpath": CLASSPATH,
-        "isis2json": ISIS2JSON_PATH,
-    },
-    dag=dag,
-    xcom_push=True,
-)
-
-read_issue_mst = BashOperator(
-    task_id="read_issue_mst",
-    bash_command=jython_command_template,
-    params={
-        "file": Variable.get("BASE_ISSUE"),
-        "classpath": CLASSPATH,
-        "isis2json": ISIS2JSON_PATH,
-    },
-    dag=dag,
-    xcom_push=True,
-)
 
 
 def journal_as_kernel(journal: Journal) -> dict:
@@ -295,13 +273,20 @@ def process_journals(**context):
     """Processa uma lista de journals carregados a partir do resultado
     de leitura da base MST"""
 
-    journals = context["ti"].xcom_pull(task_ids="read_title_mst")
+    title_json_path = context["ti"].xcom_pull(
+        task_ids="copy_mst_bases_to_work_folder_task", key="title_json_path"
+    )
+
+    with open(title_json_path, "r") as f:
+        journals = f.read()
+        logging.info("reading file from %s." % (title_json_path))
+
     journals = json.loads(journals)
     journals_as_kernel = [journal_as_kernel(Journal(journal)) for journal in journals]
 
     for journal in journals_as_kernel:
         _id = journal.pop("_id")
-        response = register_or_update(_id, journal, KERNEL_API_JOURNAL_ENDPOINT)
+        register_or_update(_id, journal, KERNEL_API_JOURNAL_ENDPOINT)
 
 
 def process_issues(**context):
@@ -322,7 +307,14 @@ def process_issues(**context):
 
         return issues
 
-    issues = context["ti"].xcom_pull(task_ids="read_issue_mst")
+    issue_json_path = context["ti"].xcom_pull(
+        task_ids="copy_mst_bases_to_work_folder_task", key="issue_json_path"
+    )
+
+    with open(issue_json_path, "r") as f:
+        issues = f.read()
+        logging.info("reading file from %s." % (issue_json_path))
+
     issues = json.loads(issues)
     issues = [Issue({"issue": data}) for data in issues]
     issues = filter_issues(issues)
@@ -330,24 +322,118 @@ def process_issues(**context):
 
     for issue in issues_as_kernel:
         _id = issue.pop("_id")
-        response = register_or_update(_id, issue, KERNEL_API_BUNDLES_ENDPOINT)
+        register_or_update(_id, issue, KERNEL_API_BUNDLES_ENDPOINT)
 
 
-work_on_journals = PythonOperator(
-    task_id="work_on_journals",
+def copy_mst_files_to_work_folder(**kwargs):
+    """Copia as bases MST para a área de trabalho da execução corrente.
+    
+    O resultado desta função gera cópias das bases title e issue para paths correspondentes aos:
+    title: /airflow_home/work_folder_path/{{ run_id }}/isis/title.*
+    issue: /airflow_home/work_folder_path/{{ run_id }}/isis/issue.*
+    """
+
+    WORK_PATH = Variable.get("WORK_FOLDER_PATH")
+    CURRENT_EXECUTION_FOLDER = os.path.join(WORK_PATH, kwargs["run_id"])
+    WORK_ISIS_FILES = os.path.join(CURRENT_EXECUTION_FOLDER, "isis")
+    WORK_JSON_FILES = os.path.join(CURRENT_EXECUTION_FOLDER, "json")
+
+    BASE_TITLE_FOLDER_PATH = Variable.get("BASE_TITLE_FOLDER_PATH")
+    BASE_ISSUE_FOLDER_PATH = Variable.get("BASE_ISSUE_FOLDER_PATH")
+
+    copying_paths = []
+
+    for path in [BASE_TITLE_FOLDER_PATH, BASE_ISSUE_FOLDER_PATH]:
+        files = [
+            f for f in os.listdir(path) if f.endswith(".xrf") or f.endswith(".mst")
+        ]
+
+        for file in files:
+            origin_path = os.path.join(path, file)
+            desatination_path = os.path.join(WORK_ISIS_FILES, file)
+            copying_paths.append([origin_path, desatination_path])
+
+    for origin, destination in copying_paths:
+        logging.info("copying file from %s to %s." % (origin, destination))
+        shutil.copy(origin, destination)
+
+        if "title.mst" in destination:
+            kwargs["ti"].xcom_push("title_mst_path", destination)
+            kwargs["ti"].xcom_push(
+                "title_json_path", os.path.join(WORK_JSON_FILES, "title.json")
+            )
+
+        if "issue.mst" in destination:
+            kwargs["ti"].xcom_push("issue_mst_path", destination)
+            kwargs["ti"].xcom_push(
+                "issue_json_path", os.path.join(WORK_JSON_FILES, "issue.json")
+            )
+
+
+CREATE_FOLDER_TEMPLATES = """
+    mkdir -p '{{ var.value.WORK_FOLDER_PATH }}/{{ run_id }}/isis' && \
+    mkdir -p '{{ var.value.WORK_FOLDER_PATH }}/{{ run_id }}/json'"""
+
+EXCTRACT_MST_FILE_TEMPLATE = """
+{% set input_path = task_instance.xcom_pull(task_ids='copy_mst_bases_to_work_folder_task', key=params.input_file_key) %}
+{% set output_path = task_instance.xcom_pull(task_ids='copy_mst_bases_to_work_folder_task', key=params.output_file_key) %}
+
+java -cp {{ params.classpath}} org.python.util.jython {{ params.isis2json }} -t 3 -p 'v' --inline {{ input_path }} -o {{ output_path }}"""
+
+
+create_work_folders_task = BashOperator(
+    task_id="create_work_folders_task", bash_command=CREATE_FOLDER_TEMPLATES, dag=dag
+)
+
+
+copy_mst_bases_to_work_folder_task = PythonOperator(
+    task_id="copy_mst_bases_to_work_folder_task",
+    python_callable=copy_mst_files_to_work_folder,
+    dag=dag,
+    provide_context=True,
+)
+
+
+extract_title_task = BashOperator(
+    task_id="extract_title_task",
+    bash_command=EXCTRACT_MST_FILE_TEMPLATE,
+    params={
+        "classpath": CLASSPATH,
+        "isis2json": ISIS2JSON_PATH,
+        "input_file_key": "title_mst_path",
+        "output_file_key": "title_json_path",
+    },
+    dag=dag,
+)
+
+
+extract_issue_task = BashOperator(
+    task_id="extract_issue_task",
+    bash_command=EXCTRACT_MST_FILE_TEMPLATE,
+    params={
+        "classpath": CLASSPATH,
+        "isis2json": ISIS2JSON_PATH,
+        "input_file_key": "issue_mst_path",
+        "output_file_key": "issue_json_path",
+    },
+    dag=dag,
+)
+
+
+process_journals_task = PythonOperator(
+    task_id="process_journals_task",
     python_callable=process_journals,
     dag=dag,
     provide_context=True,
     params={"process_journals": True},
 )
 
-work_on_issues = PythonOperator(
-    task_id="work_on_issues",
+process_issues_task = PythonOperator(
+    task_id="process_issues_task",
     python_callable=process_issues,
     dag=dag,
     provide_context=True,
 )
 
-read_title_mst >> read_issue_mst
-read_issue_mst >> work_on_journals
-work_on_journals >> work_on_issues
+create_work_folders_task >> copy_mst_bases_to_work_folder_task >> extract_title_task
+extract_title_task >> extract_issue_task >> process_journals_task >> process_issues_task
