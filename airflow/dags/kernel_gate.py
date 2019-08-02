@@ -14,6 +14,7 @@ from airflow.models import Variable
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.hooks.http_hook import HttpHook
+from airflow.exceptions import AirflowException
 from xylose.scielodocument import Journal, Issue
 from datetime import datetime, timedelta
 from deepdiff import DeepDiff
@@ -63,6 +64,7 @@ ISIS2JSON_PATH = os.path.join(BASE_PATH, "utils/isis2json/isis2json.py")
 
 KERNEL_API_JOURNAL_ENDPOINT = "/journals/"
 KERNEL_API_BUNDLES_ENDPOINT = "/bundles/"
+KERNEL_API_JOURNAL_BUNDLES_ENDPOINT = "/journals/{journal_id}/issues"
 
 default_args = {
     "owner": "airflow",
@@ -391,6 +393,51 @@ def mount_journals_issues_link(issues: List[dict]) -> dict:
     return journal_issues
 
 
+def update_journals_and_issues_link(journal_issues: dict):
+    """Atualiza o relacionamento entre Journal e Issues.
+
+    Para cada Journal é verificado se há mudanças entre a lista de Issues
+    obtida via API e a lista de issues recém montada durante o espelhamento. Caso
+    alguma mudança seja detectada o Journal será atualizado com a nova lista de
+    issues.
+
+    :param journal_issues: Dicionário contendo journals e issues. As chaves do
+    dicionário serão os identificadores dos journals e os valores serão listas contendo
+    os indificadores das issues."""
+
+    for journal_id, issues in journal_issues.items():
+        try:
+            api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
+            response = api_hook.run(endpoint="{}{}".format(KERNEL_API_JOURNAL_ENDPOINT, journal_id))
+            journal_items = response.json()["items"]
+
+            if DeepDiff(journal_items, issues):
+                BUNDLE_URL = KERNEL_API_JOURNAL_BUNDLES_ENDPOINT.format(
+                    journal_id=journal_id
+                )
+                api_hook = HttpHook(http_conn_id="kernel_conn", method="PUT")
+                response = api_hook.run(endpoint=BUNDLE_URL, data=json.dumps(issues))
+                logging.info("updating bundles of journal %s" % journal_id)
+
+        except (AirflowException):
+            logging.warning("journal %s cannot be found" % journal_id)
+
+
+def link_journals_and_issues(**kwargs):
+    """Atualiza o relacionamento entre Journal e Issue."""
+
+    issue_json_path = kwargs["ti"].xcom_pull(
+        task_ids="copy_mst_bases_to_work_folder_task", key="issue_json_path"
+    )
+
+    with open(issue_json_path) as f:
+        issues = json.load(f)
+        logging.info("reading file from %s." % (issue_json_path))
+
+    journal_issues = mount_journals_issues_link(issues)
+    update_journals_and_issues_link(journal_issues)
+
+
 CREATE_FOLDER_TEMPLATES = """
     mkdir -p '{{ var.value.WORK_FOLDER_PATH }}/{{ run_id }}/isis' && \
     mkdir -p '{{ var.value.WORK_FOLDER_PATH }}/{{ run_id }}/json'"""
@@ -456,5 +503,15 @@ process_issues_task = PythonOperator(
     provide_context=True,
 )
 
+
+link_journals_and_issues_task = PythonOperator(
+    task_id="link_journals_and_issues_task",
+    python_callable=link_journals_and_issues,
+    dag=dag,
+    provide_context=True,
+)
+
+
 create_work_folders_task >> copy_mst_bases_to_work_folder_task >> extract_title_task
 extract_title_task >> extract_issue_task >> process_journals_task >> process_issues_task
+process_issues_task >> link_journals_and_issues_task
