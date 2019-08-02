@@ -1,0 +1,15 @@
+sudo: required
+
+language: python
+
+services:
+- docker
+
+before_install:
+- pip install docker-compose
+- docker --version
+
+script:
+- make travis_compose_build
+- make travis_compose_up
+- make travis_compose_make_test
