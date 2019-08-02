@@ -366,6 +366,31 @@ def copy_mst_files_to_work_folder(**kwargs):
             )
 
 
+def mount_journals_issues_link(issues: List[dict]) -> dict:
+    """Monta a relação entre os journals e suas issues.
+
+    Monta um dicionário na estrutura {"journal_id": ["issue_id"]}. Issues do
+    tipo ahead ou pressrelease não são consideradas. É utilizado o
+    campo v35 (issue) para obter o `journal_id` ao qual a issue deve ser relacionada.
+
+    :param issues: Lista contendo issues extraídas da base MST"""
+
+    journal_issues = {}
+    issues = [Issue({"issue": data}) for data in issues]
+    issues = filter_issues(issues)
+
+    for issue in issues:
+        issue_id = issue_as_kernel(issue).pop("_id")
+        issue_position = int(issue.data["issue"]["v36"][0]["_"])
+        journal_id = issue.data.get("issue").get("v35")[0]["_"]
+        journal_issues.setdefault(journal_id, [])
+
+        if not issue_id in journal_issues[journal_id]:
+            journal_issues[journal_id].insert(issue_position, issue_id)
+
+    return journal_issues
+
+
 CREATE_FOLDER_TEMPLATES = """
     mkdir -p '{{ var.value.WORK_FOLDER_PATH }}/{{ run_id }}/isis' && \
     mkdir -p '{{ var.value.WORK_FOLDER_PATH }}/{{ run_id }}/json'"""
