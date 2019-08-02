@@ -101,3 +101,17 @@ compose_rm_db:  ## Remove database
 
 compose_initdb:  ## Initialize airflow database
 	@docker-compose -f $(COMPOSE_FILE_PROD) run --rm opac-airflow airflow initdb
+
+#####################################################
+## atalhos docker-compose build e testes no travis ##
+#####################################################
+
+travis_compose_build:
+	@echo "[Travis Build] compose file: " $(COMPOSE_FILE_PROD)
+	@docker-compose -f $(COMPOSE_FILE_PROD) build
+
+travis_compose_up:
+	@docker-compose -f $(COMPOSE_FILE_PROD) up -d
+
+travis_compose_make_test:
+	@docker-compose -f $(COMPOSE_FILE_PROD) exec opac-airflow python -m unittest -v
