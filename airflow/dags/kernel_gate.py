@@ -83,12 +83,7 @@ def journal_as_kernel(journal: Journal) -> dict:
     partir da estrutura gerada pelo isis2json"""
 
     _payload = {}
-    _id = journal.any_issn()
-
-    if not _id:
-        _id = journal.scielo_issn
-
-    _payload["_id"] = _id
+    _payload["_id"] = journal.scielo_issn
 
     if journal.mission:
         _payload["mission"] = [
