@@ -284,23 +284,24 @@ def process_journals(**context):
         register_or_update(_id, journal, KERNEL_API_JOURNAL_ENDPOINT)
 
 
+def filter_issues(issues: List[Issue]) -> List[Issue]:
+    """Filtra as issues em formato xylose sempre removendo
+    os press releases e ahead of print"""
+
+    filters = [
+        lambda issue: not issue.type == "pressrelease",
+        lambda issue: not issue.type == "ahead",
+    ]
+
+    for f in filters:
+        issues = list(filter(f, issues))
+
+    return issues
+
+
 def process_issues(**context):
     """Processa uma lista de issues carregadas a partir do resultado
     de leitura da base MST"""
-
-    def filter_issues(issues: List[Issue]) -> List[Issue]:
-        """Filtra as issues em formato xylose sempre removendo
-        os press releases e ahead of print"""
-
-        filters = [
-            lambda issue: not issue.type == "pressrelease",
-            lambda issue: not issue.type == "ahead",
-        ]
-
-        for f in filters:
-            issues = list(filter(f, issues))
-
-        return issues
 
     issue_json_path = context["ti"].xcom_pull(
         task_ids="copy_mst_bases_to_work_folder_task", key="issue_json_path"
