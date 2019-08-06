@@ -14,6 +14,7 @@ from airflow.models import Variable
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.hooks.http_hook import HttpHook
+from airflow.exceptions import AirflowException
 from xylose.scielodocument import Journal, Issue
 from datetime import datetime, timedelta
 from deepdiff import DeepDiff
@@ -63,6 +64,7 @@ ISIS2JSON_PATH = os.path.join(BASE_PATH, "utils/isis2json/isis2json.py")
 
 KERNEL_API_JOURNAL_ENDPOINT = "/journals/"
 KERNEL_API_BUNDLES_ENDPOINT = "/bundles/"
+KERNEL_API_JOURNAL_BUNDLES_ENDPOINT = "/journals/{journal_id}/issues"
 
 default_args = {
     "owner": "airflow",
@@ -83,12 +85,7 @@ def journal_as_kernel(journal: Journal) -> dict:
     partir da estrutura gerada pelo isis2json"""
 
     _payload = {}
-    _id = journal.any_issn()
-
-    if not _id:
-        _id = journal.scielo_issn
-
-    _payload["_id"] = _id
+    _payload["_id"] = journal.scielo_issn
 
     if journal.mission:
         _payload["mission"] = [
@@ -289,23 +286,24 @@ def process_journals(**context):
         register_or_update(_id, journal, KERNEL_API_JOURNAL_ENDPOINT)
 
 
+def filter_issues(issues: List[Issue]) -> List[Issue]:
+    """Filtra as issues em formato xylose sempre removendo
+    os press releases e ahead of print"""
+
+    filters = [
+        lambda issue: not issue.type == "pressrelease",
+        lambda issue: not issue.type == "ahead",
+    ]
+
+    for f in filters:
+        issues = list(filter(f, issues))
+
+    return issues
+
+
 def process_issues(**context):
     """Processa uma lista de issues carregadas a partir do resultado
     de leitura da base MST"""
-
-    def filter_issues(issues: List[Issue]) -> List[Issue]:
-        """Filtra as issues em formato xylose sempre removendo
-        os press releases e ahead of print"""
-
-        filters = [
-            lambda issue: not issue.type == "pressrelease",
-            lambda issue: not issue.type == "ahead",
-        ]
-
-        for f in filters:
-            issues = list(filter(f, issues))
-
-        return issues
 
     issue_json_path = context["ti"].xcom_pull(
         task_ids="copy_mst_bases_to_work_folder_task", key="issue_json_path"
@@ -368,6 +366,76 @@ def copy_mst_files_to_work_folder(**kwargs):
             kwargs["ti"].xcom_push(
                 "issue_json_path", os.path.join(WORK_JSON_FILES, "issue.json")
             )
+
+
+def mount_journals_issues_link(issues: List[dict]) -> dict:
+    """Monta a relação entre os journals e suas issues.
+
+    Monta um dicionário na estrutura {"journal_id": ["issue_id"]}. Issues do
+    tipo ahead ou pressrelease não são consideradas. É utilizado o
+    campo v35 (issue) para obter o `journal_id` ao qual a issue deve ser relacionada.
+
+    :param issues: Lista contendo issues extraídas da base MST"""
+
+    journal_issues = {}
+    issues = [Issue({"issue": data}) for data in issues]
+    issues = filter_issues(issues)
+
+    for issue in issues:
+        issue_id = issue_as_kernel(issue).pop("_id")
+        issue_position = int(issue.data["issue"]["v36"][0]["_"])
+        journal_id = issue.data.get("issue").get("v35")[0]["_"]
+        journal_issues.setdefault(journal_id, [])
+
+        if not issue_id in journal_issues[journal_id]:
+            journal_issues[journal_id].insert(issue_position, issue_id)
+
+    return journal_issues
+
+
+def update_journals_and_issues_link(journal_issues: dict):
+    """Atualiza o relacionamento entre Journal e Issues.
+
+    Para cada Journal é verificado se há mudanças entre a lista de Issues
+    obtida via API e a lista de issues recém montada durante o espelhamento. Caso
+    alguma mudança seja detectada o Journal será atualizado com a nova lista de
+    issues.
+
+    :param journal_issues: Dicionário contendo journals e issues. As chaves do
+    dicionário serão os identificadores dos journals e os valores serão listas contendo
+    os indificadores das issues."""
+
+    for journal_id, issues in journal_issues.items():
+        try:
+            api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
+            response = api_hook.run(endpoint="{}{}".format(KERNEL_API_JOURNAL_ENDPOINT, journal_id))
+            journal_items = response.json()["items"]
+
+            if DeepDiff(journal_items, issues):
+                BUNDLE_URL = KERNEL_API_JOURNAL_BUNDLES_ENDPOINT.format(
+                    journal_id=journal_id
+                )
+                api_hook = HttpHook(http_conn_id="kernel_conn", method="PUT")
+                response = api_hook.run(endpoint=BUNDLE_URL, data=json.dumps(issues))
+                logging.info("updating bundles of journal %s" % journal_id)
+
+        except (AirflowException):
+            logging.warning("journal %s cannot be found" % journal_id)
+
+
+def link_journals_and_issues(**kwargs):
+    """Atualiza o relacionamento entre Journal e Issue."""
+
+    issue_json_path = kwargs["ti"].xcom_pull(
+        task_ids="copy_mst_bases_to_work_folder_task", key="issue_json_path"
+    )
+
+    with open(issue_json_path) as f:
+        issues = json.load(f)
+        logging.info("reading file from %s." % (issue_json_path))
+
+    journal_issues = mount_journals_issues_link(issues)
+    update_journals_and_issues_link(journal_issues)
 
 
 CREATE_FOLDER_TEMPLATES = """
@@ -435,5 +503,15 @@ process_issues_task = PythonOperator(
     provide_context=True,
 )
 
+
+link_journals_and_issues_task = PythonOperator(
+    task_id="link_journals_and_issues_task",
+    python_callable=link_journals_and_issues,
+    dag=dag,
+    provide_context=True,
+)
+
+
 create_work_folders_task >> copy_mst_bases_to_work_folder_task >> extract_title_task
 extract_title_task >> extract_issue_task >> process_journals_task >> process_issues_task
+process_issues_task >> link_journals_and_issues_task
