@@ -3,18 +3,18 @@ from unittest.mock import patch, MagicMock
 
 from airflow import DAG
 
-from package_process import list_documents, delete_documents
+from sync_documents_to_kernel import list_documents, delete_documents
 
 
 class TestListDocuments(TestCase):
-    @patch("package_process.docs_operations.list_documents")
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.list_documents")
     def test_list_document_gets_sps_package_from_dag_run_conf(self, mk_list_documents):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
         list_documents(**kwargs)
         mk_dag_run.conf.get.assert_called_once_with("sps_package")
 
-    @patch("package_process.docs_operations.list_documents")
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.list_documents")
     def test_list_document_calls_list_documents_operation(self, mk_list_documents):
         mk_dag_run = MagicMock()
         mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
@@ -22,7 +22,7 @@ class TestListDocuments(TestCase):
         list_documents(**kwargs)
         mk_list_documents.assert_called_once_with("path_to_sps_package/package.zip")
 
-    @patch("package_process.docs_operations.list_documents")
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.list_documents")
     def test_list_document_pushes_xmls_from_packages(self, mk_list_documents):
         expected = [
             "1806-907X-rba-53-01-1-8.xml",
@@ -38,7 +38,7 @@ class TestListDocuments(TestCase):
             key="xmls_filenames", value=expected
         )
 
-    @patch("package_process.docs_operations.list_documents")
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.list_documents")
     def test_list_document_doesnt_call_ti_xcom_push_if_no_xml_files(
         self, mk_list_documents
     ):
@@ -51,7 +51,7 @@ class TestListDocuments(TestCase):
 
 
 class TestDeleteDocuments(TestCase):
-    @patch("package_process.docs_operations.delete_documents")
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
     def test_delete_documents_gets_sps_package_from_dag_run_conf(
         self, mk_delete_documents
     ):
@@ -60,7 +60,7 @@ class TestDeleteDocuments(TestCase):
         delete_documents(**kwargs)
         mk_dag_run.conf.get.assert_called_once_with("sps_package")
 
-    @patch("package_process.docs_operations.delete_documents")
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
     def test_delete_documents_gets_ti_xcom_info(self, mk_delete_documents):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
@@ -69,7 +69,7 @@ class TestDeleteDocuments(TestCase):
             key="xmls_filenames", task_ids="list_docs_task_id"
         )
 
-    @patch("package_process.docs_operations.delete_documents")
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
     def test_delete_documents_empty_ti_xcom_info(self, mk_delete_documents):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
@@ -78,7 +78,7 @@ class TestDeleteDocuments(TestCase):
         mk_delete_documents.assert_not_called()
         kwargs["ti"].xcom_push.assert_not_called()
 
-    @patch("package_process.docs_operations.delete_documents")
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
     def test_delete_documents_calls_delete_documents_operation(
         self, mk_delete_documents
     ):
@@ -96,7 +96,7 @@ class TestDeleteDocuments(TestCase):
             "path_to_sps_package/package.zip", xmls_filenames
         )
 
-    @patch("package_process.docs_operations.delete_documents")
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
     def test_delete_documents_pushes_xmls_to_preserve(self, mk_delete_documents):
         xmls_filenames = [
             "1806-907X-rba-53-01-1-8.xml",

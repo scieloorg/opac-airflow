@@ -23,7 +23,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.utils import timezone
 from airflow.api.common.experimental.trigger_dag import trigger_dag
 
-from operations import pre_packages_operations
+from operations import pre_sync_documents_to_kernel_operations
 
 
 Logger = logging.getLogger(__name__)
@@ -36,13 +36,13 @@ default_args = {
 }
 
 dag = DAG(
-    dag_id="pre_packages_process", default_args=default_args, schedule_interval=None
+    dag_id="pre_sync_documents_to_kernel", default_args=default_args, schedule_interval=None
 )
 
 
 def get_sps_packages(conf, **kwargs):
     Logger.debug("create_all_subdags IN")
-    sps_packages = pre_packages_operations.get_sps_packages(
+    sps_packages = pre_sync_documents_to_kernel_operations.get_sps_packages(
         Variable.get("SCILISTA_FILE_PATH"),
         Variable.get("XC_SPS_PACKAGES_DIR"),
         Variable.get("PROC_SPS_PACKAGES_DIR"),
@@ -51,7 +51,7 @@ def get_sps_packages(conf, **kwargs):
         Logger.info("Triggering an external dag with package %s" % sps_package)
         now = timezone.utcnow()
         trigger_dag(
-            dag_id="package_process",
+            dag_id="sync_documents_to_kernel",
             run_id="manual__%s_%s" % (os.path.basename(sps_package), now.isoformat()),
             execution_date=now,
             replace_microseconds=False,

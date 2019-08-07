@@ -3,20 +3,20 @@ from unittest.mock import patch, MagicMock, ANY
 
 from airflow import DAG
 
-from pre_packages_process import get_sps_packages
+from pre_sync_documents_to_kernel import get_sps_packages
 
 
 class TestGetSPSPackages(TestCase):
-    @patch("pre_packages_process.Variable.get")
+    @patch("pre_sync_documents_to_kernel.Variable.get")
     def test_get_sps_packages_raises_error_if_no_xc_dir_from_variable(
         self, mk_variable_get
     ):
         mk_variable_get.side_effect = KeyError
         self.assertRaises(KeyError, get_sps_packages, None)
 
-    @patch("pre_packages_process.pre_packages_operations.get_sps_packages")
-    @patch("pre_packages_process.Variable.get")
-    @patch("pre_packages_process.trigger_dag")
+    @patch("pre_sync_documents_to_kernel.pre_sync_documents_to_kernel_operations.get_sps_packages")
+    @patch("pre_sync_documents_to_kernel.Variable.get")
+    @patch("pre_sync_documents_to_kernel.trigger_dag")
     def test_get_sps_packages_calls_get_sps_packages_operation(
         self, mk_trigger_dag, mk_variable_get, mk_get_sps_packages
     ):
@@ -32,9 +32,9 @@ class TestGetSPSPackages(TestCase):
             "dir/path/scilista.lst", "dir/source", "dir/destination"
         )
 
-    @patch("pre_packages_process.pre_packages_operations.get_sps_packages")
-    @patch("pre_packages_process.Variable.get")
-    @patch("pre_packages_process.trigger_dag")
+    @patch("pre_sync_documents_to_kernel.pre_sync_documents_to_kernel_operations.get_sps_packages")
+    @patch("pre_sync_documents_to_kernel.Variable.get")
+    @patch("pre_sync_documents_to_kernel.trigger_dag")
     def test_get_sps_packages_calls_trigger_dag_for_each_package(
         self, mk_trigger_dag, mk_variable_get, mk_get_sps_packages
     ):
@@ -50,7 +50,7 @@ class TestGetSPSPackages(TestCase):
         for mk_sps_package in mk_sps_packages:
             with self.subTest(mk_sps_package=mk_sps_package):
                 mk_trigger_dag.assert_any_call(
-                    dag_id="package_process",
+                    dag_id="sync_documents_to_kernel",
                     run_id=ANY,
                     execution_date=ANY,
                     replace_microseconds=False,

@@ -9,7 +9,7 @@ import requests
 from airflow import DAG
 from lxml import etree
 
-from operations.docs_operations import (
+from operations.sync_documents_to_kernel_operations import (
     list_documents,
     documents_to_delete,
     delete_documents,
@@ -30,17 +30,17 @@ class TestListDocuments(TestCase):
     def setUp(self):
         self.sps_package = "dir/destination/abc_v50.zip"
 
-    @patch("operations.docs_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_list_document_opens_all_zips(self, MockZipFile):
         list_documents(self.sps_package)
         MockZipFile.assert_called_once_with(self.sps_package)
 
-    @patch("operations.docs_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_list_document_opens_all_zips(self, MockZipFile):
         MockZipFile.side_effect = FileNotFoundError
         self.assertRaises(FileNotFoundError, list_documents, self.sps_package)
 
-    @patch("operations.docs_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_list_document_reads_all_xmls_from_zip(self, MockZipFile):
         sps_package_file_lists = [
             "0123-4567-abc-50-1-8.xml",
@@ -58,7 +58,7 @@ class TestListDocuments(TestCase):
             result, ["0123-4567-abc-50-1-8.xml", "0123-4567-abc-50-9-18.xml"]
         )
 
-    @patch("operations.docs_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_list_document_empty_list_if_no_xml_in_zip(self, MockZipFile):
         sps_package_file_lists = [
             "v53n1a01.pdf",
@@ -74,12 +74,12 @@ class TestListDocuments(TestCase):
 
 
 class TestDocumentsToDelete(TestCase):
-    @patch("operations.docs_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_documents_to_delete_opens_zip(self, MockZipFile):
         documents_to_delete("dir/destination/abc_v50.zip", [])
         MockZipFile.assert_called_once_with("dir/destination/abc_v50.zip")
 
-    @patch("operations.docs_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_documents_to_delete_reads_each_xml_from_zip(self, MockZipFile):
         sps_xml_files = ["0123-4567-abc-50-1-8.xml", "0123-4567-abc-50-9-18.xml"]
         MockZipFile.return_value.__enter__.return_value.read.return_value = b""
@@ -91,7 +91,7 @@ class TestDocumentsToDelete(TestCase):
                         sps_xml_file
                     )
 
-    @patch("operations.docs_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_documents_to_delete_returns_empty_list_if_no_docs_to_delete(
         self, MockZipFile
     ):
@@ -103,8 +103,8 @@ class TestDocumentsToDelete(TestCase):
         )
         self.assertEqual(result, ([], []))
 
-    @patch("operations.docs_operations.ZipFile")
-    @patch("operations.docs_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
     def test_documents_to_delete_logs_error_if_no_scielo_id_in_xml(
         self, MockLogger, MockZipFile
     ):
@@ -121,7 +121,7 @@ class TestDocumentsToDelete(TestCase):
             "missing element in XML"
         )
 
-    @patch("operations.docs_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_documents_to_delete_returns_documents_id_to_delete_and_xmls_to_delete(
         self, MockZipFile
     ):
@@ -153,8 +153,8 @@ class TestDeleteDocuments(TestCase):
             ],
         }
 
-    @patch("operations.docs_operations.hooks")
-    @patch("operations.docs_operations.documents_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.hooks")
+    @patch("operations.sync_documents_to_kernel_operations.documents_to_delete")
     def test_delete_documents_calls_documents_to_delete(
         self, mk_documents_to_delete, mk_hooks
     ):
@@ -164,9 +164,9 @@ class TestDeleteDocuments(TestCase):
             self.kwargs["sps_package"], self.kwargs["xmls_filenames"]
         )
 
-    @patch("operations.docs_operations.hooks")
-    @patch("operations.docs_operations.Logger")
-    @patch("operations.docs_operations.documents_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.hooks")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.documents_to_delete")
     def test_delete_documents_calls_kernel_connect_with_docs_to_delete(
         self, mk_documents_to_delete, MockLogger, mk_hooks
     ):
@@ -195,9 +195,9 @@ class TestDeleteDocuments(TestCase):
                     % (doc_to_delete, http.client.NO_CONTENT)
                 )
 
-    @patch("operations.docs_operations.hooks")
-    @patch("operations.docs_operations.Logger")
-    @patch("operations.docs_operations.documents_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.hooks")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.documents_to_delete")
     def test_delete_documents_logs_error_if_kernel_connect_error(
         self, mk_documents_to_delete, MockLogger, mk_hooks
     ):
@@ -214,9 +214,9 @@ class TestDeleteDocuments(TestCase):
             "404 Client Error: Not Found"
         )
 
-    @patch("operations.docs_operations.hooks")
-    @patch("operations.docs_operations.Logger")
-    @patch("operations.docs_operations.documents_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.hooks")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.documents_to_delete")
     def test_delete_documents_returns_xmls_to_preserve(
         self, mk_documents_to_delete, MockLogger, mk_hooks
     ):
