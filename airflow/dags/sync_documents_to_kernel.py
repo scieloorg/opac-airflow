@@ -25,7 +25,7 @@ from datetime import datetime
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 
-from operations import docs_operations
+from operations import sync_documents_to_kernel_operations
 
 
 Logger = logging.getLogger(__name__)
@@ -36,12 +36,12 @@ default_args = {
     "start_date": datetime(2019, 7, 22),
 }
 
-dag = DAG(dag_id="package_process", default_args=default_args, schedule_interval=None)
+dag = DAG(dag_id="sync_documents_to_kernel", default_args=default_args, schedule_interval=None)
 
 
 def list_documents(dag_run, **kwargs):
     _sps_package = dag_run.conf.get("sps_package")
-    _xmls_filenames = docs_operations.list_documents(_sps_package)
+    _xmls_filenames = sync_documents_to_kernel_operations.list_documents(_sps_package)
     if _xmls_filenames:
         kwargs["ti"].xcom_push(key="xmls_filenames", value=_xmls_filenames)
 
@@ -52,7 +52,7 @@ def delete_documents(dag_run, **kwargs):
         key="xmls_filenames", task_ids="list_docs_task_id"
     )
     if _xmls_filenames:
-        _xmls_to_preserve = docs_operations.delete_documents(
+        _xmls_to_preserve = sync_documents_to_kernel_operations.delete_documents(
             _sps_package, _xmls_filenames
         )
         if _xmls_to_preserve:
@@ -64,7 +64,7 @@ def register_update_documents(dag_run, **kwargs):
     _xmls_to_preserve = kwargs["ti"].xcom_pull(
         key="xmls_to_preserve", task_ids="delete_docs_task_id"
     )
-    _documents = docs_operations.register_update_documents(
+    _documents = sync_documents_to_kernel_operations.register_update_documents(
         _sps_package, _xmls_to_preserve
     )
     if _documents:
