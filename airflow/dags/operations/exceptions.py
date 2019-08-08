@@ -1,0 +1,6 @@
+class PutDocInObjectStoreException(Exception):
+    ...
+
+
+class RegisterUpdateDocIntoKernelException(Exception):
+    ...
