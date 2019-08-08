@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir numpy==1.16.2 \
     && pip install --no-cache-dir pandas==0.24.1 \
     && pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir apache-airflow==01.10.2 \
+    && pip install --no-cache-dir apache-airflow[s3]==01.10.2 \
     && pip install --no-cache-dir -e git+https://git@github.com/scieloorg/opac_schema@v2.52#egg=opac_schema
 
 RUN pip install --no-cache-dir xylose==1.35.1 \

@@ -8,6 +8,18 @@ import requests
 from lxml import etree
 
 import common.hooks as hooks
+from operations.exceptions import (
+    PutDocInObjectStoreException,
+    RegisterUpdateDocIntoKernelException,
+)
+from operations.docs_utils import (
+    read_file_from_zip,
+    register_update_doc_into_kernel,
+    get_xml_data,
+    put_object_in_object_store,
+    put_assets_and_pdfs_in_object_store,
+    put_xml_into_object_store,
+)
 
 Logger = logging.getLogger(__name__)
 
@@ -90,9 +102,36 @@ def register_update_documents(sps_package, xmls_to_preserve):
     """
     Registra/atualiza documentos informados e seus respectivos ativos digitais e
     renditions no Minio e no Kernel.
-
-    list docs_to_preserve: lista de XMLs para manter no Kernel (Registrar ou atualizar)
+     list docs_to_preserve: lista de XMLs para manter no Kernel (Registrar ou atualizar)
     """
     Logger.debug("register_update_documents IN")
-    Logger.info("sps_package: %s xmls_to_preserve: %s", sps_package, xmls_to_preserve)
+    with ZipFile(sps_package) as zipfile:
+        for i, xml_filename in enumerate(xmls_to_preserve):
+            Logger.info(
+                'Reading XML file "%s" from ZIP file "%s" [%s/%s]',
+                xml_filename,
+                sps_package,
+                i,
+                len(xmls_to_preserve),
+            )
+            try:
+                xml_data = put_xml_into_object_store(zipfile, xml_filename)
+            except PutDocInObjectStoreException as exc:
+                Logger.info(
+                    'Could not put document "%s" in object store: %s',
+                    xml_filename,
+                    str(exc),
+                )
+            else:
+                put_assets_and_pdfs_in_object_store(zipfile, xml_data)
+                try:
+                    register_update_doc_into_kernel(xml_data)
+
+                except RegisterUpdateDocIntoKernelException as exc:
+                    Logger.info(
+                        'Could not register or update document "%s" in Kernel: %s',
+                        xml_filename,
+                        str(exc),
+                    )
+
     Logger.debug("register_update_documents OUT")
