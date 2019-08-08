@@ -198,7 +198,6 @@ class SPS_Package:
     @property
     def elements_which_has_xlink_href(self):
         paths = [
-            ".//ext-link[@xlink:href]",
             ".//graphic[@xlink:href]",
             ".//inline-graphic[@xlink:href]",
             ".//inline-supplementary-material[@xlink:href]",

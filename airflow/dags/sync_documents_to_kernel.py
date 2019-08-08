@@ -64,11 +64,12 @@ def register_update_documents(dag_run, **kwargs):
     _xmls_to_preserve = kwargs["ti"].xcom_pull(
         key="xmls_to_preserve", task_ids="delete_docs_task_id"
     )
-    _documents = sync_documents_to_kernel_operations.register_update_documents(
-        _sps_package, _xmls_to_preserve
-    )
-    if _documents:
-        kwargs["ti"].xcom_push(key="documents", value=_documents)
+    if _xmls_to_preserve:
+        _documents = sync_documents_to_kernel_operations.register_update_documents(
+            _sps_package, _xmls_to_preserve
+        )
+        if _documents:
+            kwargs["ti"].xcom_push(key="documents", value=_documents)
 
 
 list_documents_task = PythonOperator(
