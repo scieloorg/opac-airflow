@@ -1,4 +1,4 @@
-class PutDocInObjectStoreException(Exception):
+class PutXMLInObjectStoreException(Exception):
     ...
 
 

@@ -6,7 +6,7 @@ from lxml import etree
 
 import common.hooks as hooks
 from operations.exceptions import (
-    PutDocInObjectStoreException,
+    PutXMLInObjectStoreException,
     RegisterUpdateDocIntoKernelException,
 )
 from common.sps_package import SPS_Package
@@ -18,7 +18,7 @@ def read_file_from_zip(zipfile, filename):
     try:
         return zipfile.read(filename)
     except KeyError as exc:
-        raise PutDocInObjectStoreException(
+        raise PutXMLInObjectStoreException(
             'Could not read file "{}" from zipfile "{}": {}'.format(
                 filename, zipfile, str(exc)
             )
@@ -67,7 +67,7 @@ def get_xml_data(xml_content, xml_package_name):
     try:
         metadata = SPS_Package(etree.XML(xml_content, parser), xml_package_name)
     except TypeError as exc:
-        raise PutDocInObjectStoreException(
+        raise PutXMLInObjectStoreException(
             'Could not get xml data from "{}" : {}'.format(xml_package_name, str(exc))
         ) from None
     else:
@@ -112,7 +112,7 @@ def put_object_in_object_store(file, journal, scielo_id, filename):
     try:
         return hooks.object_store_connect(file, filepath, "documentstore")
     except Exception as exc:
-        raise PutDocInObjectStoreException(
+        raise PutXMLInObjectStoreException(
             'Could not put object "{}" in object store : {}'.format(filepath, str(exc))
         ) from None
 
@@ -125,8 +125,9 @@ def put_assets_and_pdfs_in_object_store(zipfile, xml_data):
         - Persistir cada PDF
         - Persistir XML no Minio
     - Retornar os dados do documento para persistir no Kernel
-    - Raise PutDocInObjectStoreException
+    - Raise PutXMLInObjectStoreException
     """
+    _assets_and_renditions = {}
     for asset in (xml_data or {}).get("assets", []):
         Logger.info('Putting Asset file "%s" to Object Store', asset["asset_id"])
         asset["asset_url"] = put_object_in_object_store(
@@ -149,7 +150,14 @@ def put_assets_and_pdfs_in_object_store(zipfile, xml_data):
 
 
 def put_xml_into_object_store(zipfile, xml_filename):
-    xml_file = read_file_from_zip(zipfile, xml_filename)
+    try:
+        xml_file = zipfile.read(xml_filename)
+    except KeyError as exc:
+        raise PutXMLInObjectStoreException(
+            'Could not read file "{}" from zipfile "{}": {}'.format(
+                xml_filename, zipfile, exc
+            )
+        ) from None
     xml_data = get_xml_data(xml_file, os.path.splitext(xml_filename)[-2])
     Logger.info('Putting XML file "%s" to Object Store', xml_filename)
     xml_data["xml_url"] = put_object_in_object_store(

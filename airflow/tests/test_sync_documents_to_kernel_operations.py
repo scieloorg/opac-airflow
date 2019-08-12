@@ -16,7 +16,7 @@ from operations.sync_documents_to_kernel_operations import (
     register_update_documents,
 )
 from operations.exceptions import (
-    PutDocInObjectStoreException,
+    PutXMLInObjectStoreException,
     RegisterUpdateDocIntoKernelException,
 )
 from tests.fixtures import XML_FILE_CONTENT
@@ -429,7 +429,7 @@ class TestRegisterUpdateDocuments(TestCase):
         MockZipFile.return_value.__enter__.return_value.read.return_value = b""
         mk_put_xml_into_object_store.side_effect = [
             None,
-            PutDocInObjectStoreException("Put Doc in Object Store Error"),
+            PutXMLInObjectStoreException("Put Doc in Object Store Error"),
             None,
         ]
         register_update_documents(**self.kwargs)

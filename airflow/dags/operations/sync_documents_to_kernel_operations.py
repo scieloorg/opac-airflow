@@ -9,7 +9,7 @@ from lxml import etree
 
 import common.hooks as hooks
 from operations.exceptions import (
-    PutDocInObjectStoreException,
+    PutXMLInObjectStoreException,
     RegisterUpdateDocIntoKernelException,
 )
 from operations.docs_utils import (
@@ -116,7 +116,7 @@ def register_update_documents(sps_package, xmls_to_preserve):
             )
             try:
                 xml_data = put_xml_into_object_store(zipfile, xml_filename)
-            except PutDocInObjectStoreException as exc:
+            except PutXMLInObjectStoreException as exc:
                 Logger.info(
                     'Could not put document "%s" in object store: %s',
                     xml_filename,

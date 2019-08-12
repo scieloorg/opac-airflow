@@ -17,7 +17,7 @@ from operations.docs_utils import (
     put_xml_into_object_store,
 )
 from operations.exceptions import (
-    PutDocInObjectStoreException,
+    PutXMLInObjectStoreException,
     RegisterUpdateDocIntoKernelException,
 )
 
@@ -99,7 +99,7 @@ class TestGetXMLData(TestCase):
         xml_content = XML_FILE_CONTENT
 
         MockSPS_Package.side_effect = TypeError()
-        self.assertRaises(PutDocInObjectStoreException, get_xml_data, xml_content, None)
+        self.assertRaises(PutXMLInObjectStoreException, get_xml_data, xml_content, None)
 
 
 class TestRegisterUpdateDocIntoKernel(TestCase):
@@ -331,32 +331,6 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
             self.assertEqual(expected_pdf["size_bytes"], result_pdf["size_bytes"])
 
 
-class TestReadFileFromZip(TestCase):
-    def test_read_file_from_zip_call_read(self):
-
-        MockZipFile = Mock()
-        read_file_from_zip(MockZipFile, "filename.pdf")
-        MockZipFile.read.assert_called_once_with("filename.pdf")
-
-    def test_read_file_from_zip_return_value(self):
-
-        MockZipFile = Mock()
-        MockZipFile.read.return_value = b"1806-907X-rba-53-01-1-8-g01"
-        result = read_file_from_zip(MockZipFile, "filename.pdf")
-        self.assertEqual(result, b"1806-907X-rba-53-01-1-8-g01")
-
-    def test_read_file_from_zip_raise_except_error(self):
-
-        MockZipFile = Mock()
-        MockZipFile.read.side_effect = KeyError()
-        self.assertRaises(
-            PutDocInObjectStoreException,
-            read_file_from_zip,
-            MockZipFile,
-            "filename.pdf",
-        )
-
-
 class TestPutObjectInObjectStore(TestCase):
     @patch("operations.docs_utils.hooks")
     def test_put_object_in_object_store_call_hook(self, mk_hooks):
@@ -399,7 +373,7 @@ class TestPutObjectInObjectStore(TestCase):
 
         mk_hooks.object_store_connect.side_effect = Exception()
         self.assertRaises(
-            PutDocInObjectStoreException,
+            PutXMLInObjectStoreException,
             put_object_in_object_store,
             MockFile,
             "1806-907X",
@@ -431,48 +405,66 @@ class TestPutXMLIntoObjectStore(TestCase):
             ],
         }
 
-    @patch("operations.docs_utils.read_file_from_zip")
+    @patch("operations.docs_utils.put_object_in_object_store")
+    @patch("operations.docs_utils.get_xml_data")
+    def test_put_xml_into_object_reads_xml_from_zip(
+        self, mk_get_xml_data, mk_put_object_in_object_store
+    ):
+        MockZipFile = Mock()
+        put_xml_into_object_store(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        MockZipFile.read.assert_any_call("1806-907X-rba-53-01-1-8.xml")
+
     @patch("operations.docs_utils.put_object_in_object_store")
     @patch("operations.docs_utils.get_xml_data")
     def test_put_xml_into_object_store_calls_get_xml_data(
-        self, mk_get_xml_data, mk_put_object_in_object_store, mk_read_file_from_zip
+        self, mk_get_xml_data, mk_put_object_in_object_store
     ):
         MockZipFile = Mock()
-        mk_read_file_from_zip.return_value = b"1806-907X-rba-53-01-1-8.xml"
+        MockZipFile.read.return_value = b"1806-907X-rba-53-01-1-8.xml"
         put_xml_into_object_store(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
         mk_get_xml_data.assert_any_call(
             b"1806-907X-rba-53-01-1-8.xml", "1806-907X-rba-53-01-1-8"
         )
 
-    @patch("operations.docs_utils.read_file_from_zip")
     @patch("operations.docs_utils.put_object_in_object_store")
     @patch("operations.docs_utils.get_xml_data")
-    def test_put_xml_into_object_store_reads_xml(
-        self, mk_get_xml_data, mk_put_object_in_object_store, mk_read_file_from_zip
+    def test_put_xml_into_object_store_error_if_zip_read_error(
+        self, mk_get_xml_data, mk_put_object_in_object_store
+    ):
+        MockZipFile = MagicMock()
+        MockZipFile.__str__.return_value = "MockZipFile"
+        MockZipFile.read.side_effect = KeyError("File not found in the archive")
+        with self.assertRaises(PutXMLInObjectStoreException) as exc_info:
+            put_xml_into_object_store(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        self.assertEqual(
+            str(exc_info.exception),
+            'Could not read file "1806-907X-rba-53-01-1-8.xml" from zipfile "MockZipFile": '
+            "'File not found in the archive'"
+        )
+
+    @patch("operations.docs_utils.put_object_in_object_store")
+    @patch("operations.docs_utils.get_xml_data")
+    def test_put_xml_into_object_store_puts_xml_in_object_store(
+        self, mk_get_xml_data, mk_put_object_in_object_store
     ):
         MockZipFile = Mock()
-        mk_read_file_from_zip.return_value = b""
+        MockZipFile.read.return_value = b""
         mk_get_xml_data.return_value = self.xml_data
         put_xml_into_object_store(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
-
-        mk_read_file_from_zip.assert_any_call(
-            MockZipFile, "1806-907X-rba-53-01-1-8.xml"
-        )
         mk_put_object_in_object_store.assert_any_call(
-            mk_read_file_from_zip.return_value,
+            MockZipFile.read.return_value,
             self.xml_data["issn"],
             self.xml_data["scielo_id"],
             "1806-907X-rba-53-01-1-8.xml",
         )
 
-    @patch("operations.docs_utils.read_file_from_zip")
     @patch("operations.docs_utils.put_object_in_object_store")
     @patch("operations.docs_utils.get_xml_data")
     def test_put_xml_into_object_store_return_data_xml(
-        self, mk_get_xml_data, mk_put_object_in_object_store, mk_read_file_from_zip
+        self, mk_get_xml_data, mk_put_object_in_object_store
     ):
         MockZipFile = Mock()
-        mk_read_file_from_zip.return_value = b""
+        MockZipFile.read.return_value = b""
         mk_get_xml_data.return_value = self.xml_data
         mk_put_object_in_object_store.return_value = \
             "http://minio/documentstore/1806-907X-rba-53-01-1-8.xml"
