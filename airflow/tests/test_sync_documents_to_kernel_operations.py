@@ -1,4 +1,5 @@
 import os
+import copy
 import http.client
 import shutil
 import tempfile
@@ -265,11 +266,9 @@ class TestRegisterUpdateDocuments(TestCase):
                 "assets": [
                     {
                         "asset_id": "1806-907X-rba-53-01-1-8-g01.jpg",
-                        "asset_url": "http://minio/documentstore/1806-907X-rba-53-01-1-8-g01.jpg",
                     },
                     {
                         "asset_id": "1806-907X-rba-53-01-1-8-g02.jpg",
-                        "asset_url": "http://minio/documentstore/1806-907X-rba-53-01-1-8-g02.jpg",
                     },
                 ],
                 "pdfs": [
@@ -277,19 +276,16 @@ class TestRegisterUpdateDocuments(TestCase):
                         "lang": "en",
                         "filename": "1806-907X-rba-53-01-1-8.pdf",
                         "mimetype": "application/pdf",
-                        "pdf_url": "http://minio/documentstore/1806-907X-rba-53-01-1-8.pdf",
                     },
                     {
                         "lang": "pt",
                         "filename": "1806-907X-rba-53-01-1-8-pt.pdf",
                         "mimetype": "application/pdf",
-                        "pdf_url": "http://minio/documentstore/1806-907X-rba-53-01-1-8-pt.pdf",
                     },
                     {
                         "lang": "de",
                         "filename": "1806-907X-rba-53-01-1-8-de.pdf",
                         "mimetype": "application/pdf",
-                        "pdf_url": "http://minio/documentstore/1806-907X-rba-53-01-1-8-de.pdf",
                     },
                 ],
             },
@@ -300,11 +296,9 @@ class TestRegisterUpdateDocuments(TestCase):
                 "assets": [
                     {
                         "asset_id": "1806-907X-rba-53-01-9-18-g01.jpg",
-                        "asset_url": "http://minio/documentstore/1806-907X-rba-53-01-9-18-g01.jpg",
                     },
                     {
                         "asset_id": "1806-907X-rba-53-01-9-18-g02.jpg",
-                        "asset_url": "http://minio/documentstore/1806-907X-rba-53-01-9-18-g02.jpg",
                     },
                 ],
                 "pdfs": [
@@ -312,7 +306,6 @@ class TestRegisterUpdateDocuments(TestCase):
                         "lang": "en",
                         "filename": "1806-907X-rba-53-01-9-18.pdf",
                         "mimetype": "application/pdf",
-                        "pdf_url": "http://minio/documentstore/1806-907X-rba-53-01-9-18.pdf",
                     }
                 ],
             },
@@ -323,7 +316,6 @@ class TestRegisterUpdateDocuments(TestCase):
                 "assets": [
                     {
                         "asset_id": "1806-907X-rba-53-01-19-25-tb01.tiff",
-                        "asset_url": "http://minio/documentstore/1806-907X-rba-53-01-19-25-tb01.tiff",
                     }
                 ],
                 "pdfs": [
@@ -331,13 +323,11 @@ class TestRegisterUpdateDocuments(TestCase):
                         "lang": "es",
                         "filename": "1806-907X-rba-53-01-19-25.pdf",
                         "mimetype": "application/pdf",
-                        "pdf_url": "http://minio/documentstore/1806-907X-rba-53-01-19-25.pdf",
                     },
                     {
                         "lang": "en",
                         "filename": "1806-907X-rba-53-01-19-25-en.pdf",
                         "mimetype": "application/pdf",
-                        "pdf_url": "http://minio/documentstore/1806-907X-rba-53-01-19-25-en.pdf",
                     },
                 ],
             },
@@ -428,9 +418,9 @@ class TestRegisterUpdateDocuments(TestCase):
     ):
         MockZipFile.return_value.__enter__.return_value.read.return_value = b""
         mk_put_xml_into_object_store.side_effect = [
-            None,
+            {},
             PutXMLInObjectStoreException("Put Doc in Object Store Error"),
-            None,
+            {},
         ]
         register_update_documents(**self.kwargs)
         MockLogger.info.assert_any_call(
@@ -477,9 +467,16 @@ class TestRegisterUpdateDocuments(TestCase):
         mk_put_assets_and_pdfs_in_object_store,
         mk_register_update_doc_into_kernel,
     ):
+        expected = copy.deepcopy(self.xmls_data)
         mk_put_xml_into_object_store.side_effect = self.xmls_data
+        mk_assets_and_pdfs = {
+            "assets": [{"asset_id": "test"}],
+            "pdfs": [{"filename": "test"}],
+        }
+        mk_put_assets_and_pdfs_in_object_store.return_value = mk_assets_and_pdfs
         register_update_documents(**self.kwargs)
-        for xml_data in self.xmls_data:
+        for xml_data in expected:
+            xml_data.update(mk_assets_and_pdfs)
             with self.subTest(xml_data=xml_data):
                 mk_register_update_doc_into_kernel.assert_any_call(xml_data)
 

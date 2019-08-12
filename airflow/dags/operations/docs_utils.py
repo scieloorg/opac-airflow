@@ -15,17 +15,6 @@ from common.sps_package import SPS_Package
 Logger = logging.getLogger(__name__)
 
 
-def read_file_from_zip(zipfile, filename):
-    try:
-        return zipfile.read(filename)
-    except KeyError as exc:
-        raise PutXMLInObjectStoreException(
-            'Could not read file "{}" from zipfile "{}": {}'.format(
-                filename, zipfile, str(exc)
-            )
-        ) from None
-
-
 def register_update_doc_into_kernel(xml_data):
 
     payload = {"data": xml_data["xml_url"], "assets": xml_data["assets"]}
@@ -128,26 +117,62 @@ def put_assets_and_pdfs_in_object_store(zipfile, xml_data):
     - Retornar os dados do documento para persistir no Kernel
     - Raise PutXMLInObjectStoreException
     """
-    _assets_and_renditions = {}
+    _assets = []
     for asset in (xml_data or {}).get("assets", []):
         Logger.info('Putting Asset file "%s" to Object Store', asset["asset_id"])
-        asset["asset_url"] = put_object_in_object_store(
-            read_file_from_zip(zipfile, asset["asset_id"]),
-            xml_data["issn"],
-            xml_data["scielo_id"],
-            asset["asset_id"],
-        )
+        try:
+            asset_file = zipfile.read(asset["asset_id"])
+        except KeyError as exc:
+            Logger.info(
+                'Could not read asset "%s" from zipfile "%s": %s',
+                asset["asset_id"],
+                zipfile,
+                str(exc)
+            )
+        else:
+            _assets.append(
+                {
+                    "asset_id": asset["asset_id"],
+                    "asset_url": put_object_in_object_store(
+                        asset_file,
+                        xml_data["issn"],
+                        xml_data["scielo_id"],
+                        asset["asset_id"],
+                    )
+                }
+            )
+    _pdfs = []
     for pdf in (xml_data or {}).get("pdfs", []):
         Logger.info('Putting PDF file "%s" to Object Store', pdf["filename"])
-        pdf_file = read_file_from_zip(zipfile, pdf["filename"])
-        pdf["data_url"] = put_object_in_object_store(
-            pdf_file,
-            xml_data["issn"],
-            xml_data["scielo_id"],
-            pdf["filename"],
-        )
-        pdf["size_bytes"] = len(pdf_file)
-    return xml_data
+        try:
+            pdf_file = zipfile.read(pdf["filename"])
+        except KeyError as exc:
+            Logger.info(
+                'Could not read PDF "%s" from zipfile "%s": %s',
+                pdf["filename"],
+                zipfile,
+                str(exc)
+            )
+        else:
+            _pdfs.append(
+                {
+                    "size_bytes": len(pdf_file),
+                    "filename": pdf["filename"],
+                    "lang": pdf["lang"],
+                    "mimetype": pdf["mimetype"],
+                    "data_url": put_object_in_object_store(
+                        pdf_file,
+                        xml_data["issn"],
+                        xml_data["scielo_id"],
+                        pdf["filename"],
+                    )
+                }
+            )
+
+    return {
+        "assets": _assets,
+        "pdfs": _pdfs,
+    }
 
 
 def put_xml_into_object_store(zipfile, xml_filename):

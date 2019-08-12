@@ -10,7 +10,6 @@ from lxml import etree
 
 from operations.docs_utils import (
     get_xml_data,
-    read_file_from_zip,
     register_update_doc_into_kernel,
     put_object_in_object_store,
     put_assets_and_pdfs_in_object_store,
@@ -244,69 +243,120 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
             ],
         }
 
-    @patch("operations.docs_utils.read_file_from_zip")
     @patch("operations.docs_utils.put_object_in_object_store")
     def test_put_assets_and_pdfs_in_object_store_reads_each_asset_from_xml(
-        self, mk_put_object_in_object_store, mk_read_file_from_zip
+        self, mk_put_object_in_object_store
     ):
-        MockZipFile = Mock()
+        MockZipFile = MagicMock()
         put_assets_and_pdfs_in_object_store(MockZipFile, self.xml_data)
         for asset in self.xml_data["assets"]:
             with self.subTest(asset=asset):
-                mk_read_file_from_zip.assert_any_call(MockZipFile, asset["asset_id"])
+                MockZipFile.read.assert_any_call(asset["asset_id"])
                 mk_put_object_in_object_store.assert_any_call(
-                    mk_read_file_from_zip.return_value,
+                    MockZipFile.read.return_value,
                     self.xml_data["issn"],
                     self.xml_data["scielo_id"],
                     asset["asset_id"],
                 )
 
-    @patch("operations.docs_utils.read_file_from_zip")
     @patch("operations.docs_utils.put_object_in_object_store")
     def test_put_assets_and_pdfs_in_object_store_reads_each_pdf_from_xml(
-        self, mk_put_object_in_object_store, mk_read_file_from_zip
+        self, mk_put_object_in_object_store
     ):
-        MockZipFile = Mock()
-        mk_read_file_from_zip.return_value = b""
+        MockZipFile = MagicMock()
+        MockZipFile.read.return_value = b""
         put_assets_and_pdfs_in_object_store(MockZipFile, self.xml_data)
 
         for pdf in self.xml_data["pdfs"]:
             with self.subTest(pdf=pdf):
-                mk_read_file_from_zip.assert_any_call(MockZipFile, pdf["filename"])
+                MockZipFile.read.assert_any_call(pdf["filename"])
                 mk_put_object_in_object_store.assert_any_call(
-                    mk_read_file_from_zip.return_value,
+                    MockZipFile.read.return_value,
                     self.xml_data["issn"],
                     self.xml_data["scielo_id"],
                     pdf["filename"],
                 )
 
-    @patch("operations.docs_utils.read_file_from_zip")
+    @patch("operations.docs_utils.Logger")
+    @patch("operations.docs_utils.put_object_in_object_store")
+    def test_put_assets_and_pdfs_in_object_store_logs_error_if_file_not_found_in_zip(
+        self, mk_put_object_in_object_store, MockLogger
+    ):
+        MockZipFile = MagicMock()
+        MockZipFile.read.side_effect = [
+            b"",
+            KeyError("File not found in the archive"),
+            KeyError("File not found in the archive"),
+            b"",            
+        ]
+        put_assets_and_pdfs_in_object_store(MockZipFile, self.xml_data)
+        MockLogger.info.assert_any_call(
+            'Could not read asset "%s" from zipfile "%s": %s',
+            self.xml_data["assets"][1]["asset_id"],
+            MockZipFile,
+            "'File not found in the archive'",
+        )
+        MockLogger.info.assert_any_call(
+            'Could not read PDF "%s" from zipfile "%s": %s',
+            self.xml_data["pdfs"][0]["filename"],
+            MockZipFile,
+            "'File not found in the archive'",
+        )
+
+    @patch("operations.docs_utils.Logger")
+    @patch("operations.docs_utils.put_object_in_object_store")
+    def test_put_assets_and_pdfs_in_object_store_returns_only_read_assets_and_pdfs(
+        self, mk_put_object_in_object_store, MockLogger
+    ):
+        MockZipFile = MagicMock()
+        MockZipFile.read.side_effect = [
+            b"",
+            KeyError("File not found in the archive"),
+            KeyError("File not found in the archive"),
+            b"",            
+        ]
+        expected = {
+            "assets": self.xml_data["assets"][:1],
+            "pdfs": self.xml_data["pdfs"][1:],
+        }
+        mk_minio_result = [
+            "http://minio/documentstore/{}".format(expected["assets"][0]["asset_id"]),
+            "http://minio/documentstore/{}".format(expected["pdfs"][0]["filename"]),
+        ]
+        mk_put_object_in_object_store.side_effect = mk_minio_result
+        expected["assets"][0]["asset_url"] = mk_minio_result[0]
+        expected["pdfs"][0]["data_url"] = mk_minio_result[1]
+        expected["pdfs"][0]["size_bytes"] = 0
+
+        result = put_assets_and_pdfs_in_object_store(MockZipFile, self.xml_data)
+        self.assertEqual(result, expected)
+
     @patch("operations.docs_utils.put_object_in_object_store")
     def test_put_assets_and_pdfs_in_object_store_return_data_asset(
-        self, mk_put_object_in_object_store, mk_read_file_from_zip
+        self, mk_put_object_in_object_store
     ):
         expected = copy.deepcopy(self.xml_data)
         for asset in expected["assets"]:
             asset["asset_url"] = "http://minio/documentstore/{}".format(
                 asset["asset_id"]
             )
-        mk_read_file_from_zip.return_value = b""
+        MockZipFile = MagicMock()
+        MockZipFile.read.return_value = b""
         mk_put_object_in_object_store.side_effect = [
             asset["asset_url"] for asset in expected["assets"]
         ] + [None, None, None]
 
         result = put_assets_and_pdfs_in_object_store(
-            Mock(), self.xml_data
+            MockZipFile, self.xml_data
         )
         for expected_asset, result_asset in zip(expected["assets"], result["assets"]):
 
             self.assertEqual(expected_asset["asset_id"], result_asset["asset_id"])
             self.assertEqual(expected_asset["asset_url"], result_asset["asset_url"])
 
-    @patch("operations.docs_utils.read_file_from_zip")
     @patch("operations.docs_utils.put_object_in_object_store")
     def test_put_assets_and_pdfs_in_object_store_return_data_pdf(
-        self, mk_put_object_in_object_store, mk_read_file_from_zip
+        self, mk_put_object_in_object_store
     ):
         expected = copy.deepcopy(self.xml_data)
         pdfs_size = []
@@ -317,13 +367,14 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
 
         mk_read_file = MagicMock(return_value=b"")
         mk_read_file.__len__.side_effect = pdfs_size
-        mk_read_file_from_zip.return_value = mk_read_file
+        MockZipFile = Mock()
+        MockZipFile.read.return_value = mk_read_file
         mk_put_object_in_object_store.side_effect = (
             [None, None] + [pdf["data_url"] for pdf in expected["pdfs"]] + [None]
         )
 
         result = put_assets_and_pdfs_in_object_store(
-            Mock(), self.xml_data
+            MockZipFile, self.xml_data
         )
         for expected_pdf, result_pdf in zip(expected["pdfs"], result["pdfs"]):
 

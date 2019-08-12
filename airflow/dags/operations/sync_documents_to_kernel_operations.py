@@ -13,7 +13,6 @@ from operations.exceptions import (
     RegisterUpdateDocIntoKernelException,
 )
 from operations.docs_utils import (
-    read_file_from_zip,
     register_update_doc_into_kernel,
     get_xml_data,
     put_object_in_object_store,
@@ -123,7 +122,8 @@ def register_update_documents(sps_package, xmls_to_preserve):
                     str(exc),
                 )
             else:
-                put_assets_and_pdfs_in_object_store(zipfile, xml_data)
+                assets_and_pdfs_data = put_assets_and_pdfs_in_object_store(zipfile, xml_data)
+                xml_data.update(assets_and_pdfs_data)
                 try:
                     register_update_doc_into_kernel(xml_data)
 
