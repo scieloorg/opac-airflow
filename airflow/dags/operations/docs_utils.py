@@ -7,6 +7,7 @@ from lxml import etree
 import common.hooks as hooks
 from operations.exceptions import (
     PutXMLInObjectStoreException,
+    ObjectStoreError,
     RegisterUpdateDocIntoKernelException,
 )
 from common.sps_package import SPS_Package
@@ -112,7 +113,7 @@ def put_object_in_object_store(file, journal, scielo_id, filename):
     try:
         return hooks.object_store_connect(file, filepath, "documentstore")
     except Exception as exc:
-        raise PutXMLInObjectStoreException(
+        raise ObjectStoreError(
             'Could not put object "{}" in object store : {}'.format(filepath, str(exc))
         ) from None
 

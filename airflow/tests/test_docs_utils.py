@@ -18,6 +18,7 @@ from operations.docs_utils import (
 )
 from operations.exceptions import (
     PutXMLInObjectStoreException,
+    ObjectStoreError,
     RegisterUpdateDocIntoKernelException,
 )
 
@@ -370,15 +371,22 @@ class TestPutObjectInObjectStore(TestCase):
     def test_put_object_in_object_store_raise_exception_error(self, mk_hooks):
 
         MockFile = Mock()
-
-        mk_hooks.object_store_connect.side_effect = Exception()
-        self.assertRaises(
-            PutXMLInObjectStoreException,
-            put_object_in_object_store,
-            MockFile,
-            "1806-907X",
-            "FX6F3cbyYmmwvtGmMB7WCgr",
-            "1806-907X-rba-53-01-1-8.xml",
+        filepath = "{}/{}/{}".format(
+            "1806-907X", "FX6F3cbyYmmwvtGmMB7WCgr", "1806-907X-rba-53-01-1-8.xml")
+        mk_hooks.object_store_connect.side_effect = Exception(
+            "ConnectionError"
+        )
+        with self.assertRaises(ObjectStoreError) as exc_info:
+            put_object_in_object_store(
+                MockFile,
+                "1806-907X",
+                "FX6F3cbyYmmwvtGmMB7WCgr",
+                "1806-907X-rba-53-01-1-8.xml",
+            )
+        self.assertEqual(
+            str(exc_info.exception),
+            'Could not put object "{}" in object store : ConnectionError'.format(
+                filepath, str(exc_info))
         )
 
 
