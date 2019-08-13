@@ -87,7 +87,7 @@ def get_xml_data(xml_content, xml_package_name):
                 }
             )
 
-        return {
+        _xml_data = {
             "scielo_id": metadata.scielo_id,
             "issn": metadata.issn,
             "volume": metadata.volume,
@@ -98,6 +98,9 @@ def get_xml_data(xml_content, xml_package_name):
             ],
             "pdfs": pdfs,
         }
+        if metadata.supplement:
+            _xml_data["supplement"] = metadata.supplement
+        return _xml_data
 
 
 def put_object_in_object_store(file, journal, scielo_id, filename):

@@ -6,6 +6,7 @@ from unittest.mock import patch, Mock, MagicMock
 
 import requests
 from airflow import DAG
+from lxml import etree
 
 from operations.docs_utils import (
     get_xml_data,
@@ -49,6 +50,17 @@ class TestGetXMLData(TestCase):
         mk_etree.XML.return_value = MockXML
         get_xml_data(xml_content, None)
         MockSPS_Package.assert_called_once_with(MockXML, None)
+
+    def test_get_xml_data_returns_supplement_when_it_is_in_xml_content(self):
+        xml_content = XML_FILE_CONTENT
+        result = get_xml_data(xml_content, "1806-907X-rba-53-01-1-8")
+        self.assertIsNone(result.get("supplement"))
+
+        xml_file = etree.XML(XML_FILE_CONTENT)
+        issue_tag = xml_file.find(".//article-meta/issue")
+        issue_tag.text = "suppl 2"
+        result = get_xml_data(etree.tostring(xml_file), "1806-907X-rba-53-01-1-8")
+        self.assertEqual(result.get("supplement"), "02")
 
     def test_get_xml_data_returns_xml_metadata(self):
         xml_content = XML_FILE_CONTENT
