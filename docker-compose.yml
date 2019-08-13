@@ -2,8 +2,7 @@ version: '2'
 
 services:
     opac-airflow:
-        build:
-            context: ./airflow
+        build: ./
         ports:
           - "8080:8080"
         command: webserver

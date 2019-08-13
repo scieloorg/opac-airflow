@@ -1,0 +1,14 @@
+*/logs*
+*.pid
+.*
+
+# Unit test / coverage reports
+*/htmlcov/
+nosetests.xml
+coverage.xml
+
+# DB
+*.db
+
+# PYTHON
+*.py[co]
