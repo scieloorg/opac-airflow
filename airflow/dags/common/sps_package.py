@@ -359,6 +359,4 @@ class SPS_Package:
     def is_document_deletion(self):
         """True if delete tag is present.
         """
-        if self.xmltree.find(".//article-id[@specific-use='delete']") is not None:
-            return True
-        return False
+        return self.xmltree.find(".//article-id[@specific-use='delete']") is not None

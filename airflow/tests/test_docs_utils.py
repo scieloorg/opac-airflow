@@ -58,9 +58,9 @@ class TestDocumentsToDelete(TestCase):
         MockZipFile.read.assert_any_call("1806-907X-rba-53-01-1-8.xml")
 
     @patch("operations.docs_utils.SPS_Package")
-    @patch("operations.docs_utils.etree")
+    @patch("operations.docs_utils.etree.XML")
     def test_document_to_delete_raises_error_if_read_from_zip_error(
-        self, mk_etree, MockSPS_Package
+        self, MockXML, MockSPS_Package
     ):
         MockZipFile = MagicMock()
         MockZipFile.read.side_effect = KeyError("File not found in the archive")
@@ -101,10 +101,10 @@ class TestDocumentsToDelete(TestCase):
         MockSPS_Package.assert_called_once_with(MockXML, "1806-907X-rba-53-01-1-8.xml")
 
     @patch("operations.docs_utils.SPS_Package")
-    @patch("operations.docs_utils.etree")
+    @patch("operations.docs_utils.etree.XML")
     @patch("operations.docs_utils.Logger")
     def test_documents_to_delete_raises_error_if_SPS_Package_error(
-        self, MockLogger, mk_etree, MockSPS_Package
+        self, MockLogger, MockXML, MockSPS_Package
     ):
         MockSPS_Package.side_effect = TypeError("XML error")
         MockZipFile = MagicMock()
@@ -218,8 +218,8 @@ class TestGetXMLData(TestCase):
         )
 
     @patch("operations.docs_utils.SPS_Package")
-    @patch("operations.docs_utils.etree")
-    def test_get_xml_data_raise_except_error(self, mk_etree, MockSPS_Package):
+    @patch("operations.docs_utils.etree.XML")
+    def test_get_xml_data_raise_except_error(self, MockXML, MockSPS_Package):
         xml_content = XML_FILE_CONTENT
 
         MockSPS_Package.side_effect = TypeError()

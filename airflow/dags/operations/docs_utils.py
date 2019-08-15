@@ -33,7 +33,7 @@ def document_to_delete(zipfile, sps_xml_file):
             etree.XML(zipfile.read(sps_xml_file), parser),
             sps_xml_file
         )
-    except (TypeError, KeyError) as exc:
+    except (etree.XMLSyntaxError, TypeError, KeyError) as exc:
         raise DocumentToDeleteException(str(exc)) from None
     else:
         if metadata.is_document_deletion:
@@ -83,7 +83,7 @@ def get_xml_data(xml_content, xml_package_name):
     parser = etree.XMLParser(remove_blank_text=True, no_network=True)
     try:
         metadata = SPS_Package(etree.XML(xml_content, parser), xml_package_name)
-    except TypeError as exc:
+    except (etree.XMLSyntaxError, TypeError) as exc:
         raise PutXMLInObjectStoreException(
             'Could not get xml data from "{}" : {}'.format(xml_package_name, str(exc))
         ) from None
