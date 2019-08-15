@@ -1,3 +1,11 @@
+class DeleteDocFromKernelException(Exception):
+    ...
+
+
+class DocumentToDeleteException(Exception):
+    ...
+
+
 class PutXMLInObjectStoreException(Exception):
     ...
 

@@ -6,6 +6,8 @@ from lxml import etree
 
 import common.hooks as hooks
 from operations.exceptions import (
+    DeleteDocFromKernelException,
+    DocumentToDeleteException,
     PutXMLInObjectStoreException,
     ObjectStoreError,
     RegisterUpdateDocIntoKernelException,
@@ -13,6 +15,31 @@ from operations.exceptions import (
 from common.sps_package import SPS_Package
 
 Logger = logging.getLogger(__name__)
+
+
+def delete_doc_from_kernel(doc_to_delete):
+    try:
+        response = hooks.kernel_connect(
+            "/documents/" + doc_to_delete, "DELETE"
+        )
+    except requests.exceptions.HTTPError as exc:
+        raise DeleteDocFromKernelException(str(exc)) from None
+
+
+def document_to_delete(zipfile, sps_xml_file):
+    parser = etree.XMLParser(remove_blank_text=True, no_network=True)
+    try:
+        metadata = SPS_Package(
+            etree.XML(zipfile.read(sps_xml_file), parser),
+            sps_xml_file
+        )
+    except (TypeError, KeyError) as exc:
+        raise DocumentToDeleteException(str(exc)) from None
+    else:
+        if metadata.is_document_deletion:
+            if metadata.scielo_id is None:
+                raise DocumentToDeleteException('Missing element in XML')
+            return metadata.scielo_id
 
 
 def register_update_doc_into_kernel(xml_data):

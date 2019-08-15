@@ -354,3 +354,11 @@ class SPS_Package:
     def assets_names(self):
         attr_name = "{http://www.w3.org/1999/xlink}href"
         return [node.get(attr_name) for node in self.elements_which_has_xlink_href]
+
+    @property
+    def is_document_deletion(self):
+        """True if delete tag is present.
+        """
+        if self.xmltree.find(".//article-id[@specific-use='delete']") is not None:
+            return True
+        return False
