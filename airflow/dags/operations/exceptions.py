@@ -1,4 +1,16 @@
-class PutDocInObjectStoreException(Exception):
+class DeleteDocFromKernelException(Exception):
+    ...
+
+
+class DocumentToDeleteException(Exception):
+    ...
+
+
+class PutXMLInObjectStoreException(Exception):
+    ...
+
+
+class ObjectStoreError(Exception):
     ...
 
 

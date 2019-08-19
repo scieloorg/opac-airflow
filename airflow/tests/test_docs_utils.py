@@ -9,19 +9,143 @@ from airflow import DAG
 from lxml import etree
 
 from operations.docs_utils import (
+    delete_doc_from_kernel,
+    document_to_delete,
     get_xml_data,
-    read_file_from_zip,
     register_update_doc_into_kernel,
     put_object_in_object_store,
     put_assets_and_pdfs_in_object_store,
     put_xml_into_object_store,
 )
 from operations.exceptions import (
-    PutDocInObjectStoreException,
+    DeleteDocFromKernelException,
+    DocumentToDeleteException,
+    PutXMLInObjectStoreException,
+    ObjectStoreError,
     RegisterUpdateDocIntoKernelException,
 )
 
 from tests.fixtures import XML_FILE_CONTENT
+
+
+class TestDeleteDocFromKernel(TestCase):
+    @patch("operations.docs_utils.hooks")
+    def test_delete_doc_from_kernel_calls_kernel_connect(self, mk_hooks):
+        delete_doc_from_kernel("FX6F3cbyYmmwvtGmMB7WCgr")
+        mk_hooks.kernel_connect.assert_called_once_with(
+            "/documents/FX6F3cbyYmmwvtGmMB7WCgr", "DELETE"
+        )
+
+    @patch("operations.docs_utils.hooks")
+    def test_delete_documents_raises_error_if_kernel_connect_error(
+        self, mk_hooks
+    ):
+        mk_hooks.kernel_connect.side_effect = requests.exceptions.HTTPError(
+            "Not Found"
+        )
+        with self.assertRaises(DeleteDocFromKernelException) as exc_info:
+            delete_doc_from_kernel("FX6F3cbyYmmwvtGmMB7WCgr")
+        self.assertEqual(str(exc_info.exception), "Not Found")
+
+
+class TestDocumentsToDelete(TestCase):
+    @patch("operations.docs_utils.SPS_Package")
+    @patch("operations.docs_utils.etree")
+    def test_document_to_delete_reads_xml_from_zip(self, mk_etree, MockSPS_Package):
+        MockSPS_Package.return_value.is_document_deletion = False
+        MockZipFile = MagicMock()
+        document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        MockZipFile.read.assert_any_call("1806-907X-rba-53-01-1-8.xml")
+
+    @patch("operations.docs_utils.SPS_Package")
+    @patch("operations.docs_utils.etree.XML")
+    def test_document_to_delete_raises_error_if_read_from_zip_error(
+        self, MockXML, MockSPS_Package
+    ):
+        MockZipFile = MagicMock()
+        MockZipFile.read.side_effect = KeyError("File not found in the archive")
+        with self.assertRaises(DocumentToDeleteException) as exc_info:
+            document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        self.assertEqual(str(exc_info.exception), "'File not found in the archive'")
+
+    @patch("operations.docs_utils.SPS_Package")
+    @patch("operations.docs_utils.etree")
+    def test_document_to_delete_creates_etree_parser(self, mk_etree, MockSPS_Package):
+        MockSPS_Package.return_value.is_document_deletion = False
+        MockZipFile = MagicMock()
+        MockZipFile.read.return_value = XML_FILE_CONTENT
+        document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        mk_etree.XMLParser.assert_called_once_with(
+            remove_blank_text=True, no_network=True
+        )
+
+    @patch("operations.docs_utils.SPS_Package")
+    @patch("operations.docs_utils.etree")
+    def test_document_to_delete_creates_etree_xml(self, mk_etree, MockSPS_Package):
+        MockParser = Mock()
+        mk_etree.XMLParser.return_value = MockParser
+        MockSPS_Package.return_value.is_document_deletion = False
+        MockZipFile = MagicMock()
+        MockZipFile.read.return_value = XML_FILE_CONTENT
+        document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        mk_etree.XML.assert_called_once_with(XML_FILE_CONTENT, MockParser)
+
+    @patch("operations.docs_utils.SPS_Package")
+    @patch("operations.docs_utils.etree")
+    def test_document_to_delete_creates_SPS_Package_instance(self, mk_etree, MockSPS_Package):
+        MockXML = Mock()
+        mk_etree.XML.return_value = MockXML
+        MockSPS_Package.return_value.is_document_deletion = False
+        MockZipFile = MagicMock()
+        document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        MockSPS_Package.assert_called_once_with(MockXML, "1806-907X-rba-53-01-1-8.xml")
+
+    @patch("operations.docs_utils.SPS_Package")
+    @patch("operations.docs_utils.etree.XML")
+    @patch("operations.docs_utils.Logger")
+    def test_documents_to_delete_raises_error_if_SPS_Package_error(
+        self, MockLogger, MockXML, MockSPS_Package
+    ):
+        MockSPS_Package.side_effect = TypeError("XML error")
+        MockZipFile = MagicMock()
+        with self.assertRaises(DocumentToDeleteException) as exc_info:
+            document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        self.assertEqual(str(exc_info.exception), "XML error")
+
+    def test_documents_to_delete_returns_none_if_xml_is_not_to_delete(self):
+        MockZipFile = MagicMock()
+        MockZipFile.read.return_value = XML_FILE_CONTENT
+        result = document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        self.assertIsNone(result)
+
+    def test_documents_to_delete_raises_error_if_no_scielo_id_in_xml(self):
+        article_id = etree.Element("article-id")
+        article_id.set("specific-use", "delete")
+        xml_file = etree.XML(XML_FILE_CONTENT)
+        am_tag = xml_file.find(".//article-meta")
+        am_tag.append(article_id)
+        scielo_id_tag = xml_file.find(".//article-id[@specific-use='scielo']")
+        am_tag.remove(scielo_id_tag)
+        deleted_xml_file = etree.tostring(xml_file)
+        MockZipFile = MagicMock()
+        MockZipFile.read.return_value = deleted_xml_file
+        with self.assertRaises(DocumentToDeleteException) as exc_info:
+            document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        self.assertEqual(str(exc_info.exception), "Missing element in XML")
+
+    def test_documents_to_delete_returns_documents_id_to_delete_and_xmls_to_delete(
+        self
+    ):
+        article_id = etree.Element("article-id")
+        article_id.set("specific-use", "delete")
+        xml_file = etree.XML(XML_FILE_CONTENT)
+        am_tag = xml_file.find(".//article-meta")
+        am_tag.append(article_id)
+        deleted_xml_file = etree.tostring(xml_file)
+        MockZipFile = MagicMock()
+        MockZipFile.read.return_value = deleted_xml_file
+        result = document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        self.assertEqual(result, "FX6F3cbyYmmwvtGmMB7WCgr") # SciELO ID de XML_FILE_CONTENT
 
 
 class TestGetXMLData(TestCase):
@@ -94,12 +218,12 @@ class TestGetXMLData(TestCase):
         )
 
     @patch("operations.docs_utils.SPS_Package")
-    @patch("operations.docs_utils.etree")
-    def test_get_xml_data_raise_except_error(self, mk_etree, MockSPS_Package):
+    @patch("operations.docs_utils.etree.XML")
+    def test_get_xml_data_raise_except_error(self, MockXML, MockSPS_Package):
         xml_content = XML_FILE_CONTENT
 
         MockSPS_Package.side_effect = TypeError()
-        self.assertRaises(PutDocInObjectStoreException, get_xml_data, xml_content, None)
+        self.assertRaises(PutXMLInObjectStoreException, get_xml_data, xml_content, None)
 
 
 class TestRegisterUpdateDocIntoKernel(TestCase):
@@ -243,69 +367,120 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
             ],
         }
 
-    @patch("operations.docs_utils.read_file_from_zip")
     @patch("operations.docs_utils.put_object_in_object_store")
     def test_put_assets_and_pdfs_in_object_store_reads_each_asset_from_xml(
-        self, mk_put_object_in_object_store, mk_read_file_from_zip
+        self, mk_put_object_in_object_store
     ):
-        MockZipFile = Mock()
+        MockZipFile = MagicMock()
         put_assets_and_pdfs_in_object_store(MockZipFile, self.xml_data)
         for asset in self.xml_data["assets"]:
             with self.subTest(asset=asset):
-                mk_read_file_from_zip.assert_any_call(MockZipFile, asset["asset_id"])
+                MockZipFile.read.assert_any_call(asset["asset_id"])
                 mk_put_object_in_object_store.assert_any_call(
-                    mk_read_file_from_zip.return_value,
+                    MockZipFile.read.return_value,
                     self.xml_data["issn"],
                     self.xml_data["scielo_id"],
                     asset["asset_id"],
                 )
 
-    @patch("operations.docs_utils.read_file_from_zip")
     @patch("operations.docs_utils.put_object_in_object_store")
     def test_put_assets_and_pdfs_in_object_store_reads_each_pdf_from_xml(
-        self, mk_put_object_in_object_store, mk_read_file_from_zip
+        self, mk_put_object_in_object_store
     ):
-        MockZipFile = Mock()
-        mk_read_file_from_zip.return_value = b""
+        MockZipFile = MagicMock()
+        MockZipFile.read.return_value = b""
         put_assets_and_pdfs_in_object_store(MockZipFile, self.xml_data)
 
         for pdf in self.xml_data["pdfs"]:
             with self.subTest(pdf=pdf):
-                mk_read_file_from_zip.assert_any_call(MockZipFile, pdf["filename"])
+                MockZipFile.read.assert_any_call(pdf["filename"])
                 mk_put_object_in_object_store.assert_any_call(
-                    mk_read_file_from_zip.return_value,
+                    MockZipFile.read.return_value,
                     self.xml_data["issn"],
                     self.xml_data["scielo_id"],
                     pdf["filename"],
                 )
 
-    @patch("operations.docs_utils.read_file_from_zip")
+    @patch("operations.docs_utils.Logger")
+    @patch("operations.docs_utils.put_object_in_object_store")
+    def test_put_assets_and_pdfs_in_object_store_logs_error_if_file_not_found_in_zip(
+        self, mk_put_object_in_object_store, MockLogger
+    ):
+        MockZipFile = MagicMock()
+        MockZipFile.read.side_effect = [
+            b"",
+            KeyError("File not found in the archive"),
+            KeyError("File not found in the archive"),
+            b"",            
+        ]
+        put_assets_and_pdfs_in_object_store(MockZipFile, self.xml_data)
+        MockLogger.info.assert_any_call(
+            'Could not read asset "%s" from zipfile "%s": %s',
+            self.xml_data["assets"][1]["asset_id"],
+            MockZipFile,
+            "'File not found in the archive'",
+        )
+        MockLogger.info.assert_any_call(
+            'Could not read PDF "%s" from zipfile "%s": %s',
+            self.xml_data["pdfs"][0]["filename"],
+            MockZipFile,
+            "'File not found in the archive'",
+        )
+
+    @patch("operations.docs_utils.Logger")
+    @patch("operations.docs_utils.put_object_in_object_store")
+    def test_put_assets_and_pdfs_in_object_store_returns_only_read_assets_and_pdfs(
+        self, mk_put_object_in_object_store, MockLogger
+    ):
+        MockZipFile = MagicMock()
+        MockZipFile.read.side_effect = [
+            b"",
+            KeyError("File not found in the archive"),
+            KeyError("File not found in the archive"),
+            b"",            
+        ]
+        expected = {
+            "assets": self.xml_data["assets"][:1],
+            "pdfs": self.xml_data["pdfs"][1:],
+        }
+        mk_minio_result = [
+            "http://minio/documentstore/{}".format(expected["assets"][0]["asset_id"]),
+            "http://minio/documentstore/{}".format(expected["pdfs"][0]["filename"]),
+        ]
+        mk_put_object_in_object_store.side_effect = mk_minio_result
+        expected["assets"][0]["asset_url"] = mk_minio_result[0]
+        expected["pdfs"][0]["data_url"] = mk_minio_result[1]
+        expected["pdfs"][0]["size_bytes"] = 0
+
+        result = put_assets_and_pdfs_in_object_store(MockZipFile, self.xml_data)
+        self.assertEqual(result, expected)
+
     @patch("operations.docs_utils.put_object_in_object_store")
     def test_put_assets_and_pdfs_in_object_store_return_data_asset(
-        self, mk_put_object_in_object_store, mk_read_file_from_zip
+        self, mk_put_object_in_object_store
     ):
         expected = copy.deepcopy(self.xml_data)
         for asset in expected["assets"]:
             asset["asset_url"] = "http://minio/documentstore/{}".format(
                 asset["asset_id"]
             )
-        mk_read_file_from_zip.return_value = b""
+        MockZipFile = MagicMock()
+        MockZipFile.read.return_value = b""
         mk_put_object_in_object_store.side_effect = [
             asset["asset_url"] for asset in expected["assets"]
         ] + [None, None, None]
 
         result = put_assets_and_pdfs_in_object_store(
-            Mock(), self.xml_data
+            MockZipFile, self.xml_data
         )
         for expected_asset, result_asset in zip(expected["assets"], result["assets"]):
 
             self.assertEqual(expected_asset["asset_id"], result_asset["asset_id"])
             self.assertEqual(expected_asset["asset_url"], result_asset["asset_url"])
 
-    @patch("operations.docs_utils.read_file_from_zip")
     @patch("operations.docs_utils.put_object_in_object_store")
     def test_put_assets_and_pdfs_in_object_store_return_data_pdf(
-        self, mk_put_object_in_object_store, mk_read_file_from_zip
+        self, mk_put_object_in_object_store
     ):
         expected = copy.deepcopy(self.xml_data)
         pdfs_size = []
@@ -316,45 +491,20 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
 
         mk_read_file = MagicMock(return_value=b"")
         mk_read_file.__len__.side_effect = pdfs_size
-        mk_read_file_from_zip.return_value = mk_read_file
+        MockZipFile = Mock()
+        MockZipFile.read.return_value = mk_read_file
         mk_put_object_in_object_store.side_effect = (
             [None, None] + [pdf["data_url"] for pdf in expected["pdfs"]] + [None]
         )
 
         result = put_assets_and_pdfs_in_object_store(
-            Mock(), self.xml_data
+            MockZipFile, self.xml_data
         )
         for expected_pdf, result_pdf in zip(expected["pdfs"], result["pdfs"]):
 
             self.assertEqual(expected_pdf["filename"], result_pdf["filename"])
             self.assertEqual(expected_pdf["data_url"], result_pdf["data_url"])
             self.assertEqual(expected_pdf["size_bytes"], result_pdf["size_bytes"])
-
-
-class TestReadFileFromZip(TestCase):
-    def test_read_file_from_zip_call_read(self):
-
-        MockZipFile = Mock()
-        read_file_from_zip(MockZipFile, "filename.pdf")
-        MockZipFile.read.assert_called_once_with("filename.pdf")
-
-    def test_read_file_from_zip_return_value(self):
-
-        MockZipFile = Mock()
-        MockZipFile.read.return_value = b"1806-907X-rba-53-01-1-8-g01"
-        result = read_file_from_zip(MockZipFile, "filename.pdf")
-        self.assertEqual(result, b"1806-907X-rba-53-01-1-8-g01")
-
-    def test_read_file_from_zip_raise_except_error(self):
-
-        MockZipFile = Mock()
-        MockZipFile.read.side_effect = KeyError()
-        self.assertRaises(
-            PutDocInObjectStoreException,
-            read_file_from_zip,
-            MockZipFile,
-            "filename.pdf",
-        )
 
 
 class TestPutObjectInObjectStore(TestCase):
@@ -396,15 +546,22 @@ class TestPutObjectInObjectStore(TestCase):
     def test_put_object_in_object_store_raise_exception_error(self, mk_hooks):
 
         MockFile = Mock()
-
-        mk_hooks.object_store_connect.side_effect = Exception()
-        self.assertRaises(
-            PutDocInObjectStoreException,
-            put_object_in_object_store,
-            MockFile,
-            "1806-907X",
-            "FX6F3cbyYmmwvtGmMB7WCgr",
-            "1806-907X-rba-53-01-1-8.xml",
+        filepath = "{}/{}/{}".format(
+            "1806-907X", "FX6F3cbyYmmwvtGmMB7WCgr", "1806-907X-rba-53-01-1-8.xml")
+        mk_hooks.object_store_connect.side_effect = Exception(
+            "ConnectionError"
+        )
+        with self.assertRaises(ObjectStoreError) as exc_info:
+            put_object_in_object_store(
+                MockFile,
+                "1806-907X",
+                "FX6F3cbyYmmwvtGmMB7WCgr",
+                "1806-907X-rba-53-01-1-8.xml",
+            )
+        self.assertEqual(
+            str(exc_info.exception),
+            'Could not put object "{}" in object store : ConnectionError'.format(
+                filepath, str(exc_info))
         )
 
 
@@ -431,48 +588,66 @@ class TestPutXMLIntoObjectStore(TestCase):
             ],
         }
 
-    @patch("operations.docs_utils.read_file_from_zip")
+    @patch("operations.docs_utils.put_object_in_object_store")
+    @patch("operations.docs_utils.get_xml_data")
+    def test_put_xml_into_object_reads_xml_from_zip(
+        self, mk_get_xml_data, mk_put_object_in_object_store
+    ):
+        MockZipFile = Mock()
+        put_xml_into_object_store(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        MockZipFile.read.assert_any_call("1806-907X-rba-53-01-1-8.xml")
+
     @patch("operations.docs_utils.put_object_in_object_store")
     @patch("operations.docs_utils.get_xml_data")
     def test_put_xml_into_object_store_calls_get_xml_data(
-        self, mk_get_xml_data, mk_put_object_in_object_store, mk_read_file_from_zip
+        self, mk_get_xml_data, mk_put_object_in_object_store
     ):
         MockZipFile = Mock()
-        mk_read_file_from_zip.return_value = b"1806-907X-rba-53-01-1-8.xml"
+        MockZipFile.read.return_value = b"1806-907X-rba-53-01-1-8.xml"
         put_xml_into_object_store(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
         mk_get_xml_data.assert_any_call(
             b"1806-907X-rba-53-01-1-8.xml", "1806-907X-rba-53-01-1-8"
         )
 
-    @patch("operations.docs_utils.read_file_from_zip")
     @patch("operations.docs_utils.put_object_in_object_store")
     @patch("operations.docs_utils.get_xml_data")
-    def test_put_xml_into_object_store_reads_xml(
-        self, mk_get_xml_data, mk_put_object_in_object_store, mk_read_file_from_zip
+    def test_put_xml_into_object_store_error_if_zip_read_error(
+        self, mk_get_xml_data, mk_put_object_in_object_store
+    ):
+        MockZipFile = MagicMock()
+        MockZipFile.__str__.return_value = "MockZipFile"
+        MockZipFile.read.side_effect = KeyError("File not found in the archive")
+        with self.assertRaises(PutXMLInObjectStoreException) as exc_info:
+            put_xml_into_object_store(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        self.assertEqual(
+            str(exc_info.exception),
+            'Could not read file "1806-907X-rba-53-01-1-8.xml" from zipfile "MockZipFile": '
+            "'File not found in the archive'"
+        )
+
+    @patch("operations.docs_utils.put_object_in_object_store")
+    @patch("operations.docs_utils.get_xml_data")
+    def test_put_xml_into_object_store_puts_xml_in_object_store(
+        self, mk_get_xml_data, mk_put_object_in_object_store
     ):
         MockZipFile = Mock()
-        mk_read_file_from_zip.return_value = b""
+        MockZipFile.read.return_value = b""
         mk_get_xml_data.return_value = self.xml_data
         put_xml_into_object_store(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
-
-        mk_read_file_from_zip.assert_any_call(
-            MockZipFile, "1806-907X-rba-53-01-1-8.xml"
-        )
         mk_put_object_in_object_store.assert_any_call(
-            mk_read_file_from_zip.return_value,
+            MockZipFile.read.return_value,
             self.xml_data["issn"],
             self.xml_data["scielo_id"],
             "1806-907X-rba-53-01-1-8.xml",
         )
 
-    @patch("operations.docs_utils.read_file_from_zip")
     @patch("operations.docs_utils.put_object_in_object_store")
     @patch("operations.docs_utils.get_xml_data")
     def test_put_xml_into_object_store_return_data_xml(
-        self, mk_get_xml_data, mk_put_object_in_object_store, mk_read_file_from_zip
+        self, mk_get_xml_data, mk_put_object_in_object_store
     ):
         MockZipFile = Mock()
-        mk_read_file_from_zip.return_value = b""
+        MockZipFile.read.return_value = b""
         mk_get_xml_data.return_value = self.xml_data
         mk_put_object_in_object_store.return_value = \
             "http://minio/documentstore/1806-907X-rba-53-01-1-8.xml"

@@ -9,11 +9,14 @@ from lxml import etree
 
 import common.hooks as hooks
 from operations.exceptions import (
-    PutDocInObjectStoreException,
+    DeleteDocFromKernelException,
+    DocumentToDeleteException,
+    PutXMLInObjectStoreException,
     RegisterUpdateDocIntoKernelException,
 )
 from operations.docs_utils import (
-    read_file_from_zip,
+    delete_doc_from_kernel,
+    document_to_delete,
     register_update_doc_into_kernel,
     get_xml_data,
     put_object_in_object_store,
@@ -44,34 +47,6 @@ def list_documents(sps_package):
         return xmls_filenames
 
 
-def documents_to_delete(sps_package, sps_xml_files):
-    docs_to_delete = []
-    xmls_to_delete = []
-    with ZipFile(sps_package) as zf:
-        for i, sps_xml_file in enumerate(sps_xml_files, 1):
-            Logger.info(
-                'Reading XML file "%s" from ZIP file "%s" [%s/%s]'
-                % (sps_xml_file, sps_package, i, len(sps_xml_files))
-            )
-            xml_content = zf.read(sps_xml_file)
-            if len(xml_content) > 0:
-                xml_file = etree.XML(xml_content)
-                scielo_id = xml_file.find(".//article-id[@specific-use='scielo']")
-                if scielo_id is None:
-                    Logger.info(
-                        'Cannot read SciELO ID from "%s": missing element in XML'
-                        % sps_xml_file
-                    )
-                else:
-                    delete_tag = scielo_id.getparent().find(
-                        "./article-id[@specific-use='delete']"
-                    )
-                    if delete_tag is not None:
-                        docs_to_delete.append(scielo_id.text)
-                        xmls_to_delete.append(sps_xml_file)
-    return xmls_to_delete, docs_to_delete
-
-
 def delete_documents(sps_package, xmls_filenames):
     """
     Deleta documentos informados do Kernel
@@ -81,19 +56,40 @@ def delete_documents(sps_package, xmls_filenames):
     """
     Logger.debug("delete_documents IN")
     Logger.info("Reading sps_package: %s" % sps_package)
-    xmls_to_delete, docs_to_delete = documents_to_delete(sps_package, xmls_filenames)
-    for doc_to_delete in docs_to_delete:
-        try:
-            response = hooks.kernel_connect("/documents/" + doc_to_delete, "DELETE")
-        except requests.exceptions.HTTPError as exc:
+    xmls_to_delete = []
+    with ZipFile(sps_package) as zipfile:
+        for i, sps_xml_file in enumerate(xmls_filenames, 1):
             Logger.info(
-                'Cannot delete "%s" from kernel status: %s' % (doc_to_delete, str(exc))
+                'Reading XML file "%s" from ZIP file "%s" [%s/%s]',
+                sps_xml_file,
+                sps_package,
+                i,
+                len(xmls_filenames),
             )
-        else:
-            Logger.info(
-                "Document %s deleted from kernel status: %d"
-                % (doc_to_delete, response.status_code)
-            )
+            try:
+                doc_to_delete = document_to_delete(zipfile, sps_xml_file)
+            except DocumentToDeleteException as exc:
+                Logger.info(
+                    'Could not delete document "%s": %s', sps_xml_file, str(exc)
+                )
+            else:
+                if doc_to_delete:
+                    xmls_to_delete.append(sps_xml_file)
+                    try:
+                        delete_doc_from_kernel(doc_to_delete)
+                    except DeleteDocFromKernelException as exc:
+                        Logger.info(
+                            'Could not delete "%s" (scielo_id: "%s") from kernel: %s',
+                            sps_xml_file,
+                            doc_to_delete,
+                            str(exc)
+                        )
+                    else:
+                        Logger.info(
+                            'Document "%s" (scielo_id: "%s") deleted from kernel',
+                            sps_xml_file,
+                            doc_to_delete
+                        )
     Logger.debug("delete_documents OUT")
     return list(set(xmls_filenames) - set(xmls_to_delete))
 
@@ -116,14 +112,15 @@ def register_update_documents(sps_package, xmls_to_preserve):
             )
             try:
                 xml_data = put_xml_into_object_store(zipfile, xml_filename)
-            except PutDocInObjectStoreException as exc:
+            except PutXMLInObjectStoreException as exc:
                 Logger.info(
                     'Could not put document "%s" in object store: %s',
                     xml_filename,
                     str(exc),
                 )
             else:
-                put_assets_and_pdfs_in_object_store(zipfile, xml_data)
+                assets_and_pdfs_data = put_assets_and_pdfs_in_object_store(zipfile, xml_data)
+                xml_data.update(assets_and_pdfs_data)
                 try:
                     register_update_doc_into_kernel(xml_data)
 

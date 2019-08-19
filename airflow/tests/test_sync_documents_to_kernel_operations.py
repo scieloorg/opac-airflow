@@ -1,4 +1,5 @@
 import os
+import copy
 import http.client
 import shutil
 import tempfile
@@ -11,12 +12,13 @@ from lxml import etree
 
 from operations.sync_documents_to_kernel_operations import (
     list_documents,
-    documents_to_delete,
     delete_documents,
     register_update_documents,
 )
 from operations.exceptions import (
-    PutDocInObjectStoreException,
+    DeleteDocFromKernelException,
+    DocumentToDeleteException,
+    PutXMLInObjectStoreException,
     RegisterUpdateDocIntoKernelException,
 )
 from tests.fixtures import XML_FILE_CONTENT
@@ -69,75 +71,6 @@ class TestListDocuments(TestCase):
         self.assertEqual(result, [])
 
 
-class TestDocumentsToDelete(TestCase):
-    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
-    def test_documents_to_delete_opens_zip(self, MockZipFile):
-        documents_to_delete("dir/destination/abc_v50.zip", [])
-        MockZipFile.assert_called_once_with("dir/destination/abc_v50.zip")
-
-    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
-    def test_documents_to_delete_reads_each_xml_from_zip(self, MockZipFile):
-        sps_xml_files = ["0123-4567-abc-50-1-8.xml", "0123-4567-abc-50-9-18.xml"]
-        MockZipFile.return_value.__enter__.return_value.read.return_value = b""
-        documents_to_delete("dir/destination/abc_v50.zip", sps_xml_files)
-        for sps_xml_file in sps_xml_files:
-            with self.subTest(sps_xml_file=sps_xml_file):
-                for sps_xml_file in sps_xml_files:
-                    MockZipFile.return_value.__enter__.return_value.read.assert_any_call(
-                        sps_xml_file
-                    )
-
-    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
-    def test_documents_to_delete_returns_empty_list_if_no_docs_to_delete(
-        self, MockZipFile
-    ):
-        xml_file = etree.XML(XML_FILE_CONTENT)
-        xml_file = etree.tostring(xml_file)
-        MockZipFile.return_value.__enter__.return_value.read.return_value = xml_file
-        result = documents_to_delete(
-            "dir/destination/abc_v50.zip", ["1806-907X-rba-53-01-1-8.xml"]
-        )
-        self.assertEqual(result, ([], []))
-
-    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
-    @patch("operations.sync_documents_to_kernel_operations.Logger")
-    def test_documents_to_delete_logs_error_if_no_scielo_id_in_xml(
-        self, MockLogger, MockZipFile
-    ):
-        xml_file = etree.XML(XML_FILE_CONTENT)
-        scielo_id = xml_file.find(".//article-id[@specific-use='scielo']")
-        scielo_id.getparent().remove(scielo_id)
-        xml_file = etree.tostring(xml_file)
-        MockZipFile.return_value.__enter__.return_value.read.return_value = xml_file
-        documents_to_delete(
-            "dir/destination/abc_v50.zip", ["1806-907X-rba-53-01-1-8.xml"]
-        )
-        MockLogger.info.assert_any_call(
-            'Cannot read SciELO ID from "1806-907X-rba-53-01-1-8.xml": '
-            "missing element in XML"
-        )
-
-    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
-    def test_documents_to_delete_returns_documents_id_to_delete_and_xmls_to_delete(
-        self, MockZipFile
-    ):
-        article_id = etree.Element("article-id")
-        article_id.set("specific-use", "delete")
-        xml_file = etree.XML(XML_FILE_CONTENT)
-        am_tag = xml_file.find(".//article-meta")
-        am_tag.append(article_id)
-        deleted_xml_file = etree.tostring(xml_file)
-        MockZipFile.return_value.__enter__.return_value.read.return_value = (
-            deleted_xml_file
-        )
-        result = documents_to_delete(
-            "dir/destination/abc_v50.zip", ["1806-907X-rba-53-01-1-8.xml"]
-        )
-        self.assertEqual(
-            result, (["1806-907X-rba-53-01-1-8.xml"], ["FX6F3cbyYmmwvtGmMB7WCgr"])
-        )  # SciELO ID de XML_FILE_CONTENT
-
-
 class TestDeleteDocuments(TestCase):
     def setUp(self):
         self.kwargs = {
@@ -148,83 +81,123 @@ class TestDeleteDocuments(TestCase):
                 "1806-907X-rba-53-01-19-25.xml",
             ],
         }
+        self.docs_to_delete = [
+            "FX6F3cbyYmmwvtGmMB7WCgr",
+            "GZ5K2cbyYmmwvtGmMB71243",
+            "KU890cbyYmmwvtGmMB7JUk4",
+        ]
 
-    @patch("operations.sync_documents_to_kernel_operations.hooks")
-    @patch("operations.sync_documents_to_kernel_operations.documents_to_delete")
-    def test_delete_documents_calls_documents_to_delete(
-        self, mk_documents_to_delete, mk_hooks
+    @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
+    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
+    def test_delete_documents_opens_zip(
+        self, MockZipFile, mk_document_to_delete, mk_delete_doc_from_kernel
     ):
-        mk_documents_to_delete.return_value = ([], [])
         delete_documents(**self.kwargs)
-        mk_documents_to_delete.assert_called_once_with(
-            self.kwargs["sps_package"], self.kwargs["xmls_filenames"]
-        )
+        MockZipFile.assert_called_once_with(self.kwargs["sps_package"])
 
-    @patch("operations.sync_documents_to_kernel_operations.hooks")
-    @patch("operations.sync_documents_to_kernel_operations.Logger")
-    @patch("operations.sync_documents_to_kernel_operations.documents_to_delete")
-    def test_delete_documents_calls_kernel_connect_with_docs_to_delete(
-        self, mk_documents_to_delete, MockLogger, mk_hooks
+    @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
+    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
+    def test_delete_documents_calls_document_to_delete_for_each_xml(
+        self, MockZipFile, mk_document_to_delete, mk_delete_doc_from_kernel
     ):
-        docs_to_delete = (
-            [
-                "1806-907X-rba-53-01-1-8.xml",
-                "1806-907X-rba-53-01-9-18.xml",
-                "1806-907X-rba-53-01-19-25.xml",
-            ],
-            [
-                "FX6F3cbyYmmwvtGmMB7WCgr",
-                "GZ5K2cbyYmmwvtGmMB71243",
-                "KU890cbyYmmwvtGmMB7JUk4",
-            ],
-        )
-        mk_documents_to_delete.return_value = docs_to_delete
-        mk_hooks.kernel_connect.return_value = Mock(status_code=http.client.NO_CONTENT)
         delete_documents(**self.kwargs)
-        for doc_to_delete in docs_to_delete[1]:
-            with self.subTest(doc_to_delete=doc_to_delete):
-                mk_hooks.kernel_connect.assert_any_call(
-                    "/documents/" + doc_to_delete, "DELETE"
+        for sps_xml_file in self.kwargs["xmls_filenames"]:
+            with self.subTest(sps_xml_file=sps_xml_file):
+                mk_document_to_delete.assert_any_call(
+                    MockZipFile.return_value.__enter__.return_value,
+                    sps_xml_file
                 )
+
+    @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
+    def test_delete_documents_logs_error_if_document_to_delete_error(
+        self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
+    ):
+        mk_document_to_delete.side_effect = DocumentToDeleteException("XML Error")
+        delete_documents(**self.kwargs)
+        mk_delete_doc_from_kernel.assert_not_called()
+        for xml_filename in self.kwargs["xmls_filenames"]:
+            with self.subTest(xml_filename=xml_filename):
                 MockLogger.info.assert_any_call(
-                    "Document %s deleted from kernel status: %d"
-                    % (doc_to_delete, http.client.NO_CONTENT)
+                    'Could not delete document "%s": %s', xml_filename, "XML Error"
                 )
 
-    @patch("operations.sync_documents_to_kernel_operations.hooks")
+    @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
     @patch("operations.sync_documents_to_kernel_operations.Logger")
-    @patch("operations.sync_documents_to_kernel_operations.documents_to_delete")
-    def test_delete_documents_logs_error_if_kernel_connect_error(
-        self, mk_documents_to_delete, MockLogger, mk_hooks
+    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
+    def test_delete_documents_calls_delete_doc_from_kernel(
+        self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
     ):
-        mk_documents_to_delete.return_value = (
-            ["1806-907X-rba-53-01-1-8.xml"],
-            ["FX6F3cbyYmmwvtGmMB7WCgr"],
-        )
-        mk_hooks.kernel_connect.side_effect = requests.exceptions.HTTPError(
+        mk_document_to_delete.side_effect = self.docs_to_delete
+        delete_documents(**self.kwargs)
+        for doc_to_delete in self.docs_to_delete:
+            with self.subTest(doc_to_delete=doc_to_delete):
+                mk_delete_doc_from_kernel.assert_any_call(doc_to_delete)
+
+    @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
+    def test_delete_documents_logs_error_if_kernel_connect_error(
+        self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
+    ):
+        mk_document_to_delete.side_effect = self.docs_to_delete
+        mk_delete_doc_from_kernel.side_effect = DeleteDocFromKernelException(
             "404 Client Error: Not Found"
         )
         delete_documents(**self.kwargs)
-        MockLogger.info.assert_any_call(
-            'Cannot delete "FX6F3cbyYmmwvtGmMB7WCgr" from kernel status: '
-            "404 Client Error: Not Found"
-        )
+        for sps_xml_file, doc_to_delete in zip(
+                self.kwargs["xmls_filenames"], self.docs_to_delete
+            ):
+            with self.subTest(sps_xml_file=sps_xml_file, doc_to_delete=doc_to_delete):
+                MockLogger.info.assert_any_call(
+                    'Could not delete "%s" (scielo_id: "%s") from kernel: %s',
+                    sps_xml_file,
+                    doc_to_delete,
+                    "404 Client Error: Not Found"
+                )
 
-    @patch("operations.sync_documents_to_kernel_operations.hooks")
+    @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
     @patch("operations.sync_documents_to_kernel_operations.Logger")
-    @patch("operations.sync_documents_to_kernel_operations.documents_to_delete")
-    def test_delete_documents_returns_xmls_to_preserve(
-        self, mk_documents_to_delete, MockLogger, mk_hooks
+    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
+    def test_delete_documents_logs_error_if_kernel_connect_error(
+        self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
     ):
-        docs_to_delete = (
-            ["1806-907X-rba-53-01-1-8.xml", "1806-907X-rba-53-01-9-18.xml"],
-            ["FX6F3cbyYmmwvtGmMB7WCgr", "GZ5K2cbyYmmwvtGmMB71243"],
-        )
-        mk_documents_to_delete.return_value = docs_to_delete
-        mk_hooks.kernel_connect.return_value = Mock(status_code=http.client.NO_CONTENT)
+        mk_document_to_delete.side_effect = self.docs_to_delete
+        delete_documents(**self.kwargs)
+        for sps_xml_file, doc_to_delete in zip(
+                self.kwargs["xmls_filenames"], self.docs_to_delete
+            ):
+            with self.subTest(sps_xml_file=sps_xml_file, doc_to_delete=doc_to_delete):
+                MockLogger.info.assert_any_call(
+                    'Document "%s" (scielo_id: "%s") deleted from kernel',
+                    sps_xml_file,
+                    doc_to_delete
+                )
+
+    @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
+    def test_delete_documents_returns_xmls_to_preserve(
+        self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
+    ):
+        docs_to_delete = [
+            "FX6F3cbyYmmwvtGmMB7WCgr", "GZ5K2cbyYmmwvtGmMB71243", None
+        ]
+        mk_document_to_delete.side_effect = docs_to_delete
         result = delete_documents(**self.kwargs)
         self.assertEqual(
-            result, list(set(self.kwargs["xmls_filenames"]) - set(docs_to_delete[0]))
+            result,
+            list(
+                set(self.kwargs["xmls_filenames"]) - set(self.kwargs["xmls_filenames"][:-1])
+            )
         )
 
 
@@ -265,11 +238,9 @@ class TestRegisterUpdateDocuments(TestCase):
                 "assets": [
                     {
                         "asset_id": "1806-907X-rba-53-01-1-8-g01.jpg",
-                        "asset_url": "http://minio/documentstore/1806-907X-rba-53-01-1-8-g01.jpg",
                     },
                     {
                         "asset_id": "1806-907X-rba-53-01-1-8-g02.jpg",
-                        "asset_url": "http://minio/documentstore/1806-907X-rba-53-01-1-8-g02.jpg",
                     },
                 ],
                 "pdfs": [
@@ -277,19 +248,16 @@ class TestRegisterUpdateDocuments(TestCase):
                         "lang": "en",
                         "filename": "1806-907X-rba-53-01-1-8.pdf",
                         "mimetype": "application/pdf",
-                        "pdf_url": "http://minio/documentstore/1806-907X-rba-53-01-1-8.pdf",
                     },
                     {
                         "lang": "pt",
                         "filename": "1806-907X-rba-53-01-1-8-pt.pdf",
                         "mimetype": "application/pdf",
-                        "pdf_url": "http://minio/documentstore/1806-907X-rba-53-01-1-8-pt.pdf",
                     },
                     {
                         "lang": "de",
                         "filename": "1806-907X-rba-53-01-1-8-de.pdf",
                         "mimetype": "application/pdf",
-                        "pdf_url": "http://minio/documentstore/1806-907X-rba-53-01-1-8-de.pdf",
                     },
                 ],
             },
@@ -300,11 +268,9 @@ class TestRegisterUpdateDocuments(TestCase):
                 "assets": [
                     {
                         "asset_id": "1806-907X-rba-53-01-9-18-g01.jpg",
-                        "asset_url": "http://minio/documentstore/1806-907X-rba-53-01-9-18-g01.jpg",
                     },
                     {
                         "asset_id": "1806-907X-rba-53-01-9-18-g02.jpg",
-                        "asset_url": "http://minio/documentstore/1806-907X-rba-53-01-9-18-g02.jpg",
                     },
                 ],
                 "pdfs": [
@@ -312,7 +278,6 @@ class TestRegisterUpdateDocuments(TestCase):
                         "lang": "en",
                         "filename": "1806-907X-rba-53-01-9-18.pdf",
                         "mimetype": "application/pdf",
-                        "pdf_url": "http://minio/documentstore/1806-907X-rba-53-01-9-18.pdf",
                     }
                 ],
             },
@@ -323,7 +288,6 @@ class TestRegisterUpdateDocuments(TestCase):
                 "assets": [
                     {
                         "asset_id": "1806-907X-rba-53-01-19-25-tb01.tiff",
-                        "asset_url": "http://minio/documentstore/1806-907X-rba-53-01-19-25-tb01.tiff",
                     }
                 ],
                 "pdfs": [
@@ -331,13 +295,11 @@ class TestRegisterUpdateDocuments(TestCase):
                         "lang": "es",
                         "filename": "1806-907X-rba-53-01-19-25.pdf",
                         "mimetype": "application/pdf",
-                        "pdf_url": "http://minio/documentstore/1806-907X-rba-53-01-19-25.pdf",
                     },
                     {
                         "lang": "en",
                         "filename": "1806-907X-rba-53-01-19-25-en.pdf",
                         "mimetype": "application/pdf",
-                        "pdf_url": "http://minio/documentstore/1806-907X-rba-53-01-19-25-en.pdf",
                     },
                 ],
             },
@@ -428,9 +390,9 @@ class TestRegisterUpdateDocuments(TestCase):
     ):
         MockZipFile.return_value.__enter__.return_value.read.return_value = b""
         mk_put_xml_into_object_store.side_effect = [
-            None,
-            PutDocInObjectStoreException("Put Doc in Object Store Error"),
-            None,
+            {},
+            PutXMLInObjectStoreException("Put Doc in Object Store Error"),
+            {},
         ]
         register_update_documents(**self.kwargs)
         MockLogger.info.assert_any_call(
@@ -477,9 +439,16 @@ class TestRegisterUpdateDocuments(TestCase):
         mk_put_assets_and_pdfs_in_object_store,
         mk_register_update_doc_into_kernel,
     ):
+        expected = copy.deepcopy(self.xmls_data)
         mk_put_xml_into_object_store.side_effect = self.xmls_data
+        mk_assets_and_pdfs = {
+            "assets": [{"asset_id": "test"}],
+            "pdfs": [{"filename": "test"}],
+        }
+        mk_put_assets_and_pdfs_in_object_store.return_value = mk_assets_and_pdfs
         register_update_documents(**self.kwargs)
-        for xml_data in self.xmls_data:
+        for xml_data in expected:
+            xml_data.update(mk_assets_and_pdfs)
             with self.subTest(xml_data=xml_data):
                 mk_register_update_doc_into_kernel.assert_any_call(xml_data)
 
