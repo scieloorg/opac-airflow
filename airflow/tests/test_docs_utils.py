@@ -12,6 +12,7 @@ from operations.docs_utils import (
     delete_doc_from_kernel,
     document_to_delete,
     get_xml_data,
+    files_sha1,
     register_update_doc_into_kernel,
     put_object_in_object_store,
     put_assets_and_pdfs_in_object_store,
@@ -37,12 +38,8 @@ class TestDeleteDocFromKernel(TestCase):
         )
 
     @patch("operations.docs_utils.hooks")
-    def test_delete_documents_raises_error_if_kernel_connect_error(
-        self, mk_hooks
-    ):
-        mk_hooks.kernel_connect.side_effect = requests.exceptions.HTTPError(
-            "Not Found"
-        )
+    def test_delete_documents_raises_error_if_kernel_connect_error(self, mk_hooks):
+        mk_hooks.kernel_connect.side_effect = requests.exceptions.HTTPError("Not Found")
         with self.assertRaises(DeleteDocFromKernelException) as exc_info:
             delete_doc_from_kernel("FX6F3cbyYmmwvtGmMB7WCgr")
         self.assertEqual(str(exc_info.exception), "Not Found")
@@ -92,7 +89,9 @@ class TestDocumentsToDelete(TestCase):
 
     @patch("operations.docs_utils.SPS_Package")
     @patch("operations.docs_utils.etree")
-    def test_document_to_delete_creates_SPS_Package_instance(self, mk_etree, MockSPS_Package):
+    def test_document_to_delete_creates_SPS_Package_instance(
+        self, mk_etree, MockSPS_Package
+    ):
         MockXML = Mock()
         mk_etree.XML.return_value = MockXML
         MockSPS_Package.return_value.is_document_deletion = False
@@ -145,7 +144,9 @@ class TestDocumentsToDelete(TestCase):
         MockZipFile = MagicMock()
         MockZipFile.read.return_value = deleted_xml_file
         result = document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
-        self.assertEqual(result, "FX6F3cbyYmmwvtGmMB7WCgr") # SciELO ID de XML_FILE_CONTENT
+        self.assertEqual(
+            result, "FX6F3cbyYmmwvtGmMB7WCgr"
+        )  # SciELO ID de XML_FILE_CONTENT
 
 
 class TestGetXMLData(TestCase):
@@ -411,7 +412,7 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
             b"",
             KeyError("File not found in the archive"),
             KeyError("File not found in the archive"),
-            b"",            
+            b"",
         ]
         put_assets_and_pdfs_in_object_store(MockZipFile, self.xml_data)
         MockLogger.info.assert_any_call(
@@ -437,7 +438,7 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
             b"",
             KeyError("File not found in the archive"),
             KeyError("File not found in the archive"),
-            b"",            
+            b"",
         ]
         expected = {
             "assets": self.xml_data["assets"][:1],
@@ -470,9 +471,7 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
             asset["asset_url"] for asset in expected["assets"]
         ] + [None, None, None]
 
-        result = put_assets_and_pdfs_in_object_store(
-            MockZipFile, self.xml_data
-        )
+        result = put_assets_and_pdfs_in_object_store(MockZipFile, self.xml_data)
         for expected_asset, result_asset in zip(expected["assets"], result["assets"]):
 
             self.assertEqual(expected_asset["asset_id"], result_asset["asset_id"])
@@ -497,9 +496,7 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
             [None, None] + [pdf["data_url"] for pdf in expected["pdfs"]] + [None]
         )
 
-        result = put_assets_and_pdfs_in_object_store(
-            MockZipFile, self.xml_data
-        )
+        result = put_assets_and_pdfs_in_object_store(MockZipFile, self.xml_data)
         for expected_pdf, result_pdf in zip(expected["pdfs"], result["pdfs"]):
 
             self.assertEqual(expected_pdf["filename"], result_pdf["filename"])
@@ -508,9 +505,24 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
 
 
 class TestPutObjectInObjectStore(TestCase):
+    @patch("operations.docs_utils.files_sha1")
     @patch("operations.docs_utils.hooks")
-    def test_put_object_in_object_store_call_hook(self, mk_hooks):
+    def test_put_object_in_object_store_call_files_sha1(self, mk_hooks, mk_files_sha1):
 
+        MockFile = Mock()
+        put_object_in_object_store(
+            MockFile,
+            "1806-907X",
+            "FX6F3cbyYmmwvtGmMB7WCgr",
+            "1806-907X-rba-53-01-1-8.xml",
+        )
+        mk_files_sha1.assert_called_once_with(MockFile)
+
+    @patch("operations.docs_utils.files_sha1")
+    @patch("operations.docs_utils.hooks")
+    def test_put_object_in_object_store_call_hook(self, mk_hooks, mk_files_sha1):
+
+        mk_files_sha1.return_value = "da39a3ee5e6b4b0d3255bfef95601890afd80709"
         MockFile = Mock()
         put_object_in_object_store(
             MockFile,
@@ -520,12 +532,15 @@ class TestPutObjectInObjectStore(TestCase):
         )
         mk_hooks.object_store_connect.assert_called_once_with(
             MockFile,
-            "1806-907X/FX6F3cbyYmmwvtGmMB7WCgr/1806-907X-rba-53-01-1-8.xml",
+            "1806-907X/FX6F3cbyYmmwvtGmMB7WCgr/da39a3ee5e6b4b0d3255bfef95601890afd80709.xml",
             "documentstore",
         )
 
+    @patch("operations.docs_utils.files_sha1")
     @patch("operations.docs_utils.hooks")
-    def test_put_object_in_object_store_return_url_object(self, mk_hooks):
+    def test_put_object_in_object_store_return_url_object(
+        self, mk_hooks, mk_files_sha1
+    ):
 
         MockFile = Mock()
         mk_hooks.object_store_connect.return_value = (
@@ -542,15 +557,20 @@ class TestPutObjectInObjectStore(TestCase):
             "http://minio/documentstore/1806-907X-rba-53-01-1-8.xml", result
         )
 
+    @patch("operations.docs_utils.files_sha1")
     @patch("operations.docs_utils.hooks")
-    def test_put_object_in_object_store_raise_exception_error(self, mk_hooks):
+    def test_put_object_in_object_store_raise_exception_error(
+        self, mk_hooks, mk_files_sha1
+    ):
 
+        mk_files_sha1.return_value = "da39a3ee5e6b4b0d3255bfef95601890afd80709"
         MockFile = Mock()
         filepath = "{}/{}/{}".format(
-            "1806-907X", "FX6F3cbyYmmwvtGmMB7WCgr", "1806-907X-rba-53-01-1-8.xml")
-        mk_hooks.object_store_connect.side_effect = Exception(
-            "ConnectionError"
+            "1806-907X",
+            "FX6F3cbyYmmwvtGmMB7WCgr",
+            "da39a3ee5e6b4b0d3255bfef95601890afd80709.xml",
         )
+        mk_hooks.object_store_connect.side_effect = Exception("ConnectionError")
         with self.assertRaises(ObjectStoreError) as exc_info:
             put_object_in_object_store(
                 MockFile,
@@ -561,7 +581,8 @@ class TestPutObjectInObjectStore(TestCase):
         self.assertEqual(
             str(exc_info.exception),
             'Could not put object "{}" in object store : ConnectionError'.format(
-                filepath, str(exc_info))
+                filepath, str(exc_info)
+            ),
         )
 
 
@@ -622,7 +643,7 @@ class TestPutXMLIntoObjectStore(TestCase):
         self.assertEqual(
             str(exc_info.exception),
             'Could not read file "1806-907X-rba-53-01-1-8.xml" from zipfile "MockZipFile": '
-            "'File not found in the archive'"
+            "'File not found in the archive'",
         )
 
     @patch("operations.docs_utils.put_object_in_object_store")
@@ -649,14 +670,23 @@ class TestPutXMLIntoObjectStore(TestCase):
         MockZipFile = Mock()
         MockZipFile.read.return_value = b""
         mk_get_xml_data.return_value = self.xml_data
-        mk_put_object_in_object_store.return_value = \
+        mk_put_object_in_object_store.return_value = (
             "http://minio/documentstore/1806-907X-rba-53-01-1-8.xml"
-
-        result = put_xml_into_object_store(
-            MockZipFile, "1806-907X-rba-53-01-1-8.xml"
         )
+
+        result = put_xml_into_object_store(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
         self.assertEqual(
             "http://minio/documentstore/1806-907X-rba-53-01-1-8.xml", result["xml_url"]
+        )
+
+
+class TestFilesSha1(TestCase):
+    def test_files_sha1_return_value(self):
+        MockFile = MagicMock()
+
+        MockFile.__getitem__.return_value = b"1806-907X-rba-53-01-1-8.xml"
+        self.assertEqual(
+            "3a4dae699f59a3b89b231845def80efe89a5a15e", files_sha1(MockFile)
         )
 
 
