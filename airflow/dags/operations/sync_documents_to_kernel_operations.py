@@ -1,25 +1,18 @@
 import os
 import logging
-import shutil
-from pathlib import Path
 from zipfile import ZipFile
 
-import requests
-from lxml import etree
-
-import common.hooks as hooks
 from operations.exceptions import (
     DeleteDocFromKernelException,
     DocumentToDeleteException,
     PutXMLInObjectStoreException,
     RegisterUpdateDocIntoKernelException,
 )
+
 from operations.docs_utils import (
     delete_doc_from_kernel,
     document_to_delete,
     register_update_doc_into_kernel,
-    get_xml_data,
-    put_object_in_object_store,
     put_assets_and_pdfs_in_object_store,
     put_xml_into_object_store,
 )
@@ -132,3 +125,34 @@ def register_update_documents(sps_package, xmls_to_preserve):
                     )
 
     Logger.debug("register_update_documents OUT")
+
+
+def relate_documents(documents):
+
+    """
+        Relaciona documento com seu fascículo(DocumentsBundle).
+
+        :param kwargs['documents']: Uma lista de dicionários contento os atributos necessários para a descoberta do fascículo.
+
+            Exemplo contendo a lista de atributos(mínimo):
+            [
+                {
+                 "scielo_id": "S0034-8910.2014048004923",
+                 "issn": "0034-8910",
+                 "volume": "48",
+                 "order": "347",
+                 "number": "2"
+                 },
+                {
+                 "scielo_id": "S0034-8910.20140078954641",
+                 "issn": "1518-8787",
+                 "volume": "02",
+                 "order": "978",
+                 "number": "2"
+                 },
+            ]
+
+    """
+    Logger.info("Entrou no relate_documents_to_documentsbundle")
+
+    Logger.info("Saiu do relate_documents_to_documentsbundle")

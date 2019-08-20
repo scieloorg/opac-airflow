@@ -2,21 +2,13 @@ import os
 import logging
 import shutil
 from pathlib import Path
-from zipfile import ZipFile
-
-import requests
-from lxml import etree
-
-import common.hooks as hooks
 
 Logger = logging.getLogger(__name__)
 
 
 def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
     """
-    Obtém Pacotes SPS através da Scilista, movendo os pacotes para o diretório de
-    processamento do Airflow e gera lista dos paths dos pacotes SPS no diretório de
-    processamento.
+    Obtém Pacotes SPS através da Scilista, movendo os pacotes para o diretório de processamento do Airflow e gera lista dos paths dos pacotes SPS no diretório de processamento.
 
     list scilista: lista com as linhas do arquivo scilista.lst
         rsp v10n4

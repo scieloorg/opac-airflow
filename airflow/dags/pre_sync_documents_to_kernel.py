@@ -1,7 +1,6 @@
 # conding: utf-8
 """
-    DAG responsável por preparar os pacotes SPS vindos do fluxo de ingestão para
-    atualização do Kernel.
+    DAG responsável por preparar os pacotes SPS vindos do fluxo de ingestão para atualização do Kernel.
 
     Passos:
         a. Obtém Pacotes SPS através da Scilista

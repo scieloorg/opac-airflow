@@ -11,6 +11,7 @@ from operations.exceptions import (
     PutXMLInObjectStoreException,
     ObjectStoreError,
     RegisterUpdateDocIntoKernelException,
+    RelateDocumentToDocumentsBundleException,
 )
 from common.sps_package import SPS_Package
 
@@ -217,3 +218,21 @@ def put_xml_into_object_store(zipfile, xml_filename):
         xml_file, xml_data["issn"], xml_data["scielo_id"], xml_filename
     )
     return xml_data
+
+
+def register_documents_to_documentsbundle(bundle_id, payload):
+
+    if not isinstance(payload, list):
+        raise ValueError("documents param must be list instance")
+
+    for load in payload:
+        if not isinstance(load, dict):
+            raise ValueError("some list item is not a dictionary")
+
+    try:
+        response = hooks.kernel_connect(
+            "/bundles/" + bundle_id, "PUT", payload
+        )
+        return response
+    except requests.exceptions.HTTPError as exc:
+        raise RelateDocumentToDocumentsBundleException(str(exc)) from None

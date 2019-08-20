@@ -79,6 +79,11 @@ Executando a aplicação:
 
 ```docker-compose up -d```
 
+### Teste
+
+```
+docker-compose -f docker-compose-dev.yml exec opac-airflow python -m unittest -v
+```
 
 ## Licença de uso
 

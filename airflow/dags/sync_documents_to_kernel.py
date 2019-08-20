@@ -72,6 +72,9 @@ def register_update_documents(dag_run, **kwargs):
             kwargs["ti"].xcom_push(key="documents", value=_documents)
 
 
+def relate_documents(dag_run, **kwargs):
+    pass
+
 list_documents_task = PythonOperator(
     task_id="list_docs_task_id",
     provide_context=True,
