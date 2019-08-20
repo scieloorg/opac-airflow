@@ -175,6 +175,24 @@ class TestGetXMLData(TestCase):
         get_xml_data(xml_content, None)
         MockSPS_Package.assert_called_once_with(MockXML, None)
 
+    def test_get_xml_data_does_not_return_volume_when_it_is_not_in_xml_content(self):
+        xml_file = etree.XML(XML_FILE_CONTENT)
+        volume_tag = xml_file.find(".//article-meta/volume")
+        volume_tag.getparent().remove(volume_tag)
+        result = get_xml_data(etree.tostring(xml_file), "1806-907X-rba-53-01-1-8")
+        self.assertNotIn("volume", result.keys())
+
+    def test_get_xml_data_does_not_return_number_when_it_is_not_in_xml_content(self):
+        xml_file = etree.XML(XML_FILE_CONTENT)
+        number_tag = xml_file.find(".//article-meta/issue")
+        number_tag.text = "suppl 2"
+        result = get_xml_data(etree.tostring(xml_file), "1806-907X-rba-53-01-1-8")
+        self.assertNotIn("number", result.keys())
+
+        number_tag.getparent().remove(number_tag)
+        result = get_xml_data(etree.tostring(xml_file), "1806-907X-rba-53-01-1-8")
+        self.assertNotIn("number", result.keys())
+
     def test_get_xml_data_returns_supplement_when_it_is_in_xml_content(self):
         xml_content = XML_FILE_CONTENT
         result = get_xml_data(xml_content, "1806-907X-rba-53-01-1-8")
@@ -186,12 +204,28 @@ class TestGetXMLData(TestCase):
         result = get_xml_data(etree.tostring(xml_file), "1806-907X-rba-53-01-1-8")
         self.assertEqual(result.get("supplement"), "02")
 
+    def test_get_xml_data_returns_order_with_fpage_when_there_is_no_order_in_xml_content(self):
+        xml_content = XML_FILE_CONTENT
+        result = get_xml_data(xml_content, "1806-907X-rba-53-01-1-8")
+        self.assertEqual(result.get("order"), "00001")
+
+    def test_get_xml_data_returns_order_with_order_when_there_is_order_in_xml_content(self):
+        article_id = etree.Element("article-id")
+        article_id.set("pub-id-type", "other")
+        article_id.text = "00200"
+        xml_file = etree.XML(XML_FILE_CONTENT)
+        am_tag = xml_file.find(".//article-meta")
+        am_tag.append(article_id)
+        result = get_xml_data(etree.tostring(xml_file), "1806-907X-rba-53-01-1-8")
+        self.assertEqual(result.get("order"), "00200")
+
     def test_get_xml_data_returns_xml_metadata(self):
         xml_content = XML_FILE_CONTENT
         result = get_xml_data(xml_content, "1806-907X-rba-53-01-1-8")
         self.assertEqual(result["xml_package_name"], "1806-907X-rba-53-01-1-8")
         self.assertEqual(result["scielo_id"], "FX6F3cbyYmmwvtGmMB7WCgr")
         self.assertEqual(result["issn"], "1806-907X")
+        self.assertEqual(result["year"], "2018")
         self.assertEqual(result["volume"], "53")
         self.assertEqual(result["number"], "01")
         self.assertEqual(
