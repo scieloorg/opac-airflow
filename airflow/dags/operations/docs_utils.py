@@ -120,8 +120,7 @@ def get_xml_data(xml_content, xml_package_name):
 
 def files_sha1(file):
     _sum = hashlib.sha1()
-    chunk = file[:1024]
-    _sum.update(chunk)
+    _sum.update(file)
     return _sum.hexdigest()
 
 

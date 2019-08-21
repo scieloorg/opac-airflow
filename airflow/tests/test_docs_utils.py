@@ -682,11 +682,10 @@ class TestPutXMLIntoObjectStore(TestCase):
 
 class TestFilesSha1(TestCase):
     def test_files_sha1_return_value(self):
-        MockFile = MagicMock()
 
-        MockFile.__getitem__.return_value = b"1806-907X-rba-53-01-1-8.xml"
+        file = b"1806-907X-rba-53-01-1-8.xml"
         self.assertEqual(
-            "3a4dae699f59a3b89b231845def80efe89a5a15e", files_sha1(MockFile)
+            "3a4dae699f59a3b89b231845def80efe89a5a15e", files_sha1(file)
         )
 
 
