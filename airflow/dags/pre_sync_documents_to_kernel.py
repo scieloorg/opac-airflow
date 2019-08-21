@@ -31,7 +31,8 @@ Logger = logging.getLogger(__name__)
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
-    "start_date": datetime.utcnow(),
+    "start_date": datetime(2019, 8, 21),
+    # "start_date": datetime.utcnow(),
 }
 
 dag = DAG(

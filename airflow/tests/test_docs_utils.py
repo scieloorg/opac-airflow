@@ -16,7 +16,7 @@ from operations.docs_utils import (
     put_object_in_object_store,
     put_assets_and_pdfs_in_object_store,
     put_xml_into_object_store,
-    register_documents_to_documentsbundle,
+    register_document_to_documentsbundle,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -676,8 +676,8 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
             Verifica se register_document envoca kernel_connect com os parâmetros corretos.
         """
 
-        register_documents_to_documentsbundle("0066-782X-1999-v72-n0",
-                                              self.payload)
+        register_document_to_documentsbundle("0066-782X-1999-v72-n0",
+                                             self.payload)
 
         mk_hooks.kernel_connect.assert_called_once_with(
             "/bundles/0066-782X-1999-v72-n0",
@@ -699,7 +699,7 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
         )
 
         self.assertRaises(RelateDocumentToDocumentsBundleException,
-                          register_documents_to_documentsbundle,
+                          register_document_to_documentsbundle,
                           "0066-782X-1999-v72-n0",
                           self.payload)
 
@@ -709,7 +709,7 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
         """
         payload = {"id": "0034-8910-rsp-48-2-0347", "order": "01"}
 
-        self.assertRaises(ValueError, register_documents_to_documentsbundle, "0066-782X-1999-v72-n0", payload)
+        self.assertRaises(ValueError, register_document_to_documentsbundle, "0066-782X-1999-v72-n0", payload)
 
     def test_if_register_document_documentsbundle_received_just_list_of_dict(self):
         """
@@ -721,12 +721,12 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
                     2,
                   ]
 
-        self.assertRaises(ValueError, register_documents_to_documentsbundle, "0066-782X-1999-v72-n0", payload)
+        self.assertRaises(ValueError, register_document_to_documentsbundle, "0066-782X-1999-v72-n0", payload)
 
     @patch("operations.docs_utils.hooks")
     def test_if_register_document_documentsbundle_return_status_code_204_with_correct_params(self, mk_hooks):
         """
-            Verifica se ao envocarmos register_documents_to_documentsbundle com o ID do bundle e payload corretos o retorno é o esperado.
+            Verifica se ao envocarmos register_document_to_documentsbundle com o ID do bundle e payload corretos o retorno é o esperado.
 
             Status code 204 significa que os documentos foram atualizado com sucesso.
         """
@@ -737,7 +737,7 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
                     {"id": "0034-8910-rsp-48-2-0348", "order": "02"},
                   ]
 
-        response = register_documents_to_documentsbundle("0066-782X-1999-v72-n0", payload)
+        response = register_document_to_documentsbundle("0066-782X-1999-v72-n0", payload)
 
         self.assertEqual(response.status_code, 204)
 

@@ -220,8 +220,12 @@ def put_xml_into_object_store(zipfile, xml_filename):
     return xml_data
 
 
-def register_documents_to_documentsbundle(bundle_id, payload):
+def register_document_to_documentsbundle(bundle_id, payload):
+    """
+        Relaciona documento com seu fascículo(DocumentsBundle).
 
+        Utiliza a endpoint do Kernel /bundles/{{ DUNDLE_ID }}
+    """
     if not isinstance(payload, list):
         raise ValueError("documents param must be list instance")
 
@@ -236,3 +240,31 @@ def register_documents_to_documentsbundle(bundle_id, payload):
         return response
     except requests.exceptions.HTTPError as exc:
         raise RelateDocumentToDocumentsBundleException(str(exc)) from None
+
+
+def issue_id(issn_id, year, volume=None, number=None, supplement=None):
+    """
+        Gera Id utilizado na ferramenta de migração para cadastro do documentsbundle.
+    """
+
+    labels = ["issn_id", "year", "volume", "number", "supplement"]
+    values = [issn_id, year, volume, number, supplement]
+
+    data = dict([(label, value) for label, value in zip(labels, values)])
+
+    labels = ["issn_id", "year"]
+    _id = []
+    for label in labels:
+        value = data.get(label)
+        if value:
+            _id.append(value)
+
+    labels = [("volume", "v"), ("number", "n"), ("supplement", "s")]
+    for label, prefix in labels:
+        value = data.get(label)
+        if value:
+            if value.isdigit():
+                value = str(int(value))
+            _id.append(prefix + value)
+
+    return "-".join(_id)

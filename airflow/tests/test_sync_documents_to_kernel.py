@@ -7,10 +7,9 @@ from sync_documents_to_kernel import (
     list_documents,
     delete_documents,
     register_update_documents,
-    relate_documents,
 )
 
-from operations.sync_documents_to_kernel_operations import relate_documents
+from operations.sync_documents_to_kernel_operations import relate_documents_to_documentsbundle
 
 
 class TestListDocuments(TestCase):
@@ -206,10 +205,6 @@ class TestRegisterUpdateDocuments(TestCase):
         kwargs["ti"].xcom_push.assert_called_once_with(
             key="documents", value=documents
         )
-
-
-class TestRelateDocuments(TestCase):
-    pass
 
 
 if __name__ == "__main__":

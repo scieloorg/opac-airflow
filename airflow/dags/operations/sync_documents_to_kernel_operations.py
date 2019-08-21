@@ -15,6 +15,8 @@ from operations.docs_utils import (
     register_update_doc_into_kernel,
     put_assets_and_pdfs_in_object_store,
     put_xml_into_object_store,
+    issue_id,
+    register_document_to_documentsbundle,
 )
 
 Logger = logging.getLogger(__name__)
@@ -127,10 +129,9 @@ def register_update_documents(sps_package, xmls_to_preserve):
     Logger.debug("register_update_documents OUT")
 
 
-def relate_documents(documents):
-
+def relate_documents_to_documentsbundle(documents):
     """
-        Relaciona documento com seu fascículo(DocumentsBundle).
+        Relaciona documentos com seu fascículos(DocumentsBundle).
 
         :param kwargs['documents']: Uma lista de dicionários contento os atributos necessários para a descoberta do fascículo.
 
@@ -139,20 +140,75 @@ def relate_documents(documents):
                 {
                  "scielo_id": "S0034-8910.2014048004923",
                  "issn": "0034-8910",
+                 "year": "2014",
                  "volume": "48",
+                 "number": "2",
                  "order": "347",
-                 "number": "2"
+                 },
+                {
+                 "scielo_id": "S0034-8910.2014048004924",
+                 "issn": "0034-8910",
+                 "year": "2014",
+                 "volume": "48",
+                 "number": "2",
+                 "order": "348",
                  },
                 {
                  "scielo_id": "S0034-8910.20140078954641",
                  "issn": "1518-8787",
+                 "year": "2014",
                  "volume": "02",
+                 "number": "2",
                  "order": "978",
-                 "number": "2"
                  },
+                {
+                 "scielo_id": "S0034-8910.20140078954641",
+                 "issn": "1518-8787",
+                 "year": "2014",
+                 "volume": "02",
+                 "number": "2",
+                 "order": "978",
+                 "supplement": "1",
+                 }
             ]
 
+        Return a list of document related or not, something like:
+            [
+             {'S0034-8910.2014048004923': 'related'},
+             {'S0034-8910.20140078954641': 'not_related', 'error': ''}
+            ]
     """
+
     Logger.info("Entrou no relate_documents_to_documentsbundle")
+
+    bundle_id = ''
+    bundle_id_doc = {}
+    ret = []
+
+    if documents:
+        for doc in documents:
+
+            bundle_id = issue_id(issn_id=doc.get("issn"),
+                                 year=doc.get("year"),
+                                 volume=doc.get("volume", None),
+                                 number=doc.get("number", None),
+                                 supplement=doc.get("supplement", None))
+
+            bundle_id_doc.setdefault(bundle_id, [])
+
+            payload_doc = {}
+            payload_doc['id'] = doc.get("scielo_id")
+            payload_doc['order'] = doc.get("order")
+
+            bundle_id_doc[bundle_id].append(payload_doc)
+
+        for bundle_id, payload in bundle_id_doc.items():
+            response = register_document_to_documentsbundle(bundle_id, payload)
+
+            ret.append({bundle_id:
+                        'related' if response.status_code == 200 else 'not_related'
+                        })
+
+        return ret
 
     Logger.info("Saiu do relate_documents_to_documentsbundle")
