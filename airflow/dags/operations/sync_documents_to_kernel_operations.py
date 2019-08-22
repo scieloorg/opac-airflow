@@ -1,7 +1,7 @@
 import os
-import json
 import logging
 from zipfile import ZipFile
+from copy import deepcopy
 
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -98,6 +98,7 @@ def register_update_documents(sps_package, xmls_to_preserve):
     """
     Logger.debug("register_update_documents IN")
     with ZipFile(sps_package) as zipfile:
+        synchronized_docs_metadata = []
         for i, xml_filename in enumerate(xmls_to_preserve):
             Logger.info(
                 'Reading XML file "%s" from ZIP file "%s" [%s/%s]',
@@ -116,9 +117,10 @@ def register_update_documents(sps_package, xmls_to_preserve):
                 )
             else:
                 assets_and_pdfs_data = put_assets_and_pdfs_in_object_store(zipfile, xml_data)
-                xml_data.update(assets_and_pdfs_data)
+                _document_metadata = deepcopy(xml_data)
+                _document_metadata.update(assets_and_pdfs_data)
                 try:
-                    register_update_doc_into_kernel(xml_data)
+                    register_update_doc_into_kernel(_document_metadata)
 
                 except RegisterUpdateDocIntoKernelException as exc:
                     Logger.info(
@@ -126,8 +128,12 @@ def register_update_documents(sps_package, xmls_to_preserve):
                         xml_filename,
                         str(exc),
                     )
+                else:
+                    synchronized_docs_metadata.append(xml_data)
 
     Logger.debug("register_update_documents OUT")
+
+    return synchronized_docs_metadata
 
 
 def relate_documents_to_documentsbundle(documents):
@@ -204,7 +210,7 @@ def relate_documents_to_documentsbundle(documents):
             bundle_id_doc[bundle_id].append(payload_doc)
 
         for bundle_id, payload in bundle_id_doc.items():
-            response = register_document_to_documentsbundle(bundle_id, json.dumps(payload))
+            response = register_document_to_documentsbundle(bundle_id, payload)
 
             ret.append({bundle_id: response.status_code})
 

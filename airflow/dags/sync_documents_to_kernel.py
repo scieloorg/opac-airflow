@@ -33,7 +33,7 @@ Logger = logging.getLogger(__name__)
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
-    "start_date": datetime(2019, 7, 22),
+    "start_date": datetime(2019, 7, 21),
 }
 
 dag = DAG(dag_id="sync_documents_to_kernel", default_args=default_args, schedule_interval=None)

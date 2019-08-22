@@ -484,6 +484,32 @@ class TestRegisterUpdateDocuments(TestCase):
             "Register Doc in Kernel Error",
         )
 
+    @patch(
+        "operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
+    )
+    @patch(
+        "operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
+    )
+    @patch("operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
+    def test_register_update_documents_returns_syncronized_documents_metadata_list(
+        self,
+        MockZipFile,
+        mk_put_xml_into_object_store,
+        mk_put_assets_and_pdfs_in_object_store,
+        mk_register_update_doc_into_kernel,
+    ):
+        expected = [self.xmls_data[0], self.xmls_data[2]]
+        mk_put_xml_into_object_store.side_effect = self.xmls_data
+        mk_register_update_doc_into_kernel.side_effect = [
+            None,
+            RegisterUpdateDocIntoKernelException("Register Doc in Kernel Error"),
+            None,
+        ]
+
+        result = register_update_documents(**self.kwargs)
+        self.assertEqual(result, expected)
+
 
 class TestRelateDocumentToDocumentsbundle(TestCase):
 

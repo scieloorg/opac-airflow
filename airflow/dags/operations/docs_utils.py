@@ -1,5 +1,6 @@
-import logging
 import os
+import logging
+import hashlib
 
 import requests
 from lxml import etree
@@ -20,9 +21,7 @@ Logger = logging.getLogger(__name__)
 
 def delete_doc_from_kernel(doc_to_delete):
     try:
-        response = hooks.kernel_connect(
-            "/documents/" + doc_to_delete, "DELETE"
-        )
+        response = hooks.kernel_connect("/documents/" + doc_to_delete, "DELETE")
     except requests.exceptions.HTTPError as exc:
         raise DeleteDocFromKernelException(str(exc)) from None
 
@@ -31,15 +30,14 @@ def document_to_delete(zipfile, sps_xml_file):
     parser = etree.XMLParser(remove_blank_text=True, no_network=True)
     try:
         metadata = SPS_Package(
-            etree.XML(zipfile.read(sps_xml_file), parser),
-            sps_xml_file
+            etree.XML(zipfile.read(sps_xml_file), parser), sps_xml_file
         )
     except (etree.XMLSyntaxError, TypeError, KeyError) as exc:
         raise DocumentToDeleteException(str(exc)) from None
     else:
         if metadata.is_document_deletion:
             if metadata.scielo_id is None:
-                raise DocumentToDeleteException('Missing element in XML')
+                raise DocumentToDeleteException("Missing element in XML")
             return metadata.scielo_id
 
 
@@ -108,17 +106,24 @@ def get_xml_data(xml_content, xml_package_name):
         _xml_data = {
             "scielo_id": metadata.scielo_id,
             "issn": metadata.issn,
-            "volume": metadata.volume,
-            "number": metadata.number,
+            "year": metadata.year,
+            "order": metadata.order,
             "xml_package_name": xml_package_name,
             "assets": [
                 {"asset_id": asset_name} for asset_name in metadata.assets_names
             ],
             "pdfs": pdfs,
         }
-        if metadata.supplement:
-            _xml_data["supplement"] = metadata.supplement
+        for attr in ["volume", "number", "supplement"]:
+            if getattr(metadata, attr) is not None:
+                _xml_data[attr] = getattr(metadata, attr)
         return _xml_data
+
+
+def files_sha1(file):
+    _sum = hashlib.sha1()
+    _sum.update(file)
+    return _sum.hexdigest()
 
 
 def put_object_in_object_store(file, journal, scielo_id, filename):
@@ -126,7 +131,13 @@ def put_object_in_object_store(file, journal, scielo_id, filename):
     - Persistir no Minio
     - Adicionar em dict a URL do Minio
     """
-    filepath = "{}/{}/{}".format(journal, scielo_id, filename)
+
+    n_filename = files_sha1(file)
+    _, file_extension = os.path.splitext(filename)
+
+    filepath = "{}/{}/{}".format(
+        journal, scielo_id, "{}{}".format(n_filename, file_extension)
+    )
     try:
         return hooks.object_store_connect(file, filepath, "documentstore")
     except Exception as exc:
@@ -155,7 +166,7 @@ def put_assets_and_pdfs_in_object_store(zipfile, xml_data):
                 'Could not read asset "%s" from zipfile "%s": %s',
                 asset["asset_id"],
                 zipfile,
-                str(exc)
+                str(exc),
             )
         else:
             _assets.append(
@@ -166,7 +177,7 @@ def put_assets_and_pdfs_in_object_store(zipfile, xml_data):
                         xml_data["issn"],
                         xml_data["scielo_id"],
                         asset["asset_id"],
-                    )
+                    ),
                 }
             )
     _pdfs = []
@@ -179,7 +190,7 @@ def put_assets_and_pdfs_in_object_store(zipfile, xml_data):
                 'Could not read PDF "%s" from zipfile "%s": %s',
                 pdf["filename"],
                 zipfile,
-                str(exc)
+                str(exc),
             )
         else:
             _pdfs.append(
@@ -193,14 +204,11 @@ def put_assets_and_pdfs_in_object_store(zipfile, xml_data):
                         xml_data["issn"],
                         xml_data["scielo_id"],
                         pdf["filename"],
-                    )
+                    ),
                 }
             )
 
-    return {
-        "assets": _assets,
-        "pdfs": _pdfs,
-    }
+    return {"assets": _assets, "pdfs": _pdfs}
 
 
 def put_xml_into_object_store(zipfile, xml_filename):
@@ -235,8 +243,7 @@ def register_document_to_documentsbundle(bundle_id, payload):
 
     try:
         response = hooks.kernel_connect(
-            "/bundles/" + bundle_id, "PUT", payload
-        )
+            "/bundles/%s/documents" % bundle_id, "PUT", payload)
         return response
     except requests.exceptions.HTTPError as exc:
         raise RelateDocumentToDocumentsBundleException(str(exc)) from None
