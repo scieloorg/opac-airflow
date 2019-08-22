@@ -493,9 +493,9 @@ class TestRelateDocumentToDocumentsbundle(TestCase):
 
     @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
     @patch("operations.sync_documents_to_kernel_operations.issue_id")
-    def test_if_relate_register_on_document_store(self, mk_issue_id,  mk_regdocument):
+    def test_if_relate_documents_to_documentsbundle_register_on_document_store(self, mk_issue_id,  mk_regdocument):
 
-        mock_response = Mock(status_code=200)
+        mock_response = Mock(status_code=204)
 
         documents = [
                         {
@@ -544,10 +544,71 @@ class TestRelateDocumentToDocumentsbundle(TestCase):
 
         self.assertEqual(relate_documents_to_documentsbundle(documents),
                          [
-                             {'0034-8910-2014-v48-n2': 'related'},
-                             {'1518-8787-2014-v2-n2': 'related'},
-                             {'1518-8787-2014-v2-n2-s1': 'related'}
+                             {'0034-8910-2014-v48-n2': 204},
+                             {'1518-8787-2014-v2-n2': 204},
+                             {'1518-8787-2014-v2-n2-s1': 204}
                          ])
+
+    @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
+    @patch("operations.sync_documents_to_kernel_operations.issue_id")
+    def test_if_some_documents_are_not_register_on_document_store(self, mk_issue_id,  mk_regdocument):
+
+        documents = [
+                        {
+                         "scielo_id": "S0034-8910.2014048004923",
+                         "issn": "0034-8910",
+                         "year": "2014",
+                         "volume": "48",
+                         "number": "2",
+                         "order": "347",
+                         },
+                        {
+                         "scielo_id": "S0034-8910.2014048004924",
+                         "issn": "0034-8910",
+                         "year": "2014",
+                         "volume": "48",
+                         "number": "2",
+                         "order": "348",
+                         },
+                        {
+                         "scielo_id": "S0034-8910.20140078954641",
+                         "issn": "1518-8787",
+                         "year": "2014",
+                         "volume": "02",
+                         "number": "2",
+                         "order": "978",
+                         },
+                        {
+                         "scielo_id": "S0034-8910.20140078954641",
+                         "issn": "1518-8787",
+                         "year": "2014",
+                         "volume": "02",
+                         "number": "2",
+                         "order": "978",
+                         "supplement": "1",
+                         }
+                    ]
+
+        mk_regdocument.side_effect = [
+                                      Mock(status_code=204),
+                                      Mock(status_code=422),
+                                      Mock(status_code=404)
+                                      ]
+
+        mk_issue_id.side_effect = [
+                                   '0034-8910-2014-v48-n2',
+                                   '0034-8910-2014-v48-n2',
+                                   '1518-8787-2014-v2-n2',
+                                   '1518-8787-2014-v2-n2-s1'
+                                   ]
+
+        self.assertEqual(relate_documents_to_documentsbundle(documents),
+                         [
+                             {'0034-8910-2014-v48-n2': 204},
+                             {'1518-8787-2014-v2-n2': 422},
+                             {'1518-8787-2014-v2-n2-s1': 404}
+                         ])
+
 
 if __name__ == "__main__":
     main()

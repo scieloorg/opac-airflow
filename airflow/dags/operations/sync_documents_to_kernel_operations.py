@@ -1,4 +1,5 @@
 import os
+import json
 import logging
 from zipfile import ZipFile
 
@@ -179,11 +180,11 @@ def relate_documents_to_documentsbundle(documents):
             ]
     """
 
-    Logger.info("Entrou no relate_documents_to_documentsbundle")
+    Logger.info("relate_documents_to_documentsbundle PUT")
 
+    ret = []
     bundle_id = ''
     bundle_id_doc = {}
-    ret = []
 
     if documents:
         for doc in documents:
@@ -203,12 +204,10 @@ def relate_documents_to_documentsbundle(documents):
             bundle_id_doc[bundle_id].append(payload_doc)
 
         for bundle_id, payload in bundle_id_doc.items():
-            response = register_document_to_documentsbundle(bundle_id, payload)
+            response = register_document_to_documentsbundle(bundle_id, json.dumps(payload))
 
-            ret.append({bundle_id:
-                        'related' if response.status_code == 200 else 'not_related'
-                        })
+            ret.append({bundle_id: response.status_code})
 
         return ret
 
-    Logger.info("Saiu do relate_documents_to_documentsbundle")
+    Logger.info("relate_documents_to_documentsbundle OUT")
