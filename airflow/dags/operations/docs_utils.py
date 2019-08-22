@@ -105,16 +105,17 @@ def get_xml_data(xml_content, xml_package_name):
         _xml_data = {
             "scielo_id": metadata.scielo_id,
             "issn": metadata.issn,
-            "volume": metadata.volume,
-            "number": metadata.number,
+            "year": metadata.year,
+            "order": metadata.order,
             "xml_package_name": xml_package_name,
             "assets": [
                 {"asset_id": asset_name} for asset_name in metadata.assets_names
             ],
             "pdfs": pdfs,
         }
-        if metadata.supplement:
-            _xml_data["supplement"] = metadata.supplement
+        for attr in ["volume", "number", "supplement"]:
+            if getattr(metadata, attr) is not None:
+                _xml_data[attr] = getattr(metadata, attr)
         return _xml_data
 
 
