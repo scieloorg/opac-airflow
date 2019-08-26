@@ -22,6 +22,7 @@ from mongoengine import connect
 
 from opac_schema.v1 import models
 
+from common.hooks import mongo_connect
 
 failure_recipients = os.environ.get("EMIAL_ON_FAILURE_RECIPIENTS", None)
 EMIAL_ON_FAILURE_RECIPIENTS = (
@@ -47,21 +48,6 @@ dag = DAG(
 )
 
 api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
-
-
-@retry(wait=tenacity.wait_exponential(), stop=tenacity.stop_after_attempt(10))
-def mongo_connect():
-    # TODO: Necessário adicionar um commando para adicionar previamente uma conexão, ver: https://github.com/puckel/docker-airflow/issues/75
-    conn = BaseHook.get_connection("opac_conn")
-
-    uri = "mongodb://{creds}{host}{port}/{database}".format(
-        creds="{}:{}@".format(conn.login, conn.password) if conn.login else "",
-        host=conn.host,
-        port="" if conn.port is None else ":{}".format(conn.port),
-        database=conn.schema,
-    )
-
-    connect(host=uri, **conn.extra_dejson)
 
 
 class EnqueuedState:
