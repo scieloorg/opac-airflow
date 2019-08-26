@@ -226,3 +226,64 @@ def ArticleFactory(
     article.xml = document_xml_url
 
     return article
+
+
+def try_register_documents(
+    documents: Iterable,
+    get_relation_data: callable,
+    fetch_document_front: callable,
+    article_factory: callable,
+) -> List[str]:
+    """Registra documentos do Kernel na base de dados do `OPAC`.
+
+    Os documentos que não puderem ser registrados serão considerados como
+    órfãos. Documentos que não possuam identificação a qual fascículo tem
+    relação serão considerados órfãos.
+
+    Args:
+        documents (Iterable): iterável com os identicadores dos documentos 
+            a serem registrados.
+        get_relation_data (callable): função que identifica o fasículo 
+            e o item de relacionamento que está sendo registrado.
+        fetch_document_front (callable): função que recupera os dados de 
+            `front` do documento a partir da API do Kernel.
+        article_factory (callable): função que cria uma instância do modelo 
+            de dados do Artigo na base do OPAC.
+
+    Returns:
+        List[str] orphans: Lista contendo todos os identificadores dos
+            documentos que não puderam ser registrados na base de dados do
+            OPAC.
+    """
+
+    orphans = []
+
+    # Para capturarmos a URL base é necessário que o hook tenha sido utilizado
+    # ao menos uma vez.
+    BASE_URL = hooks.KERNEL_HOOK_BASE.run(
+        endpoint="", extra_options={"timeout": 1, "check_response": False}
+    ).url
+
+    for document_id in documents:
+        try:
+            issue_id, item = get_relation_data(document_id)
+            document_front = fetch_document_front(document_id)
+            document_xml_url = "{base_url}documents/{document_id}".format(
+                base_url=BASE_URL, document_id=document_id
+            )
+            document = article_factory(
+                document_id,
+                document_front,
+                issue_id,
+                item.get("order"),
+                document_xml_url,
+            )
+            document.save()
+        except (models.Issue.DoesNotExist, ValueError):
+            orphans.append(document_id)
+            logging.info(
+                "Could not possible to register the document %s. "
+                "Probably the issue that is related to it does not exist." % document_id
+            )
+
+    return list(set(orphans))

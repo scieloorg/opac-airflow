@@ -6,7 +6,7 @@ import json
 from airflow import DAG
 
 from kernel_changes import JournalFactory
-from operations.kernel_changes_operations import ArticleFactory
+from operations.kernel_changes_operations import ArticleFactory, try_register_documents
 from opac_schema.v1 import models
 
 
@@ -202,3 +202,84 @@ class ArticleFactoryTests(unittest.TestCase):
 
     def test_has_xml_attribute(self):
         self.assertTrue(hasattr(self.document, "xml"))
+
+
+class RegisterDocumentTests(unittest.TestCase):
+    def setUp(self):
+        self.documents = ["67TH7T7CyPPmgtVrGXhWXVs"]
+        self.document_front = load_json_fixture(
+            "kernel-document-front-s1518-8787.2019053000621.json"
+        )
+
+        mk_hooks = patch("operations.kernel_changes_operations.hooks")
+        self.mk_hooks = mk_hooks.start()
+
+    def tearDown(self):
+        self.mk_hooks.stop()
+
+    def test_try_register_documents_call_save_methods_from_article_instance(self):
+        article_factory_mock = MagicMock()
+        article_instance_mock = MagicMock()
+        article_factory_mock.return_value = article_instance_mock
+
+        try_register_documents(
+            documents=self.documents,
+            get_relation_data=lambda document_id: (
+                "issue-1",
+                {"id": "67TH7T7CyPPmgtVrGXhWXVs", "order": "01"},
+            ),
+            fetch_document_front=lambda document_id: self.document_front,
+            article_factory=article_factory_mock,
+        )
+
+        article_instance_mock.save.assert_called_once()
+
+    def test_try_register_documents_call_fetch_document_front_once(self):
+        fetch_document_front_mock = MagicMock()
+        article_factory_mock = MagicMock()
+
+        try_register_documents(
+            documents=self.documents,
+            get_relation_data=lambda _: ("", {}),
+            fetch_document_front=fetch_document_front_mock,
+            article_factory=article_factory_mock,
+        )
+
+        fetch_document_front_mock.assert_called_once_with("67TH7T7CyPPmgtVrGXhWXVs")
+
+    def test_try_register_documents_call_article_factory_once(self):
+        article_factory_mock = MagicMock()
+        self.mk_hooks.KERNEL_HOOK_BASE.run.side_effect = [
+            MagicMock(url="http://kernel_url/")
+        ]
+
+        try_register_documents(
+            documents=self.documents,
+            get_relation_data=lambda _: (
+                "issue-1",
+                {"id": "67TH7T7CyPPmgtVrGXhWXVs", "order": "01"},
+            ),
+            fetch_document_front=lambda _: self.document_front,
+            article_factory=article_factory_mock,
+        )
+
+        article_factory_mock.assert_called_once_with(
+            "67TH7T7CyPPmgtVrGXhWXVs",
+            self.document_front,
+            "issue-1",
+            "01",
+            "http://kernel_url/documents/67TH7T7CyPPmgtVrGXhWXVs",
+        )
+
+    def test_try_register_document_should_be_orphan_when_issue_was_not_found(self):
+        article_factory_mock = MagicMock()
+
+        orphans = try_register_documents(
+            documents=self.documents,
+            get_relation_data=lambda document_id: (),
+            fetch_document_front=lambda document_id: self.document_front,
+            article_factory=article_factory_mock,
+        )
+
+        self.assertEqual(1, len(orphans))
+        self.assertEqual(["67TH7T7CyPPmgtVrGXhWXVs"], orphans)
