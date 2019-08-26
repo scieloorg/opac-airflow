@@ -14,7 +14,7 @@ from operations.sync_documents_to_kernel_operations import (
     list_documents,
     delete_documents,
     register_update_documents,
-    relate_documents_to_documentsbundle,
+    link_documents_to_documentsbundle,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -513,13 +513,13 @@ class TestRegisterUpdateDocuments(TestCase):
 
 class TestRelateDocumentToDocumentsbundle(TestCase):
 
-    def test_if_relate_documents_to_documentsbundle_return_none_when_param_document_empty(self):
+    def test_if_link_documents_to_documentsbundle_return_none_when_param_document_empty(self):
 
-        self.assertIsNone(relate_documents_to_documentsbundle([]), None)
+        self.assertIsNone(link_documents_to_documentsbundle([]), None)
 
     @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
     @patch("operations.sync_documents_to_kernel_operations.issue_id")
-    def test_if_relate_documents_to_documentsbundle_register_on_document_store(self, mk_issue_id,  mk_regdocument):
+    def test_if_link_documents_to_documentsbundle_register_on_document_store(self, mk_issue_id,  mk_regdocument):
 
         mock_response = Mock(status_code=204)
 
@@ -568,11 +568,11 @@ class TestRelateDocumentToDocumentsbundle(TestCase):
                                    '1518-8787-2014-v2-n2-s1'
                                    ]
 
-        self.assertEqual(relate_documents_to_documentsbundle(documents),
+        self.assertEqual(link_documents_to_documentsbundle(documents),
                          [
-                             {'0034-8910-2014-v48-n2': 204},
-                             {'1518-8787-2014-v2-n2': 204},
-                             {'1518-8787-2014-v2-n2-s1': 204}
+                             {'id': '0034-8910-2014-v48-n2', 'status': 204},
+                             {'id': '1518-8787-2014-v2-n2', 'status': 204},
+                             {'id': '1518-8787-2014-v2-n2-s1', 'status': 204}
                          ])
 
     @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
@@ -628,11 +628,11 @@ class TestRelateDocumentToDocumentsbundle(TestCase):
                                    '1518-8787-2014-v2-n2-s1'
                                    ]
 
-        self.assertEqual(relate_documents_to_documentsbundle(documents),
+        self.assertEqual(link_documents_to_documentsbundle(documents),
                          [
-                             {'0034-8910-2014-v48-n2': 204},
-                             {'1518-8787-2014-v2-n2': 422},
-                             {'1518-8787-2014-v2-n2-s1': 404}
+                             {'id': '0034-8910-2014-v48-n2', 'status': 204},
+                             {'id': '1518-8787-2014-v2-n2', 'status': 422},
+                             {'id': '1518-8787-2014-v2-n2-s1', 'status': 404}
                          ])
 
 

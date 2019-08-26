@@ -7,7 +7,7 @@ from sync_documents_to_kernel import (
     list_documents,
     delete_documents,
     register_update_documents,
-    relate_documents_to_documentsbundle,
+    link_documents_to_documentsbundle,
 )
 
 
@@ -208,33 +208,33 @@ class TestRegisterUpdateDocuments(TestCase):
 
 class TestRelateDocumentsToDocumentsbundle(TestCase):
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.relate_documents_to_documentsbundle")
-    def test_relate_documents_to_documentsbundle_gets_ti_xcom_documents(self, mk_relate_documents):
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    def test_link_documents_to_documentsbundle_gets_ti_xcom_documents(self, mk_link_documents):
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
 
-        relate_documents_to_documentsbundle(**kwargs)
+        link_documents_to_documentsbundle(**kwargs)
 
         kwargs["ti"].xcom_pull.assert_called_once_with(
             key="documents", task_ids="register_update_docs_id"
         )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.relate_documents_to_documentsbundle")
-    def test_relate_documents_to_documentsbundle_empty_ti_xcom_documents(self, mk_relate_documents):
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    def test_link_documents_to_documentsbundle_empty_ti_xcom_documents(self, mk_link_documents):
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
 
         kwargs["ti"].xcom_pull.return_value = None
 
-        relate_documents_to_documentsbundle(**kwargs)
+        link_documents_to_documentsbundle(**kwargs)
 
-        mk_relate_documents.assert_not_called()
+        mk_link_documents.assert_not_called()
 
         kwargs["ti"].xcom_push.assert_not_called()
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.relate_documents_to_documentsbundle")
-    def test_relate_documents_to_documentsbundle_calls_relate_documents_to_documentsbundle_operation(
-        self, mk_relate_documents
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    def test_link_documents_to_documentsbundle_calls_link_documents_to_documentsbundle_operation(
+        self, mk_link_documents
     ):
 
         documents = [
@@ -261,26 +261,26 @@ class TestRelateDocumentsToDocumentsbundle(TestCase):
 
         kwargs["ti"].xcom_pull.return_value = documents
 
-        relate_documents_to_documentsbundle(**kwargs)
+        link_documents_to_documentsbundle(**kwargs)
 
-        mk_relate_documents.assert_called_once_with(documents)
+        mk_link_documents.assert_called_once_with(documents)
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.relate_documents_to_documentsbundle")
-    def test_relate_documents_to_documentsbundle_does_not_push_if_no_documents(self, mk_relate_documents):
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    def test_link_documents_to_documentsbundle_does_not_push_if_no_documents(self, mk_link_documents):
         documents = []
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
 
         kwargs["ti"].xcom_pull.return_value = documents
 
-        mk_relate_documents.return_value = []
+        mk_link_documents.return_value = []
 
-        relate_documents_to_documentsbundle(**kwargs)
+        link_documents_to_documentsbundle(**kwargs)
 
         kwargs["ti"].xcom_push.assert_not_called()
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.relate_documents_to_documentsbundle")
-    def test_relate_documents_to_documentsbundle_pushes_documents(self, mk_relate_documents):
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    def test_link_documents_to_documentsbundle_pushes_documents(self, mk_link_documents):
 
         documents = [
                         {
@@ -302,16 +302,18 @@ class TestRelateDocumentsToDocumentsbundle(TestCase):
                         }
                     ]
 
+        pushed_documents = [{'1806-907X-2003-v53-n1': 204}]
+
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
 
         kwargs["ti"].xcom_pull.return_value = documents
 
-        mk_relate_documents.return_value = documents
+        mk_link_documents.return_value = pushed_documents
 
-        relate_documents_to_documentsbundle(**kwargs)
+        link_documents_to_documentsbundle(**kwargs)
 
         kwargs["ti"].xcom_push.assert_called_once_with(
-            key="related_bundle", value=documents
+            key="linked_bundle", value=pushed_documents
         )
 
 if __name__ == "__main__":

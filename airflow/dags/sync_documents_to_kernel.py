@@ -72,14 +72,14 @@ def register_update_documents(dag_run, **kwargs):
             kwargs["ti"].xcom_push(key="documents", value=_documents)
 
 
-def relate_documents_to_documentsbundle(dag_run, **kwargs):
+def link_documents_to_documentsbundle(dag_run, **kwargs):
     documents = kwargs["ti"].xcom_pull(key="documents", task_ids="register_update_docs_id")
 
     if documents:
-        related_bundle = sync_documents_to_kernel_operations.relate_documents_to_documentsbundle(documents)
+        linked_bundle = sync_documents_to_kernel_operations.link_documents_to_documentsbundle(documents)
 
-        if related_bundle:
-            kwargs["ti"].xcom_push(key="related_bundle", value=related_bundle)
+        if linked_bundle:
+            kwargs["ti"].xcom_push(key="linked_bundle", value=linked_bundle)
 
 list_documents_task = PythonOperator(
     task_id="list_docs_task_id",
@@ -102,11 +102,11 @@ register_update_documents_task = PythonOperator(
     dag=dag,
 )
 
-relate_documents_task = PythonOperator(
-    task_id="relate_documents_task_id",
+link_documents_task = PythonOperator(
+    task_id="link_documents_task_id",
     provide_context=True,
-    python_callable=relate_documents_to_documentsbundle,
+    python_callable=link_documents_to_documentsbundle,
     dag=dag,
 )
 
-list_documents_task >> delete_documents_task >> register_update_documents_task >> relate_documents_task
+list_documents_task >> delete_documents_task >> register_update_documents_task >> link_documents_task

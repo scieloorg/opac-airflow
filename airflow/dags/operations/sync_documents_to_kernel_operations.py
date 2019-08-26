@@ -136,7 +136,7 @@ def register_update_documents(sps_package, xmls_to_preserve):
     return synchronized_docs_metadata
 
 
-def relate_documents_to_documentsbundle(documents):
+def link_documents_to_documentsbundle(documents):
     """
         Relaciona documentos com seu fascículos(DocumentsBundle).
 
@@ -178,15 +178,16 @@ def relate_documents_to_documentsbundle(documents):
                  "supplement": "1",
                  }
             ]
-
-        Return a list of document related or not, something like:
+        {"id": "0034-8910-2014-v48-n2", "status":204}
+        Return a list of document linkd or not, something like:
             [
-             {'S0034-8910.2014048004923': 'related'},
-             {'S0034-8910.20140078954641': 'not_related', 'error': ''}
+             {'id': 'S0034-8910.2014048004923', 'status': 204},
+             {'id': 'S0034-8910.20140078954641', 'status': 422},
+             {'id': 'S0034-8910.20140078923452', 'status': 404},
             ]
     """
 
-    Logger.info("relate_documents_to_documentsbundle PUT")
+    Logger.info("link_documents_to_documentsbundle PUT")
 
     ret = []
     bundle_id = ''
@@ -212,8 +213,8 @@ def relate_documents_to_documentsbundle(documents):
         for bundle_id, payload in bundle_id_doc.items():
             response = register_document_to_documentsbundle(bundle_id, payload)
 
-            ret.append({bundle_id: response.status_code})
+            ret.append({'id': bundle_id, 'status': response.status_code})
 
         return ret
 
-    Logger.info("relate_documents_to_documentsbundle OUT")
+    Logger.info("link_documents_to_documentsbundle OUT")

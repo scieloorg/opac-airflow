@@ -736,7 +736,7 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
     @patch("operations.docs_utils.hooks")
     def test_register_document_documentsbundle_to_documentsbundle_calls_kernel_connect(self, mk_hooks):
         """
-            Verifica se register_document envoca kernel_connect com os parâmetros corretos.
+            Verifica se register_document invoca kernel_connect com os parâmetros corretos.
         """
 
         register_document_to_documentsbundle("0066-782X-1999-v72-n0",
@@ -768,7 +768,7 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
 
     def test_if_register_document_documentsbundle_raise_value_error_when_param_payload_not_list(self):
         """
-            Verifica se register_document recebeu uma lista como payload.
+            Verifica se register_document levanta uma exceção quando um dicionário ao invés de uma lista.
         """
         payload = {"id": "0034-8910-rsp-48-2-0347", "order": "01"}
 
@@ -776,7 +776,7 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
 
     def test_if_register_document_documentsbundle_received_just_list_of_dict(self):
         """
-            Verifica se register_document recebeu uma lista com somente dicionários como payload.
+            Verifica se register_document recebeu uma lista com somente dicionários como payload e levanta um exceção.
         """
         payload = [
                     {"id": "0034-8910-rsp-48-2-0347", "order": "01"},
@@ -789,7 +789,7 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
     @patch("operations.docs_utils.hooks")
     def test_if_register_document_documentsbundle_return_status_code_204_with_correct_params(self, mk_hooks):
         """
-            Verifica se ao envocarmos register_document_to_documentsbundle com o ID do bundle e payload corretos o retorno é o esperado.
+            Verifica se ao invocarmos register_document_to_documentsbundle com o ID do bundle e payload corretos o retorno é o esperado.
 
             Status code 204 significa que os documentos foram atualizado com sucesso.
         """
