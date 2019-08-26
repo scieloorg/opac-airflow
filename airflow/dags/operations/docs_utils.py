@@ -234,12 +234,6 @@ def register_document_to_documentsbundle(bundle_id, payload):
 
         Utiliza a endpoint do Kernel /bundles/{{ DUNDLE_ID }}
     """
-    if not isinstance(payload, list):
-        raise ValueError("documents param must be list instance")
-
-    for load in payload:
-        if not isinstance(load, dict):
-            raise ValueError("some list item is not a dictionary")
 
     try:
         response = hooks.kernel_connect(

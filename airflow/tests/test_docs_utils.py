@@ -766,26 +766,6 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
                           "0066-782X-1999-v72-n0",
                           self.payload)
 
-    def test_if_register_document_documentsbundle_raise_value_error_when_param_payload_not_list(self):
-        """
-            Verifica se register_document levanta uma exceção quando um dicionário ao invés de uma lista.
-        """
-        payload = {"id": "0034-8910-rsp-48-2-0347", "order": "01"}
-
-        self.assertRaises(ValueError, register_document_to_documentsbundle, "0066-782X-1999-v72-n0", payload)
-
-    def test_if_register_document_documentsbundle_received_just_list_of_dict(self):
-        """
-            Verifica se register_document recebeu uma lista com somente dicionários como payload e levanta um exceção.
-        """
-        payload = [
-                    {"id": "0034-8910-rsp-48-2-0347", "order": "01"},
-                    {"id": "0034-8910-rsp-48-2-0348", "order": "02"},
-                    2,
-                  ]
-
-        self.assertRaises(ValueError, register_document_to_documentsbundle, "0066-782X-1999-v72-n0", payload)
-
     @patch("operations.docs_utils.hooks")
     def test_if_register_document_documentsbundle_return_status_code_204_with_correct_params(self, mk_hooks):
         """
