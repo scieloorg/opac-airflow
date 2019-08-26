@@ -1,10 +1,13 @@
 import os
 import unittest
+from unittest.mock import patch, MagicMock
 import json
 
 from airflow import DAG
 
 from kernel_changes import JournalFactory
+from operations.kernel_changes_operations import ArticleFactory
+from opac_schema.v1 import models
 
 
 FIXTURES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
@@ -95,3 +98,107 @@ class JournalFactoryTests(unittest.TestCase):
 
     def test_attribute_updated(self):
         self.assertEqual(self.journal.updated, "2019-07-19T20:33:17.102106Z")
+
+
+class ArticleFactoryTests(unittest.TestCase):
+    def setUp(self):
+        self.article_objects = patch(
+            "operations.kernel_changes_operations.models.Article.objects"
+        )
+        self.issue_objects = patch(
+            "operations.kernel_changes_operations.models.Issue.objects"
+        )
+        ArticleObjectsMock = self.article_objects.start()
+        self.issue_objects.start()
+
+        ArticleObjectsMock.get.side_effect = models.Article.DoesNotExist
+
+        self.document_front = load_json_fixture(
+            "kernel-document-front-s1518-8787.2019053000621.json"
+        )
+        self.document = ArticleFactory(
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", "1", ""
+        )
+
+    def tearDown(self):
+        self.article_objects.stop()
+        self.issue_objects.stop()
+
+    def test_has_method_save(self):
+        self.assertTrue(hasattr(self.document, "save"))
+
+    def test_has_title_attribute(self):
+        self.assertTrue(hasattr(self.document, "title"))
+
+    def test_has_section_attribute(self):
+        self.assertTrue(hasattr(self.document, "section"))
+
+    def test_has_abstract_attribute(self):
+        self.assertTrue(hasattr(self.document, "abstract"))
+
+    def test_has_identification_attributes(self):
+        self.assertTrue(hasattr(self.document, "_id"))
+        self.assertTrue(hasattr(self.document, "aid"))
+        self.assertTrue(hasattr(self.document, "pid"))
+        self.assertTrue(hasattr(self.document, "doi"))
+
+        self.assertEqual("67TH7T7CyPPmgtVrGXhWXVs", self.document._id)
+        self.assertEqual("67TH7T7CyPPmgtVrGXhWXVs", self.document.aid)
+        self.assertEqual("10.11606/S1518-8787.2019053000621", self.document.doi)
+
+    def test_has_authors_attribute(self):
+        self.assertTrue(hasattr(self.document, "authors"))
+
+    def test_has_translated_titles_attribute(self):
+        self.assertTrue(hasattr(self.document, "translated_titles"))
+        self.assertEqual(1, len(self.document.translated_titles))
+
+    def test_has_trans_sections_attribute(self):
+        self.assertTrue(hasattr(self.document, "trans_sections"))
+        self.assertEqual(2, len(self.document.trans_sections))
+
+    def test_has_abstracts_attribute(self):
+        self.assertTrue(hasattr(self.document, "abstracts"))
+        self.assertEqual(2, len(self.document.abstracts))
+
+    def test_has_keywords_attribute(self):
+        self.assertTrue(hasattr(self.document, "keywords"))
+        self.assertEqual(2, len(self.document.keywords))
+
+    def test_has_abstract_languages_attribute(self):
+        self.assertTrue(hasattr(self.document, "abstract_languages"))
+        self.assertEqual(2, len(self.document.abstract_languages))
+
+    def test_has_original_language_attribute(self):
+        self.assertTrue(hasattr(self.document, "original_language"))
+        self.assertEqual("en", self.document.original_language)
+
+    def test_has_publication_date_attribute(self):
+        self.assertTrue(hasattr(self.document, "publication_date"))
+        self.assertEqual("31 01 2019", self.document.publication_date)
+
+    def test_has_type_attribute(self):
+        self.assertTrue(hasattr(self.document, "type"))
+        self.assertEqual("research-article", self.document.type)
+
+    def test_has_elocation_attribute(self):
+        self.assertTrue(hasattr(self.document, "elocation"))
+
+    def test_has_fpage_attribute(self):
+        self.assertTrue(hasattr(self.document, "fpage"))
+
+    def test_has_lpage_attribute(self):
+        self.assertTrue(hasattr(self.document, "lpage"))
+
+    def test_has_issue_attribute(self):
+        self.assertTrue(hasattr(self.document, "issue"))
+
+    def test_has_journal_attribute(self):
+        self.assertTrue(hasattr(self.document, "journal"))
+
+    def test_has_order_attribute(self):
+        self.assertTrue(hasattr(self.document, "order"))
+        self.assertEqual(1, self.document.order)
+
+    def test_has_xml_attribute(self):
+        self.assertTrue(hasattr(self.document, "xml"))
