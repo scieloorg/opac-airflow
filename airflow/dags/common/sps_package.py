@@ -2,7 +2,6 @@ import os
 import itertools
 import logging
 
-from copy import deepcopy
 from lxml import etree
 
 

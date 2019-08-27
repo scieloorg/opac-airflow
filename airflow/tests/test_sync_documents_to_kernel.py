@@ -7,6 +7,7 @@ from sync_documents_to_kernel import (
     list_documents,
     delete_documents,
     register_update_documents,
+    link_documents_to_documentsbundle,
 )
 
 
@@ -204,6 +205,116 @@ class TestRegisterUpdateDocuments(TestCase):
             key="documents", value=documents
         )
 
+
+class TestRelateDocumentsToDocumentsbundle(TestCase):
+
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    def test_link_documents_to_documentsbundle_gets_ti_xcom_documents(self, mk_link_documents):
+
+        kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
+
+        link_documents_to_documentsbundle(**kwargs)
+
+        kwargs["ti"].xcom_pull.assert_called_once_with(
+            key="documents", task_ids="register_update_docs_id"
+        )
+
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    def test_link_documents_to_documentsbundle_empty_ti_xcom_documents(self, mk_link_documents):
+
+        kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
+
+        kwargs["ti"].xcom_pull.return_value = None
+
+        link_documents_to_documentsbundle(**kwargs)
+
+        mk_link_documents.assert_not_called()
+
+        kwargs["ti"].xcom_push.assert_not_called()
+
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    def test_link_documents_to_documentsbundle_calls_link_documents_to_documentsbundle_operation(
+        self, mk_link_documents
+    ):
+
+        documents = [
+                        {
+                            'scielo_id': 'JV5Lb3v3HBYmPPdG6QD9jGQ',
+                            'issn': '1806-907X',
+                            'year': '2003',
+                            'order': '00001',
+                            'xml_package_name': '1806-907X-rba-53-01-1-8',
+                            'assets': [],
+                            'pdfs': [
+                                {
+                                    'lang': 'pt',
+                                    'filename': '1806-907X-rba-53-01-1-8.pdf',
+                                    'mimetype': 'application/pdf'
+                                }],
+                            'volume': '53',
+                            'number': '01',
+                            'xml_url': 'http://192.168.169.185:9000/documentstore/1806-907X/JV5Lb3v3HBYmPPdG6QD9jGQ/e8a6df175375a6f922cf8a3bf2ef4a0ce2b09c93.xml'
+                        }
+                    ]
+
+        kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
+
+        kwargs["ti"].xcom_pull.return_value = documents
+
+        link_documents_to_documentsbundle(**kwargs)
+
+        mk_link_documents.assert_called_once_with(documents)
+
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    def test_link_documents_to_documentsbundle_does_not_push_if_no_documents(self, mk_link_documents):
+        documents = []
+
+        kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
+
+        kwargs["ti"].xcom_pull.return_value = documents
+
+        mk_link_documents.return_value = []
+
+        link_documents_to_documentsbundle(**kwargs)
+
+        kwargs["ti"].xcom_push.assert_not_called()
+
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    def test_link_documents_to_documentsbundle_pushes_documents(self, mk_link_documents):
+
+        documents = [
+                        {
+                            'scielo_id': 'JV5Lb3v3HBYmPPdG6QD9jGQ',
+                            'issn': '1806-907X',
+                            'year': '2003',
+                            'order': '00001',
+                            'xml_package_name': '1806-907X-rba-53-01-1-8',
+                            'assets': [],
+                            'pdfs': [
+                                {
+                                    'lang': 'pt',
+                                    'filename': '1806-907X-rba-53-01-1-8.pdf',
+                                    'mimetype': 'application/pdf'
+                                }],
+                            'volume': '53',
+                            'number': '01',
+                            'xml_url': 'http://192.168.169.185:9000/documentstore/1806-907X/JV5Lb3v3HBYmPPdG6QD9jGQ/e8a6df175375a6f922cf8a3bf2ef4a0ce2b09c93.xml'
+                        }
+                    ]
+
+        pushed_documents = [{'1806-907X-2003-v53-n1': 204}]
+
+        kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
+
+        kwargs["ti"].xcom_pull.return_value = documents
+
+        mk_link_documents.return_value = pushed_documents
+
+        link_documents_to_documentsbundle(**kwargs)
+
+        kwargs["ti"].xcom_push.assert_called_once_with(
+            key="linked_bundle", value=pushed_documents
+        )
 
 if __name__ == "__main__":
     main()

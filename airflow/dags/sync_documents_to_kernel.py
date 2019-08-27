@@ -33,7 +33,7 @@ Logger = logging.getLogger(__name__)
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
-    "start_date": datetime(2019, 7, 22),
+    "start_date": datetime(2019, 7, 21),
 }
 
 dag = DAG(dag_id="sync_documents_to_kernel", default_args=default_args, schedule_interval=None)
@@ -72,6 +72,15 @@ def register_update_documents(dag_run, **kwargs):
             kwargs["ti"].xcom_push(key="documents", value=_documents)
 
 
+def link_documents_to_documentsbundle(dag_run, **kwargs):
+    documents = kwargs["ti"].xcom_pull(key="documents", task_ids="register_update_docs_id")
+
+    if documents:
+        linked_bundle = sync_documents_to_kernel_operations.link_documents_to_documentsbundle(documents)
+
+        if linked_bundle:
+            kwargs["ti"].xcom_push(key="linked_bundle", value=linked_bundle)
+
 list_documents_task = PythonOperator(
     task_id="list_docs_task_id",
     provide_context=True,
@@ -93,4 +102,11 @@ register_update_documents_task = PythonOperator(
     dag=dag,
 )
 
-list_documents_task >> delete_documents_task >> register_update_documents_task
+link_documents_task = PythonOperator(
+    task_id="link_documents_task_id",
+    provide_context=True,
+    python_callable=link_documents_to_documentsbundle,
+    dag=dag,
+)
+
+list_documents_task >> delete_documents_task >> register_update_documents_task >> link_documents_task

@@ -16,3 +16,7 @@ class ObjectStoreError(Exception):
 
 class RegisterUpdateDocIntoKernelException(Exception):
     ...
+
+
+class RelateDocumentToDocumentsBundleException(Exception):
+    ...

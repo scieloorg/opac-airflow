@@ -1,28 +1,23 @@
 import os
 import logging
-import shutil
-from pathlib import Path
 from zipfile import ZipFile
 from copy import deepcopy
 
-import requests
-from lxml import etree
-
-import common.hooks as hooks
 from operations.exceptions import (
     DeleteDocFromKernelException,
     DocumentToDeleteException,
     PutXMLInObjectStoreException,
     RegisterUpdateDocIntoKernelException,
 )
+
 from operations.docs_utils import (
     delete_doc_from_kernel,
     document_to_delete,
     register_update_doc_into_kernel,
-    get_xml_data,
-    put_object_in_object_store,
     put_assets_and_pdfs_in_object_store,
     put_xml_into_object_store,
+    issue_id,
+    register_document_to_documentsbundle,
 )
 
 Logger = logging.getLogger(__name__)
@@ -137,4 +132,89 @@ def register_update_documents(sps_package, xmls_to_preserve):
                     synchronized_docs_metadata.append(xml_data)
 
     Logger.debug("register_update_documents OUT")
+
     return synchronized_docs_metadata
+
+
+def link_documents_to_documentsbundle(documents):
+    """
+        Relaciona documentos com seu fascículos(DocumentsBundle).
+
+        :param kwargs['documents']: Uma lista de dicionários contento os atributos necessários para a descoberta do fascículo.
+
+            Exemplo contendo a lista de atributos(mínimo):
+            [
+                {
+                 "scielo_id": "S0034-8910.2014048004923",
+                 "issn": "0034-8910",
+                 "year": "2014",
+                 "volume": "48",
+                 "number": "2",
+                 "order": "347",
+                 },
+                {
+                 "scielo_id": "S0034-8910.2014048004924",
+                 "issn": "0034-8910",
+                 "year": "2014",
+                 "volume": "48",
+                 "number": "2",
+                 "order": "348",
+                 },
+                {
+                 "scielo_id": "S0034-8910.20140078954641",
+                 "issn": "1518-8787",
+                 "year": "2014",
+                 "volume": "02",
+                 "number": "2",
+                 "order": "978",
+                 },
+                {
+                 "scielo_id": "S0034-8910.20140078954641",
+                 "issn": "1518-8787",
+                 "year": "2014",
+                 "volume": "02",
+                 "number": "2",
+                 "order": "978",
+                 "supplement": "1",
+                 }
+            ]
+        {"id": "0034-8910-2014-v48-n2", "status":204}
+        Return a list of document linkd or not, something like:
+            [
+             {'id': 'S0034-8910.2014048004923', 'status': 204},
+             {'id': 'S0034-8910.20140078954641', 'status': 422},
+             {'id': 'S0034-8910.20140078923452', 'status': 404},
+            ]
+    """
+
+    Logger.info("link_documents_to_documentsbundle PUT")
+
+    ret = []
+    bundle_id = ''
+    bundle_id_doc = {}
+
+    if documents:
+        for doc in documents:
+
+            bundle_id = issue_id(issn_id=doc.get("issn"),
+                                 year=doc.get("year"),
+                                 volume=doc.get("volume", None),
+                                 number=doc.get("number", None),
+                                 supplement=doc.get("supplement", None))
+
+            bundle_id_doc.setdefault(bundle_id, [])
+
+            payload_doc = {}
+            payload_doc['id'] = doc.get("scielo_id")
+            payload_doc['order'] = doc.get("order")
+
+            bundle_id_doc[bundle_id].append(payload_doc)
+
+        for bundle_id, payload in bundle_id_doc.items():
+            response = register_document_to_documentsbundle(bundle_id, payload)
+
+            ret.append({'id': bundle_id, 'status': response.status_code})
+
+        return ret
+
+    Logger.info("link_documents_to_documentsbundle OUT")

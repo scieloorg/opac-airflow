@@ -19,6 +19,8 @@ from xylose.scielodocument import Journal, Issue
 from datetime import datetime, timedelta
 from deepdiff import DeepDiff
 
+from operations.docs_utils import issue_id
+
 """
 Para o devido entendimento desta DAG pode-se ter como base a seguinte explicação.
 
@@ -31,7 +33,7 @@ de execução são às seguintes:
 2) Faz uma cópia das bases MST:
     a) A partir das variáveis `BASE_ISSUE_FOLDER_PATH` e `BASE_TITLE_FOLDER_PATH`
     b) Retorna XCOM com os paths exatos de onde os arquivos MST estarão
-    c) Retorna XCOM com os paths exatos de onde os resultados da extração MST devem ser depositados  
+    c) Retorna XCOM com os paths exatos de onde os resultados da extração MST devem ser depositados
 3) Ler a base TITLE em formato MST
     a) Armazena output do isis2json no arquivo `/airflow_home/{{ dag_run }}/json/title.json`
 4) Ler a base ISSUE em formato MST
@@ -147,33 +149,6 @@ def journal_as_kernel(journal: Journal) -> dict:
         _payload["contact"]["address"] = journal.editor_address
 
     return _payload
-
-
-def issue_id(issn_id, year, volume=None, number=None, supplement=None):
-    """Reproduz ID gerado para os documents bundle utilizado na ferramenta
-    de migração"""
-
-    labels = ["issn_id", "year", "volume", "number", "supplement"]
-    values = [issn_id, year, volume, number, supplement]
-
-    data = dict([(label, value) for label, value in zip(labels, values)])
-
-    labels = ["issn_id", "year"]
-    _id = []
-    for label in labels:
-        value = data.get(label)
-        if value:
-            _id.append(value)
-
-    labels = [("volume", "v"), ("number", "n"), ("supplement", "s")]
-    for label, prefix in labels:
-        value = data.get(label)
-        if value:
-            if value.isdigit():
-                value = str(int(value))
-            _id.append(prefix + value)
-
-    return "-".join(_id)
 
 
 def issue_as_kernel(issue: dict) -> dict:
@@ -325,7 +300,7 @@ def process_issues(**context):
 
 def copy_mst_files_to_work_folder(**kwargs):
     """Copia as bases MST para a área de trabalho da execução corrente.
-    
+
     O resultado desta função gera cópias das bases title e issue para paths correspondentes aos:
     title: /airflow_home/work_folder_path/{{ run_id }}/isis/title.*
     issue: /airflow_home/work_folder_path/{{ run_id }}/isis/issue.*

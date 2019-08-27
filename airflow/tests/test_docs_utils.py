@@ -17,6 +17,7 @@ from operations.docs_utils import (
     put_object_in_object_store,
     put_assets_and_pdfs_in_object_store,
     put_xml_into_object_store,
+    register_document_to_documentsbundle,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -24,6 +25,7 @@ from operations.exceptions import (
     PutXMLInObjectStoreException,
     ObjectStoreError,
     RegisterUpdateDocIntoKernelException,
+    RelateDocumentToDocumentsBundleException,
 )
 
 from tests.fixtures import XML_FILE_CONTENT
@@ -719,9 +721,68 @@ class TestFilesSha1(TestCase):
 
         file = b"1806-907X-rba-53-01-1-8.xml"
         self.assertEqual(
-            "3a4dae699f59a3b89b231845def80efe89a5a15e", files_sha1(file)
+                         "3a4dae699f59a3b89b231845def80efe89a5a15e", files_sha1(file)
+                         )
+
+
+class TestRegisterDocumentsToDocumentsBundle(TestCase):
+
+    def setUp(self):
+        self.payload = [
+                        {"id": "0034-8910-rsp-48-2-0347", "order": "01"},
+                        {"id": "0034-8910-rsp-48-2-0348", "order": "02"}
+                       ]
+
+    @patch("operations.docs_utils.hooks")
+    def test_register_document_documentsbundle_to_documentsbundle_calls_kernel_connect(self, mk_hooks):
+        """
+            Verifica se register_document invoca kernel_connect com os parâmetros corretos.
+        """
+
+        register_document_to_documentsbundle("0066-782X-1999-v72-n0",
+                                             self.payload)
+
+        mk_hooks.kernel_connect.assert_called_once_with(
+            "/bundles/0066-782X-1999-v72-n0/documents",
+            "PUT",
+            [
+                {"id": "0034-8910-rsp-48-2-0347", "order": "01"},
+                {"id": "0034-8910-rsp-48-2-0348", "order": "02"}
+            ]
         )
 
+    @patch("operations.docs_utils.hooks")
+    def test_register_document_documentsbundle_raise_error_when_documentsbundle_not_found(self, mk_hooks):
+        """
+            Verifica se register_document levanda uma exceção quando o conteúdo não foi encontrado.
+        """
+
+        mk_hooks.kernel_connect.side_effect = requests.exceptions.HTTPError(
+            "Not Found"
+        )
+
+        self.assertRaises(RelateDocumentToDocumentsBundleException,
+                          register_document_to_documentsbundle,
+                          "0066-782X-1999-v72-n0",
+                          self.payload)
+
+    @patch("operations.docs_utils.hooks")
+    def test_if_register_document_documentsbundle_return_status_code_204_with_correct_params(self, mk_hooks):
+        """
+            Verifica se ao invocarmos register_document_to_documentsbundle com o ID do bundle e payload corretos o retorno é o esperado.
+
+            Status code 204 significa que os documentos foram atualizado com sucesso.
+        """
+        mk_hooks.kernel_connect.return_value.status_code = requests.codes.no_content
+
+        payload = [
+                    {"id": "0034-8910-rsp-48-2-0347", "order": "01"},
+                    {"id": "0034-8910-rsp-48-2-0348", "order": "02"},
+                  ]
+
+        response = register_document_to_documentsbundle("0066-782X-1999-v72-n0", payload)
+
+        self.assertEqual(response.status_code, 204)
 
 if __name__ == "__main__":
     main()
