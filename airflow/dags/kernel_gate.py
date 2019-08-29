@@ -195,10 +195,20 @@ def issue_as_kernel(issue: dict) -> dict:
     return _payload
 
 
+def issue_data_to_link(issue: dict) -> dict:
+    _issue_data = issue_as_kernel(issue)
+    _issue_info_to_link = {
+        "id": _issue_data["_id"],
+        "year": _issue_data["publication_year"],
+    }
+    for attr in ("volume", "number", "supplement"):
+        if attr in _issue_data.keys() and _issue_data.get(attr):
+            _issue_info_to_link[attr] = _issue_data.get(attr)
+    return _issue_info_to_link
+
+
 def register_or_update(_id: str, payload: dict, entity_url: str):
     """Cadastra ou atualiza uma entidade no Kernel a partir de um payload"""
-
-
 
     try:
         response = hooks.kernel_connect(
@@ -349,13 +359,13 @@ def mount_journals_issues_link(issues: List[dict]) -> dict:
     issues = filter_issues(issues)
 
     for issue in issues:
-        issue_id = issue_as_kernel(issue).pop("_id")
-        issue_position = int(issue.data["issue"]["v36"][0]["_"])
+        issue_to_link = issue_data_to_link(issue)
+        issue_to_link["order"] = issue.data["issue"]["v36"][0]["_"]
         journal_id = issue.data.get("issue").get("v35")[0]["_"]
         journal_issues.setdefault(journal_id, [])
 
-        if not issue_id in journal_issues[journal_id]:
-            journal_issues[journal_id].insert(issue_position, issue_id)
+        if not issue_to_link in journal_issues[journal_id]:
+            journal_issues[journal_id].append(issue_to_link)
 
     return journal_issues
 
