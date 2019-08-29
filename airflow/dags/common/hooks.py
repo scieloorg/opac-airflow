@@ -23,17 +23,29 @@ DEFAULT_HEADER = {
     stop=stop_after_attempt(4),
     retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
 )
-def kernel_connect(endpoint, method, data=None, headers=DEFAULT_HEADER, timeout=1):
-    api_hook = HttpHook(http_conn_id="kernel_conn", method=method)
+def http_hook_run(api_hook, method, endpoint, data=None, headers=DEFAULT_HEADER, timeout=1):
     response = api_hook.run(
         endpoint=endpoint,
-        data=json.dumps(data) if data else None,
+        data=data,
         headers=headers,
-        extra_options={"timeout": timeout}
+        extra_options={"timeout": timeout, "check_response": False}
     )
     Logger.debug(
         "%s %s - Payload: %s - status_code: %s",
         method, endpoint, json.dumps((data or ""), indent=2), response.status_code
+    )
+    return response
+
+
+def kernel_connect(endpoint, method, data=None, headers=DEFAULT_HEADER, timeout=1):
+    api_hook = HttpHook(http_conn_id="kernel_conn", method=method)
+    response = http_hook_run(
+        api_hook=api_hook,
+        method=method,
+        endpoint=endpoint,
+        data=json.dumps(data) if data else None,
+        headers=headers,
+        timeout=timeout
     )
     response.raise_for_status()
     return response
