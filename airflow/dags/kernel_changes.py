@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import logging
 from datetime import timedelta
@@ -27,6 +28,8 @@ EMIAL_ON_FAILURE_RECIPIENTS = (
     failure_recipients.split(",") if failure_recipients else []
 )
 
+EMAIL_SPLIT_REGEX = re.compile("[;\\/]+")
+
 default_args = {
     "owner": "airflow",
     "start_date": airflow.utils.dates.days_ago(2),
@@ -40,7 +43,7 @@ default_args = {
 dag = DAG(
     dag_id="kernel_changes",
     default_args=default_args,
-    schedule_interval=timedelta(minutes=1),
+    schedule_interval=None,
 )
 
 api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
@@ -232,9 +235,9 @@ def parser_endpoint(endpoint):
     Return: (journals, 0000-0000-00-00-2)
 
     """
-    _, _entity, _id = endpoint.split("/")
+    _parsed_endpoint = endpoint.split("/")
 
-    return (_entity, _id)
+    return _parsed_endpoint[1:3]
 
 
 def filter_changes(tasks, entity, action):
@@ -310,7 +313,9 @@ def JournalFactory(data):
     # Editor mail
     if metadata.get("contact", ""):
         contact = metadata.get("contact")
-        journal.editor_email = contact.get("email", "").split(";")[0].strip()
+        journal.editor_email = EMAIL_SPLIT_REGEX.split(contact.get("email", ""))[
+            0
+        ].strip()
 
     journal.online_submission_url = metadata.get("online_submission_url", "")
     journal.logo_url = metadata.get("logo_url", "")
@@ -406,21 +411,23 @@ def try_register_issues(
     orphans = []
 
     for issue_id in issues:
-        if get_journal_id(issue_id) is not None:
+        journal_id = get_journal_id(issue_id)
+        logging.info('Registering issue "%s" to journal "%s"', issue_id, journal_id)
+        if journal_id is not None:
             data = fetch_data(issue_id)
             try:
                 issue = issue_factory(
-                    data, get_journal_id(issue_id), get_issue_order(issue_id)
+                    data, journal_id, get_issue_order(issue_id)
                 )
                 issue.save()
             except models.Journal.DoesNotExist:
-                orphan_issues.append(issue_id)
+                orphans.append(issue_id)
             else:
                 known_documents[issue_id] = data.get("items", [])
         else:
             orphans.append(issue_id)
 
-    return orphans, known_documents
+    return list(set(orphans)), known_documents
 
 
 def register_issues(ds, **kwargs):
