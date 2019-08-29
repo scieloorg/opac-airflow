@@ -443,15 +443,10 @@ def register_issues(ds, **kwargs):
 
     def _journal_id(issue_id):
         """Obtém o identificador do periódico onde `issue_id` está contido."""
-        j = [
-            journal_id
-            for journal_id, issues in known_issues.items()
-            if issue_id in issues
-        ]
-        try:
-            return j[0]
-        except IndexError:
-            return None
+        for journal_id, items in known_issues.items():
+            for item in items:
+                if issue_id == item["id"]:
+                    return journal_id
 
     def _issue_order(issue_id):
         """A posição em relação aos demais fascículos do periódico.
@@ -459,7 +454,10 @@ def register_issues(ds, **kwargs):
         Pode levantar `ValueError` caso `issue_id` não conste na relação de 
         fascículos do periódico `journal_id`.
         """
-        return known_issues.get(_journal_id(issue_id), []).index(issue_id)
+        issues = known_issues.get(_journal_id(issue_id), [])
+        for issue in issues:
+            if issue_id == issue["id"]:
+                return issue["order"]
 
     issues_to_get = itertools.chain(
         Variable.get("orphan_issues", default_var=[], deserialize_json=True),
