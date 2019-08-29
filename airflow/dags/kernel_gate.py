@@ -19,6 +19,7 @@ from xylose.scielodocument import Journal, Issue
 from datetime import datetime, timedelta
 from deepdiff import DeepDiff
 
+from common import hooks
 from operations.docs_utils import issue_id
 
 """
@@ -197,21 +198,24 @@ def issue_as_kernel(issue: dict) -> dict:
 def register_or_update(_id: str, payload: dict, entity_url: str):
     """Cadastra ou atualiza uma entidade no Kernel a partir de um payload"""
 
-    api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
 
-    response = api_hook.run(
-        endpoint="{}{}".format(entity_url, _id), extra_options={"check_response": False}
-    )
 
-    if response.status_code == http.client.NOT_FOUND:
-        payload = {k: v for k, v in payload.items() if v}
-        api_hook = HttpHook(http_conn_id="kernel_conn", method="PUT")
-        response = api_hook.run(
-            endpoint="{}{}".format(entity_url, _id),
-            data=json.dumps(payload),
-            extra_options={"check_response": False},
+    try:
+        response = hooks.kernel_connect(
+            endpoint="{}{}".format(entity_url, _id), method="GET"
         )
-    elif response.status_code == http.client.OK:
+    except requests.exceptions.HTTPError as exc:
+        logging.info("hooks.kernel_connect HTTPError: %d", exc.response.status_code)
+        if exc.response.status_code == http.client.NOT_FOUND:
+            payload = {k: v for k, v in payload.items() if v}
+            response = hooks.kernel_connect(
+                endpoint="{}{}".format(entity_url, _id),
+                method="PUT",
+                data=payload
+            )
+        else:
+            raise exc
+    else:
         _metadata = response.json()["metadata"]
 
         payload = {
@@ -221,13 +225,11 @@ def register_or_update(_id: str, payload: dict, entity_url: str):
         }
 
         if DeepDiff(_metadata, payload, ignore_order=True):
-            api_hook = HttpHook(http_conn_id="kernel_conn", method="PATCH")
-            response = api_hook.run(
+            response = hooks.kernel_connect(
                 endpoint="{}{}".format(entity_url, _id),
-                data=json.dumps(payload),
-                extra_options={"check_response": False},
+                method="PATCH",
+                data=payload
             )
-
     return response
 
 
