@@ -113,18 +113,7 @@ def journal_as_kernel(journal: Journal) -> dict:
         if _status[2]:
             _payload["status"]["reason"] = _status[2]
 
-    _payload["subject_areas"] = []
-    if journal.subject_areas:
-
-        for subject_area in journal.subject_areas:
-            # TODO: Algumas áreas estão em caixa baixa, o que devemos fazer?
-
-            # A Base MST possui uma grande área que é considerada errada
-            # é preciso normalizar o valor
-            if subject_area.upper() == "LINGUISTICS, LETTERS AND ARTS":
-                subject_area = "LINGUISTIC, LITERATURE AND ARTS"
-
-            _payload["subject_areas"].append(subject_area.upper())
+    _payload["subject_areas"] = journal.subject_areas or []
 
     _payload["sponsors"] = []
     if journal.sponsors:
@@ -200,6 +189,7 @@ def issue_as_kernel(issue: dict) -> dict:
         issue.number,
         _payload.get("supplement"),
     )
+    _payload["publication_year"] = str(_creation_date.year)
 
     return _payload
 
