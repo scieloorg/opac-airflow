@@ -19,6 +19,7 @@ from xylose.scielodocument import Journal, Issue
 from datetime import datetime, timedelta
 from deepdiff import DeepDiff
 
+from common import hooks
 from operations.docs_utils import issue_id
 
 """
@@ -113,18 +114,7 @@ def journal_as_kernel(journal: Journal) -> dict:
         if _status[2]:
             _payload["status"]["reason"] = _status[2]
 
-    _payload["subject_areas"] = []
-    if journal.subject_areas:
-
-        for subject_area in journal.subject_areas:
-            # TODO: Algumas áreas estão em caixa baixa, o que devemos fazer?
-
-            # A Base MST possui uma grande área que é considerada errada
-            # é preciso normalizar o valor
-            if subject_area.upper() == "LINGUISTICS, LETTERS AND ARTS":
-                subject_area = "LINGUISTIC, LITERATURE AND ARTS"
-
-            _payload["subject_areas"].append(subject_area.upper())
+    _payload["subject_areas"] = journal.subject_areas or []
 
     _payload["sponsors"] = []
     if journal.sponsors:
@@ -200,28 +190,42 @@ def issue_as_kernel(issue: dict) -> dict:
         issue.number,
         _payload.get("supplement"),
     )
+    _payload["publication_year"] = str(_creation_date.year)
 
     return _payload
+
+
+def issue_data_to_link(issue: dict) -> dict:
+    _issue_data = issue_as_kernel(issue)
+    _issue_info_to_link = {
+        "id": _issue_data["_id"],
+        "year": _issue_data["publication_year"],
+    }
+    for attr in ("volume", "number", "supplement"):
+        if attr in _issue_data.keys() and _issue_data.get(attr):
+            _issue_info_to_link[attr] = _issue_data.get(attr)
+    return _issue_info_to_link
 
 
 def register_or_update(_id: str, payload: dict, entity_url: str):
     """Cadastra ou atualiza uma entidade no Kernel a partir de um payload"""
 
-    api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
-
-    response = api_hook.run(
-        endpoint="{}{}".format(entity_url, _id), extra_options={"check_response": False}
-    )
-
-    if response.status_code == http.client.NOT_FOUND:
-        payload = {k: v for k, v in payload.items() if v}
-        api_hook = HttpHook(http_conn_id="kernel_conn", method="PUT")
-        response = api_hook.run(
-            endpoint="{}{}".format(entity_url, _id),
-            data=json.dumps(payload),
-            extra_options={"check_response": False},
+    try:
+        response = hooks.kernel_connect(
+            endpoint="{}{}".format(entity_url, _id), method="GET"
         )
-    elif response.status_code == http.client.OK:
+    except requests.exceptions.HTTPError as exc:
+        logging.info("hooks.kernel_connect HTTPError: %d", exc.response.status_code)
+        if exc.response.status_code == http.client.NOT_FOUND:
+            payload = {k: v for k, v in payload.items() if v}
+            response = hooks.kernel_connect(
+                endpoint="{}{}".format(entity_url, _id),
+                method="PUT",
+                data=payload
+            )
+        else:
+            raise exc
+    else:
         _metadata = response.json()["metadata"]
 
         payload = {
@@ -231,13 +235,11 @@ def register_or_update(_id: str, payload: dict, entity_url: str):
         }
 
         if DeepDiff(_metadata, payload, ignore_order=True):
-            api_hook = HttpHook(http_conn_id="kernel_conn", method="PATCH")
-            response = api_hook.run(
+            response = hooks.kernel_connect(
                 endpoint="{}{}".format(entity_url, _id),
-                data=json.dumps(payload),
-                extra_options={"check_response": False},
+                method="PATCH",
+                data=payload
             )
-
     return response
 
 
@@ -357,13 +359,13 @@ def mount_journals_issues_link(issues: List[dict]) -> dict:
     issues = filter_issues(issues)
 
     for issue in issues:
-        issue_id = issue_as_kernel(issue).pop("_id")
-        issue_position = int(issue.data["issue"]["v36"][0]["_"])
+        issue_to_link = issue_data_to_link(issue)
+        issue_to_link["order"] = issue.data["issue"]["v36"][0]["_"]
         journal_id = issue.data.get("issue").get("v35")[0]["_"]
         journal_issues.setdefault(journal_id, [])
 
-        if not issue_id in journal_issues[journal_id]:
-            journal_issues[journal_id].insert(issue_position, issue_id)
+        if not issue_to_link in journal_issues[journal_id]:
+            journal_issues[journal_id].append(issue_to_link)
 
     return journal_issues
 
