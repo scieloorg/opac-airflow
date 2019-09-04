@@ -103,7 +103,7 @@ def ArticleFactory(
                 }
             )
 
-    def _get_translaed_sections(data: dict) -> List[models.TranslatedSection]:
+    def _get_translated_sections(data: dict) -> List[models.TranslatedSection]:
         """Recupera a lista de seções traduzidas a partir do document front"""
 
         sections = [
@@ -195,7 +195,7 @@ def ArticleFactory(
     article.authors = list(_get_article_authors(data))
     article.languages = list(_get_languages(data))
     article.translated_titles = list(_get_translated_titles(data))
-    article.trans_sections = list(_get_translaed_sections(data))
+    article.trans_sections = list(_get_translated_sections(data))
     article.abstracts = list(_get_abstracts(data))
     article.keywords = list(_get_keywords(data))
 
