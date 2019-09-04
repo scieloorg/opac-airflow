@@ -376,13 +376,44 @@ def IssueFactory(data, journal_id, issue_order):
     issue.year = metadata.get("publication_year")
     issue.volume = metadata.get("volume", "")
     issue.number = metadata.get("number", "")
-    issue.label = metadata.get(
-        "label", "%s%s" % ("v" + issue.volume, "n" + issue.number)
-    )
     issue.order = metadata.get("order", 0)
     issue.pid = metadata.get("pid", "")
     issue.journal = models.Journal.objects.get(_id=journal_id)
     issue.order = issue_order
+
+    def _get_issue_label(metadata: dict) -> str:
+        """Produz o label esperado pelo OPAC de acordo com as regras aplicadas
+        pelo OPAC Proc e Xylose.
+        
+        Args:
+            metadata (dict): conteúdo de um bundle
+        
+        Returns:
+            str: label produzido a partir de um bundle
+        """
+
+        label_number = metadata.get("number", "")
+        label_volume = metadata.get("volume", "")
+        label_supplement = (
+            " suppl %s" % metadata.get("supplement", "")
+            if metadata.get("supplement", "")
+            else ""
+        )
+
+        if label_number:
+            label_number += label_supplement
+
+        return "".join(["v" + label_volume, "n" + label_number])
+
+    issue.label = _get_issue_label(metadata)
+
+    if metadata.get("supplement"):
+        issue.suppl_text = metadata.get("supplement")
+        issue.type = "supplement"
+    elif issue.volume and not issue.number:
+        issue.type = "volume_issue"
+    elif issue.number and "spe" in issue.number:
+        issue.type = "special"
 
     return issue
 
