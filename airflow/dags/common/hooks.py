@@ -9,6 +9,9 @@ from tenacity import (
 )
 from airflow.hooks.http_hook import HttpHook
 from airflow.hooks.S3_hook import S3Hook
+from airflow.hooks.base_hook import BaseHook
+
+from mongoengine import connect
 
 
 Logger = logging.getLogger(__name__)
@@ -17,6 +20,7 @@ DEFAULT_HEADER = {
     "Content-Type": "application/json"
 }
 
+KERNEL_HOOK_BASE = HttpHook(http_conn_id="kernel_conn", method="GET")
 
 @retry(
     wait=wait_exponential(),
@@ -61,3 +65,18 @@ def object_store_connect(bytes_data, filepath, bucket_name):
     s3_hook.load_bytes(bytes_data, key=filepath, bucket_name=bucket_name, replace=True)
     s3_host = s3_hook.get_connection("aws_default").extra_dejson.get("host")
     return "{}/{}/{}".format(s3_host, bucket_name, filepath)
+
+
+@retry(wait=wait_exponential(), stop=stop_after_attempt(10))
+def mongo_connect():
+    # TODO: Necessário adicionar um commando para adicionar previamente uma conexão, ver: https://github.com/puckel/docker-airflow/issues/75
+    conn = BaseHook.get_connection("opac_conn")
+
+    uri = "mongodb://{creds}{host}{port}/{database}".format(
+        creds="{}:{}@".format(conn.login, conn.password) if conn.login else "",
+        host=conn.host,
+        port="" if conn.port is None else ":{}".format(conn.port),
+        database=conn.schema,
+    )
+
+    connect(host=uri, **conn.extra_dejson)

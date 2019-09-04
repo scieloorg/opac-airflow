@@ -4,6 +4,7 @@ import json
 import logging
 from datetime import timedelta
 import itertools
+from typing import Dict, List, Tuple
 
 import tenacity
 from tenacity import retry
@@ -22,6 +23,8 @@ from mongoengine import connect
 
 from opac_schema.v1 import models
 
+from operations.kernel_changes_operations import try_register_documents, ArticleFactory
+from common.hooks import mongo_connect
 
 failure_recipients = os.environ.get("EMIAL_ON_FAILURE_RECIPIENTS", None)
 EMIAL_ON_FAILURE_RECIPIENTS = (
@@ -47,21 +50,6 @@ dag = DAG(
 )
 
 api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
-
-
-@retry(wait=tenacity.wait_exponential(), stop=tenacity.stop_after_attempt(10))
-def mongo_connect():
-    # TODO: Necessário adicionar um commando para adicionar previamente uma conexão, ver: https://github.com/puckel/docker-airflow/issues/75
-    conn = BaseHook.get_connection("opac_conn")
-
-    uri = "mongodb://{creds}{host}{port}/{database}".format(
-        creds="{}:{}@".format(conn.login, conn.password) if conn.login else "",
-        host=conn.host,
-        port="" if conn.port is None else ":{}".format(conn.port),
-        database=conn.schema,
-    )
-
-    connect(host=uri, **conn.extra_dejson)
 
 
 class EnqueuedState:
@@ -481,240 +469,90 @@ register_issues_task = PythonOperator(
 )
 
 
-def register_document(data, issue_id, document_id, i_documents):
-    """
-    Esta função pode lançar a exceção `models.Issue.DoesNotExist`.
-    """
+def register_documents(**kwargs):
+    """Registra documentos na base de dados do OPAC a partir de
+    informações vindas da API do `Kernel`. Armazena como órfãos nas variáveis
+    do Airflow os documentos que não puderam ser salvos."""
 
-    def nestget(data, *path, default=""):
-        """
-        Obtém valores de list ou dicionários.
-        """
-        for key_or_index in path:
-            try:
-                data = data[key_or_index]
-            except (KeyError, IndexError):
-                return default
-        return data
-
-    article = nestget(data, "article", 0)
-    article_meta = nestget(data, "article_meta", 0)
-    pub_date = nestget(data, "pub_date", 0)
-    sub_articles = nestget(data, "sub_article")
-    contribs = nestget(data, "contrib")
-
-    document = models.Article()
-
-    document.title = nestget(article_meta, "article_title", 0)
-    document.section = nestget(article_meta, "pub_subject", 0)
-
-    authors = []
-
-    valid_contrib_types = [
-        "author",
-        "editor",
-        "organizer",
-        "translator",
-        "autor",
-        "compiler",
-    ]
-
-    for contrib in contribs:
-
-        if nestget(contrib, "contrib_type", 0) in valid_contrib_types:
-            authors.append(
-                "%s, %s"
-                % (
-                    nestget(contrib, "contrib_surname", 0),
-                    nestget(contrib, "contrib_given_names", 0),
-                )
-            )
-
-    document.authors = authors
-
-    document.abstract = nestget(article_meta, "abstract", 0)
-
-    publisher_id = nestget(article_meta, "article_publisher_id", 0)
-
-    document._id = publisher_id
-    document.aid = publisher_id
-    document.pid = nestget(article_meta, "article_publisher_id", 1)
-    document.doi = nestget(article_meta, "article_doi", 0)
-
-    original_lang = nestget(article, "lang", 0)
-
-    # article.languages contém todas as traduções do artigo e o idioma original
-    languages = [original_lang]
-    trans_titles = []
-    trans_sections = []
-    trans_abstracts = []
-
-    trans_sections.append(
-        models.TranslatedSection(
-            **{
-                "name": nestget(article_meta, "pub_subject", 0),
-                "language": original_lang,
-            }
-        )
-    )
-
-    trans_abstracts.append(
-        models.Abstract(**{"text": document.abstract, "language": original_lang})
-    )
-
-    if data.get("trans_abstract"):
-
-        for trans_abs in data.get("trans_abstract"):
-            trans_abstracts.append(
-                models.Abstract(
-                    **{
-                        "text": nestget(trans_abs, "text", 0),
-                        "language": nestget(trans_abs, "lang", 0),
-                    }
-                )
-            )
-
-    keywords = []
-    for sub in sub_articles:
-        lang = nestget(sub, "article", 0, "lang", 0)
-
-        languages.append(lang)
-
-        trans_titles.append(
-            models.TranslatedTitle(
-                **{
-                    "name": nestget(sub, "article_meta", 0, "article_title", 0),
-                    "language": lang,
-                }
-            )
-        )
-
-        trans_sections.append(
-            models.TranslatedSection(
-                **{
-                    "name": nestget(sub, "article_meta", 0, "pub_subject", 0),
-                    "language": lang,
-                }
-            )
-        )
-
-        trans_abstracts.append(
-            models.Abstract(
-                **{
-                    "text": nestget(sub, "article_meta", 0, "abstract_p", 0),
-                    "language": lang,
-                }
-            )
-        )
-
-    if data.get("kwd_group"):
-
-        for kwd_group in nestget(data, "kwd_group"):
-
-            keywords.append(
-                models.ArticleKeyword(
-                    **{
-                        "keywords": nestget(kwd_group, "kwd", default=[]),
-                        "language": nestget(kwd_group, "lang", 0),
-                    }
-                )
-            )
-
-    document.languages = languages
-    document.translated_titles = trans_titles
-    document.sections = trans_sections
-    document.abstracts = trans_abstracts
-    document.keywords = keywords
-    document.abstract_languages = [
-        trans_abs["language"] for trans_abs in trans_abstracts
-    ]
-
-    document.original_language = original_lang
-
-    document.publication_date = nestget(pub_date, "text", 0)
-
-    document.type = nestget(article, "type", 0)
-    document.elocation = nestget(article_meta, "pub_elocation", 0)
-    document.fpage = nestget(article_meta, "pub_fpage", 0)
-    document.fpage_sequence = nestget(article_meta, "pub_fpage_seq", 0)
-    document.lpage = nestget(article_meta, "pub_lpage", 0)
-
-    issue = models.Issue.objects.get(_id=issue_id)
-
-    document.issue = issue
-    document.journal = issue.journal
-
-    document.order = i_documents.get(issue.id).index(document_id)
-    document.xml = "%s/documents/%s" % (api_hook.base_url, document._id)
-
-    document.save()
-
-    return document
-
-
-def register_orphan_documents(ds, **kwargs):
-    """
-    Registrar os documentos orfãos.
-    """
-
-    i_documents = kwargs["ti"].xcom_pull(
-        key="i_documents", task_ids="register_issues_task"
-    )
-
-    orphan_documents = []
-
-    for document_id in json.loads(Variable.get("orphan_documents", "[]")):
-
-        issue_id = [i for i, d in i_documents.items() if document_id in d]
-
-        if issue_id:
-            resp_json = fetch_documents_front(document_id)
-            try:
-                register_document(resp_json, issue_id[0], document_id, i_documents)
-            except models.Issue.DoesNotExist:
-                orphan_documents.append(document_id)
-        else:
-            orphan_documents.append(document_id)
-
-    Variable.set("orphan_documents", json.dumps(orphan_documents))
-
-
-register_orphan_documents_task = PythonOperator(
-    task_id="register_orphan_documents",
-    provide_context=True,
-    python_callable=register_orphan_documents,
-    dag=dag,
-)
-
-
-def register_documents(ds, **kwargs):
     mongo_connect()
 
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
-    i_documents = kwargs["ti"].xcom_pull(
-        key="i_documents", task_ids="register_issues_task"
+    def _get_relation_data(document_id: str) -> Tuple[str, Dict]:
+        """Recupera informações sobre o relacionamento entre o 
+        DocumentsBundle e o Document.
+
+        Retorna uma tupla contendo o identificador da issue onde o
+        documento está relacionado e o item do relacionamento.
+
+        >> _get_relation_data("67TH7T7CyPPmgtVrGXhWXVs")
+        ('0034-8910-2019-v53', {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+
+        :param document_id: Identificador único de um documento
+        """
+
+        for issue_id, items in known_documents.items():
+            for item in items:
+                if document_id == item["id"]:
+                    return (issue_id, item)
+
+        return ()
+
+    def _get_known_documents(**kwargs) -> Dict[str, List[str]]:
+        """Recupera a lista de todos os documentos que estão relacionados com
+        um `DocumentsBundle`.
+
+        Levando em consideração que a DAG que detecta mudanças na API do Kernel
+        roda de forma assíncrona em relação a DAG de espelhamento/sincronização.
+
+        É possível que algumas situações especiais ocorram onde em uma rodada
+        **anterior** o **evento de registro** de um `Document` foi capturado mas a 
+        atualização de seu `DocumentsBundle` não ocorreu (elas ocorrem em transações
+        distintas e possuem timestamps também distintos). O documento será
+        registrado como **órfão** e sua `task` não será processada na próxima
+        execução.
+
+        Na próxima execução a task `register_issue_task` entenderá que o
+        `bundle` é órfão e não conhecerá os seus documentos (known_documents)
+        e consequentemente o documento continuará órfão.
+
+        Uma solução para este problema é atualizar a lista de documentos
+        conhecidos a partir da lista de eventos de `get` de `bundles`.
+        """
+
+        known_documents = kwargs["ti"].xcom_pull(
+            key="i_documents", task_ids="register_issues_task"
+        )
+
+        issues_recently_updated = [
+            get_id(task["id"]) for task in filter_changes(tasks, "bundles", "get")
+            if known_documents.get(get_id(task["id"])) is None
+        ]
+
+        for issue_id in issues_recently_updated:
+            known_documents.setdefault(issue_id, [])
+            known_documents[issue_id] = list(
+                itertools.chain(
+                    known_documents[issue_id], fetch_bundles(issue_id).get("items", [])
+                )
+            )
+        return known_documents
+
+    known_documents = _get_known_documents(**kwargs)
+
+    # TODO: Em caso de um update no document é preciso atualizar o registro
+    # Precisamos de uma nova task?
+
+    documents_to_get = itertools.chain(
+        Variable.get("orphan_documents", default_var=[], deserialize_json=True),
+        (get_id(task["id"]) for task in filter_changes(tasks, "documents", "get")),
     )
 
-    orphan_documents = []
+    orphans = try_register_documents(
+        documents_to_get, _get_relation_data, fetch_documents_front, ArticleFactory
+    )
 
-    document_changes = filter_changes(tasks, "documents", "get")
-
-    for document in document_changes:
-        document_id = get_id(document.get("id"))
-        issue_id = [i for i, d in i_documents.items() if document_id in d]
-
-        if issue_id:
-            resp_json = fetch_documents_front(document_id)
-            try:
-                register_document(resp_json, issue_id[0], document_id, i_documents)
-            except models.Issue.DoesNotExist:
-                orphan_documents.append(document_id)
-        else:
-            orphan_documents.append(document_id)
-
-    Variable.set("orphan_documents", json.dumps(orphan_documents))
-    return tasks
+    Variable.set("orphan_documents", orphans, serialize_json=True)
 
 
 register_documents_task = PythonOperator(
@@ -858,9 +696,7 @@ register_issues_task << register_journals_task
 
 register_last_issues_task << register_issues_task
 
-register_orphan_documents_task << register_last_issues_task
-
-register_documents_task << register_orphan_documents_task
+register_documents_task << register_last_issues_task
 
 delete_journals_task << register_documents_task
 
