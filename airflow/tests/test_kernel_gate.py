@@ -1,14 +1,16 @@
 import os
 import json
-from copy import deepcopy
-import http.client
 import unittest
-from unittest import mock
+import tempfile
 
 from airflow import DAG
 from xylose.scielodocument import Issue
 
-from kernel_gate import mount_journals_issues_link, issue_data_to_link
+from kernel_gate import (
+    mount_journals_issues_link,
+    issue_data_to_link,
+    create_journal_issn_index
+)
 from .test_kernel_changes import load_json_fixture
 
 FIXTURES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
@@ -109,3 +111,46 @@ class UpdateJournalAndIssueLink(unittest.TestCase):
         journals_issues_link = mount_journals_issues_link(self.issues)
 
         self.assertDictEqual(journals_issues_link, {})
+
+
+class TestSaveJournalIssnIndex(unittest.TestCase):
+
+    def test_creates_index_file(self):
+        self.journals = [
+            {
+                "scielo_issn": "0001-0001",
+                "print_issn": "0001-0001",
+                "electronic_issn": "0001-000X",
+            },
+            {
+                "scielo_issn": "0002-0001",
+                "print_issn": "0002-0002",
+                "electronic_issn": "0002-000X",
+            },
+            {
+                "scielo_issn": "0003-000X",
+                "print_issn": "0003-0001",
+                "electronic_issn": "0003-000X",
+            },
+            {
+                "scielo_issn": "0004-000X",
+                "electronic_issn": "0004-000X",
+            },
+        ]
+        expected = json.dumps(
+            {
+                "0001-0001": "0001-0001",
+                "0001-000X": "0001-0001",
+                "0002-0001": "0002-0001",
+                "0002-0002": "0002-0001",
+                "0002-000X": "0002-0001",
+                "0003-000X": "0003-000X",
+                "0003-0001": "0003-000X",
+                "0004-000X": "0004-000X",
+            }
+        )
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            create_journal_issn_index(tmpdirname, self.journals)
+            with open(os.path.join(tmpdirname, "issn_index.json")) as index_file:
+                result = index_file.read()
+                self.assertEqual(result, expected)

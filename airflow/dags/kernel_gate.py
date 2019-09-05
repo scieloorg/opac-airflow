@@ -9,7 +9,6 @@ import json
 import http.client
 from typing import List
 from airflow import DAG
-from airflow import exceptions
 from airflow.models import Variable
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
@@ -243,9 +242,28 @@ def register_or_update(_id: str, payload: dict, entity_url: str):
     return response
 
 
+def create_journal_issn_index(title_json_dirname, journals):
+    _issn_index = {}
+    for journal in journals:
+        _issn_id = journal["scielo_issn"]
+        _issn_index.update({_issn_id: _issn_id})
+        _print_issn = journal.get("print_issn", "")
+        if len(_print_issn) > 0 and _print_issn != _issn_id:
+            _issn_index.update({_print_issn: _issn_id})
+        _electronic_issn = journal.get("electronic_issn", "")
+        if len(_electronic_issn) > 0 and _electronic_issn != _issn_id:
+            _issn_index.update({_electronic_issn: _issn_id})
+
+    _issn_index_json_path = os.path.join(title_json_dirname, "issn_index.json")
+    logging.info("creating journal ISSN index file %s.", _issn_index_json_path)
+    with open(_issn_index_json_path, "w") as index_file:
+        index_file.write(json.dumps(_issn_index))
+    return _issn_index_json_path
+
+
 def process_journals(**context):
     """Processa uma lista de journals carregados a partir do resultado
-    de leitura da base MST"""
+    de leitura da base MST e gera um índice de ISSN de periódicos"""
 
     title_json_path = context["ti"].xcom_pull(
         task_ids="copy_mst_bases_to_work_folder_task", key="title_json_path"
@@ -257,10 +275,15 @@ def process_journals(**context):
 
     journals = json.loads(journals)
     journals_as_kernel = [journal_as_kernel(Journal(journal)) for journal in journals]
+    issn_index_json_path = create_journal_issn_index(
+        os.path.dirname(title_json_path), journals_as_kernel
+    )
 
     for journal in journals_as_kernel:
         _id = journal.pop("_id")
         register_or_update(_id, journal, KERNEL_API_JOURNAL_ENDPOINT)
+
+    context["ti"].xcom_push("issn_index_json_path", issn_index_json_path)
 
 
 def filter_issues(issues: List[Issue]) -> List[Issue]:
@@ -364,7 +387,7 @@ def mount_journals_issues_link(issues: List[dict]) -> dict:
         journal_id = issue.data.get("issue").get("v35")[0]["_"]
         journal_issues.setdefault(journal_id, [])
 
-        if not issue_to_link in journal_issues[journal_id]:
+        if issue_to_link not in journal_issues[journal_id]:
             journal_issues[journal_id].append(issue_to_link)
 
     return journal_issues
