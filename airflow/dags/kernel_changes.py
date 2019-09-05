@@ -392,6 +392,9 @@ def IssueFactory(data, journal_id, issue_order):
             str: label produzido a partir de um bundle
         """
 
+        START_REGEX = re.compile("^0")
+        END_REGEX = re.compile("0$")
+
         label_number = metadata.get("number", "")
         label_volume = metadata.get("volume", "")
         label_supplement = (
@@ -402,6 +405,9 @@ def IssueFactory(data, journal_id, issue_order):
 
         if label_number:
             label_number += label_supplement
+            label_number = START_REGEX.sub("", label_number)
+            label_number = END_REGEX.sub("", label_number)
+            label_number = label_number.strip()
 
         return "".join(["v" + label_volume, "n" + label_number])
 
