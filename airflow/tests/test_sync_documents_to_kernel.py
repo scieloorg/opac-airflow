@@ -206,7 +206,7 @@ class TestRegisterUpdateDocuments(TestCase):
         )
 
 
-class TestRelateDocumentsToDocumentsbundle(TestCase):
+class TestLinkDocumentsToDocumentsbundle(TestCase):
 
     @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
     def test_link_documents_to_documentsbundle_gets_ti_xcom_documents(self, mk_link_documents):
@@ -215,8 +215,22 @@ class TestRelateDocumentsToDocumentsbundle(TestCase):
 
         link_documents_to_documentsbundle(**kwargs)
 
-        kwargs["ti"].xcom_pull.assert_called_once_with(
+        kwargs["ti"].xcom_pull.assert_any_call(
             key="documents", task_ids="register_update_docs_id"
+        )
+
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    def test_link_documents_to_documentsbundle_gets_ti_xcom_title_json_path(self, mk_link_documents):
+
+        kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
+
+        link_documents_to_documentsbundle(**kwargs)
+
+        kwargs["ti"].xcom_pull.assert_any_call(
+            task_ids="process_journals_task",
+            dag_id="kernel-gate",
+            key="issn_index_json_path",
+            include_prior_dates=True
         )
 
     @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
@@ -259,11 +273,11 @@ class TestRelateDocumentsToDocumentsbundle(TestCase):
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
 
-        kwargs["ti"].xcom_pull.return_value = documents
+        kwargs["ti"].xcom_pull.side_effect = [documents, "/json/title.json"]
 
         link_documents_to_documentsbundle(**kwargs)
 
-        mk_link_documents.assert_called_once_with(documents)
+        mk_link_documents.assert_called_once_with(documents, "/json/title.json")
 
     @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
     def test_link_documents_to_documentsbundle_does_not_push_if_no_documents(self, mk_link_documents):
@@ -315,6 +329,7 @@ class TestRelateDocumentsToDocumentsbundle(TestCase):
         kwargs["ti"].xcom_push.assert_called_once_with(
             key="linked_bundle", value=pushed_documents
         )
+
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,6 @@
 import os
 import logging
+import json
 from zipfile import ZipFile
 from copy import deepcopy
 
@@ -136,7 +137,7 @@ def register_update_documents(sps_package, xmls_to_preserve):
     return synchronized_docs_metadata
 
 
-def link_documents_to_documentsbundle(documents):
+def link_documents_to_documentsbundle(documents, issn_index_json_path):
     """
         Relaciona documentos com seu fascículos(DocumentsBundle).
 
@@ -194,21 +195,31 @@ def link_documents_to_documentsbundle(documents):
     bundle_id_doc = {}
 
     if documents:
+        Logger.info('Reading ISSN index file %s', issn_index_json_path)
+        with open(issn_index_json_path) as issn_index_file:
+            issn_index_json = issn_index_file.read()
+            issn_index = json.loads(issn_index_json)
         for doc in documents:
+            try:
+                issn_id = issn_index[doc["issn"]]
+            except KeyError as exc:
+                Logger.info(
+                    'Could not get journal ISSN ID: ISSN id "%s" not found', doc["issn"]
+                )
+            else:
+                bundle_id = issue_id(issn_id=issn_id,
+                                     year=doc.get("year"),
+                                     volume=doc.get("volume", None),
+                                     number=doc.get("number", None),
+                                     supplement=doc.get("supplement", None))
 
-            bundle_id = issue_id(issn_id=doc.get("issn"),
-                                 year=doc.get("year"),
-                                 volume=doc.get("volume", None),
-                                 number=doc.get("number", None),
-                                 supplement=doc.get("supplement", None))
+                bundle_id_doc.setdefault(bundle_id, [])
 
-            bundle_id_doc.setdefault(bundle_id, [])
+                payload_doc = {}
+                payload_doc['id'] = doc.get("scielo_id")
+                payload_doc['order'] = doc.get("order")
 
-            payload_doc = {}
-            payload_doc['id'] = doc.get("scielo_id")
-            payload_doc['order'] = doc.get("order")
-
-            bundle_id_doc[bundle_id].append(payload_doc)
+                bundle_id_doc[bundle_id].append(payload_doc)
 
         for bundle_id, payload in bundle_id_doc.items():
             response = register_document_to_documentsbundle(bundle_id, payload)
