@@ -18,5 +18,5 @@ class RegisterUpdateDocIntoKernelException(Exception):
     ...
 
 
-class RelateDocumentToDocumentsBundleException(Exception):
+class LinkDocumentToDocumentsBundleException(Exception):
     ...

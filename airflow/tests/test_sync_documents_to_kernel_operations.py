@@ -1,14 +1,12 @@
 import os
 import copy
-import http.client
-import shutil
 import tempfile
+import builtins
+import json
 from unittest import TestCase, main
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, Mock
 
-import requests
 from airflow import DAG
-from lxml import etree
 
 from operations.sync_documents_to_kernel_operations import (
     list_documents,
@@ -22,7 +20,6 @@ from operations.exceptions import (
     PutXMLInObjectStoreException,
     RegisterUpdateDocIntoKernelException,
 )
-from tests.fixtures import XML_FILE_CONTENT
 
 
 class TestListDocuments(TestCase):
@@ -35,7 +32,7 @@ class TestListDocuments(TestCase):
         MockZipFile.assert_called_once_with(self.sps_package)
 
     @patch("operations.sync_documents_to_kernel_operations.ZipFile")
-    def test_list_document_opens_all_zips(self, MockZipFile):
+    def test_list_document_raises_error_if_zipfile_not_found(self, MockZipFile):
         MockZipFile.side_effect = FileNotFoundError
         self.assertRaises(FileNotFoundError, list_documents, self.sps_package)
 
@@ -167,7 +164,7 @@ class TestDeleteDocuments(TestCase):
     @patch("operations.sync_documents_to_kernel_operations.Logger")
     @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
     @patch("operations.sync_documents_to_kernel_operations.ZipFile")
-    def test_delete_documents_logs_error_if_kernel_connect_error(
+    def test_delete_documents_logs_document_deletion_success(
         self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
     ):
         mk_document_to_delete.side_effect = self.docs_to_delete
@@ -511,53 +508,87 @@ class TestRegisterUpdateDocuments(TestCase):
         self.assertEqual(result, expected)
 
 
-class TestRelateDocumentToDocumentsbundle(TestCase):
+class TestLinkDocumentToDocumentsbundle(TestCase):
+    def setUp(self):
+        self.documents = [
+            {
+                "scielo_id": "S0034-8910.2014048004923",
+                "issn": "0034-8910",
+                "year": "2014",
+                "volume": "48",
+                "number": "2",
+                "order": "347",
+             },
+            {
+                "scielo_id": "S0034-8910.2014048004924",
+                "issn": "0034-8910",
+                "year": "2014",
+                "volume": "48",
+                "number": "2",
+                "order": "348",
+             },
+            {
+                "scielo_id": "S0034-8910.20140078954641",
+                "issn": "1518-8787",
+                "year": "2014",
+                "volume": "02",
+                "number": "2",
+                "order": "978",
+             },
+            {
+                "scielo_id": "S0034-8910.20140078954641",
+                "issn": "1518-8787",
+                "year": "2014",
+                "volume": "02",
+                "number": "2",
+                "order": "978",
+                "supplement": "1",
+             }
+        ]
+        self.issn_index_json = json.dumps({
+            "0034-8910": "0034-8910",
+            "1518-8787": "1518-8787",
+        })
 
     def test_if_link_documents_to_documentsbundle_return_none_when_param_document_empty(self):
 
-        self.assertIsNone(link_documents_to_documentsbundle([]), None)
+        self.assertIsNone(link_documents_to_documentsbundle([], None), None)
+
+    @patch.object(builtins, "open")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
+    @patch("operations.sync_documents_to_kernel_operations.issue_id")
+    def test_link_documents_to_documentsbundle_logs_journal_issn_id_error(
+        self, mk_issue_id,  mk_regdocument, MockLogger, mk_open
+    ):
+        mk_open.return_value.__enter__.return_value.read.return_value = "{}"
+        link_documents_to_documentsbundle(self.documents[:1], "/json/index.json")
+        MockLogger.info.assert_any_call(
+            'Could not get journal ISSN ID: ISSN id "%s" not found', "0034-8910"
+        )
+
+    @patch.object(builtins, "open")
+    @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
+    @patch("operations.sync_documents_to_kernel_operations.issue_id")
+    def test_link_documents_to_documentsbundle_calls_issue_id_with_issn_id(
+        self, mk_issue_id,  mk_regdocument, mk_open
+    ):
+        mk_open.return_value.__enter__.return_value.read.return_value = '{"0034-8910": "0101-0101"}'
+        link_documents_to_documentsbundle(self.documents[:1], "/json/index.json")
+        mk_issue_id.assert_called_once_with(
+            issn_id="0101-0101",
+            year=self.documents[0]["year"],
+            volume=self.documents[0].get("volume", None),
+            number=self.documents[0].get("number", None),
+            supplement=self.documents[0].get("supplement", None)
+        )
 
     @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
     @patch("operations.sync_documents_to_kernel_operations.issue_id")
-    def test_if_link_documents_to_documentsbundle_register_on_document_store(self, mk_issue_id,  mk_regdocument):
-
+    def test_if_link_documents_to_documentsbundle_register_on_document_store(
+        self, mk_issue_id,  mk_regdocument
+    ):
         mock_response = Mock(status_code=204)
-
-        documents = [
-                        {
-                         "scielo_id": "S0034-8910.2014048004923",
-                         "issn": "0034-8910",
-                         "year": "2014",
-                         "volume": "48",
-                         "number": "2",
-                         "order": "347",
-                         },
-                        {
-                         "scielo_id": "S0034-8910.2014048004924",
-                         "issn": "0034-8910",
-                         "year": "2014",
-                         "volume": "48",
-                         "number": "2",
-                         "order": "348",
-                         },
-                        {
-                         "scielo_id": "S0034-8910.20140078954641",
-                         "issn": "1518-8787",
-                         "year": "2014",
-                         "volume": "02",
-                         "number": "2",
-                         "order": "978",
-                         },
-                        {
-                         "scielo_id": "S0034-8910.20140078954641",
-                         "issn": "1518-8787",
-                         "year": "2014",
-                         "volume": "02",
-                         "number": "2",
-                         "order": "978",
-                         "supplement": "1",
-                         }
-                    ]
 
         mk_regdocument.return_value = mock_response
 
@@ -568,53 +599,24 @@ class TestRelateDocumentToDocumentsbundle(TestCase):
                                    '1518-8787-2014-v2-n2-s1'
                                    ]
 
-        self.assertEqual(link_documents_to_documentsbundle(documents),
-                         [
-                             {'id': '0034-8910-2014-v48-n2', 'status': 204},
-                             {'id': '1518-8787-2014-v2-n2', 'status': 204},
-                             {'id': '1518-8787-2014-v2-n2-s1', 'status': 204}
-                         ])
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            issn_index_json_path = os.path.join(tmpdirname, "issn_index.json")
+            with open(issn_index_json_path, "w") as index_file:
+                index_file.write(self.issn_index_json)
+
+            self.assertEqual(
+                link_documents_to_documentsbundle(self.documents, issn_index_json_path),
+                [
+                    {'id': '0034-8910-2014-v48-n2', 'status': 204},
+                    {'id': '1518-8787-2014-v2-n2', 'status': 204},
+                    {'id': '1518-8787-2014-v2-n2-s1', 'status': 204}
+                ])
 
     @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
     @patch("operations.sync_documents_to_kernel_operations.issue_id")
-    def test_if_some_documents_are_not_register_on_document_store(self, mk_issue_id,  mk_regdocument):
-
-        documents = [
-                        {
-                         "scielo_id": "S0034-8910.2014048004923",
-                         "issn": "0034-8910",
-                         "year": "2014",
-                         "volume": "48",
-                         "number": "2",
-                         "order": "347",
-                         },
-                        {
-                         "scielo_id": "S0034-8910.2014048004924",
-                         "issn": "0034-8910",
-                         "year": "2014",
-                         "volume": "48",
-                         "number": "2",
-                         "order": "348",
-                         },
-                        {
-                         "scielo_id": "S0034-8910.20140078954641",
-                         "issn": "1518-8787",
-                         "year": "2014",
-                         "volume": "02",
-                         "number": "2",
-                         "order": "978",
-                         },
-                        {
-                         "scielo_id": "S0034-8910.20140078954641",
-                         "issn": "1518-8787",
-                         "year": "2014",
-                         "volume": "02",
-                         "number": "2",
-                         "order": "978",
-                         "supplement": "1",
-                         }
-                    ]
-
+    def test_if_some_documents_are_not_register_on_document_store(
+        self, mk_issue_id,  mk_regdocument
+    ):
         mk_regdocument.side_effect = [
                                       Mock(status_code=204),
                                       Mock(status_code=422),
@@ -628,12 +630,18 @@ class TestRelateDocumentToDocumentsbundle(TestCase):
                                    '1518-8787-2014-v2-n2-s1'
                                    ]
 
-        self.assertEqual(link_documents_to_documentsbundle(documents),
-                         [
-                             {'id': '0034-8910-2014-v48-n2', 'status': 204},
-                             {'id': '1518-8787-2014-v2-n2', 'status': 422},
-                             {'id': '1518-8787-2014-v2-n2-s1', 'status': 404}
-                         ])
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            issn_index_json_path = os.path.join(tmpdirname, "issn_index.json")
+            with open(issn_index_json_path, "w") as index_file:
+                index_file.write(self.issn_index_json)
+
+            self.assertEqual(
+                link_documents_to_documentsbundle(self.documents, issn_index_json_path),
+                [
+                    {'id': '0034-8910-2014-v48-n2', 'status': 204},
+                    {'id': '1518-8787-2014-v2-n2', 'status': 422},
+                    {'id': '1518-8787-2014-v2-n2-s1', 'status': 404}
+                ])
 
 
 if __name__ == "__main__":

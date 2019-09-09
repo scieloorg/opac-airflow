@@ -12,7 +12,7 @@ from operations.exceptions import (
     PutXMLInObjectStoreException,
     ObjectStoreError,
     RegisterUpdateDocIntoKernelException,
-    RelateDocumentToDocumentsBundleException,
+    LinkDocumentToDocumentsBundleException,
 )
 from common.sps_package import SPS_Package
 
@@ -240,7 +240,7 @@ def register_document_to_documentsbundle(bundle_id, payload):
             "/bundles/%s/documents" % bundle_id, "PUT", payload)
         return response
     except requests.exceptions.HTTPError as exc:
-        raise RelateDocumentToDocumentsBundleException(str(exc)) from None
+        raise LinkDocumentToDocumentsBundleException(str(exc)) from None
 
 
 def issue_id(issn_id, year, volume=None, number=None, supplement=None):

@@ -1,7 +1,6 @@
-import os
 import copy
 import random
-from unittest import TestCase, main, skip
+from unittest import TestCase, main
 from unittest.mock import patch, Mock, MagicMock
 
 import requests
@@ -25,7 +24,7 @@ from operations.exceptions import (
     PutXMLInObjectStoreException,
     ObjectStoreError,
     RegisterUpdateDocIntoKernelException,
-    RelateDocumentToDocumentsBundleException,
+    LinkDocumentToDocumentsBundleException,
 )
 
 from tests.fixtures import XML_FILE_CONTENT
@@ -761,7 +760,7 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
             "Not Found"
         )
 
-        self.assertRaises(RelateDocumentToDocumentsBundleException,
+        self.assertRaises(LinkDocumentToDocumentsBundleException,
                           register_document_to_documentsbundle,
                           "0066-782X-1999-v72-n0",
                           self.payload)
@@ -783,6 +782,7 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
         response = register_document_to_documentsbundle("0066-782X-1999-v72-n0", payload)
 
         self.assertEqual(response.status_code, 204)
+
 
 if __name__ == "__main__":
     main()

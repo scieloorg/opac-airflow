@@ -74,12 +74,21 @@ def register_update_documents(dag_run, **kwargs):
 
 def link_documents_to_documentsbundle(dag_run, **kwargs):
     documents = kwargs["ti"].xcom_pull(key="documents", task_ids="register_update_docs_id")
+    issn_index_json_path = kwargs["ti"].xcom_pull(
+        task_ids="process_journals_task",
+        dag_id="kernel-gate",
+        key="issn_index_json_path",
+        include_prior_dates=True
+    )
 
     if documents:
-        linked_bundle = sync_documents_to_kernel_operations.link_documents_to_documentsbundle(documents)
+        linked_bundle = sync_documents_to_kernel_operations.link_documents_to_documentsbundle(
+            documents, issn_index_json_path
+        )
 
         if linked_bundle:
             kwargs["ti"].xcom_push(key="linked_bundle", value=linked_bundle)
+
 
 list_documents_task = PythonOperator(
     task_id="list_docs_task_id",
