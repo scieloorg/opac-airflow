@@ -30,6 +30,7 @@ contento:
 * Python 3.7+
 * Apache Airflow
 * git+https://git@github.com/scieloorg/opac_schema@v2.52#egg=opac_schema
+* curl
 
 ## Implantação local
 
