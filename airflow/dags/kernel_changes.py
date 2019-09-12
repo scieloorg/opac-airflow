@@ -23,7 +23,12 @@ from mongoengine import connect
 
 from opac_schema.v1 import models
 
-from operations.kernel_changes_operations import try_register_documents, ArticleFactory
+from operations.kernel_changes_operations import (
+    try_register_documents,
+    ArticleFactory,
+    ArticleRenditionFactory,
+    try_register_documents_renditions,
+)
 from common.hooks import mongo_connect
 
 failure_recipients = os.environ.get("EMIAL_ON_FAILURE_RECIPIENTS", None)
@@ -144,6 +149,18 @@ def fetch_documents_front(document_id):
          Obtém o JSON do Document do Kernel com base no parametro 'document_id'
     """
     return fetch_data("/documents/%s/front" % (document_id))
+
+
+def fetch_documents_renditions(document_id: str) -> List[Dict]:
+    """Obtém o uma lista contendo as representações de um documento
+
+    Args:
+        document_id (str): Identificador único de um documento
+
+    Returns:
+        renditions (List[Dict])
+    """
+    return fetch_data("/documents/%s/renditions" % (document_id))
 
 
 def changes(since=""):
@@ -609,6 +626,34 @@ register_documents_task = PythonOperator(
 )
 
 
+def register_documents_renditions(**kwargs):
+    """Registra as manifestações de documentos processados na base de dados
+    do OPAC"""
+
+    mongo_connect()
+
+    tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
+
+    renditions_to_get = itertools.chain(
+        Variable.get("orphan_renditions", default_var=[], deserialize_json=True),
+        (get_id(task["id"]) for task in filter_changes(tasks, "renditions", "get")),
+    )
+
+    orphans = try_register_documents_renditions(
+        renditions_to_get, fetch_documents_renditions, ArticleRenditionFactory
+    )
+
+    Variable.set("orphan_renditions", orphans, serialize_json=True)
+
+
+register_documents_renditions_task = PythonOperator(
+    task_id="register_documents_renditions_task",
+    provide_context=True,
+    python_callable=register_documents_renditions,
+    dag=dag,
+)
+
+
 def delete_documents(ds, **kwargs):
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
@@ -744,7 +789,9 @@ register_last_issues_task << register_issues_task
 
 register_documents_task << register_last_issues_task
 
-delete_journals_task << register_documents_task
+register_documents_renditions_task << register_documents_task
+
+delete_journals_task << register_documents_renditions_task
 
 delete_issues_task << delete_journals_task
 
