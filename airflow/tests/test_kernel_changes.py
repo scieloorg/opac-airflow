@@ -6,7 +6,11 @@ import json
 from airflow import DAG
 
 from kernel_changes import JournalFactory
-from operations.kernel_changes_operations import ArticleFactory, try_register_documents
+from operations.kernel_changes_operations import (
+    ArticleFactory,
+    try_register_documents,
+    ArticleRenditionFactory,
+)
 from opac_schema.v1 import models
 
 
@@ -283,3 +287,38 @@ class RegisterDocumentTests(unittest.TestCase):
 
         self.assertEqual(1, len(orphans))
         self.assertEqual(["67TH7T7CyPPmgtVrGXhWXVs"], orphans)
+
+
+class ArticleRenditionFactoryTests(unittest.TestCase):
+    def setUp(self):
+        self.article_objects = patch(
+            "operations.kernel_changes_operations.models.Article.objects"
+        )
+
+        ArticleObjectsMock = self.article_objects.start()
+        ArticleObjectsMock.get.side_effect = MagicMock()
+
+        self.document_front = load_json_fixture(
+            "kernel-document-front-s1518-8787.2019053000621.json"
+        )
+        self.article = ArticleRenditionFactory(
+            "67TH7T7CyPPmgtVrGXhWXVs",
+            [
+                {
+                    "filename": "filename.pdf",
+                    "url": "//object-storage/file.pdf",
+                    "mimetype": "application/pdf",
+                    "lang": "en",
+                    "size_bytes": 1,
+                }
+            ],
+        )
+
+    def tearDown(self):
+        self.article_objects.stop()
+
+    def test_pdfs_attr_should_be_populated_with_rendition_pdf_data(self):
+        self.assertEqual(
+            [{"lang": "en", "url": "//object-storage/file.pdf", "type": "pdf"}],
+            self.article.pdfs,
+        )

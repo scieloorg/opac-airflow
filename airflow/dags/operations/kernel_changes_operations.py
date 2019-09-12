@@ -287,3 +287,32 @@ def try_register_documents(
             )
 
     return list(set(orphans))
+
+
+def ArticleRenditionFactory(article_id: str, data: List[dict]) -> models.Article:
+    """Recupera uma instância de artigo a partir de um article_id e popula seus
+    assets a partir dos dados de entrada.
+
+    A partir do article_id uma instância de Artigo é recuperada da base OPAC e
+    seus assets são populados. Se o Artigo não existir na base OPAC a exceção
+    models.ArticleDoesNotExists é lançada.
+    
+    Args:
+        article_id (str): Identificador do artigo a ser recuperado
+        data (List[dict]): Lista de renditions do artigo
+    
+    Returns:
+        models.Article: Artigo recuperado e atualizado com uma nova lista de assets."""
+
+    article = models.Article.objects.get(_id=article_id)
+
+    def _get_pdfs(data: dict) -> List[dict]:
+        return [
+            {"lang": rendition["lang"], "url": rendition["url"], "type": "pdf"}
+            for rendition in data
+            if rendition["mimetype"] == "application/pdf"
+        ]
+
+    article.pdfs = list(_get_pdfs(data))
+
+    return article
