@@ -316,3 +316,45 @@ def ArticleRenditionFactory(article_id: str, data: List[dict]) -> models.Article
     article.pdfs = list(_get_pdfs(data))
 
     return article
+
+
+def try_register_documents_renditions(
+    documents: List[str],
+    get_rendition_data: callable,
+    article_rendition_factory: callable,
+) -> List[str]:
+    """Registra as manifestações de documentos na base de dados do OPAC
+
+    As manifestações que não puderem ser registradas serão consideradas como
+    órfãos.
+
+    Args:
+        documents (Iterable): iterável com os identicadores dos documentos 
+            a serem registrados.
+        get_rendition_data (callable): Recupera os dados de manifestações
+            de um documento.
+        article_rendition_factory (callable): Recupera uma instância de
+            artigo da base OPAC e popula as suas manifestações de acordo
+            com os dados apresentados.
+
+    Returns:
+        List[str] orphans: Lista contendo todos os identificadores dos
+            documentos em que as manifestações que não puderam ser registradas
+            na base de dados do OPAC.
+    """
+
+    orphans = []
+
+    for document in documents:
+        try:
+            data = get_rendition_data(document)
+            article = article_rendition_factory(document, data)
+            article.save()
+        except models.Article.DoesNotExist:
+            logging.info(
+                'Could not possible save rendition for document, probably '
+                'document %s isn\'t in OPAC database.' % document
+            )
+            orphans.append(document)
+
+    return list(set(orphans))
