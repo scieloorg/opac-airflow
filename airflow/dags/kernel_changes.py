@@ -223,10 +223,19 @@ def parser_endpoint(endpoint):
     Return: (journals, 0000-0000-00-00-2)
 
     """
-    _parsed_endpoint = endpoint.split("/")
+    patterns = [
+        r"^\/(?P<entity>journals)\/(?P<id>[-\w]+)$",
+        r"^\/(?P<entity>bundles)\/(?P<id>[-\w\.]+)$",
+        r"^\/(?P<entity>documents)\/(?P<id>[-\w]+)$",
+        r"^\/documents\/(?P<id>[-\w]+)\/(?P<entity>renditions)$",
+    ]
 
-    return _parsed_endpoint[1:3]
+    for pattern in patterns:
+        matched = re.match(pattern, endpoint)
 
+        if matched:
+            groups = matched.groupdict()
+            return (groups["entity"], groups["id"])
 
 def filter_changes(tasks, entity, action):
     """
