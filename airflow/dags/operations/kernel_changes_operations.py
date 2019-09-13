@@ -287,3 +287,74 @@ def try_register_documents(
             )
 
     return list(set(orphans))
+
+
+def ArticleRenditionFactory(article_id: str, data: List[dict]) -> models.Article:
+    """Recupera uma instância de artigo a partir de um article_id e popula seus
+    assets a partir dos dados de entrada.
+
+    A partir do article_id uma instância de Artigo é recuperada da base OPAC e
+    seus assets são populados. Se o Artigo não existir na base OPAC a exceção
+    models.ArticleDoesNotExists é lançada.
+    
+    Args:
+        article_id (str): Identificador do artigo a ser recuperado
+        data (List[dict]): Lista de renditions do artigo
+    
+    Returns:
+        models.Article: Artigo recuperado e atualizado com uma nova lista de assets."""
+
+    article = models.Article.objects.get(_id=article_id)
+
+    def _get_pdfs(data: dict) -> List[dict]:
+        return [
+            {"lang": rendition["lang"], "url": rendition["url"], "type": "pdf"}
+            for rendition in data
+            if rendition["mimetype"] == "application/pdf"
+        ]
+
+    article.pdfs = list(_get_pdfs(data))
+
+    return article
+
+
+def try_register_documents_renditions(
+    documents: List[str],
+    get_rendition_data: callable,
+    article_rendition_factory: callable,
+) -> List[str]:
+    """Registra as manifestações de documentos na base de dados do OPAC
+
+    As manifestações que não puderem ser registradas serão consideradas como
+    órfãos.
+
+    Args:
+        documents (Iterable): iterável com os identicadores dos documentos 
+            a serem registrados.
+        get_rendition_data (callable): Recupera os dados de manifestações
+            de um documento.
+        article_rendition_factory (callable): Recupera uma instância de
+            artigo da base OPAC e popula as suas manifestações de acordo
+            com os dados apresentados.
+
+    Returns:
+        List[str] orphans: Lista contendo todos os identificadores dos
+            documentos em que as manifestações que não puderam ser registradas
+            na base de dados do OPAC.
+    """
+
+    orphans = []
+
+    for document in documents:
+        try:
+            data = get_rendition_data(document)
+            article = article_rendition_factory(document, data)
+            article.save()
+        except models.Article.DoesNotExist:
+            logging.info(
+                'Could not possible save rendition for document, probably '
+                'document %s isn\'t in OPAC database.' % document
+            )
+            orphans.append(document)
+
+    return list(set(orphans))
