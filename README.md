@@ -49,7 +49,9 @@ $ airflow webserver
 
 ## Configuração
 
-### Conexão com OPAC:
+### Airflow
+
+#### Conexão com OPAC:
 
 * Conn Id: `opac_conn`
 * Conn Type: `MongoDB`
@@ -58,20 +60,29 @@ $ airflow webserver
 * Port: porta do host MongoDB
 * Extra: `{"authentication_source": "admin"}`
 
-### Conexão com Kernel:
+#### Conexão com Kernel:
 
 * Conn Id: `kernel_conn`
 * Conn Type: `HTTP`
 * Host: endereço do host do Kernel
 * Port: porta do host do Kernel
 
-### Conexão com Object Store (Min.io):
+#### Conexão com Object Store (Min.io):
 
 * Conn Id: `aws_default`
 * Conn Type: `Amazon Web Service`
 * Schema: `http` ou `https`
 * Login: login do Object Store
 * Extra: `{"host": "<endereço do host:porta>"}`
+
+#### Variáveis:
+
+* `BASE_TITLE_FOLDER_PATH`: Diretório de origem da base ISIS title
+* `BASE_ISSUE_FOLDER_PATH`: Diretório de origem da base ISIS issue
+* `WORK_FOLDER_PATH`: Diretório para a cópia das bases ISIS
+* `SCILISTA_FILE_PATH`: Caminho onde o arquivo `scilista` deverá ser lido
+* `XC_SPS_PACKAGES_DIR`: Diretório de origem dos pacotes SPS a serem sincronizados
+* `PROC_SPS_PACKAGES_DIR`: Diretório de destino dos pacotes SPS a serem sincronizados
 
 
 ### Variáveis de ambiente:
