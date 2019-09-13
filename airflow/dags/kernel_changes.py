@@ -23,7 +23,12 @@ from mongoengine import connect
 
 from opac_schema.v1 import models
 
-from operations.kernel_changes_operations import try_register_documents, ArticleFactory
+from operations.kernel_changes_operations import (
+    try_register_documents,
+    ArticleFactory,
+    ArticleRenditionFactory,
+    try_register_documents_renditions,
+)
 from common.hooks import mongo_connect
 
 failure_recipients = os.environ.get("EMIAL_ON_FAILURE_RECIPIENTS", None)
@@ -146,6 +151,18 @@ def fetch_documents_front(document_id):
     return fetch_data("/documents/%s/front" % (document_id))
 
 
+def fetch_documents_renditions(document_id: str) -> List[Dict]:
+    """Obtém o uma lista contendo as representações de um documento
+
+    Args:
+        document_id (str): Identificador único de um documento
+
+    Returns:
+        renditions (List[Dict])
+    """
+    return fetch_data("/documents/%s/renditions" % (document_id))
+
+
 def changes(since=""):
     """Verifies if change's endpoint has new modifications.
     If none modification was found returns an empty generator. If
@@ -223,10 +240,19 @@ def parser_endpoint(endpoint):
     Return: (journals, 0000-0000-00-00-2)
 
     """
-    _parsed_endpoint = endpoint.split("/")
+    patterns = [
+        r"^\/(?P<entity>journals)\/(?P<id>[-\w]+)$",
+        r"^\/(?P<entity>bundles)\/(?P<id>[-\w\.]+)$",
+        r"^\/(?P<entity>documents)\/(?P<id>[-\w]+)$",
+        r"^\/documents\/(?P<id>[-\w]+)\/(?P<entity>renditions)$",
+    ]
 
-    return _parsed_endpoint[1:3]
+    for pattern in patterns:
+        matched = re.match(pattern, endpoint)
 
+        if matched:
+            groups = matched.groupdict()
+            return (groups["entity"], groups["id"])
 
 def filter_changes(tasks, entity, action):
     """
@@ -600,6 +626,34 @@ register_documents_task = PythonOperator(
 )
 
 
+def register_documents_renditions(**kwargs):
+    """Registra as manifestações de documentos processados na base de dados
+    do OPAC"""
+
+    mongo_connect()
+
+    tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
+
+    renditions_to_get = itertools.chain(
+        Variable.get("orphan_renditions", default_var=[], deserialize_json=True),
+        (get_id(task["id"]) for task in filter_changes(tasks, "renditions", "get")),
+    )
+
+    orphans = try_register_documents_renditions(
+        renditions_to_get, fetch_documents_renditions, ArticleRenditionFactory
+    )
+
+    Variable.set("orphan_renditions", orphans, serialize_json=True)
+
+
+register_documents_renditions_task = PythonOperator(
+    task_id="register_documents_renditions_task",
+    provide_context=True,
+    python_callable=register_documents_renditions,
+    dag=dag,
+)
+
+
 def delete_documents(ds, **kwargs):
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
@@ -735,7 +789,9 @@ register_last_issues_task << register_issues_task
 
 register_documents_task << register_last_issues_task
 
-delete_journals_task << register_documents_task
+register_documents_renditions_task << register_documents_task
+
+delete_journals_task << register_documents_renditions_task
 
 delete_issues_task << delete_journals_task
 

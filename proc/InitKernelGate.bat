@@ -3,7 +3,7 @@ rem Verifica e Instala o Curl
 rem Faz uma requisição HTTP para o opac-airflow
 
 
-echo "Inicializando InitKernelGate..."
+echo "Inicializando InitKernelGate: Sincronizacao com o Kernel..."
 
 export DAGID='kernel-gate'
 export AIRFLOW_HOST=http://0.0.0.0:8080
@@ -13,7 +13,9 @@ echo "Executando InitKernelGate..."
 
 if [ ! -x "$(command -v curl)" ]
 then
-    echo "'curl' e uma dependencia para o comando para acionar o Kernel Gate"
+    echo '"curl" e uma dependencia do comando InitKernelGate'
+    echo
+    echo Não foi encontrada curl instalado. Instale curl e tente novamente.
     echo
     echo Tecle CONTROL-C para sair ou ENTER para continuar...
     while [ true ] ; do
@@ -25,6 +27,6 @@ then
         fi
     done
 else
-    echo 'Acessando para iniciar o Kernel Gate: ' $AIRFLOW_API
+    echo Acessando a URL $AIRFLOW_API para iniciar sincronizacao com o Kernel
     curl -XPOST "$AIRFLOW_API" -H 'Cache-Control: no-cache' -H 'Content-Type: application/json' -d '{}'
 fi

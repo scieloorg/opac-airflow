@@ -6,7 +6,12 @@ import json
 from airflow import DAG
 
 from kernel_changes import JournalFactory
-from operations.kernel_changes_operations import ArticleFactory, try_register_documents
+from operations.kernel_changes_operations import (
+    ArticleFactory,
+    try_register_documents,
+    ArticleRenditionFactory,
+    try_register_documents_renditions,
+)
 from opac_schema.v1 import models
 
 
@@ -283,3 +288,91 @@ class RegisterDocumentTests(unittest.TestCase):
 
         self.assertEqual(1, len(orphans))
         self.assertEqual(["67TH7T7CyPPmgtVrGXhWXVs"], orphans)
+
+
+class ArticleRenditionFactoryTests(unittest.TestCase):
+    def setUp(self):
+        self.article_objects = patch(
+            "operations.kernel_changes_operations.models.Article.objects"
+        )
+
+        ArticleObjectsMock = self.article_objects.start()
+        ArticleObjectsMock.get.side_effect = MagicMock()
+
+        self.document_front = load_json_fixture(
+            "kernel-document-front-s1518-8787.2019053000621.json"
+        )
+        self.article = ArticleRenditionFactory(
+            "67TH7T7CyPPmgtVrGXhWXVs",
+            [
+                {
+                    "filename": "filename.pdf",
+                    "url": "//object-storage/file.pdf",
+                    "mimetype": "application/pdf",
+                    "lang": "en",
+                    "size_bytes": 1,
+                }
+            ],
+        )
+
+    def tearDown(self):
+        self.article_objects.stop()
+
+    def test_pdfs_attr_should_be_populated_with_rendition_pdf_data(self):
+        self.assertEqual(
+            [{"lang": "en", "url": "//object-storage/file.pdf", "type": "pdf"}],
+            self.article.pdfs,
+        )
+
+
+class RegisterDocumentRenditionsTest(unittest.TestCase):
+    def setUp(self):
+        self.documents = ["67TH7T7CyPPmgtVrGXhWXVs"]
+        self.document_front = load_json_fixture(
+            "kernel-document-front-s1518-8787.2019053000621.json"
+        )
+
+        mk_hooks = patch("operations.kernel_changes_operations.hooks")
+        self.mk_hooks = mk_hooks.start()
+
+        self.renditions = [
+            {
+                "filename": "filename.pdf",
+                "url": "//object-storage/file.pdf",
+                "mimetype": "application/pdf",
+                "lang": "en",
+                "size_bytes": 1,
+            }
+        ]
+
+    def tearDown(self):
+        self.mk_hooks.stop()
+
+    def test_try_register_documents_renditions_call_save_methods_from_article_instance(
+        self
+    ):
+        article_rendition_factory_mock = MagicMock()
+        article_instance_mock = MagicMock()
+        article_rendition_factory_mock.return_value = article_instance_mock
+
+        orphans = try_register_documents_renditions(
+            documents=self.documents,
+            get_rendition_data=lambda document_id: self.renditions,
+            article_rendition_factory=article_rendition_factory_mock,
+        )
+
+        article_instance_mock.save.assert_called()
+
+        self.assertEqual([], orphans)
+
+    def test_has_orphans_when_try_register_an_orphan_rendition(self):
+        article_rendition_factory_mock = MagicMock()
+        article_rendition_factory_mock.side_effect = [models.Article.DoesNotExist]
+
+        orphans = try_register_documents_renditions(
+            documents=self.documents,
+            get_rendition_data=lambda document_id: self.renditions,
+            article_rendition_factory=article_rendition_factory_mock,
+        )
+
+        self.assertEqual(self.documents, orphans)
