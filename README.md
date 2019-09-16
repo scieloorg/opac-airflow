@@ -1,90 +1,102 @@
-# Opac-airflow
+# OPAC-Airflow
 
-Opac-airflow é uma plataforma de fluxo de processamento dos metadados do SciELO para o Site(OPAC).
+OPAC-Airflow é a configuração SciELO do [Apache Airflow](http://airflow.apache.org/) para o controle do fluxo de metadados e documentos para a publicação no Site(OPAC), desde o fluxo direto de ingestão legado.
 
-É responsável, atualmente, pela identificação das alterações realizadas nos metadados do SciELO e pela consistência no Site(OPAC).
-
-
-# Premissas que o processamento deve contemplar
-
-* Deve coletar somente as mudanças
-* Verificar antecipadamente os pontos de integração
-* Enviar e-mail em caso de falha
-* Cadastrar os registros sempre como despublicados, até que todo as tarefas sejam finalizadas
-* Realizar as tarefas de remoção nos últimos passos se e somente se todos os
-passos tenham sido realizados com sucesso
-* Ao finalizar com sucesso, enviar e-mail com um relatório de processamento
-contento:
-
-    * Quais itens foram inseridos e removidos
-    * Tabela de links para os novos itens cadastrados para validação manual
-    * Tempo de execução total e por tarefa
-    * Link para airflow com o contextualizado processamento.
+[![Build Status](https://travis-ci.org/scieloorg/opac-airflow.svg?branch=master)](https://travis-ci.org/scieloorg/opac-airflow)
 
 
-## Fluxo
+## Funcionamento
+
+Os metadados são armazenados no [Kernel](https://github.com/scieloorg/document-store) e os arquivos (XMLs, ativos digitais e manifestações) no [Minio](https://min.io/) (também compatível com AWS S3). Para que os dados sejam carregados no site [OPAC](https://github.com/scieloorg/OPAC), são lidos os registros de mudança no Kernel.
+
+### Responsabilidades de cada DAG
+
+* `kernel_gate`: efetua o espelhamento das bases ISIS no Kernel
+* `pre_sync_documents_to_kernel`: copia os pacotes SPS informados
+* `sync_documents_to_kernel`: sincroniza com o Kernel e o Minio os documentos de um pacote SPS
+* `kernel_changes`: carrega os metadados do Kernel no site
 
 
-## Requisitos
+## Instalação
+
+## Construindo a aplicação com Docker
+
+`docker-compose build`
+
+Executando a aplicação:
+
+`docker-compose up -d`
+
+## Instalação no servidor
+
+### Requisitos
 
 * Python 3.7+
-* Apache Airflow
-* git+https://git@github.com/scieloorg/opac_schema@v2.52#egg=opac_schema
-* curl
+* [Apache Airflow com S3](http://airflow.apache.org/installation.html)
+* [OpenJDK8](https://openjdk.java.net)
+* [Xylose 1.35.1](https://github.com/scieloorg/xylose)
+* [OPAC-Schema 2.52](https://github.com/scieloorg/opac_schema)
+* [deepdiff com Murmur3](https://deepdiff.readthedocs.io/)
+* [lxml 4.3.4](https://lxml.de)
 
-## Implantação local
+### Inicializando o servidor
 
-### Conexões do airflow:
+```
+$ airflow initdb
+$ airflow scheduler
+$ airflow webserver
+```
 
+## Configuração
+
+### Airflow
 
 #### Conexão com OPAC:
 
-* Conn Id: opac_conn
-* Conn Type: MongoDB
-* Host: localhost
-* Schema: opac
-* Port: 27017
-* Extra: {"authentication_source": "admin"}
+* Conn Id: `opac_conn`
+* Conn Type: `MongoDB`
+* Host: endereço do host MongoDB
+* Schema: `opac`
+* Port: porta do host MongoDB
+* Extra: `{"authentication_source": "admin"}`
 
 #### Conexão com Kernel:
 
-* Conn Id: kernel_conn
-* Conn Type: HTTP
-* Host: http://0.0.0.0
-* Port: 6543
+* Conn Id: `kernel_conn`
+* Conn Type: `HTTP`
+* Host: endereço do host do Kernel
+* Port: porta do host do Kernel
+
+#### Conexão com Object Store (Min.io):
+
+* Conn Id: `aws_default`
+* Conn Type: `Amazon Web Service`
+* Schema: `http` ou `https`
+* Login: login do Object Store
+* Extra: `{"host": "<endereço do host:porta>"}`
+
+#### Variáveis:
+
+* `BASE_TITLE_FOLDER_PATH`: Diretório de origem da base ISIS title
+* `BASE_ISSUE_FOLDER_PATH`: Diretório de origem da base ISIS issue
+* `WORK_FOLDER_PATH`: Diretório para a cópia das bases ISIS
+* `SCILISTA_FILE_PATH`: Caminho onde o arquivo `scilista` deverá ser lido
+* `XC_SPS_PACKAGES_DIR`: Diretório de origem dos pacotes SPS a serem sincronizados
+* `PROC_SPS_PACKAGES_DIR`: Diretório de destino dos pacotes SPS a serem sincronizados
 
 
 ### Variáveis de ambiente:
 
-```
-export AIRFLOW_HOME="$(pwd)"
-```
+`export AIRFLOW_HOME="$(pwd)" && export EMIAL_ON_FAILURE_RECIPIENTS=infra@scielo.org`
 
-```
-airflow initdb
-```
 
-```
-airflow scheduler
-```
+## Testes Automatizados
 
-```
-airflow webserver --port=8080
-```
+No Docker:
+`docker-compose -f docker-compose-dev.yml exec opac-airflow python -m unittest -v`
 
-Construindo a aplicação com docker:
-
-```docker-compose build```
-
-Executando a aplicação:
-
-```docker-compose up -d```
-
-### Teste
-
-```
-docker-compose -f docker-compose-dev.yml exec opac-airflow python -m unittest -v
-```
+No servidor local:
+`python -m unittest -v`
 
 ## Licença de uso
 
