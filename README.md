@@ -51,7 +51,7 @@ $ airflow webserver
 
 ### Airflow
 
-#### Conexão com OPAC:
+## Conexão com OPAC:
 
 * Conn Id: `opac_conn`
 * Conn Type: `MongoDB`
@@ -60,14 +60,14 @@ $ airflow webserver
 * Port: porta do host MongoDB
 * Extra: `{"authentication_source": "admin"}`
 
-#### Conexão com Kernel:
+## Conexão com Kernel:
 
 * Conn Id: `kernel_conn`
 * Conn Type: `HTTP`
 * Host: endereço do host do Kernel
 * Port: porta do host do Kernel
 
-#### Conexão com Object Store (Min.io):
+## Conexão com Object Store (Min.io):
 
 * Conn Id: `aws_default`
 * Conn Type: `Amazon Web Service`
@@ -75,7 +75,7 @@ $ airflow webserver
 * Login: login do Object Store
 * Extra: `{"host": "<endereço do host:porta>"}`
 
-#### Variáveis:
+## Variáveis:
 
 * `BASE_TITLE_FOLDER_PATH`: Diretório de origem da base ISIS title
 * `BASE_ISSUE_FOLDER_PATH`: Diretório de origem da base ISIS issue
@@ -85,7 +85,7 @@ $ airflow webserver
 * `PROC_SPS_PACKAGES_DIR`: Diretório de destino dos pacotes SPS a serem sincronizados
 
 
-### Variáveis de ambiente:
+## Variáveis de ambiente:
 
 * `AIRFLOW_HOME`: Diretório de instalação da aplicação 
 * `EMIAL_ON_FAILURE_RECIPIENTS`: Conta de e-mail para envio de falha, padrão: infra@scielo.org
