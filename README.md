@@ -67,7 +67,7 @@ $ airflow webserver
 * Host: endereço do host do Kernel
 * Port: porta do host do Kernel
 
-## Conexão com Object Store (Min.io):
+## Conexão com Object Store (Minio):
 
 * Conn Id: `aws_default`
 * Conn Type: `Amazon Web Service`
