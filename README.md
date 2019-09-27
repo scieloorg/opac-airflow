@@ -87,7 +87,14 @@ $ airflow webserver
 
 ### Variáveis de ambiente:
 
-`export AIRFLOW_HOME="$(pwd)" && export EMIAL_ON_FAILURE_RECIPIENTS=infra@scielo.org`
+* `AIRFLOW_HOME`: Diretório de instalação da aplicação 
+* `EMIAL_ON_FAILURE_RECIPIENTS`: Conta de e-mail para envio de falha, padrão: infra@scielo.org
+* `AIRFLOW__SMTP__SMTP_HOST`: Endereço do servidor de e-mail
+* `AIRFLOW__SMTP__SMTP_USER`: Endereço de e-mail responsável pelo envio de e-mails
+* `AIRFLOW__SMTP__SMTP_PASSWORD`: Endereço de e-mail responsável pelo envio de e-mails
+* `AIRFLOW__SMTP__SMTP_MAIL_FROM`: Endereço de e-mail do remetente
+* `AIRFLOW__SMTP__SMTP_SSL`: ```True``` ou ```False``` para indicar o uso de criptografia no servidor de e-mail
+* `AIRFLOW__SMTP__SMTP_PORT`: Porta do servidor de e-mail
 
 
 ## Testes Automatizados
