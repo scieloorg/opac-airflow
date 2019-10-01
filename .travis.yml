@@ -4,6 +4,7 @@ language: python
 
 services:
 - docker
+- postgresql
 
 before_install:
 - pip install docker-compose
