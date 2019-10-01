@@ -31,7 +31,7 @@ services:
           - POSTGRES_PORT=5432
           - POSTGRES_DB=opac_airflow
         links:
-            - postgres
+            - postgres:postgres
 
     postgres:
         image: postgres:9.6-alpine
