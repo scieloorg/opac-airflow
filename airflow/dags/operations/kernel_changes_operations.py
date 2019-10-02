@@ -225,6 +225,9 @@ def ArticleFactory(
 
     article.xml = document_xml_url
 
+    # Campo de compatibilidade do OPAC
+    article.htmls = [{"lang": lang} for lang in _get_languages(data)]
+
     return article
 
 

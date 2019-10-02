@@ -208,6 +208,12 @@ class ArticleFactoryTests(unittest.TestCase):
     def test_has_xml_attribute(self):
         self.assertTrue(hasattr(self.document, "xml"))
 
+    def test_has_htmls_attribute(self):
+        self.assertTrue(hasattr(self.document, "htmls"))
+
+    def test_htmls_attibutes_should_be_populated_with_documents_languages(self):
+        self.assertEqual([{"lang": "en"}, {"lang": "pt"}], self.document.htmls)
+
 
 class RegisterDocumentTests(unittest.TestCase):
     def setUp(self):
