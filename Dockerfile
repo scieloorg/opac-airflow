@@ -20,4 +20,10 @@ RUN apk add --no-cache --virtual .build-deps \
     && pip install --no-cache-dir lxml==4.3.4 \
     && apk --purge del .build-deps
 
+COPY ./entrypoint.sh /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh
+
 USER airflow
+
+ENTRYPOINT ["/entrypoint.sh"]
