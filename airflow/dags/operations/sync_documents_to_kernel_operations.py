@@ -4,11 +4,16 @@ import json
 from zipfile import ZipFile
 from copy import deepcopy
 
+from common.hooks import kernel_connect
+import requests
+from deepdiff import DeepDiff
+
 from operations.exceptions import (
     DeleteDocFromKernelException,
     DocumentToDeleteException,
     PutXMLInObjectStoreException,
     RegisterUpdateDocIntoKernelException,
+    LinkDocumentToDocumentsBundleException,
 )
 
 from operations.docs_utils import (
@@ -221,11 +226,40 @@ def link_documents_to_documentsbundle(documents, issn_index_json_path):
 
                 bundle_id_doc[bundle_id].append(payload_doc)
 
-        for bundle_id, payload in bundle_id_doc.items():
-            response = register_document_to_documentsbundle(bundle_id, payload)
+        def _update_items_list(new_items: list, current_items: list) -> list:
+            """Retorna uma lista links atualizada a partir dos items atuais
+            e dos novos items."""
 
-            ret.append({'id': bundle_id, 'status': response.status_code})
+            items = deepcopy(current_items)
 
+            for new_item in new_items:
+                for index, current_item in enumerate(items):
+                    if new_item["id"] == current_item["id"]:
+                        items[index] = new_item
+                        break
+                else:
+                    items.append(new_item)
+
+            return items
+
+        for bundle_id, new_items in bundle_id_doc.items():
+            try:
+                conn_response = kernel_connect("/bundles/" + bundle_id, "GET")
+                current_items = conn_response.json()["items"]
+                payload = _update_items_list(new_items, current_items)
+
+                if DeepDiff(current_items, payload, ignore_order=True):
+                    response = register_document_to_documentsbundle(bundle_id, payload)
+                    ret.append({"id": bundle_id, "status": response.status_code})
+                    logging.info(
+                        "The bundle %s items list has been updated." % bundle_id
+                    )
+                else:
+                    logging.info(
+                        "The bundle %s items does not need to be updated." % bundle_id
+                    )
+            except requests.exceptions.HTTPError as exc:
+                raise LinkDocumentToDocumentsBundleException(str(exc)) from None
         return ret
 
     Logger.info("link_documents_to_documentsbundle OUT")
