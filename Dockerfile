@@ -21,8 +21,10 @@ RUN apk add --no-cache --virtual .build-deps \
     && apk --purge del .build-deps
 
 COPY ./entrypoint.sh /entrypoint.sh
+COPY ./start_airflow.sh /start_airflow.sh
 
 RUN chmod +x /entrypoint.sh
+RUN chmod +x /start_airflow.sh
 
 USER airflow
 

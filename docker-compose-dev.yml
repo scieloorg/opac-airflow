@@ -12,7 +12,7 @@ services:
         build: ./
         ports:
           - "8080:8080"
-        command: airflow webserver
+        command: /start_airflow.sh
         volumes:
             - ./airflow:/usr/local/airflow
             - ./data:/usr/local/airflow/data
