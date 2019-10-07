@@ -1,5 +1,5 @@
 #!/bin/sh
 
 airflow initdb
-airflow scheduler
+airflow scheduler &
 airflow webserver

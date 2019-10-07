@@ -28,4 +28,4 @@ RUN chmod +x /start_airflow.sh
 
 USER airflow
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/dumb-init", "/entrypoint.sh"]
