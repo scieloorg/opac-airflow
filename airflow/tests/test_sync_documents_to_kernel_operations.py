@@ -568,10 +568,11 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
         )
 
     @patch.object(builtins, "open")
+    @patch("operations.sync_documents_to_kernel_operations.kernel_connect")
     @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
     @patch("operations.sync_documents_to_kernel_operations.issue_id")
     def test_link_documents_to_documentsbundle_calls_issue_id_with_issn_id(
-        self, mk_issue_id,  mk_regdocument, mk_open
+        self, mk_issue_id,  mk_regdocument, mk_kernel_connect, mk_open
     ):
         mk_open.return_value.__enter__.return_value.read.return_value = '{"0034-8910": "0101-0101"}'
         link_documents_to_documentsbundle(self.documents[:1], "/json/index.json")
@@ -583,10 +584,11 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
             supplement=self.documents[0].get("supplement", None)
         )
 
+    @patch("operations.sync_documents_to_kernel_operations.kernel_connect")
     @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
     @patch("operations.sync_documents_to_kernel_operations.issue_id")
     def test_if_link_documents_to_documentsbundle_register_on_document_store(
-        self, mk_issue_id,  mk_regdocument
+        self, mk_issue_id,  mk_regdocument, mk_kernel_connect
     ):
         mock_response = Mock(status_code=204)
 
@@ -612,10 +614,11 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
                     {'id': '1518-8787-2014-v2-n2-s1', 'status': 204}
                 ])
 
+    @patch("operations.sync_documents_to_kernel_operations.kernel_connect")
     @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
     @patch("operations.sync_documents_to_kernel_operations.issue_id")
     def test_if_some_documents_are_not_register_on_document_store(
-        self, mk_issue_id,  mk_regdocument
+        self, mk_issue_id,  mk_regdocument, mk_kernel_connect
     ):
         mk_regdocument.side_effect = [
                                       Mock(status_code=204),
@@ -642,6 +645,87 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
                     {'id': '1518-8787-2014-v2-n2', 'status': 422},
                     {'id': '1518-8787-2014-v2-n2-s1', 'status': 404}
                 ])
+
+
+    @patch(
+        "operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle"
+    )
+    @patch("operations.sync_documents_to_kernel_operations.kernel_connect")
+    @patch("operations.sync_documents_to_kernel_operations.issue_id")
+    @patch.object(builtins, "open")
+    def test_link_documents_to_documentsbundle_should_not_emit_an_update_call_if_the_payload_wont_change(
+        self, mk_open, mk_issue_id, mk_kernel_connect, mk_register_document_to_bundle
+    ):
+        new_document_to_link = self.documents[0]
+        current_bundle_item_list = [
+            {
+                "id": new_document_to_link["scielo_id"],
+                "order": new_document_to_link["order"],
+            }
+        ]
+
+        # journal_issn_map
+        mk_open.return_value.__enter__.return_value.read.return_value = (
+            '{"0034-8910": "0101-0101"}'
+        )
+
+        # Bundle_id traduzido a partir do journal_issn_map
+        mk_issue_id.side_effect = ["0034-8910-2014-v48-n2"]
+        mk_kernel_connect.return_value.json.return_value.__getitem__.return_value = (
+            current_bundle_item_list
+        )
+
+        link_documents_to_documentsbundle(
+            [new_document_to_link], "/some/random/json/path.json"
+        )
+
+        # Não emita uma atualização do bundle se a nova lista for idêntica a atual
+        mk_register_document_to_bundle.assert_not_called()
+
+    @patch(
+        "operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle"
+    )
+    @patch("operations.sync_documents_to_kernel_operations.kernel_connect")
+    @patch("operations.sync_documents_to_kernel_operations.issue_id")
+    @patch.object(builtins, "open")
+    def test_link_documents_to_documentsbundle_should_not_reset_item_list_when_new_documents_arrives(
+        self, mk_open, mk_issue_id, mk_kernel_connect, mk_register_document_to_bundle
+    ):
+        new_documents_to_link = self.documents[0:2]
+        current_bundle_item_list = [
+            {
+                "id": new_documents_to_link[0]["scielo_id"],
+                "order": new_documents_to_link[0]["order"],
+            }
+        ]
+
+        # journal_issn_map
+        mk_open.return_value.__enter__.return_value.read.return_value = (
+            '{"0034-8910": "0101-0101"}'
+        )
+
+        # Bundle_id traduzido a partir do journal_issn_map
+        mk_issue_id.return_value = "0034-8910-2014-v48-n2"
+        mk_kernel_connect.return_value.json.return_value.__getitem__.return_value = (
+            current_bundle_item_list
+        )
+
+        link_documents_to_documentsbundle(
+            new_documents_to_link, "/some/random/json/path.json"
+        )
+
+        # Lista produzida a partir dos documentos existes e dos novos
+        # documentos
+        new_payload_list = current_bundle_item_list + [
+            {
+                "id": new_documents_to_link[1]["scielo_id"],
+                "order": new_documents_to_link[1]["order"],
+            }
+        ]
+
+        mk_register_document_to_bundle.assert_called_with(
+            "0034-8910-2014-v48-n2", new_payload_list
+        )
 
 
 if __name__ == "__main__":
