@@ -12,10 +12,10 @@ services:
         build: ./
         ports:
           - "8080:8080"
-        command: webserver
+        command: /start_airflow.sh
         volumes:
             - ./airflow:/usr/local/airflow
-            - ./data:/usr/local/airflow/data
+            - ./data_dev:/usr/local/airflow/data_dev
         environment:
           - AIRFLOW_HOME=/usr/local/airflow
           - EMIAL_ON_FAILURE_RECIPIENTS=infra@scielo.org
@@ -25,3 +25,31 @@ services:
           - AIRFLOW__SMTP__SMTP_MAIL_FROM=${AIRFLOW__SMTP__SMTP_MAIL_FROM}
           - AIRFLOW__SMTP__SMTP_SSL=${AIRFLOW__SMTP__SMTP_SSL}
           - AIRFLOW__SMTP__SMTP_PORT=${AIRFLOW__SMTP__SMTP_PORT}
+          - POSTGRES_USER=postgres_user
+          - POSTGRES_PASSWORD=postgres_pass
+          - POSTGRES_HOST=postgres
+          - POSTGRES_PORT=5432
+          - POSTGRES_DB=opac_airflow
+        links:
+            - postgres:postgres
+        depends_on:
+            - postgres
+
+    postgres:
+        image: postgres:9.6-alpine
+        restart: always
+        environment:
+          - POSTGRES_USER=postgres_user
+          - POSTGRES_PASSWORD=postgres_pass
+          - POSTGRES_DB=opac_airflow
+        volumes:
+          - ./data_dev/pg_data:/var/lib/postgresql/data_dev
+        ports:
+          - "5432:5432"
+
+    adminer:
+        image: adminer
+        restart: always
+        ports:
+          - 8081:8080
+
