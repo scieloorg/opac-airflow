@@ -33,6 +33,6 @@ services:
           - POSTGRES_PASSWORD=postgres_pass
           - POSTGRES_DB=opac_airflow
         volumes:
-          - ./data_dev/pg_data:/var/lib/postgresql/data
+          - ./data/pg_data:/var/lib/postgresql/data
         ports:
           - "5432:5432"
