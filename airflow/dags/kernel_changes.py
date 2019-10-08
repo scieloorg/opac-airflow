@@ -677,6 +677,7 @@ delete_documents_task = PythonOperator(
 
 
 def delete_issues(ds, **kwargs):
+    mongo_connect()
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
     issue_changes = filter_changes(tasks, "bundles", "delete")
