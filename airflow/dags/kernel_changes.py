@@ -677,6 +677,7 @@ delete_documents_task = PythonOperator(
 
 
 def delete_issues(ds, **kwargs):
+    mongo_connect()
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
     issue_changes = filter_changes(tasks, "bundles", "delete")
@@ -727,7 +728,7 @@ def register_last_issues(ds, **kwargs):
         try:
             logging.info("Id do journal: %s" % journal._id)
             last_j_issue = (
-                models.Issue.objects.filter(journal=journal._id)
+                models.Issue.objects.filter(journal=journal._id, is_public=True)
                 .order_by("-year", "-order")
                 .first()
                 .select_related()
@@ -785,9 +786,7 @@ register_journals_task << read_changes_task
 
 register_issues_task << register_journals_task
 
-register_last_issues_task << register_issues_task
-
-register_documents_task << register_last_issues_task
+register_documents_task << register_issues_task
 
 register_documents_renditions_task << register_documents_task
 
@@ -796,3 +795,5 @@ delete_journals_task << register_documents_renditions_task
 delete_issues_task << delete_journals_task
 
 delete_documents_task << delete_issues_task
+
+register_last_issues_task << delete_documents_task
