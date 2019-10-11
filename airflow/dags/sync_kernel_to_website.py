@@ -49,7 +49,7 @@ default_args = {
 }
 
 dag = DAG(
-    dag_id="kernel_changes",
+    dag_id="sync_kernel_to_website",
     default_args=default_args,
     schedule_interval=None,
 )

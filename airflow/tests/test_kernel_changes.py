@@ -5,7 +5,7 @@ import json
 
 from airflow import DAG
 
-from kernel_changes import JournalFactory
+from sync_kernel_to_website import JournalFactory
 from operations.kernel_changes_operations import (
     ArticleFactory,
     try_register_documents,
