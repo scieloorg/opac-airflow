@@ -1,0 +1,6 @@
+apache-airflow[s3,postgres]==01.10.4
+xylose==1.35.1
+lxml==4.3.4
+pymongo==3.9.0
+deepdiff[murmur]==4.0.7
+-e git+https://git@github.com/scieloorg/opac_schema@v2.52#egg=opac_schema
