@@ -6,7 +6,7 @@ import tempfile
 from airflow import DAG
 from xylose.scielodocument import Issue
 
-from kernel_gate import (
+from sync_isis_to_kernel import (
     mount_journals_issues_link,
     issue_data_to_link,
     create_journal_issn_index

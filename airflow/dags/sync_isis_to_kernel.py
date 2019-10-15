@@ -79,7 +79,7 @@ default_args = {
     "retry_delay": timedelta(minutes=5),
 }
 
-dag = DAG("kernel-gate", default_args=default_args, schedule_interval=None)
+dag = DAG("sync_isis_to_kernel", default_args=default_args, schedule_interval=None)
 
 
 def journal_as_kernel(journal: Journal) -> dict:
