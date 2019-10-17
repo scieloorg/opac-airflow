@@ -215,10 +215,9 @@ def ArticleFactory(
     article.lpage = _nestget(data, "article_meta", 0, "pub_lpage", 0)
 
     # Issue vinculada
-    if issue_id:
-        issue = models.Issue.objects.get(_id=issue_id)
-        article.issue = issue
-        article.journal = issue.journal
+    issue = models.Issue.objects.get(_id=issue_id)
+    article.issue = issue
+    article.journal = issue.journal
 
     if document_order:
         article.order = int(document_order)
