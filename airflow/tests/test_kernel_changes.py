@@ -282,20 +282,6 @@ class RegisterDocumentTests(unittest.TestCase):
             "http://kernel_url/documents/67TH7T7CyPPmgtVrGXhWXVs",
         )
 
-    def test_try_register_document_should_be_orphan_when_issue_was_not_found(self):
-        article_factory_mock = MagicMock()
-
-        orphans = try_register_documents(
-            documents=self.documents,
-            get_relation_data=lambda document_id: (),
-            fetch_document_front=lambda document_id: self.document_front,
-            article_factory=article_factory_mock,
-        )
-
-        self.assertEqual(1, len(orphans))
-        self.assertEqual(["67TH7T7CyPPmgtVrGXhWXVs"], orphans)
-
-
 class ArticleRenditionFactoryTests(unittest.TestCase):
     def setUp(self):
         self.article_objects = patch(
