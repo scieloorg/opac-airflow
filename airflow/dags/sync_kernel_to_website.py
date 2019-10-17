@@ -559,7 +559,7 @@ def register_documents(**kwargs):
                 if document_id == item["id"]:
                     return (issue_id, item)
 
-        return ()
+        return (None, {})
 
     def _get_known_documents(**kwargs) -> Dict[str, List[str]]:
         """Recupera a lista de todos os documentos que estão relacionados com
