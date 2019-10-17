@@ -59,8 +59,8 @@ def ArticleFactory(
     article.abstract = _nestget(data, "article_meta", 0, "abstract", 0)
 
     # Identificadores
-    article._id = _nestget(data, "article_meta", 0, "article_publisher_id", 0)
-    article.aid = _nestget(data, "article_meta", 0, "article_publisher_id", 0)
+    article._id = document_id
+    article.aid = document_id
     article.pid = _nestget(data, "article_meta", 0, "article_publisher_id", 1)
     article.doi = _nestget(data, "article_meta", 0, "article_doi", 0)
 
