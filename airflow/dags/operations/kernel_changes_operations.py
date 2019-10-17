@@ -281,11 +281,13 @@ def try_register_documents(
                 document_xml_url,
             )
             document.save()
-        except (models.Issue.DoesNotExist, ValueError):
+        except models.Issue.DoesNotExist:
             orphans.append(document_id)
-            logging.info(
-                "Could not possible to register the document %s. "
-                "Probably the issue that is related to it does not exist." % document_id
+            logging.error(
+                "Could not register document %s. "
+                "Issue '%s' can't be found in the website database.",
+                document_id,
+                issue_id,
             )
 
     return list(set(orphans))
@@ -354,8 +356,8 @@ def try_register_documents_renditions(
             article.save()
         except models.Article.DoesNotExist:
             logging.info(
-                'Could not possible save rendition for document, probably '
-                'document %s isn\'t in OPAC database.' % document
+                "Could not possible save rendition for document, probably "
+                "document %s isn't in OPAC database." % document
             )
             orphans.append(document)
 
