@@ -355,9 +355,10 @@ def try_register_documents_renditions(
             article = article_rendition_factory(document, data)
             article.save()
         except models.Article.DoesNotExist:
-            logging.info(
-                "Could not possible save rendition for document, probably "
-                "document %s isn't in OPAC database." % document
+            logging.error(
+                "Could not save renditions for document '%s' because "
+                "it does not exist in website database.",
+                document,
             )
             orphans.append(document)
 
