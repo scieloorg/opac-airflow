@@ -228,7 +228,7 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
 
         kwargs["ti"].xcom_pull.assert_any_call(
             task_ids="process_journals_task",
-            dag_id="kernel-gate",
+            dag_id="sync_isis_to_kernel",
             key="issn_index_json_path",
             include_prior_dates=True
         )

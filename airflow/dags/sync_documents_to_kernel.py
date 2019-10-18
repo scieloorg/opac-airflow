@@ -76,7 +76,7 @@ def link_documents_to_documentsbundle(dag_run, **kwargs):
     documents = kwargs["ti"].xcom_pull(key="documents", task_ids="register_update_docs_id")
     issn_index_json_path = kwargs["ti"].xcom_pull(
         task_ids="process_journals_task",
-        dag_id="kernel-gate",
+        dag_id="sync_isis_to_kernel",
         key="issn_index_json_path",
         include_prior_dates=True
     )
