@@ -50,6 +50,9 @@ def ArticleFactory(
 
     try:
         article = models.Article.objects.get(_id=document_id)
+
+        if issue_id is None:
+            issue_id = article.issue._id
     except models.Article.DoesNotExist:
         article = models.Article()
 
