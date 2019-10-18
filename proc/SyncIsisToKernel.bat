@@ -3,17 +3,17 @@ rem Verifica e Instala o Curl
 rem Faz uma requisição HTTP para o opac-airflow
 
 
-echo "Inicializando InitKernelGate: Sincronizacao com o Kernel..."
+echo "Inicializando: Sincronizacao com o Kernel..."
 
-export DAGID='kernel-gate'
+export DAGID='sync_isis_to_kernel'
 export AIRFLOW_HOST=http://0.0.0.0:8080
 export AIRFLOW_API=$AIRFLOW_HOST/api/experimental/dags/$DAGID/dag_runs
 
-echo "Executando InitKernelGate..."
+echo "Executando SyncIsisToKernel..."
 
 if [ ! -x "$(command -v curl)" ]
 then
-    echo '"curl" e uma dependencia do comando InitKernelGate'
+    echo '"curl" e uma dependencia do comando SyncIsisToKernel'
     echo
     echo Não foi encontrada curl instalado. Instale curl e tente novamente.
     echo
