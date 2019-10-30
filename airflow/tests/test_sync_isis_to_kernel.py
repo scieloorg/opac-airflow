@@ -1,13 +1,11 @@
 import os
 import json
 import unittest
+
 from unittest.mock import Mock
 import tempfile
 
-from airflow import DAG
 from xylose.scielodocument import Issue
-
-from dags.operations.docs_utils import issue_id
 
 from dags.sync_isis_to_kernel import (
     mount_journals_issues_link,

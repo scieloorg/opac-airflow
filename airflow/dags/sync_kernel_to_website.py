@@ -23,13 +23,13 @@ from mongoengine import connect
 
 from opac_schema.v1 import models
 
-from operations.kernel_changes_operations import (
+from dags.operations.kernel_changes_operations import (
     try_register_documents,
     ArticleFactory,
     ArticleRenditionFactory,
     try_register_documents_renditions,
 )
-from common.hooks import mongo_connect
+from dags.common.hooks import mongo_connect
 
 failure_recipients = os.environ.get("EMIAL_ON_FAILURE_RECIPIENTS", None)
 EMIAL_ON_FAILURE_RECIPIENTS = (

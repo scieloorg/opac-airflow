@@ -7,7 +7,7 @@ import requests
 from airflow import DAG
 from lxml import etree
 
-from operations.docs_utils import (
+from dags.operations.docs_utils import (
     delete_doc_from_kernel,
     document_to_delete,
     get_xml_data,
@@ -18,7 +18,7 @@ from operations.docs_utils import (
     put_xml_into_object_store,
     register_document_to_documentsbundle,
 )
-from operations.exceptions import (
+from dags.operations.exceptions import (
     DeleteDocFromKernelException,
     DocumentToDeleteException,
     PutXMLInObjectStoreException,
@@ -31,14 +31,14 @@ from tests.fixtures import XML_FILE_CONTENT
 
 
 class TestDeleteDocFromKernel(TestCase):
-    @patch("operations.docs_utils.hooks")
+    @patch("dags.operations.docs_utils.hooks")
     def test_delete_doc_from_kernel_calls_kernel_connect(self, mk_hooks):
         delete_doc_from_kernel("FX6F3cbyYmmwvtGmMB7WCgr")
         mk_hooks.kernel_connect.assert_called_once_with(
             "/documents/FX6F3cbyYmmwvtGmMB7WCgr", "DELETE"
         )
 
-    @patch("operations.docs_utils.hooks")
+    @patch("dags.operations.docs_utils.hooks")
     def test_delete_documents_raises_error_if_kernel_connect_error(self, mk_hooks):
         mk_hooks.kernel_connect.side_effect = requests.exceptions.HTTPError("Not Found")
         with self.assertRaises(DeleteDocFromKernelException) as exc_info:
@@ -47,16 +47,16 @@ class TestDeleteDocFromKernel(TestCase):
 
 
 class TestDocumentsToDelete(TestCase):
-    @patch("operations.docs_utils.SPS_Package")
-    @patch("operations.docs_utils.etree")
+    @patch("dags.operations.docs_utils.SPS_Package")
+    @patch("dags.operations.docs_utils.etree")
     def test_document_to_delete_reads_xml_from_zip(self, mk_etree, MockSPS_Package):
         MockSPS_Package.return_value.is_document_deletion = False
         MockZipFile = MagicMock()
         document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
         MockZipFile.read.assert_any_call("1806-907X-rba-53-01-1-8.xml")
 
-    @patch("operations.docs_utils.SPS_Package")
-    @patch("operations.docs_utils.etree.XML")
+    @patch("dags.operations.docs_utils.SPS_Package")
+    @patch("dags.operations.docs_utils.etree.XML")
     def test_document_to_delete_raises_error_if_read_from_zip_error(
         self, MockXML, MockSPS_Package
     ):
@@ -66,8 +66,8 @@ class TestDocumentsToDelete(TestCase):
             document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
         self.assertEqual(str(exc_info.exception), "'File not found in the archive'")
 
-    @patch("operations.docs_utils.SPS_Package")
-    @patch("operations.docs_utils.etree")
+    @patch("dags.operations.docs_utils.SPS_Package")
+    @patch("dags.operations.docs_utils.etree")
     def test_document_to_delete_creates_etree_parser(self, mk_etree, MockSPS_Package):
         MockSPS_Package.return_value.is_document_deletion = False
         MockZipFile = MagicMock()
@@ -77,8 +77,8 @@ class TestDocumentsToDelete(TestCase):
             remove_blank_text=True, no_network=True
         )
 
-    @patch("operations.docs_utils.SPS_Package")
-    @patch("operations.docs_utils.etree")
+    @patch("dags.operations.docs_utils.SPS_Package")
+    @patch("dags.operations.docs_utils.etree")
     def test_document_to_delete_creates_etree_xml(self, mk_etree, MockSPS_Package):
         MockParser = Mock()
         mk_etree.XMLParser.return_value = MockParser
@@ -88,8 +88,8 @@ class TestDocumentsToDelete(TestCase):
         document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
         mk_etree.XML.assert_called_once_with(XML_FILE_CONTENT, MockParser)
 
-    @patch("operations.docs_utils.SPS_Package")
-    @patch("operations.docs_utils.etree")
+    @patch("dags.operations.docs_utils.SPS_Package")
+    @patch("dags.operations.docs_utils.etree")
     def test_document_to_delete_creates_SPS_Package_instance(
         self, mk_etree, MockSPS_Package
     ):
@@ -100,9 +100,9 @@ class TestDocumentsToDelete(TestCase):
         document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
         MockSPS_Package.assert_called_once_with(MockXML, "1806-907X-rba-53-01-1-8.xml")
 
-    @patch("operations.docs_utils.SPS_Package")
-    @patch("operations.docs_utils.etree.XML")
-    @patch("operations.docs_utils.Logger")
+    @patch("dags.operations.docs_utils.SPS_Package")
+    @patch("dags.operations.docs_utils.etree.XML")
+    @patch("dags.operations.docs_utils.Logger")
     def test_documents_to_delete_raises_error_if_SPS_Package_error(
         self, MockLogger, MockXML, MockSPS_Package
     ):
@@ -151,16 +151,16 @@ class TestDocumentsToDelete(TestCase):
 
 
 class TestGetXMLData(TestCase):
-    @patch("operations.docs_utils.SPS_Package")
-    @patch("operations.docs_utils.etree")
+    @patch("dags.operations.docs_utils.SPS_Package")
+    @patch("dags.operations.docs_utils.etree")
     def test_get_xml_data_creates_etree_parser(self, mk_etree, MockSPS_Package):
         get_xml_data(XML_FILE_CONTENT, None)
         mk_etree.XMLParser.assert_called_once_with(
             remove_blank_text=True, no_network=True
         )
 
-    @patch("operations.docs_utils.SPS_Package")
-    @patch("operations.docs_utils.etree")
+    @patch("dags.operations.docs_utils.SPS_Package")
+    @patch("dags.operations.docs_utils.etree")
     def test_get_xml_data_creates_etree_xml(self, mk_etree, MockSPS_Package):
         xml_content = XML_FILE_CONTENT
         MockParser = Mock()
@@ -168,8 +168,8 @@ class TestGetXMLData(TestCase):
         get_xml_data(xml_content, None)
         mk_etree.XML.assert_called_once_with(xml_content, MockParser)
 
-    @patch("operations.docs_utils.SPS_Package")
-    @patch("operations.docs_utils.etree")
+    @patch("dags.operations.docs_utils.SPS_Package")
+    @patch("dags.operations.docs_utils.etree")
     def test_get_xml_data_creates_SPS_Package_instance(self, mk_etree, MockSPS_Package):
         xml_content = XML_FILE_CONTENT
         MockXML = Mock()
@@ -253,8 +253,8 @@ class TestGetXMLData(TestCase):
             ],
         )
 
-    @patch("operations.docs_utils.SPS_Package")
-    @patch("operations.docs_utils.etree.XML")
+    @patch("dags.operations.docs_utils.SPS_Package")
+    @patch("dags.operations.docs_utils.etree.XML")
     def test_get_xml_data_raise_except_error(self, MockXML, MockSPS_Package):
         xml_content = XML_FILE_CONTENT
 
@@ -317,7 +317,7 @@ class TestRegisterUpdateDocIntoKernel(TestCase):
             ],
         }
 
-    @patch("operations.docs_utils.hooks")
+    @patch("dags.operations.docs_utils.hooks")
     def test_register_update_doc_into_kernel_put_to_kernel_doc(self, mk_hooks):
 
         payload = {"data": self.xml_data["xml_url"], "assets": self.xml_data["assets"]}
@@ -326,7 +326,7 @@ class TestRegisterUpdateDocIntoKernel(TestCase):
             "/documents/FX6F3cbyYmmwvtGmMB7WCgr", "PUT", payload
         )
 
-    @patch("operations.docs_utils.hooks")
+    @patch("dags.operations.docs_utils.hooks")
     def test_register_update_doc_into_kernel_put_to_kernel_pdfs(self, mk_hooks):
 
         register_update_doc_into_kernel(self.xml_data)
@@ -338,7 +338,7 @@ class TestRegisterUpdateDocIntoKernel(TestCase):
                     pdf_payload,
                 )
 
-    @patch("operations.docs_utils.hooks")
+    @patch("dags.operations.docs_utils.hooks")
     def test_register_update_doc_into_kernel_put_to_kernel_doc_hook_HttpError(
         self, mk_hooks
     ):
@@ -354,8 +354,8 @@ class TestRegisterUpdateDocIntoKernel(TestCase):
             self.xml_data,
         )
 
-    @patch("operations.docs_utils.Logger")
-    @patch("operations.docs_utils.hooks")
+    @patch("dags.operations.docs_utils.Logger")
+    @patch("dags.operations.docs_utils.hooks")
     def test_register_update_doc_into_kernel_put_to_kernel_pdfs_hook_HttpError(
         self, mk_hooks, MockLogger
     ):
@@ -403,7 +403,7 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
             ],
         }
 
-    @patch("operations.docs_utils.put_object_in_object_store")
+    @patch("dags.operations.docs_utils.put_object_in_object_store")
     def test_put_assets_and_pdfs_in_object_store_reads_each_asset_from_xml(
         self, mk_put_object_in_object_store
     ):
@@ -419,7 +419,7 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
                     asset["asset_id"],
                 )
 
-    @patch("operations.docs_utils.put_object_in_object_store")
+    @patch("dags.operations.docs_utils.put_object_in_object_store")
     def test_put_assets_and_pdfs_in_object_store_reads_each_pdf_from_xml(
         self, mk_put_object_in_object_store
     ):
@@ -437,8 +437,8 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
                     pdf["filename"],
                 )
 
-    @patch("operations.docs_utils.Logger")
-    @patch("operations.docs_utils.put_object_in_object_store")
+    @patch("dags.operations.docs_utils.Logger")
+    @patch("dags.operations.docs_utils.put_object_in_object_store")
     def test_put_assets_and_pdfs_in_object_store_logs_error_if_file_not_found_in_zip(
         self, mk_put_object_in_object_store, MockLogger
     ):
@@ -463,8 +463,8 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
             "'File not found in the archive'",
         )
 
-    @patch("operations.docs_utils.Logger")
-    @patch("operations.docs_utils.put_object_in_object_store")
+    @patch("dags.operations.docs_utils.Logger")
+    @patch("dags.operations.docs_utils.put_object_in_object_store")
     def test_put_assets_and_pdfs_in_object_store_returns_only_read_assets_and_pdfs(
         self, mk_put_object_in_object_store, MockLogger
     ):
@@ -491,7 +491,7 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
         result = put_assets_and_pdfs_in_object_store(MockZipFile, self.xml_data)
         self.assertEqual(result, expected)
 
-    @patch("operations.docs_utils.put_object_in_object_store")
+    @patch("dags.operations.docs_utils.put_object_in_object_store")
     def test_put_assets_and_pdfs_in_object_store_return_data_asset(
         self, mk_put_object_in_object_store
     ):
@@ -512,7 +512,7 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
             self.assertEqual(expected_asset["asset_id"], result_asset["asset_id"])
             self.assertEqual(expected_asset["asset_url"], result_asset["asset_url"])
 
-    @patch("operations.docs_utils.put_object_in_object_store")
+    @patch("dags.operations.docs_utils.put_object_in_object_store")
     def test_put_assets_and_pdfs_in_object_store_return_data_pdf(
         self, mk_put_object_in_object_store
     ):
@@ -540,8 +540,8 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
 
 
 class TestPutObjectInObjectStore(TestCase):
-    @patch("operations.docs_utils.files_sha1")
-    @patch("operations.docs_utils.hooks")
+    @patch("dags.operations.docs_utils.files_sha1")
+    @patch("dags.operations.docs_utils.hooks")
     def test_put_object_in_object_store_call_files_sha1(self, mk_hooks, mk_files_sha1):
 
         MockFile = Mock()
@@ -553,8 +553,8 @@ class TestPutObjectInObjectStore(TestCase):
         )
         mk_files_sha1.assert_called_once_with(MockFile)
 
-    @patch("operations.docs_utils.files_sha1")
-    @patch("operations.docs_utils.hooks")
+    @patch("dags.operations.docs_utils.files_sha1")
+    @patch("dags.operations.docs_utils.hooks")
     def test_put_object_in_object_store_call_hook(self, mk_hooks, mk_files_sha1):
 
         mk_files_sha1.return_value = "da39a3ee5e6b4b0d3255bfef95601890afd80709"
@@ -571,8 +571,8 @@ class TestPutObjectInObjectStore(TestCase):
             "documentstore",
         )
 
-    @patch("operations.docs_utils.files_sha1")
-    @patch("operations.docs_utils.hooks")
+    @patch("dags.operations.docs_utils.files_sha1")
+    @patch("dags.operations.docs_utils.hooks")
     def test_put_object_in_object_store_return_url_object(
         self, mk_hooks, mk_files_sha1
     ):
@@ -592,8 +592,8 @@ class TestPutObjectInObjectStore(TestCase):
             "http://minio/documentstore/1806-907X-rba-53-01-1-8.xml", result
         )
 
-    @patch("operations.docs_utils.files_sha1")
-    @patch("operations.docs_utils.hooks")
+    @patch("dags.operations.docs_utils.files_sha1")
+    @patch("dags.operations.docs_utils.hooks")
     def test_put_object_in_object_store_raise_exception_error(
         self, mk_hooks, mk_files_sha1
     ):
@@ -644,8 +644,8 @@ class TestPutXMLIntoObjectStore(TestCase):
             ],
         }
 
-    @patch("operations.docs_utils.put_object_in_object_store")
-    @patch("operations.docs_utils.get_xml_data")
+    @patch("dags.operations.docs_utils.put_object_in_object_store")
+    @patch("dags.operations.docs_utils.get_xml_data")
     def test_put_xml_into_object_reads_xml_from_zip(
         self, mk_get_xml_data, mk_put_object_in_object_store
     ):
@@ -653,8 +653,8 @@ class TestPutXMLIntoObjectStore(TestCase):
         put_xml_into_object_store(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
         MockZipFile.read.assert_any_call("1806-907X-rba-53-01-1-8.xml")
 
-    @patch("operations.docs_utils.put_object_in_object_store")
-    @patch("operations.docs_utils.get_xml_data")
+    @patch("dags.operations.docs_utils.put_object_in_object_store")
+    @patch("dags.operations.docs_utils.get_xml_data")
     def test_put_xml_into_object_store_calls_get_xml_data(
         self, mk_get_xml_data, mk_put_object_in_object_store
     ):
@@ -665,8 +665,8 @@ class TestPutXMLIntoObjectStore(TestCase):
             b"1806-907X-rba-53-01-1-8.xml", "1806-907X-rba-53-01-1-8"
         )
 
-    @patch("operations.docs_utils.put_object_in_object_store")
-    @patch("operations.docs_utils.get_xml_data")
+    @patch("dags.operations.docs_utils.put_object_in_object_store")
+    @patch("dags.operations.docs_utils.get_xml_data")
     def test_put_xml_into_object_store_error_if_zip_read_error(
         self, mk_get_xml_data, mk_put_object_in_object_store
     ):
@@ -681,8 +681,8 @@ class TestPutXMLIntoObjectStore(TestCase):
             "'File not found in the archive'",
         )
 
-    @patch("operations.docs_utils.put_object_in_object_store")
-    @patch("operations.docs_utils.get_xml_data")
+    @patch("dags.operations.docs_utils.put_object_in_object_store")
+    @patch("dags.operations.docs_utils.get_xml_data")
     def test_put_xml_into_object_store_puts_xml_in_object_store(
         self, mk_get_xml_data, mk_put_object_in_object_store
     ):
@@ -697,8 +697,8 @@ class TestPutXMLIntoObjectStore(TestCase):
             "1806-907X-rba-53-01-1-8.xml",
         )
 
-    @patch("operations.docs_utils.put_object_in_object_store")
-    @patch("operations.docs_utils.get_xml_data")
+    @patch("dags.operations.docs_utils.put_object_in_object_store")
+    @patch("dags.operations.docs_utils.get_xml_data")
     def test_put_xml_into_object_store_return_data_xml(
         self, mk_get_xml_data, mk_put_object_in_object_store
     ):
@@ -732,7 +732,7 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
                         {"id": "0034-8910-rsp-48-2-0348", "order": "02"}
                        ]
 
-    @patch("operations.docs_utils.hooks")
+    @patch("dags.operations.docs_utils.hooks")
     def test_register_document_documentsbundle_to_documentsbundle_calls_kernel_connect(self, mk_hooks):
         """
             Verifica se register_document invoca kernel_connect com os parâmetros corretos.
@@ -750,7 +750,7 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
             ]
         )
 
-    @patch("operations.docs_utils.hooks")
+    @patch("dags.operations.docs_utils.hooks")
     def test_register_document_documentsbundle_raise_error_when_documentsbundle_not_found(self, mk_hooks):
         """
             Verifica se register_document levanda uma exceção quando o conteúdo não foi encontrado.
@@ -765,7 +765,7 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
                           "0066-782X-1999-v72-n0",
                           self.payload)
 
-    @patch("operations.docs_utils.hooks")
+    @patch("dags.operations.docs_utils.hooks")
     def test_if_register_document_documentsbundle_return_status_code_204_with_correct_params(self, mk_hooks):
         """
             Verifica se ao invocarmos register_document_to_documentsbundle com o ID do bundle e payload corretos o retorno é o esperado.

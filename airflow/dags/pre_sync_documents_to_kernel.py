@@ -22,7 +22,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.utils import timezone
 from airflow.api.common.experimental.trigger_dag import trigger_dag
 
-from operations import pre_sync_documents_to_kernel_operations
+from dags.operations import pre_sync_documents_to_kernel_operations
 
 
 Logger = logging.getLogger(__name__)

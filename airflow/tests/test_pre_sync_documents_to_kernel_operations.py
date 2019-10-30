@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 
 from airflow import DAG
 
-from operations.pre_sync_documents_to_kernel_operations import get_sps_packages
+from dags.operations.pre_sync_documents_to_kernel_operations import get_sps_packages
 
 
 class TestGetSPSPackages(TestCase):
@@ -15,26 +15,26 @@ class TestGetSPSPackages(TestCase):
             "proc_dir_name": "dir/destination",
         }
 
-    @patch("operations.pre_sync_documents_to_kernel_operations.Path")
-    @patch("operations.pre_sync_documents_to_kernel_operations.open")
+    @patch("dags.operations.pre_sync_documents_to_kernel_operations.Path")
+    @patch("dags.operations.pre_sync_documents_to_kernel_operations.open")
     def test_get_sps_packages_creates_path_dirs(self, mk_open, MockPath):
         get_sps_packages(**self.kwargs)
         MockPath.assert_any_call(self.kwargs["xc_dir_name"])
         MockPath.assert_any_call(self.kwargs["proc_dir_name"])
 
-    @patch("operations.pre_sync_documents_to_kernel_operations.open")
+    @patch("dags.operations.pre_sync_documents_to_kernel_operations.open")
     def test_read_scilista_from_file(self, mk_open):
         get_sps_packages(**self.kwargs)
         mk_open.assert_called_once_with("dir/path/scilista.lst")
 
-    @patch("operations.pre_sync_documents_to_kernel_operations.open")
+    @patch("dags.operations.pre_sync_documents_to_kernel_operations.open")
     def test_get_sps_packages_raises_error_if_scilista_open_error(self, mk_open):
         mk_open.side_effect = FileNotFoundError
         self.assertRaises(FileNotFoundError, get_sps_packages, *self.kwargs)
 
-    @patch("operations.pre_sync_documents_to_kernel_operations.shutil")
-    @patch("operations.pre_sync_documents_to_kernel_operations.os.path.exists")
-    @patch("operations.pre_sync_documents_to_kernel_operations.open")
+    @patch("dags.operations.pre_sync_documents_to_kernel_operations.shutil")
+    @patch("dags.operations.pre_sync_documents_to_kernel_operations.os.path.exists")
+    @patch("dags.operations.pre_sync_documents_to_kernel_operations.open")
     def test_get_sps_packages_moves_from_xc_dir_to_proc_dir(
         self, mk_open, mk_path_exists, mk_shutil
     ):
@@ -54,9 +54,9 @@ class TestGetSPSPackages(TestCase):
                         self.kwargs["xc_dir_name"] + filename, tmpdirname + filename
                     )
 
-    @patch("operations.pre_sync_documents_to_kernel_operations.shutil")
-    @patch("operations.pre_sync_documents_to_kernel_operations.os.path.exists")
-    @patch("operations.pre_sync_documents_to_kernel_operations.open")
+    @patch("dags.operations.pre_sync_documents_to_kernel_operations.shutil")
+    @patch("dags.operations.pre_sync_documents_to_kernel_operations.os.path.exists")
+    @patch("dags.operations.pre_sync_documents_to_kernel_operations.open")
     def test_get_sps_packages_moves_anything_if_no_source_file(
         self, mk_open, mk_path_exists, mk_shutil
     ):

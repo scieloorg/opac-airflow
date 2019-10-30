@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 
 from airflow import DAG
 
-from sync_documents_to_kernel import (
+from dags.sync_documents_to_kernel import (
     list_documents,
     delete_documents,
     register_update_documents,
@@ -12,14 +12,14 @@ from sync_documents_to_kernel import (
 
 
 class TestListDocuments(TestCase):
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.list_documents")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.list_documents")
     def test_list_document_gets_sps_package_from_dag_run_conf(self, mk_list_documents):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
         list_documents(**kwargs)
         mk_dag_run.conf.get.assert_called_once_with("sps_package")
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.list_documents")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.list_documents")
     def test_list_document_calls_list_documents_operation(self, mk_list_documents):
         mk_dag_run = MagicMock()
         mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
@@ -27,7 +27,7 @@ class TestListDocuments(TestCase):
         list_documents(**kwargs)
         mk_list_documents.assert_called_once_with("path_to_sps_package/package.zip")
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.list_documents")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.list_documents")
     def test_list_document_pushes_xmls_from_packages(self, mk_list_documents):
         expected = [
             "1806-907X-rba-53-01-1-8.xml",
@@ -43,7 +43,7 @@ class TestListDocuments(TestCase):
             key="xmls_filenames", value=expected
         )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.list_documents")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.list_documents")
     def test_list_document_doesnt_call_ti_xcom_push_if_no_xml_files(
         self, mk_list_documents
     ):
@@ -56,7 +56,7 @@ class TestListDocuments(TestCase):
 
 
 class TestDeleteDocuments(TestCase):
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
     def test_delete_documents_gets_sps_package_from_dag_run_conf(
         self, mk_delete_documents
     ):
@@ -65,7 +65,7 @@ class TestDeleteDocuments(TestCase):
         delete_documents(**kwargs)
         mk_dag_run.conf.get.assert_called_once_with("sps_package")
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
     def test_delete_documents_gets_ti_xcom_info(self, mk_delete_documents):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
@@ -74,7 +74,7 @@ class TestDeleteDocuments(TestCase):
             key="xmls_filenames", task_ids="list_docs_task_id"
         )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
     def test_delete_documents_empty_ti_xcom_info(self, mk_delete_documents):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
@@ -83,7 +83,7 @@ class TestDeleteDocuments(TestCase):
         mk_delete_documents.assert_not_called()
         kwargs["ti"].xcom_push.assert_not_called()
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
     def test_delete_documents_calls_delete_documents_operation(
         self, mk_delete_documents
     ):
@@ -101,7 +101,7 @@ class TestDeleteDocuments(TestCase):
             "path_to_sps_package/package.zip", xmls_filenames
         )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
     def test_delete_documents_pushes_xmls_to_preserve(self, mk_delete_documents):
         xmls_filenames = [
             "1806-907X-rba-53-01-1-8.xml",
@@ -124,7 +124,7 @@ class TestDeleteDocuments(TestCase):
 
 
 class TestRegisterUpdateDocuments(TestCase):
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
     def test_register_update_documents_gets_sps_package_from_dag_run_conf(
         self, mk_register_update_documents
     ):
@@ -133,7 +133,7 @@ class TestRegisterUpdateDocuments(TestCase):
         register_update_documents(**kwargs)
         mk_dag_run.conf.get.assert_called_once_with("sps_package")
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
     def test_register_update_documents_gets_ti_xcom_info(self, mk_register_update_documents):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
@@ -142,7 +142,7 @@ class TestRegisterUpdateDocuments(TestCase):
             key="xmls_to_preserve", task_ids="delete_docs_task_id"
         )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
     def test_register_update_documents_empty_ti_xcom_info(self, mk_register_update_documents):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
@@ -151,7 +151,7 @@ class TestRegisterUpdateDocuments(TestCase):
         mk_register_update_documents.assert_not_called()
         kwargs["ti"].xcom_push.assert_not_called()
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
     def test_register_update_documents_calls_register_update_documents_operation(
         self, mk_register_update_documents
     ):
@@ -169,7 +169,7 @@ class TestRegisterUpdateDocuments(TestCase):
             "path_to_sps_package/package.zip", xmls_filenames
         )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
     def test_register_update_documents_does_not_push_if_no_documents_into_kernel(self, mk_register_update_documents):
         xmls_filenames = [
             "1806-907X-rba-53-01-1-8.xml",
@@ -184,7 +184,7 @@ class TestRegisterUpdateDocuments(TestCase):
         register_update_documents(**kwargs)
         kwargs["ti"].xcom_push.assert_not_called()
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
     def test_register_update_documents_pushes_documents(self, mk_register_update_documents):
         xmls_filenames = [
             "1806-907X-rba-53-01-1-8.xml",
@@ -208,7 +208,7 @@ class TestRegisterUpdateDocuments(TestCase):
 
 class TestLinkDocumentsToDocumentsbundle(TestCase):
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
     def test_link_documents_to_documentsbundle_gets_ti_xcom_documents(self, mk_link_documents):
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
@@ -219,7 +219,7 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
             key="documents", task_ids="register_update_docs_id"
         )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
     def test_link_documents_to_documentsbundle_gets_ti_xcom_title_json_path(self, mk_link_documents):
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
@@ -233,7 +233,7 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
             include_prior_dates=True
         )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
     def test_link_documents_to_documentsbundle_empty_ti_xcom_documents(self, mk_link_documents):
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
@@ -246,7 +246,7 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
 
         kwargs["ti"].xcom_push.assert_not_called()
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
     def test_link_documents_to_documentsbundle_calls_link_documents_to_documentsbundle_operation(
         self, mk_link_documents
     ):
@@ -279,7 +279,7 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
 
         mk_link_documents.assert_called_once_with(documents, "/json/title.json")
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
     def test_link_documents_to_documentsbundle_does_not_push_if_no_documents(self, mk_link_documents):
         documents = []
 
@@ -293,7 +293,7 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
 
         kwargs["ti"].xcom_push.assert_not_called()
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
+    @patch("dags.sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
     def test_link_documents_to_documentsbundle_pushes_documents(self, mk_link_documents):
 
         documents = [

@@ -5,8 +5,8 @@ import hashlib
 import requests
 from lxml import etree
 
-import common.hooks as hooks
-from operations.exceptions import (
+import dags.common.hooks as hooks
+from dags.operations.exceptions import (
     DeleteDocFromKernelException,
     DocumentToDeleteException,
     PutXMLInObjectStoreException,
@@ -14,7 +14,7 @@ from operations.exceptions import (
     RegisterUpdateDocIntoKernelException,
     LinkDocumentToDocumentsBundleException,
 )
-from common.sps_package import SPS_Package
+from dags.common.sps_package import SPS_Package
 
 Logger = logging.getLogger(__name__)
 

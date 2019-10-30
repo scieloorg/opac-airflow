@@ -3,7 +3,7 @@ from typing import Iterable, Generator, Dict, List, Tuple
 
 from opac_schema.v1 import models
 
-import common.hooks as hooks
+import dags.common.hooks as hooks
 
 
 def ArticleFactory(

@@ -18,8 +18,8 @@ from xylose.scielodocument import Journal, Issue
 from datetime import datetime, timedelta
 from deepdiff import DeepDiff
 
-from common import hooks
-from operations.docs_utils import issue_id
+from dags.common import hooks
+from dags.operations.docs_utils import issue_id
 
 """
 Para o devido entendimento desta DAG pode-se ter como base a seguinte explicação.
