@@ -6,12 +6,12 @@ import tempfile
 from airflow import DAG
 from xylose.scielodocument import Issue
 
-from sync_isis_to_kernel import (
+from dags.sync_isis_to_kernel import (
     mount_journals_issues_link,
     issue_data_to_link,
     create_journal_issn_index
 )
-from .test_kernel_changes import load_json_fixture
+from .test_sync_kernel_to_website import load_json_fixture
 
 FIXTURES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 
