@@ -160,10 +160,9 @@ def issue_as_kernel(issue: dict) -> dict:
     _payload["volume"] = issue.volume or ""
     _payload["number"] = issue.number or ""
 
-    if issue.type is "supplement":
-        _payload["supplement"] = (
-            issue.supplement_volume or issue.supplement_number or "0"
-        )
+    suppl = issue.supplement_volume or issue.supplement_number
+    if suppl or issue.type is "supplement":
+        _payload["supplement"] = suppl or "0"
 
     if issue.titles:
         _titles = [
@@ -173,11 +172,12 @@ def issue_as_kernel(issue: dict) -> dict:
     else:
         _payload["titles"] = []
 
+    _payload["publication_months"] = {}
     if issue.start_month and issue.end_month:
-        _publication_season = [int(issue.start_month), int(issue.end_month)]
-        _payload["publication_season"] = sorted(set(_publication_season))
-    else:
-        _payload["publication_season"] = []
+        _payload["publication_months"]["range"] = [
+            int(issue.start_month), int(issue.end_month)]
+    elif issue.start_month:
+        _payload["publication_months"]["month"] = int(issue.start_month)
 
     issn_id = issue.data.get("issue").get("v35")[0]["_"]
     _creation_date = parse_date(issue.publication_date)
