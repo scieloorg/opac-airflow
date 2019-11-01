@@ -1,17 +1,21 @@
 import os
 import json
 import unittest
+from unittest.mock import Mock
 import tempfile
 
 from airflow import DAG
 from xylose.scielodocument import Issue
 
-from sync_isis_to_kernel import (
+from dags.operations.docs_utils import issue_id
+
+from dags.sync_isis_to_kernel import (
     mount_journals_issues_link,
+    issue_as_kernel,
     issue_data_to_link,
     create_journal_issn_index
 )
-from .test_kernel_changes import load_json_fixture
+from .test_sync_kernel_to_website import load_json_fixture
 
 FIXTURES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 
@@ -154,3 +158,104 @@ class TestSaveJournalIssnIndex(unittest.TestCase):
             with open(os.path.join(tmpdirname, "issn_index.json")) as index_file:
                 result = index_file.read()
                 self.assertEqual(result, expected)
+
+
+class TestIssueAsKernel(unittest.TestCase):
+
+    def test_issue_as_kernel_returns_volume(self):
+        mocked_issue = Mock()
+        mocked_issue.volume = "1"
+        result = issue_as_kernel(mocked_issue)
+        self.assertEqual(1, result["volume"])
+
+    def test_issue_as_kernel_do_not_return_volume(self):
+        mocked_issue = Mock()
+        mocked_issue.volume = None
+        result = issue_as_kernel(mocked_issue)
+        self.assertEqual("", result["volume"])
+
+    def test_issue_as_kernel_returns_number(self):
+        mocked_issue = Mock()
+        mocked_issue.number = "1"
+        result = issue_as_kernel(mocked_issue)
+        self.assertEqual(1, result["number"])
+
+    def test_issue_as_kernel_do_not_return_number(self):
+        mocked_issue = Mock()
+        mocked_issue.number = None
+        result = issue_as_kernel(mocked_issue)
+        self.assertEqual("", result["number"])
+
+    def test_issue_as_kernel_returns_volume_supplement(self):
+        mocked_issue = Mock()
+        mocked_issue.supplement_volume = "4"
+        mocked_issue.supplement_number = None
+        result = issue_as_kernel(mocked_issue)
+        self.assertNotIn("4", result["supplement"])
+
+    def test_issue_as_kernel_returns_number_supplement(self):
+        mocked_issue = Mock()
+        mocked_issue.supplement_volume = None
+        mocked_issue.supplement_number = "3"
+        result = issue_as_kernel(mocked_issue)
+        self.assertNotIn("3", result["supplement"])
+
+    def test_issue_as_kernel_returns_supplement(self):
+        mocked_issue = Mock()
+        mocked_issue.type = "supplement"
+        mocked_issue.supplement_volume = None
+        mocked_issue.supplement_number = None
+        result = issue_as_kernel(mocked_issue)
+        self.assertNotIn("0", result["supplement"])
+
+    def test_issue_as_kernel_do_not_return_supplement(self):
+        mocked_issue = Mock()
+        mocked_issue.supplement_volume = None
+        mocked_issue.supplement_number = None
+        mocked_issue.type = None
+        result = issue_as_kernel(mocked_issue)
+        self.assertNotIn("supplement", result.keys())
+
+    def test_issue_as_kernel_returns_titles(self):
+        mocked_issue = Mock()
+        mocked_issue.titles = {
+            "es": "Título en Español",
+            "pt": "Título em Português",
+            "en": "English Title",
+        }
+        result = issue_as_kernel(mocked_issue)
+        expected = [
+            {"language": "es", "value": "Título en Español"},
+            {"language": "pt", "value": "Título em Português"},
+            {"language": "en", "value": "English Title"},
+        ]
+        self.assertEqual(expected, result["titles"])
+
+    def test_issue_as_kernel_returns_months_range(self):
+        mocked_issue = Mock()
+        mocked_issue.start_month = "1"
+        mocked_issue.end_month = "3"
+        result = issue_as_kernel(mocked_issue)
+        self.assertEqual([1, 3], result["publication_months"]["range"])
+
+    def test_issue_as_kernel_returns_month(self):
+        mocked_issue = Mock()
+        mocked_issue.start_month = "1"
+        result = issue_as_kernel(mocked_issue)
+        self.assertEqual(1, result["publication_months"]["month"])
+
+    def test_issue_as_kernel_returns_publication_year(self):
+        mocked_issue = Mock()
+        mocked_issue.publication_date = "2017-09"
+        result = issue_as_kernel(mocked_issue)
+        self.assertEqual("2017", result["publication_year"])
+
+    def test_issue_as_kernel_returns__id(self):
+        mocked_issue = Mock()
+        mocked_issue.number = "2"
+        mocked_issue.volume = "3"
+        mocked_issue.supplement_volume = "0"
+        mocked_issue.publication_date = "2013-09"
+        mocked_issue.data = {"issue": {"v35": [{"_": "1234-0987"}]}}
+        result = issue_as_kernel(mocked_issue)
+        self.assertIsNotNone(result["_id"])
