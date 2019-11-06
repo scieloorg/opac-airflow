@@ -6,7 +6,7 @@ import json
 from airflow import DAG
 
 from sync_kernel_to_website import JournalFactory
-from operations.kernel_changes_operations import (
+from operations.sync_kernel_to_website_operations import (
     ArticleFactory,
     try_register_documents,
     ArticleRenditionFactory,
@@ -108,10 +108,10 @@ class JournalFactoryTests(unittest.TestCase):
 class ArticleFactoryTests(unittest.TestCase):
     def setUp(self):
         self.article_objects = patch(
-            "operations.kernel_changes_operations.models.Article.objects"
+            "operations.sync_kernel_to_website_operations.models.Article.objects"
         )
         self.issue_objects = patch(
-            "operations.kernel_changes_operations.models.Issue.objects"
+            "operations.sync_kernel_to_website_operations.models.Issue.objects"
         )
         ArticleObjectsMock = self.article_objects.start()
         self.issue_objects.start()
@@ -222,7 +222,7 @@ class RegisterDocumentTests(unittest.TestCase):
             "kernel-document-front-s1518-8787.2019053000621.json"
         )
 
-        mk_hooks = patch("operations.kernel_changes_operations.hooks")
+        mk_hooks = patch("operations.sync_kernel_to_website_operations.hooks")
         self.mk_hooks = mk_hooks.start()
 
     def tearDown(self):
@@ -285,7 +285,7 @@ class RegisterDocumentTests(unittest.TestCase):
 class ArticleRenditionFactoryTests(unittest.TestCase):
     def setUp(self):
         self.article_objects = patch(
-            "operations.kernel_changes_operations.models.Article.objects"
+            "operations.sync_kernel_to_website_operations.models.Article.objects"
         )
 
         ArticleObjectsMock = self.article_objects.start()
@@ -324,7 +324,7 @@ class RegisterDocumentRenditionsTest(unittest.TestCase):
             "kernel-document-front-s1518-8787.2019053000621.json"
         )
 
-        mk_hooks = patch("operations.kernel_changes_operations.hooks")
+        mk_hooks = patch("operations.sync_kernel_to_website_operations.hooks")
         self.mk_hooks = mk_hooks.start()
 
         self.renditions = [

@@ -23,7 +23,7 @@ from mongoengine import connect
 
 from opac_schema.v1 import models
 
-from operations.kernel_changes_operations import (
+from operations.sync_kernel_to_website_operations import (
     try_register_documents,
     ArticleFactory,
     ArticleRenditionFactory,
