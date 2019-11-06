@@ -112,17 +112,16 @@ No servidor local:
 Dentro da pasta **opac-airflow**, executar:
 
 `export AIRFLOW_HOME=$(pwd)/airflow`
-`export AIRFLOW__CORE__DAGS_FOLDER=$(pwd)/airflow/dags` 
+`export AIRFLOW__CORE__DAGS_FOLDER=$(pwd)/airflow/dags`
 `export AIRFLOW__CORE__BASE_LOG_FOLDER=$(pwd)/airflow/logs`
 `export AIRFLOW__CORE__DAG_PROCESSOR_MANAGER_LOG_LOCATION=$(pwd)/airflow/logs/dag_processor_manager/dag_processor_manager.log`
 `export AIRFLOW__CORE__PLUGINS_FOLDER=$(pwd)/airflow/plugins`
 `export AIRFLOW__SCHEDULER__CHILD_PROCESS_LOG_DIRECTORY=$(pwd)/airflow/logs/scheduler`
-`export POSTGRES_USER=joffily`
+`export POSTGRES_USER=username`
 `export POSTGRES_PASSWORD=''`
-`export POSTGRES_HOST=192.168.169.125`
+`export POSTGRES_HOST=localhost`
 `export POSTGRES_PORT=5432`
 `export POSTGRES_DB=airflow_externo`
-`export POSTGRES_PORT=5432`
 
 `cd airflow`
 `python -m unittest -v`
