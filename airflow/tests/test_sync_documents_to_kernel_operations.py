@@ -8,13 +8,13 @@ from unittest.mock import patch, Mock
 
 from airflow import DAG
 
-from dags.operations.sync_documents_to_kernel_operations import (
+from operations.sync_documents_to_kernel_operations import (
     list_documents,
     delete_documents,
     register_update_documents,
     link_documents_to_documentsbundle,
 )
-from dags.operations.exceptions import (
+from operations.exceptions import (
     DeleteDocFromKernelException,
     DocumentToDeleteException,
     PutXMLInObjectStoreException,
@@ -26,17 +26,17 @@ class TestListDocuments(TestCase):
     def setUp(self):
         self.sps_package = "dir/destination/abc_v50.zip"
 
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_list_document_opens_all_zips(self, MockZipFile):
         list_documents(self.sps_package)
         MockZipFile.assert_called_once_with(self.sps_package)
 
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_list_document_raises_error_if_zipfile_not_found(self, MockZipFile):
         MockZipFile.side_effect = FileNotFoundError
         self.assertRaises(FileNotFoundError, list_documents, self.sps_package)
 
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_list_document_reads_all_xmls_from_zip(self, MockZipFile):
         sps_package_file_lists = [
             "0123-4567-abc-50-1-8.xml",
@@ -54,7 +54,7 @@ class TestListDocuments(TestCase):
             result, ["0123-4567-abc-50-1-8.xml", "0123-4567-abc-50-9-18.xml"]
         )
 
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_list_document_empty_list_if_no_xml_in_zip(self, MockZipFile):
         sps_package_file_lists = [
             "v53n1a01.pdf",
@@ -85,18 +85,18 @@ class TestDeleteDocuments(TestCase):
             "KU890cbyYmmwvtGmMB7JUk4",
         ]
 
-    @patch("dags.operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
-    @patch("dags.operations.sync_documents_to_kernel_operations.document_to_delete")
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
+    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_delete_documents_opens_zip(
         self, MockZipFile, mk_document_to_delete, mk_delete_doc_from_kernel
     ):
         delete_documents(**self.kwargs)
         MockZipFile.assert_called_once_with(self.kwargs["sps_package"])
 
-    @patch("dags.operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
-    @patch("dags.operations.sync_documents_to_kernel_operations.document_to_delete")
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
+    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_delete_documents_calls_document_to_delete_for_each_xml(
         self, MockZipFile, mk_document_to_delete, mk_delete_doc_from_kernel
     ):
@@ -108,10 +108,10 @@ class TestDeleteDocuments(TestCase):
                     sps_xml_file
                 )
 
-    @patch("dags.operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
-    @patch("dags.operations.sync_documents_to_kernel_operations.Logger")
-    @patch("dags.operations.sync_documents_to_kernel_operations.document_to_delete")
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_delete_documents_logs_error_if_document_to_delete_error(
         self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
     ):
@@ -124,10 +124,10 @@ class TestDeleteDocuments(TestCase):
                     'Could not delete document "%s": %s', xml_filename, "XML Error"
                 )
 
-    @patch("dags.operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
-    @patch("dags.operations.sync_documents_to_kernel_operations.Logger")
-    @patch("dags.operations.sync_documents_to_kernel_operations.document_to_delete")
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_delete_documents_calls_delete_doc_from_kernel(
         self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
     ):
@@ -137,10 +137,10 @@ class TestDeleteDocuments(TestCase):
             with self.subTest(doc_to_delete=doc_to_delete):
                 mk_delete_doc_from_kernel.assert_any_call(doc_to_delete)
 
-    @patch("dags.operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
-    @patch("dags.operations.sync_documents_to_kernel_operations.Logger")
-    @patch("dags.operations.sync_documents_to_kernel_operations.document_to_delete")
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_delete_documents_logs_error_if_kernel_connect_error(
         self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
     ):
@@ -160,10 +160,10 @@ class TestDeleteDocuments(TestCase):
                     "404 Client Error: Not Found"
                 )
 
-    @patch("dags.operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
-    @patch("dags.operations.sync_documents_to_kernel_operations.Logger")
-    @patch("dags.operations.sync_documents_to_kernel_operations.document_to_delete")
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_delete_documents_logs_document_deletion_success(
         self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
     ):
@@ -179,10 +179,10 @@ class TestDeleteDocuments(TestCase):
                     doc_to_delete
                 )
 
-    @patch("dags.operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
-    @patch("dags.operations.sync_documents_to_kernel_operations.Logger")
-    @patch("dags.operations.sync_documents_to_kernel_operations.document_to_delete")
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_delete_documents_returns_xmls_to_preserve(
         self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
     ):
@@ -321,14 +321,14 @@ class TestRegisterUpdateDocuments(TestCase):
         ]
 
     @patch(
-        "dags.operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
+        "operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
     )
     @patch(
-        "dags.operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
+        "operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
     )
-    @patch("dags.operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
-    @patch("dags.operations.sync_documents_to_kernel_operations.Logger")
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_register_update_documents_opens_zip(
         self,
         MockZipFile,
@@ -340,20 +340,20 @@ class TestRegisterUpdateDocuments(TestCase):
         register_update_documents(**self.kwargs)
         MockZipFile.assert_called_once_with(self.kwargs["sps_package"])
 
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_register_update_documents_open_zip_raises_error(self, MockZipFile):
         MockZipFile.side_effect = Exception("Zipfile error")
         self.assertRaises(Exception, register_update_documents, **self.kwargs)
 
     @patch(
-        "dags.operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
+        "operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
     )
     @patch(
-        "dags.operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
+        "operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
     )
-    @patch("dags.operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
-    @patch("dags.operations.sync_documents_to_kernel_operations.Logger")
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_register_update_documents_calls_put_xml_into_object_store(
         self,
         MockZipFile,
@@ -370,14 +370,14 @@ class TestRegisterUpdateDocuments(TestCase):
                 )
 
     @patch(
-        "dags.operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
+        "operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
     )
     @patch(
-        "dags.operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
+        "operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
     )
-    @patch("dags.operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
-    @patch("dags.operations.sync_documents_to_kernel_operations.Logger")
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_register_update_documents_logs_error_if_put_xml_into_object_store_error(
         self,
         MockZipFile,
@@ -400,13 +400,13 @@ class TestRegisterUpdateDocuments(TestCase):
         )
 
     @patch(
-        "dags.operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
+        "operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
     )
     @patch(
-        "dags.operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
+        "operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
     )
-    @patch("dags.operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_register_update_documents_puts_each_doc_in_object_store(
         self,
         MockZipFile,
@@ -423,13 +423,13 @@ class TestRegisterUpdateDocuments(TestCase):
                 )
 
     @patch(
-        "dags.operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
+        "operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
     )
     @patch(
-        "dags.operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
+        "operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
     )
-    @patch("dags.operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_register_update_documents_call_register_update_doc_into_kernel(
         self,
         MockZipFile,
@@ -451,14 +451,14 @@ class TestRegisterUpdateDocuments(TestCase):
                 mk_register_update_doc_into_kernel.assert_any_call(xml_data)
 
     @patch(
-        "dags.operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
+        "operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
     )
     @patch(
-        "dags.operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
+        "operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
     )
-    @patch("dags.operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
-    @patch("dags.operations.sync_documents_to_kernel_operations.Logger")
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_register_update_documents_call_register_update_doc_into_kernel_raise_error(
         self,
         MockZipFile,
@@ -482,13 +482,13 @@ class TestRegisterUpdateDocuments(TestCase):
         )
 
     @patch(
-        "dags.operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
+        "operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
     )
     @patch(
-        "dags.operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
+        "operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
     )
-    @patch("dags.operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
-    @patch("dags.operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_register_update_documents_returns_syncronized_documents_metadata_list(
         self,
         MockZipFile,
@@ -555,9 +555,9 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
         self.assertIsNone(link_documents_to_documentsbundle([], None), None)
 
     @patch.object(builtins, "open")
-    @patch("dags.operations.sync_documents_to_kernel_operations.Logger")
-    @patch("dags.operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
-    @patch("dags.operations.sync_documents_to_kernel_operations.issue_id")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
+    @patch("operations.sync_documents_to_kernel_operations.issue_id")
     def test_link_documents_to_documentsbundle_logs_journal_issn_id_error(
         self, mk_issue_id,  mk_regdocument, MockLogger, mk_open
     ):
@@ -568,9 +568,9 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
         )
 
     @patch.object(builtins, "open")
-    @patch("dags.operations.sync_documents_to_kernel_operations.kernel_connect")
-    @patch("dags.operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
-    @patch("dags.operations.sync_documents_to_kernel_operations.issue_id")
+    @patch("operations.sync_documents_to_kernel_operations.kernel_connect")
+    @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
+    @patch("operations.sync_documents_to_kernel_operations.issue_id")
     def test_link_documents_to_documentsbundle_calls_issue_id_with_issn_id(
         self, mk_issue_id,  mk_regdocument, mk_kernel_connect, mk_open
     ):
@@ -584,9 +584,9 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
             supplement=self.documents[0].get("supplement", None)
         )
 
-    @patch("dags.operations.sync_documents_to_kernel_operations.kernel_connect")
-    @patch("dags.operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
-    @patch("dags.operations.sync_documents_to_kernel_operations.issue_id")
+    @patch("operations.sync_documents_to_kernel_operations.kernel_connect")
+    @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
+    @patch("operations.sync_documents_to_kernel_operations.issue_id")
     def test_if_link_documents_to_documentsbundle_register_on_document_store(
         self, mk_issue_id,  mk_regdocument, mk_kernel_connect
     ):
@@ -614,9 +614,9 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
                     {'id': '1518-8787-2014-v2-n2-s1', 'status': 204}
                 ])
 
-    @patch("dags.operations.sync_documents_to_kernel_operations.kernel_connect")
-    @patch("dags.operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
-    @patch("dags.operations.sync_documents_to_kernel_operations.issue_id")
+    @patch("operations.sync_documents_to_kernel_operations.kernel_connect")
+    @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
+    @patch("operations.sync_documents_to_kernel_operations.issue_id")
     def test_if_some_documents_are_not_register_on_document_store(
         self, mk_issue_id,  mk_regdocument, mk_kernel_connect
     ):
@@ -648,10 +648,10 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
 
 
     @patch(
-        "dags.operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle"
+        "operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle"
     )
-    @patch("dags.operations.sync_documents_to_kernel_operations.kernel_connect")
-    @patch("dags.operations.sync_documents_to_kernel_operations.issue_id")
+    @patch("operations.sync_documents_to_kernel_operations.kernel_connect")
+    @patch("operations.sync_documents_to_kernel_operations.issue_id")
     @patch.object(builtins, "open")
     def test_link_documents_to_documentsbundle_should_not_emit_an_update_call_if_the_payload_wont_change(
         self, mk_open, mk_issue_id, mk_kernel_connect, mk_register_document_to_bundle
@@ -683,10 +683,10 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
         mk_register_document_to_bundle.assert_not_called()
 
     @patch(
-        "dags.operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle"
+        "operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle"
     )
-    @patch("dags.operations.sync_documents_to_kernel_operations.kernel_connect")
-    @patch("dags.operations.sync_documents_to_kernel_operations.issue_id")
+    @patch("operations.sync_documents_to_kernel_operations.kernel_connect")
+    @patch("operations.sync_documents_to_kernel_operations.issue_id")
     @patch.object(builtins, "open")
     def test_link_documents_to_documentsbundle_should_not_reset_item_list_when_new_documents_arrives(
         self, mk_open, mk_issue_id, mk_kernel_connect, mk_register_document_to_bundle

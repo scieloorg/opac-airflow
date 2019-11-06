@@ -4,11 +4,11 @@ import json
 from zipfile import ZipFile
 from copy import deepcopy
 
-from dags.common.hooks import kernel_connect
+from common.hooks import kernel_connect
 import requests
 from deepdiff import DeepDiff
 
-from dags.operations.exceptions import (
+from operations.exceptions import (
     DeleteDocFromKernelException,
     DocumentToDeleteException,
     PutXMLInObjectStoreException,
@@ -16,7 +16,7 @@ from dags.operations.exceptions import (
     LinkDocumentToDocumentsBundleException,
 )
 
-from dags.operations.docs_utils import (
+from operations.docs_utils import (
     delete_doc_from_kernel,
     document_to_delete,
     register_update_doc_into_kernel,

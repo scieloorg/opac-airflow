@@ -25,7 +25,7 @@ from datetime import datetime
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 
-from dags.operations import sync_documents_to_kernel_operations
+from operations import sync_documents_to_kernel_operations
 
 
 Logger = logging.getLogger(__name__)

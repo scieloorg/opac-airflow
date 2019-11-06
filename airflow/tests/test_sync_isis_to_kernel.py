@@ -7,7 +7,7 @@ import tempfile
 
 from xylose.scielodocument import Issue
 
-from dags.sync_isis_to_kernel import (
+from sync_isis_to_kernel import (
     mount_journals_issues_link,
     issue_as_kernel,
     issue_data_to_link,
