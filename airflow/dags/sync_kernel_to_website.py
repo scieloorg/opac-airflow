@@ -254,6 +254,7 @@ def parser_endpoint(endpoint):
             groups = matched.groupdict()
             return (groups["entity"], groups["id"])
 
+
 def filter_changes(tasks, entity, action):
     """
     Filter changes
@@ -347,7 +348,7 @@ def register_journals(ds, **kwargs):
 
     journal_changes = filter_changes(tasks, "journals", "get")
 
-    # Dictionary with id of journal and list of issues, something like: known_issues[journal_id] = [issue_id, issue_id, ....]
+    # Dictionary with id of journal and list of issues, something like: known_issues[journal_id] = {aop: bundle_id, items: [issue_id, issue_id, ....]}
     known_issues = {}
 
     for journal in journal_changes:
@@ -356,7 +357,10 @@ def register_journals(ds, **kwargs):
         t_journal = JournalFactory(resp_json)
         t_journal.save()
 
-        known_issues[get_id(journal.get("id"))] = resp_json.get("items", [])
+        known_issues[get_id(journal.get("id"))] = {
+            'aop': resp_json.get("aop", ""),
+            'items': resp_json.get("items", [])
+           }
 
     kwargs["ti"].xcom_push(key="known_issues", value=known_issues)
 
@@ -371,7 +375,7 @@ register_journals_task = PythonOperator(
 )
 
 
-def IssueFactory(data, journal_id, issue_order):
+def IssueFactory(data, journal_id, issue_order=None, type="regular"):
     """
     Realiza o registro fascículo utilizando o opac schema.
 
@@ -383,7 +387,7 @@ def IssueFactory(data, journal_id, issue_order):
 
     issue = models.Issue()
     issue._id = issue.iid = data.get("id")
-    issue.type = metadata.get("type", "regular")
+    issue.type = metadata.get("type", type)
     issue.spe_text = metadata.get("spe_text", "")
     issue.start_month = metadata.get("publication_month", 0)
     issue.end_month = metadata.get("publication_season", [0])[-1]
@@ -398,10 +402,10 @@ def IssueFactory(data, journal_id, issue_order):
     def _get_issue_label(metadata: dict) -> str:
         """Produz o label esperado pelo OPAC de acordo com as regras aplicadas
         pelo OPAC Proc e Xylose.
-        
+
         Args:
             metadata (dict): conteúdo de um bundle
-        
+
         Returns:
             str: label produzido a partir de um bundle
         """
@@ -439,7 +443,7 @@ def IssueFactory(data, journal_id, issue_order):
 
 
 def try_register_issues(
-    issues, get_journal_id, get_issue_order, fetch_data, issue_factory
+    issues, get_journal_id, get_aop_id, get_issue_order, fetch_data, issue_factory
 ):
     """Registra uma coleção de fascículos.
 
@@ -449,13 +453,15 @@ def try_register_issues(
     :param issues: lista de identificadores dos fascículos a serem registrados.
     :param get_journal_id: função que recebe o identificador de um fascículo no
     Kernel e retorna o identificador do periódico que o contém.
-    :param get_issue_order: função que recebe o identificador de um fascículo e 
-    retorna um número inteiro referente a posição do fascículo em relação 
+    :param get_aop_id: função que recebe o identificador de um fascículo e
+    retorna o identificador do bundle que representa um ahead of print.
+    :param get_issue_order: função que recebe o identificador de um fascículo e
+    retorna um número inteiro referente a posição do fascículo em relação
     aos demais.
-    :param fetch_data: função que recebe o identificador de um fascículo e 
-    retorna seus dados, em estruturas do Python, conforme retornado pelo 
+    :param fetch_data: função que recebe o identificador de um fascículo e
+    retorna seus dados, em estruturas do Python, conforme retornado pelo
     endpoint do Kernel.
-    :param issue_factory: função que recebe os dados retornados da função 
+    :param issue_factory: função que recebe os dados retornados da função
     `fetch_data` e retorna uma instância da classe `Issue`, do `opac_schema`.
     """
     known_documents = {}
@@ -467,9 +473,14 @@ def try_register_issues(
         if journal_id is not None:
             data = fetch_data(issue_id)
             try:
-                issue = issue_factory(
-                    data, journal_id, get_issue_order(issue_id)
-                )
+                if issue_id == get_aop_id(issue_id):
+                    issue = issue_factory(
+                        data, journal_id, type="ahead"
+                    )
+                else:
+                    issue = issue_factory(
+                        data, journal_id, get_issue_order(issue_id)
+                    )
                 issue.save()
             except models.Journal.DoesNotExist:
                 orphans.append(issue_id)
@@ -484,7 +495,7 @@ def try_register_issues(
 def register_issues(ds, **kwargs):
     """Registra ou atualiza todos os fascículos a partir do Kernel.
 
-    Fascículos de periódicos não encontrados são marcados como órfãos e 
+    Fascículos de periódicos não encontrados são marcados como órfãos e
     armazenados em uma variável persistente para futuras tentativas.
     """
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
@@ -494,28 +505,33 @@ def register_issues(ds, **kwargs):
 
     def _journal_id(issue_id):
         """Obtém o identificador do periódico onde `issue_id` está contido."""
-        for journal_id, items in known_issues.items():
-            for item in items:
-                if issue_id == item["id"]:
+        for journal_id, issues in known_issues.items():
+            for issue in issues['items']:
+                if issue_id == issue["id"]:
                     return journal_id
 
     def _issue_order(issue_id):
         """A posição em relação aos demais fascículos do periódico.
-        
-        Pode levantar `ValueError` caso `issue_id` não conste na relação de 
+
+        Pode levantar `ValueError` caso `issue_id` não conste na relação de
         fascículos do periódico `journal_id`.
         """
-        issues = known_issues.get(_journal_id(issue_id), [])
-        for issue in issues:
+        issues = known_issues.get(_journal_id(issue_id), {})
+        for issue in issues['items']:
             if issue_id == issue["id"]:
                 return issue["order"]
+
+    def _aop_id(issue_id):
+        """Obtém o identificador do ahead of print do periódico.
+        """
+        return known_issues.get(_journal_id(issue_id), {})['aop']
 
     issues_to_get = itertools.chain(
         Variable.get("orphan_issues", default_var=[], deserialize_json=True),
         (get_id(task["id"]) for task in filter_changes(tasks, "bundles", "get")),
     )
     orphans, known_documents = try_register_issues(
-        issues_to_get, _journal_id, _issue_order, fetch_bundles, IssueFactory
+        issues_to_get, _journal_id, _aop_id, _issue_order, fetch_bundles, IssueFactory
     )
 
     kwargs["ti"].xcom_push(key="i_documents", value=known_documents)
@@ -542,7 +558,7 @@ def register_documents(**kwargs):
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
     def _get_relation_data(document_id: str) -> Tuple[str, Dict]:
-        """Recupera informações sobre o relacionamento entre o 
+        """Recupera informações sobre o relacionamento entre o
         DocumentsBundle e o Document.
 
         Retorna uma tupla contendo o identificador da issue onde o
@@ -569,7 +585,7 @@ def register_documents(**kwargs):
         roda de forma assíncrona em relação a DAG de espelhamento/sincronização.
 
         É possível que algumas situações especiais ocorram onde em uma rodada
-        **anterior** o **evento de registro** de um `Document` foi capturado mas a 
+        **anterior** o **evento de registro** de um `Document` foi capturado mas a
         atualização de seu `DocumentsBundle` não ocorreu (elas ocorrem em transações
         distintas e possuem timestamps também distintos). O documento será
         registrado como **órfão** e sua `task` não será processada na próxima
