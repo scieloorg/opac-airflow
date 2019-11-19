@@ -524,7 +524,7 @@ def register_issues(ds, **kwargs):
     def _aop_id(issue_id):
         """Obtém o identificador do ahead of print do periódico.
         """
-        return known_issues.get(_journal_id(issue_id), {})['aop']
+        return known_issues.get(_journal_id(issue_id), {}).get('aop', '')
 
     issues_to_get = itertools.chain(
         Variable.get("orphan_issues", default_var=[], deserialize_json=True),
