@@ -73,6 +73,7 @@ def register_update_documents(dag_run, **kwargs):
 
 
 def link_documents_to_documentsbundle(dag_run, **kwargs):
+    _sps_package = dag_run.conf.get("sps_package")
     documents = kwargs["ti"].xcom_pull(key="documents", task_ids="register_update_docs_id")
     issn_index_json_path = kwargs["ti"].xcom_pull(
         task_ids="process_journals_task",
@@ -83,7 +84,7 @@ def link_documents_to_documentsbundle(dag_run, **kwargs):
 
     if documents:
         linked_bundle = sync_documents_to_kernel_operations.link_documents_to_documentsbundle(
-            documents, issn_index_json_path
+            _sps_package, documents, issn_index_json_path
         )
 
         if linked_bundle:
