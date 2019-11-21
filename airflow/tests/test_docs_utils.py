@@ -1,5 +1,6 @@
 import copy
 import random
+import http.client
 from unittest import TestCase, main
 from unittest.mock import patch, Mock, MagicMock
 
@@ -17,6 +18,8 @@ from operations.docs_utils import (
     put_assets_and_pdfs_in_object_store,
     put_xml_into_object_store,
     register_document_to_documentsbundle,
+    get_or_create_bundle,
+    create_aop_bundle,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -782,6 +785,95 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
         response = register_document_to_documentsbundle("0066-782X-1999-v72-n0", payload)
 
         self.assertEqual(response.status_code, 204)
+
+
+@patch("operations.docs_utils.hooks")
+@patch("operations.docs_utils.create_aop_bundle")
+class TestGetOrCreateBundleIssueBundle(TestCase):
+    def test_tries_to_get_bundle_from_kernel(self, mk_create_aop_bundle, mk_hooks):
+        bundle_id = "0034-8910-rsp-48-2-0347"
+        get_or_create_bundle(bundle_id, False)
+        mk_hooks.kernel_connect.assert_called_once_with("/bundles/" + bundle_id, "GET")
+
+    def test_raises_exception_if_issue_not_found_in_kernel(self, mk_create_aop_bundle, mk_hooks):
+        bundle_id = "0034-8910-rsp-48-2-0347"
+        error = requests.exceptions.HTTPError("Bundle not found")
+        error.response = Mock(status_code=http.client.NOT_FOUND)
+        mk_hooks.kernel_connect.side_effect = error
+        with self.assertRaises(LinkDocumentToDocumentsBundleException) as exc_info:
+            get_or_create_bundle(bundle_id, False)
+        self.assertEqual(str(exc_info.exception), "Bundle not found")
+        mk_create_aop_bundle.assert_not_called()
+
+    def test_returns_kernel_response(self, mk_create_aop_bundle, mk_hooks):
+        bundle_id = "0034-8910-rsp-48-2-0347"
+        MockResponse = Mock(spec=requests.Response)
+        mk_hooks.kernel_connect.return_value = MockResponse
+        result = get_or_create_bundle(bundle_id, False)
+        self.assertEqual(result, MockResponse)
+
+
+@patch("operations.docs_utils.hooks")
+@patch("operations.docs_utils.create_aop_bundle")
+class TestGetOrCreateBundleAOPBundle(TestCase):
+    def test_tries_to_get_bundle_from_kernel(self, mk_create_aop_bundle, mk_hooks):
+        bundle_id = "0034-8910-aop"
+        get_or_create_bundle(bundle_id, True)
+        mk_hooks.kernel_connect.assert_called_once_with("/bundles/" + bundle_id, "GET")
+
+    def test_creates_aop_bundle_if_not_found(self, mk_create_aop_bundle, mk_hooks):
+        bundle_id = "0034-8910-aop"
+        error = requests.exceptions.HTTPError("Bundle not found")
+        error.response = Mock(status_code=http.client.NOT_FOUND)
+        mk_hooks.kernel_connect.side_effect = [error, Mock(spec=requests.Response)]
+        get_or_create_bundle(bundle_id, True)
+        mk_create_aop_bundle.assert_called_once_with(bundle_id)
+
+    def test_returns_kernel_response(self, mk_create_aop_bundle, mk_hooks):
+        bundle_id = "0034-8910-aop"
+        error = requests.exceptions.HTTPError("Bundle not found")
+        error.response = Mock(status_code=http.client.NOT_FOUND)
+        MockResponse = Mock(spec=requests.Response)
+        mk_hooks.kernel_connect.side_effect = [error, MockResponse]
+        result = get_or_create_bundle(bundle_id, True)
+        self.assertEqual(result, MockResponse)
+        mk_hooks.kernel_connect.assert_called_with("/bundles/" + bundle_id, "GET")
+
+    def test_raises_exception_if_error_on_getting_created_aop_bundle(
+        self, mk_create_aop_bundle, mk_hooks
+    ):
+        bundle_id = "0034-8910-aop"
+        error = requests.exceptions.HTTPError("Bundle not found")
+        error.response = Mock(status_code=http.client.NOT_FOUND)
+        MockResponse = Mock(spec=requests.Response)
+        mk_hooks.kernel_connect.side_effect = error
+        with self.assertRaises(LinkDocumentToDocumentsBundleException) as exc_info:
+            get_or_create_bundle(bundle_id, False)
+        self.assertEqual(str(exc_info.exception), "Bundle not found")
+
+
+@patch("operations.docs_utils.hooks")
+class TestCreateAOPBundle(TestCase):
+    def test_tries_to_put_bundle_from_kernel(self, mk_hooks):
+        bundle_id = "0034-8910-aop"
+        create_aop_bundle(bundle_id)
+        mk_hooks.kernel_connect.assert_any_call("/bundles/" + bundle_id, "PUT")
+
+    def test_raises_exception_if_issue_not_created_in_kernel(self, mk_hooks):
+        bundle_id = "0034-8910-aop"
+        error = requests.exceptions.HTTPError("Internal Error")
+        error.response = Mock(status_code=http.client.NOT_FOUND)
+        mk_hooks.kernel_connect.side_effect = error
+        with self.assertRaises(LinkDocumentToDocumentsBundleException) as exc_info:
+            create_aop_bundle(bundle_id)
+        self.assertEqual(str(exc_info.exception), "Internal Error")
+
+    def test_sets_aop_bundle_to_journal(self, mk_hooks):
+        bundle_id = "0034-8910-aop"
+        create_aop_bundle(bundle_id)
+        mk_hooks.kernel_connect.assert_any_call(
+            "/journals/0034-8910/aop", "PATCH", {"aop": bundle_id}
+        )
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 import os
 import logging
 import hashlib
+import http.client
 
 import requests
 from lxml import etree
@@ -269,3 +270,27 @@ def issue_id(issn_id, year, volume=None, number=None, supplement=None):
             _id.append(prefix + value)
 
     return "-".join(_id)
+
+
+def create_aop_bundle(bundle_id):
+    try:
+        hooks.kernel_connect("/bundles/" + bundle_id, "PUT")
+    except requests.exceptions.HTTPError as exc:
+        raise LinkDocumentToDocumentsBundleException(str(exc))
+    else:
+        journal_aop_path = "/journals/{}/aop".format(bundle_id[:9])
+        hooks.kernel_connect(journal_aop_path, "PATCH", {"aop": bundle_id})
+
+
+def get_or_create_bundle(bundle_id, is_aop):
+    try:
+        return hooks.kernel_connect("/bundles/" + bundle_id, "GET")
+    except requests.exceptions.HTTPError as exc:
+        if exc.response.status_code == http.client.NOT_FOUND and is_aop:
+            create_aop_bundle(bundle_id)
+            try:
+                return hooks.kernel_connect("/bundles/" + bundle_id, "GET")
+            except requests.exceptions.HTTPError as exc:
+                raise LinkDocumentToDocumentsBundleException(str(exc))
+        else:
+            raise LinkDocumentToDocumentsBundleException(str(exc))
