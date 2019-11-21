@@ -18,6 +18,7 @@ from operations.docs_utils import (
     put_assets_and_pdfs_in_object_store,
     put_xml_into_object_store,
     register_document_to_documentsbundle,
+    get_bundle_id,
     get_or_create_bundle,
     create_aop_bundle,
 )
@@ -785,6 +786,44 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
         response = register_document_to_documentsbundle("0066-782X-1999-v72-n0", payload)
 
         self.assertEqual(response.status_code, 204)
+
+
+class TestGetBundleId(TestCase):
+    def test_returns_aop_bundle_id_if_no_volume_number_and_supplement(self):
+        self.assertEqual(
+            get_bundle_id("0101-0202", "2019"),
+            "0101-0202-aop"
+        )
+
+    def test_returns_issue_bundle_id_with_year_and_volume(self):
+        self.assertEqual(
+            get_bundle_id("0101-0202", "2019", "53"),
+            "0101-0202-2019-v53"
+        )
+
+    def test_returns_issue_bundle_id_with_year_and_supplement_volume(self):
+        self.assertEqual(
+            get_bundle_id("0101-0202", "2019", "53", supplement="1"),
+            "0101-0202-2019-v53-s1"
+        )
+
+    def test_returns_issue_bundle_id_with_year_volume_and_number(self):
+        self.assertEqual(
+            get_bundle_id("0101-0202", "2019", "53", number="2"),
+            "0101-0202-2019-v53-n2"
+        )
+
+    def test_returns_issue_bundle_id_with_year_volume_and_special_number(self):
+        self.assertEqual(
+            get_bundle_id("0101-0202", "2019", "53", number="spe3"),
+            "0101-0202-2019-v53-nspe3"
+        )
+
+    def test_returns_issue_bundle_id_with_year_volume_and_supplement_number(self):
+        self.assertEqual(
+            get_bundle_id("0101-0202", "2019", "53", number="3", supplement="1"),
+            "0101-0202-2019-v53-n3-s1"
+        )
 
 
 @patch("operations.docs_utils.hooks")

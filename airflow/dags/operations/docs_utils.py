@@ -244,10 +244,13 @@ def register_document_to_documentsbundle(bundle_id, payload):
         raise LinkDocumentToDocumentsBundleException(str(exc)) from None
 
 
-def issue_id(issn_id, year, volume=None, number=None, supplement=None):
+def get_bundle_id(issn_id, year, volume=None, number=None, supplement=None):
     """
         Gera Id utilizado na ferramenta de migração para cadastro do documentsbundle.
     """
+
+    if all(list(map(lambda x: x is None, [volume, number, supplement]))):
+        return issn_id + "-aop"
 
     labels = ["issn_id", "year", "volume", "number", "supplement"]
     values = [issn_id, year, volume, number, supplement]
