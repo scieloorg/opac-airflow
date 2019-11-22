@@ -289,7 +289,7 @@ def get_or_create_bundle(bundle_id, is_aop):
     try:
         return hooks.kernel_connect("/bundles/" + bundle_id, "GET")
     except requests.exceptions.HTTPError as exc:
-        if exc.response.status_code == http.client.NOT_FOUND and is_aop:
+        if is_aop and exc.response.status_code == http.client.NOT_FOUND:
             create_aop_bundle(bundle_id)
             try:
                 return hooks.kernel_connect("/bundles/" + bundle_id, "GET")
