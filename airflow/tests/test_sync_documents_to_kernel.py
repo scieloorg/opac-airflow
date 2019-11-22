@@ -206,9 +206,18 @@ class TestRegisterUpdateDocuments(TestCase):
         )
 
 
+@patch(
+    "sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle"
+)
 class TestLinkDocumentsToDocumentsbundle(TestCase):
+    def test_link_documents_to_documentsbundle_gets_sps_package_from_dag_run_conf(
+        self, mk_link_documents
+    ):
+        mk_dag_run = MagicMock()
+        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+        link_documents_to_documentsbundle(**kwargs)
+        mk_dag_run.conf.get.assert_called_once_with("sps_package")
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
     def test_link_documents_to_documentsbundle_gets_ti_xcom_documents(self, mk_link_documents):
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
@@ -219,7 +228,6 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
             key="documents", task_ids="register_update_docs_id"
         )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
     def test_link_documents_to_documentsbundle_gets_ti_xcom_title_json_path(self, mk_link_documents):
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
@@ -233,7 +241,6 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
             include_prior_dates=True
         )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
     def test_link_documents_to_documentsbundle_empty_ti_xcom_documents(self, mk_link_documents):
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
@@ -246,7 +253,6 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
 
         kwargs["ti"].xcom_push.assert_not_called()
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
     def test_link_documents_to_documentsbundle_calls_link_documents_to_documentsbundle_operation(
         self, mk_link_documents
     ):
@@ -271,15 +277,18 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
                         }
                     ]
 
-        kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
+        mk_dag_run = MagicMock()
+        mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
+        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
 
         kwargs["ti"].xcom_pull.side_effect = [documents, "/json/title.json"]
 
         link_documents_to_documentsbundle(**kwargs)
 
-        mk_link_documents.assert_called_once_with(documents, "/json/title.json")
+        mk_link_documents.assert_called_once_with(
+            "path_to_sps_package/package.zip", documents, "/json/title.json"
+        )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
     def test_link_documents_to_documentsbundle_does_not_push_if_no_documents(self, mk_link_documents):
         documents = []
 
@@ -293,7 +302,6 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
 
         kwargs["ti"].xcom_push.assert_not_called()
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle")
     def test_link_documents_to_documentsbundle_pushes_documents(self, mk_link_documents):
 
         documents = [
