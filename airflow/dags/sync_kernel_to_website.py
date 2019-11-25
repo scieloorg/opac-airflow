@@ -348,8 +348,11 @@ def register_journals(ds, **kwargs):
 
     journal_changes = filter_changes(tasks, "journals", "get")
 
-    # Dictionary with id of journal and list of issues, something like: known_issues[journal_id] = {aop: bundle_id, items: [issue_id, issue_id, ....]}
+    # Dictionary with id of journal and list of issues, something like: known_issues[journal_id] = [issue_id, issue_id, ....]
     known_issues = {}
+
+    # Dictionary with id of journal and aop of the jounal, something like: journals_issues[journal_id] = aop_id
+    journals_aop = {}
 
     for journal in journal_changes:
         resp_json = fetch_journal(get_id(journal.get("id")))
@@ -357,12 +360,11 @@ def register_journals(ds, **kwargs):
         t_journal = JournalFactory(resp_json)
         t_journal.save()
 
-        known_issues[get_id(journal.get("id"))] = {
-            'aop': resp_json.get("aop", ""),
-            'items': resp_json.get("items", [])
-           }
+        known_issues[get_id(journal.get("id"))] = resp_json.get("items", [])
+        journals_aop[get_id(journal.get("id"))] = resp_json.get("aop", "")
 
     kwargs["ti"].xcom_push(key="known_issues", value=known_issues)
+    kwargs["ti"].xcom_push(key="journals_aop", value=journals_aop)
 
     return tasks
 
@@ -443,7 +445,7 @@ def IssueFactory(data, journal_id, issue_order=None, type="regular"):
 
 
 def try_register_issues(
-    issues, get_journal_id, get_aop_id, get_issue_order, fetch_data, issue_factory
+    issues, get_journal_id, get_issue_order, fetch_data, issue_factory, is_aop=False
 ):
     """Registra uma coleção de fascículos.
 
@@ -473,14 +475,12 @@ def try_register_issues(
         if journal_id is not None:
             data = fetch_data(issue_id)
             try:
-                if issue_id == get_aop_id(issue_id):
-                    issue = issue_factory(
-                        data, journal_id, type="ahead"
-                    )
-                else:
+                if get_issue_order:
                     issue = issue_factory(
                         data, journal_id, get_issue_order(issue_id)
-                    )
+                        )
+                else:
+                    issue = issue_factory(data, journal_id)
                 issue.save()
             except models.Journal.DoesNotExist:
                 orphans.append(issue_id)
@@ -502,11 +502,14 @@ def register_issues(ds, **kwargs):
     known_issues = kwargs["ti"].xcom_pull(
         key="known_issues", task_ids="register_journals_task"
     )
+    journals_aop = kwargs["ti"].xcom_pull(
+        key="journals_aop", task_ids="register_journals_task"
+    )
 
     def _journal_id(issue_id):
         """Obtém o identificador do periódico onde `issue_id` está contido."""
         for journal_id, issues in known_issues.items():
-            for issue in issues['items']:
+            for issue in issues:
                 if issue_id == issue["id"]:
                     return journal_id
 
@@ -517,21 +520,30 @@ def register_issues(ds, **kwargs):
         fascículos do periódico `journal_id`.
         """
         issues = known_issues.get(_journal_id(issue_id), {})
-        for issue in issues['items']:
+        for issue in issues:
             if issue_id == issue["id"]:
                 return issue["order"]
 
-    def _aop_id(issue_id):
-        """Obtém o identificador do ahead of print do periódico.
-        """
-        return known_issues.get(_journal_id(issue_id), {}).get('aop', '')
+    def _journal_aop_id(aop_id):
+        """Obtém o identificador do periódico a partir da lista de AOPs."""
+        for key, aop in journals_aop.items():
+            if key == aop_id:
+                return key
 
     issues_to_get = itertools.chain(
         Variable.get("orphan_issues", default_var=[], deserialize_json=True),
         (get_id(task["id"]) for task in filter_changes(tasks, "bundles", "get")),
     )
+
+    # Cadastro dos AOPs
+    # No caso dos aops não é obrigatório o atributo order
     orphans, known_documents = try_register_issues(
-        issues_to_get, _journal_id, _aop_id, _issue_order, fetch_bundles, IssueFactory
+        journals_aop.values(), _journal_aop_id, None, fetch_bundles, IssueFactory, True
+    )
+
+    # Cadastro dos fascículos regulares
+    orphans, known_documents = try_register_issues(
+        issues_to_get, _journal_id, _issue_order, fetch_bundles, IssueFactory
     )
 
     kwargs["ti"].xcom_push(key="i_documents", value=known_documents)
