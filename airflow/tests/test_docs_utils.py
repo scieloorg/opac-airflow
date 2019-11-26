@@ -17,7 +17,7 @@ from operations.docs_utils import (
     put_object_in_object_store,
     put_assets_and_pdfs_in_object_store,
     put_xml_into_object_store,
-    register_document_to_documentsbundle,
+    update_documents_in_bundle,
     get_bundle_id,
     get_or_create_bundle,
     create_aop_bundle,
@@ -743,7 +743,7 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
             Verifica se register_document invoca kernel_connect com os parâmetros corretos.
         """
 
-        register_document_to_documentsbundle("0066-782X-1999-v72-n0",
+        update_documents_in_bundle("0066-782X-1999-v72-n0",
                                              self.payload)
 
         mk_hooks.kernel_connect.assert_called_once_with(
@@ -766,14 +766,14 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
         )
 
         self.assertRaises(LinkDocumentToDocumentsBundleException,
-                          register_document_to_documentsbundle,
+                          update_documents_in_bundle,
                           "0066-782X-1999-v72-n0",
                           self.payload)
 
     @patch("operations.docs_utils.hooks")
     def test_if_register_document_documentsbundle_return_status_code_204_with_correct_params(self, mk_hooks):
         """
-            Verifica se ao invocarmos register_document_to_documentsbundle com o ID do bundle e payload corretos o retorno é o esperado.
+            Verifica se ao invocarmos update_documents_in_bundle com o ID do bundle e payload corretos o retorno é o esperado.
 
             Status code 204 significa que os documentos foram atualizado com sucesso.
         """
@@ -784,7 +784,7 @@ class TestRegisterDocumentsToDocumentsBundle(TestCase):
                     {"id": "0034-8910-rsp-48-2-0348", "order": "02"},
                   ]
 
-        response = register_document_to_documentsbundle("0066-782X-1999-v72-n0", payload)
+        response = update_documents_in_bundle("0066-782X-1999-v72-n0", payload)
 
         self.assertEqual(response.status_code, 204)
 
@@ -917,7 +917,7 @@ class TestCreateAOPBundle(TestCase):
 
 
 @patch("operations.docs_utils.hooks")
-@patch("operations.docs_utils.register_document_to_documentsbundle")
+@patch("operations.docs_utils.update_documents_in_bundle")
 class TestUpdateAOPBundle(TestCase):
     def setUp(self):
         self.documents_list = [
@@ -925,12 +925,12 @@ class TestUpdateAOPBundle(TestCase):
             for number in range(1, 5)
         ]
 
-    def test_gets_journal(self, mk_register_document_to_documentsbundle, mk_hooks):
+    def test_gets_journal(self, mk_update_documents_in_bundle, mk_hooks):
         update_aop_bundle_items("0034-8910", self.documents_list)
         mk_hooks.kernel_connect.assert_any_call("/journals/" + "0034-8910", "GET")
 
     def test_raises_exception_if_journal_get_error(
-        self, mk_register_document_to_documentsbundle, mk_hooks
+        self, mk_update_documents_in_bundle, mk_hooks
     ):
         error = requests.exceptions.HTTPError("Internal Error")
         error.response = Mock(status_code=http.client.NOT_FOUND)
@@ -940,7 +940,7 @@ class TestUpdateAOPBundle(TestCase):
         self.assertEqual(str(exc_info.exception), "Internal Error")
 
     def test_gets_aop_bundle_data(
-        self, mk_register_document_to_documentsbundle, mk_hooks
+        self, mk_update_documents_in_bundle, mk_hooks
     ):
         MockJournalResponse = Mock(spec=requests.Response)
         MockJournalResponse.json.return_value = {
@@ -957,7 +957,7 @@ class TestUpdateAOPBundle(TestCase):
         mk_hooks.kernel_connect.assert_any_call("/bundles/" + "0034-8910-aop", "GET")
 
     def test_raises_exception_if_bundle_get_error(
-        self, mk_register_document_to_documentsbundle, mk_hooks
+        self, mk_update_documents_in_bundle, mk_hooks
     ):
         MockJournalResponse = Mock(spec=requests.Response)
         MockJournalResponse.json.return_value = {
@@ -971,8 +971,8 @@ class TestUpdateAOPBundle(TestCase):
             update_aop_bundle_items("0034-8910", self.documents_list)
         self.assertEqual(str(exc_info.exception), "Internal Error")
 
-    def test_calls_register_document_to_documentsbundle(
-        self, mk_register_document_to_documentsbundle, mk_hooks
+    def test_calls_update_documents_in_bundle(
+        self, mk_update_documents_in_bundle, mk_hooks
     ):
         MockJournalResponse = Mock(spec=requests.Response)
         MockJournalResponse.json.return_value = {
@@ -998,7 +998,7 @@ class TestUpdateAOPBundle(TestCase):
             {"id": "ahead-3", "order": "3"},
             {"id": "ahead-3", "order": "5"},
         ]
-        mk_register_document_to_documentsbundle.assert_called_once_with(
+        mk_update_documents_in_bundle.assert_called_once_with(
             "0034-8910-aop", updated_docs_list
         )
 

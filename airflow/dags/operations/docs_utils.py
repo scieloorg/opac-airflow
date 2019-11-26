@@ -229,7 +229,7 @@ def put_xml_into_object_store(zipfile, xml_filename):
     return xml_data
 
 
-def register_document_to_documentsbundle(bundle_id, payload):
+def update_documents_in_bundle(bundle_id, payload):
     """
         Relaciona documento com seu fascículo(DocumentsBundle).
 
@@ -322,7 +322,7 @@ def update_aop_bundle_items(issn_id, documents_list):
                     for aop_item in aop_bundle_items
                     if aop_item["id"] not in documents_ids
                 ]
-                register_document_to_documentsbundle(
+                update_documents_in_bundle(
                     aop_bundle_id,
                     updated_aop_items
                 )
