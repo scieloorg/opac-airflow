@@ -512,7 +512,7 @@ class TestRegisterUpdateDocuments(TestCase):
 
 @patch("operations.sync_documents_to_kernel_operations.Logger")
 @patch(
-    "operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle"
+    "operations.sync_documents_to_kernel_operations.update_documents_in_bundle"
 )
 @patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
 @patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
@@ -830,7 +830,7 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
 
 @patch("operations.sync_documents_to_kernel_operations.Logger")
 @patch(
-    "operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle"
+    "operations.sync_documents_to_kernel_operations.update_documents_in_bundle"
 )
 @patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
 @patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
