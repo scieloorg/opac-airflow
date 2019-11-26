@@ -351,7 +351,8 @@ def register_journals(ds, **kwargs):
     # Dictionary with id of journal and list of issues, something like: known_issues[journal_id] = [issue_id, issue_id, ....]
     known_issues = {}
 
-    # Dictionary with id of journal and aop of the jounal, something like: journals_issues[journal_id] = aop_id
+    # Dictionary with id of journal and aop of the jounal, something like:
+    # journals_aop = {'journal_id' = 'aop_id', 'journal_id' = 'aop_id', ....}
     journals_aop = {}
 
     for journal in journal_changes:
@@ -361,7 +362,7 @@ def register_journals(ds, **kwargs):
         t_journal.save()
 
         known_issues[get_id(journal.get("id"))] = resp_json.get("items", [])
-        journals_aop[get_id(journal.get("id"))] = resp_json.get("aop", "")
+        journals_aop[resp_json.get("aop", "")] = get_id(journal.get("id"))
 
     kwargs["ti"].xcom_push(key="known_issues", value=known_issues)
     kwargs["ti"].xcom_push(key="journals_aop", value=journals_aop)
@@ -377,11 +378,13 @@ register_journals_task = PythonOperator(
 )
 
 
-def IssueFactory(data, journal_id, issue_order=None, type="regular"):
+def IssueFactory(data, journal_id, issue_order=None, _type="regular"):
     """
     Realiza o registro fascículo utilizando o opac schema.
 
     Esta função pode lançar a exceção `models.Journal.DoesNotExist`.
+
+    Para satisfazer a obrigatoriedade do ano para os "Fascículos" ahead, estamos fixando o ano de fascículos do tipo ``ahead`` com o valor 9999
     """
     mongo_connect()
 
@@ -389,13 +392,13 @@ def IssueFactory(data, journal_id, issue_order=None, type="regular"):
 
     issue = models.Issue()
     issue._id = issue.iid = data.get("id")
-    issue.type = metadata.get("type", type)
+    issue.type = metadata.get("type", _type)
     issue.spe_text = metadata.get("spe_text", "")
     issue.start_month = metadata.get("publication_month", 0)
     issue.end_month = metadata.get("publication_season", [0])[-1]
-    issue.year = metadata.get("publication_year")
+    issue.year = '9999' if _type == 'ahead' else metadata.get("publication_year")
     issue.volume = metadata.get("volume", "")
-    issue.number = metadata.get("number", "")
+    issue.number = 'ahead' if _type == 'ahead' else metadata.get("number", "")
     issue.order = metadata.get("order", 0)
     issue.pid = metadata.get("pid", "")
     issue.journal = models.Journal.objects.get(_id=journal_id)
@@ -475,12 +478,13 @@ def try_register_issues(
         if journal_id is not None:
             data = fetch_data(issue_id)
             try:
-                if get_issue_order:
+                if not is_aop:
                     issue = issue_factory(
                         data, journal_id, get_issue_order(issue_id)
                         )
                 else:
-                    issue = issue_factory(data, journal_id)
+                    # Não é necessário o campo de ordenação(order) no ahead
+                    issue = issue_factory(data, journal_id, _type='ahead')
                 issue.save()
             except models.Journal.DoesNotExist:
                 orphans.append(issue_id)
@@ -519,29 +523,27 @@ def register_issues(ds, **kwargs):
         Pode levantar `ValueError` caso `issue_id` não conste na relação de
         fascículos do periódico `journal_id`.
         """
-        issues = known_issues.get(_journal_id(issue_id), {})
+        issues = known_issues.get(_journal_id(issue_id), [])
         for issue in issues:
             if issue_id == issue["id"]:
                 return issue["order"]
 
     def _journal_aop_id(aop_id):
         """Obtém o identificador do periódico a partir da lista de AOPs."""
-        for key, aop in journals_aop.items():
-            if key == aop_id:
-                return key
+        return journals_aop[aop_id]
 
     issues_to_get = itertools.chain(
         Variable.get("orphan_issues", default_var=[], deserialize_json=True),
         (get_id(task["id"]) for task in filter_changes(tasks, "bundles", "get")),
     )
 
-    # Cadastro dos AOPs
+    # Cadastra os AOPs
     # No caso dos aops não é obrigatório o atributo order
     orphans, known_documents = try_register_issues(
-        journals_aop.values(), _journal_aop_id, None, fetch_bundles, IssueFactory, True
+        journals_aop.keys(), _journal_aop_id, None, fetch_bundles, IssueFactory, True
     )
 
-    # Cadastro dos fascículos regulares
+    # Cadastra os fascículos regulares
     orphans, known_documents = try_register_issues(
         issues_to_get, _journal_id, _issue_order, fetch_bundles, IssueFactory
     )
