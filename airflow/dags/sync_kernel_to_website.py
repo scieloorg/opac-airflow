@@ -362,7 +362,9 @@ def register_journals(ds, **kwargs):
         t_journal.save()
 
         known_issues[get_id(journal.get("id"))] = resp_json.get("items", [])
-        journals_aop[resp_json.get("aop", "")] = get_id(journal.get("id"))
+
+        if resp_json.get("aop"):
+            journals_aop[resp_json.get("aop", "")] = get_id(journal.get("id"))
 
     kwargs["ti"].xcom_push(key="known_issues", value=known_issues)
     kwargs["ti"].xcom_push(key="journals_aop", value=journals_aop)
