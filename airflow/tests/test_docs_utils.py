@@ -21,6 +21,7 @@ from operations.docs_utils import (
     get_bundle_id,
     get_or_create_bundle,
     create_aop_bundle,
+    update_aop_bundle_items,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -912,6 +913,93 @@ class TestCreateAOPBundle(TestCase):
         create_aop_bundle(bundle_id)
         mk_hooks.kernel_connect.assert_any_call(
             "/journals/0034-8910/aop", "PATCH", {"aop": bundle_id}
+        )
+
+
+@patch("operations.docs_utils.hooks")
+@patch("operations.docs_utils.register_document_to_documentsbundle")
+class TestUpdateAOPBundle(TestCase):
+    def setUp(self):
+        self.documents_list = [
+            {"id": f"item-{number}", "order": number}
+            for number in range(1, 5)
+        ]
+
+    def test_gets_journal(self, mk_register_document_to_documentsbundle, mk_hooks):
+        update_aop_bundle_items("0034-8910", self.documents_list)
+        mk_hooks.kernel_connect.assert_any_call("/journals/" + "0034-8910", "GET")
+
+    def test_raises_exception_if_journal_get_error(
+        self, mk_register_document_to_documentsbundle, mk_hooks
+    ):
+        error = requests.exceptions.HTTPError("Internal Error")
+        error.response = Mock(status_code=http.client.NOT_FOUND)
+        mk_hooks.kernel_connect.side_effect = error
+        with self.assertRaises(LinkDocumentToDocumentsBundleException) as exc_info:
+            update_aop_bundle_items("0034-8910", self.documents_list)
+        self.assertEqual(str(exc_info.exception), "Internal Error")
+
+    def test_gets_aop_bundle_data(
+        self, mk_register_document_to_documentsbundle, mk_hooks
+    ):
+        MockJournalResponse = Mock(spec=requests.Response)
+        MockJournalResponse.json.return_value = {
+            "id": "0034-8910",
+            "aop": "0034-8910-aop",
+        }
+        MockBundleResponse = Mock(spec=requests.Response)
+        MockBundleResponse.json.return_value = {
+            "id": "0034-8910-aop",
+            "items": [],
+        }
+        mk_hooks.kernel_connect.side_effect = [MockJournalResponse, MockBundleResponse]
+        update_aop_bundle_items("0034-8910", self.documents_list)
+        mk_hooks.kernel_connect.assert_any_call("/bundles/" + "0034-8910-aop", "GET")
+
+    def test_raises_exception_if_bundle_get_error(
+        self, mk_register_document_to_documentsbundle, mk_hooks
+    ):
+        MockJournalResponse = Mock(spec=requests.Response)
+        MockJournalResponse.json.return_value = {
+            "id": "0034-8910",
+            "aop": "0034-8910-aop",
+        }
+        error = requests.exceptions.HTTPError("Internal Error")
+        error.response = Mock(status_code=http.client.NOT_FOUND)
+        mk_hooks.kernel_connect.side_effect = [MockJournalResponse, error]
+        with self.assertRaises(LinkDocumentToDocumentsBundleException) as exc_info:
+            update_aop_bundle_items("0034-8910", self.documents_list)
+        self.assertEqual(str(exc_info.exception), "Internal Error")
+
+    def test_calls_register_document_to_documentsbundle(
+        self, mk_register_document_to_documentsbundle, mk_hooks
+    ):
+        MockJournalResponse = Mock(spec=requests.Response)
+        MockJournalResponse.json.return_value = {
+            "id": "0034-8910",
+            "aop": "0034-8910-aop",
+        }
+        mk_aop_bundle_data = {
+            "id": "0034-8910-aop",
+            "items": [
+                {"id": "ahead-1", "order": "1"},
+                self.documents_list[1],
+                {"id": "ahead-3", "order": "3"},
+                self.documents_list[3],
+                {"id": "ahead-3", "order": "5"},
+            ],
+        }
+        MockBundleResponse = Mock(spec=requests.Response)
+        MockBundleResponse.json.return_value = mk_aop_bundle_data
+        mk_hooks.kernel_connect.side_effect = [MockJournalResponse, MockBundleResponse]
+        update_aop_bundle_items("0034-8910", self.documents_list)
+        updated_docs_list = [
+            {"id": "ahead-1", "order": "1"},
+            {"id": "ahead-3", "order": "3"},
+            {"id": "ahead-3", "order": "5"},
+        ]
+        mk_register_document_to_documentsbundle.assert_called_once_with(
+            "0034-8910-aop", updated_docs_list
         )
 
 

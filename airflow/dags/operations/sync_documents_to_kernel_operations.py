@@ -4,8 +4,6 @@ import json
 from zipfile import ZipFile
 from copy import deepcopy
 
-from common.hooks import kernel_connect
-import requests
 from deepdiff import DeepDiff
 
 from operations.exceptions import (
@@ -24,6 +22,7 @@ from operations.docs_utils import (
     put_xml_into_object_store,
     get_bundle_id,
     register_document_to_documentsbundle,
+    update_aop_bundle_items,
     get_or_create_bundle,
 )
 
@@ -198,6 +197,7 @@ def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_pa
     Logger.info("link_documents_to_documentsbundle PUT")
 
     ret = []
+    issn_id = ''
     bundle_id = ''
     bundle_id_doc = {}
 
@@ -254,6 +254,7 @@ def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_pa
             else:
                 current_items = conn_response.json()["items"]
                 payload = _update_items_list(new_items, current_items)
+                Logger.info("Registering bundle_id %s with %s", bundle_id, payload)
 
                 if DeepDiff(current_items, payload, ignore_order=True):
                     response = register_document_to_documentsbundle(bundle_id, payload)
@@ -265,6 +266,11 @@ def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_pa
                     logging.info(
                         "The bundle %s items does not need to be updated." % bundle_id
                     )
+                if not is_aop_bundle:
+                    try:
+                        update_aop_bundle_items(issn_id, payload)
+                    except LinkDocumentToDocumentsBundleException as exc:
+                        Logger.error(str(exc))
         return ret
 
     Logger.info("link_documents_to_documentsbundle OUT")
