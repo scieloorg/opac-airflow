@@ -236,6 +236,7 @@ def register_document_to_documentsbundle(bundle_id, payload):
         Utiliza a endpoint do Kernel /bundles/{{ DUNDLE_ID }}
     """
 
+    Logger.info('Updating Bundle "%s" with Documents: %s', bundle_id, payload)
     try:
         response = hooks.kernel_connect(
             "/bundles/%s/documents" % bundle_id, "PUT", payload)
@@ -297,3 +298,31 @@ def get_or_create_bundle(bundle_id, is_aop):
                 raise LinkDocumentToDocumentsBundleException(str(exc))
         else:
             raise LinkDocumentToDocumentsBundleException(str(exc))
+
+
+def update_aop_bundle_items(issn_id, documents_list):
+    try:
+        journal_resp = hooks.kernel_connect(f"/journals/{issn_id}", "GET")
+    except requests.exceptions.HTTPError as exc:
+        raise LinkDocumentToDocumentsBundleException(str(exc))
+    else:
+        aop_bundle_id = journal_resp.json().get("aop")
+        if aop_bundle_id is not None:
+            try:
+                aop_bundle_resp = hooks.kernel_connect(
+                    f"/bundles/{aop_bundle_id}", "GET"
+                )
+            except requests.exceptions.HTTPError as exc:
+                raise LinkDocumentToDocumentsBundleException(str(exc))
+            else:
+                aop_bundle_items = aop_bundle_resp.json()["items"]
+                documents_ids = [document["id"] for document in documents_list]
+                updated_aop_items = [
+                    aop_item
+                    for aop_item in aop_bundle_items
+                    if aop_item["id"] not in documents_ids
+                ]
+                register_document_to_documentsbundle(
+                    aop_bundle_id,
+                    updated_aop_items
+                )

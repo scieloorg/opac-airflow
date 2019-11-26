@@ -47,7 +47,7 @@ def kernel_connect(endpoint, method, data=None, headers=DEFAULT_HEADER, timeout=
         api_hook=api_hook,
         method=method,
         endpoint=endpoint,
-        data=json.dumps(data) if data else None,
+        data=json.dumps(data) if data is not None else None,
         headers=headers,
         timeout=timeout
     )

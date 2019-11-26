@@ -510,6 +510,13 @@ class TestRegisterUpdateDocuments(TestCase):
         self.assertEqual(result, expected)
 
 
+@patch("operations.sync_documents_to_kernel_operations.Logger")
+@patch(
+    "operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle"
+)
+@patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
+@patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
+@patch("operations.sync_documents_to_kernel_operations.update_aop_bundle_items")
 class TestLinkDocumentToDocumentsbundle(TestCase):
     def setUp(self):
         self.documents = [
@@ -538,21 +545,28 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
                 "order": "978",
              },
             {
-                "scielo_id": "S0034-8910.20140078954641",
+                "scielo_id": "S0034-8910.20140078954642",
                 "issn": "1518-8787",
                 "year": "2014",
                 "volume": "02",
                 "number": "2",
-                "order": "978",
+                "order": "979",
                 "supplement": "1",
              }
         ]
         self.issn_index_json = json.dumps({
             "0034-8910": "0034-8910",
-            "1518-8787": "1518-8787",
+            "1518-8787": "0034-8910",
         })
 
-    def test_if_link_documents_to_documentsbundle_return_none_when_param_document_empty(self):
+    def test_if_link_documents_to_documentsbundle_return_none_when_param_document_empty(
+        self,
+        mk_update_aop_bundle_items,
+        mk_get_or_create_bundle,
+        mk_get_bundle_id,
+        mk_regdocument,
+        MockLogger
+    ):
 
         self.assertIsNone(link_documents_to_documentsbundle(
             "path_to_sps_package/package.zip", [], None),
@@ -560,12 +574,14 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
         )
 
     @patch.object(builtins, "open")
-    @patch("operations.sync_documents_to_kernel_operations.Logger")
-    @patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
-    @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
-    @patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
     def test_link_documents_to_documentsbundle_logs_journal_issn_id_error(
-        self, mk_get_bundle_id,  mk_regdocument, mk_get_or_create_bundle, MockLogger, mk_open
+        self,
+        mk_open,
+        mk_update_aop_bundle_items,
+        mk_get_or_create_bundle,
+        mk_get_bundle_id,
+        mk_regdocument,
+        MockLogger
     ):
         mk_open.return_value.__enter__.return_value.read.return_value = '{}'
         link_documents_to_documentsbundle(
@@ -576,11 +592,14 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
         )
 
     @patch.object(builtins, "open")
-    @patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
-    @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
-    @patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
     def test_link_documents_to_documentsbundle_calls_get_bundle_id_with_issn_id(
-        self, mk_get_bundle_id,  mk_regdocument, mk_get_or_create_bundle, mk_open
+        self,
+        mk_open,
+        mk_update_aop_bundle_items,
+        mk_get_or_create_bundle,
+        mk_get_bundle_id,
+        mk_regdocument,
+        MockLogger
     ):
         mk_open.return_value.__enter__.return_value.read.return_value = '{"0034-8910": "0101-0101"}'
         link_documents_to_documentsbundle(
@@ -594,11 +613,13 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
             supplement=self.documents[0].get("supplement", None)
         )
 
-    @patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
-    @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
-    @patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
     def test_if_link_documents_to_documentsbundle_register_on_document_store(
-        self, mk_get_bundle_id,  mk_regdocument, mk_get_or_create_bundle
+        self,
+        mk_update_aop_bundle_items,
+        mk_get_or_create_bundle,
+        mk_get_bundle_id,
+        mk_regdocument,
+        MockLogger
     ):
         mock_response = Mock(status_code=204)
 
@@ -607,8 +628,8 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
         mk_get_bundle_id.side_effect = [
                                    '0034-8910-2014-v48-n2',
                                    '0034-8910-2014-v48-n2',
-                                   '1518-8787-2014-v2-n2',
-                                   '1518-8787-2014-v2-n2-s1'
+                                   '0034-8910-2014-v2-n2',
+                                   '0034-8910-2014-v2-n2-s1'
                                    ]
 
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -624,15 +645,17 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
                 ),
                 [
                     {'id': '0034-8910-2014-v48-n2', 'status': 204},
-                    {'id': '1518-8787-2014-v2-n2', 'status': 204},
-                    {'id': '1518-8787-2014-v2-n2-s1', 'status': 204}
+                    {'id': '0034-8910-2014-v2-n2', 'status': 204},
+                    {'id': '0034-8910-2014-v2-n2-s1', 'status': 204}
                 ])
 
-    @patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
-    @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
-    @patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
     def test_if_some_documents_are_not_register_on_document_store(
-        self, mk_get_bundle_id,  mk_regdocument, mk_get_or_create_bundle
+        self,
+        mk_update_aop_bundle_items,
+        mk_get_or_create_bundle,
+        mk_get_bundle_id,
+        mk_regdocument,
+        MockLogger
     ):
         mk_regdocument.side_effect = [
                                       Mock(status_code=204),
@@ -643,8 +666,8 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
         mk_get_bundle_id.side_effect = [
                                    '0034-8910-2014-v48-n2',
                                    '0034-8910-2014-v48-n2',
-                                   '1518-8787-2014-v2-n2',
-                                   '1518-8787-2014-v2-n2-s1'
+                                   '0034-8910-2014-v2-n2',
+                                   '0034-8910-2014-v2-n2-s1'
                                    ]
 
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -660,19 +683,19 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
                 ),
                 [
                     {'id': '0034-8910-2014-v48-n2', 'status': 204},
-                    {'id': '1518-8787-2014-v2-n2', 'status': 422},
-                    {'id': '1518-8787-2014-v2-n2-s1', 'status': 404}
+                    {'id': '0034-8910-2014-v2-n2', 'status': 422},
+                    {'id': '0034-8910-2014-v2-n2-s1', 'status': 404}
                 ])
 
-
-    @patch(
-        "operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle"
-    )
-    @patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
-    @patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
     @patch.object(builtins, "open")
     def test_link_documents_to_documentsbundle_should_not_emit_an_update_call_if_the_payload_wont_change(
-        self, mk_open, mk_get_bundle_id, mk_get_or_create_bundle, mk_register_document_to_bundle
+        self,
+        mk_open,
+        mk_update_aop_bundle_items,
+        mk_get_or_create_bundle,
+        mk_get_bundle_id,
+        mk_regdocument,
+        MockLogger
     ):
         new_document_to_link = self.documents[0]
         current_bundle_item_list = [
@@ -700,16 +723,17 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
         )
 
         # Não emita uma atualização do bundle se a nova lista for idêntica a atual
-        mk_register_document_to_bundle.assert_not_called()
+        mk_regdocument.assert_not_called()
 
-    @patch(
-        "operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle"
-    )
-    @patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
-    @patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
     @patch.object(builtins, "open")
     def test_link_documents_to_documentsbundle_should_not_reset_item_list_when_new_documents_arrives(
-        self, mk_open, mk_get_bundle_id, mk_get_or_create_bundle, mk_register_document_to_bundle
+        self,
+        mk_open,
+        mk_update_aop_bundle_items,
+        mk_get_or_create_bundle,
+        mk_get_bundle_id,
+        mk_regdocument,
+        MockLogger
     ):
         new_documents_to_link = self.documents[0:2]
         current_bundle_item_list = [
@@ -745,9 +769,63 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
             }
         ]
 
-        mk_register_document_to_bundle.assert_called_with(
+        mk_regdocument.assert_called_with(
             "0034-8910-2014-v48-n2", new_payload_list
         )
+
+    @patch.object(builtins, "open")
+    def test_calls_update_aop_bundle_items(
+        self,
+        mk_open,
+        mk_update_aop_bundle_items,
+        mk_get_or_create_bundle,
+        mk_get_bundle_id,
+        mk_regdocument,
+        MockLogger
+    ):
+        mk_open.return_value.__enter__.return_value.read.return_value = (
+            self.issn_index_json
+        )
+        mk_get_bundle_id.return_value = "0034-8910-2014-v48-n2"
+        bundle_data = {
+            "id": "0034-8910-2014-v48-n2",
+            "items": [
+                {"id": f"item-{number}", "order": number}
+                for number in range(1, 5)
+            ],
+        }
+        mk_get_or_create_bundle.return_value.json.return_value = bundle_data
+        link_documents_to_documentsbundle(
+            "path_to_sps_package/package.zip", self.documents, "/json/index.json"
+        )
+        expected = bundle_data["items"]
+        expected += [
+            {"id": document["scielo_id"], "order": document["order"]}
+            for document in self.documents
+        ]
+        mk_update_aop_bundle_items.assert_called_with("0034-8910", expected)
+
+    @patch.object(builtins, "open")
+    def test_logs_exception_if_update_aop_bundle_items_raise_exception(
+        self,
+        mk_open,
+        mk_update_aop_bundle_items,
+        mk_get_or_create_bundle,
+        mk_get_bundle_id,
+        mk_regdocument,
+        MockLogger
+    ):
+        mk_open.return_value.__enter__.return_value.read.return_value = (
+            '{"0034-8910": "0101-0101"}'
+        )
+        mk_get_bundle_id.return_value = "0034-8910-2014-v48-n2"
+        error = LinkDocumentToDocumentsBundleException("No AOP Bundle in Journal")
+        error.response = Mock(status_code=404)
+        mk_update_aop_bundle_items.side_effect = error
+        link_documents_to_documentsbundle(
+            "path_to_sps_package/package.zip", self.documents, "/json/index.json"
+        )
+        MockLogger.error.assert_called_with("No AOP Bundle in Journal")
 
 
 @patch("operations.sync_documents_to_kernel_operations.Logger")
@@ -756,6 +834,7 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
 )
 @patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
 @patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
+@patch("operations.sync_documents_to_kernel_operations.update_aop_bundle_items")
 class TestLinkDocumentToDocumentsbundleAOPs(TestCase):
     def setUp(self):
         self.documents = [
@@ -782,13 +861,14 @@ class TestLinkDocumentToDocumentsbundleAOPs(TestCase):
         ]
         self.issn_index_json = json.dumps({
             "0034-8910": "0034-8910",
-            "1518-8787": "1518-8787",
+            "1518-8787": "0034-8910",
         })
 
     @patch.object(builtins, "open")
     def test_calls_get_or_create_bundle(
         self,
         mk_open,
+        mk_update_aop_bundle_items,
         mk_get_or_create_bundle,
         mk_get_bundle_id,
         mk_regdocument,
@@ -808,6 +888,7 @@ class TestLinkDocumentToDocumentsbundleAOPs(TestCase):
     def test_get_or_create_bundle_raises_exception(
         self,
         mk_open,
+        mk_update_aop_bundle_items,
         mk_get_or_create_bundle,
         mk_get_bundle_id,
         mk_regdocument,
@@ -830,6 +911,25 @@ class TestLinkDocumentToDocumentsbundleAOPs(TestCase):
         MockLogger.info.assert_called_with(
             "Could not get bundle %: Bundle not found", "0101-0101-aop"
         )
+
+    @patch.object(builtins, "open")
+    def test_does_not_call_update_aop_bundle_items(
+        self,
+        mk_open,
+        mk_update_aop_bundle_items,
+        mk_get_or_create_bundle,
+        mk_get_bundle_id,
+        mk_regdocument,
+        MockLogger
+    ):
+        mk_open.return_value.__enter__.return_value.read.return_value = (
+            '{"0034-8910": "0101-0101"}'
+        )
+        mk_get_bundle_id.return_value = "0101-0101-aop"
+        link_documents_to_documentsbundle(
+            "path_to_sps_package/2019nahead.zip", self.documents[:1], "/json/index.json"
+        )
+        mk_update_aop_bundle_items.assert_not_called()
 
 
 if __name__ == "__main__":
