@@ -319,7 +319,7 @@ class SPS_Package:
         return parse_date(self._match_pubdate(xpaths))
 
     @property
-    def scielo_id(self):
+    def scielo_pid_v3(self):
         """The scielo id of the main document.
         """
         return self.xmltree.findtext(".//article-id[@specific-use='scielo-v3']")
