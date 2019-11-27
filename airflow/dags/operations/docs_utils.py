@@ -37,9 +37,9 @@ def document_to_delete(zipfile, sps_xml_file):
         raise DocumentToDeleteException(str(exc)) from None
     else:
         if metadata.is_document_deletion:
-            if metadata.scielo_id is None:
+            if metadata.scielo_pid_v3 is None:
                 raise DocumentToDeleteException("Missing element in XML")
-            return metadata.scielo_id
+            return metadata.scielo_pid_v3
 
 
 def register_update_doc_into_kernel(xml_data):
@@ -105,7 +105,7 @@ def get_xml_data(xml_content, xml_package_name):
             )
 
         _xml_data = {
-            "scielo_id": metadata.scielo_id,
+            "scielo_id": metadata.scielo_pid_v3,
             "issn": metadata.issn,
             "year": metadata.year,
             "order": metadata.order,
