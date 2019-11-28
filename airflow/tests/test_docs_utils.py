@@ -29,6 +29,7 @@ from operations.exceptions import (
     ObjectStoreError,
     RegisterUpdateDocIntoKernelException,
     LinkDocumentToDocumentsBundleException,
+    Pidv3Exception,
 )
 
 from tests.fixtures import XML_FILE_CONTENT
