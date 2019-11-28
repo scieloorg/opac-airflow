@@ -78,14 +78,6 @@ class SPS_Package:
     def acron(self):
         return self.xmltree.findtext('.//journal-id[@journal-id-type="publisher-id"]')
 
-    @property
-    def publisher_id(self):
-        try:
-            return self.xmltree.xpath(
-                './/article-id[not(@specific-use="scielo") and @pub-id-type="publisher-id"]/text()'
-            )[0]
-        except IndexError:
-            return None
 
     @property
     def journal_meta(self):
