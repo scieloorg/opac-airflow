@@ -13,7 +13,6 @@ from operations.exceptions import (
     ObjectStoreError,
     RegisterUpdateDocIntoKernelException,
     LinkDocumentToDocumentsBundleException,
-    Pidv3Exception,
 )
 from common.sps_package import SPS_Package
 
@@ -221,12 +220,7 @@ def put_xml_into_object_store(zipfile, xml_filename):
                 xml_filename, zipfile, exc
             )
         ) from None
-
     xml_data = get_xml_data(xml_file, os.path.splitext(xml_filename)[-2])
-
-    if not xml_data.get("scielo_id"):
-        raise Pidv3Exception('Could not get scielo id v3') from None
-
     Logger.info('Putting XML file "%s" to Object Store', xml_filename)
     xml_data["xml_url"] = put_object_in_object_store(
         xml_file, xml_data["issn"], xml_data["scielo_id"], xml_filename

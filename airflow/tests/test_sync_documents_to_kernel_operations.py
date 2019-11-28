@@ -19,7 +19,6 @@ from operations.exceptions import (
     DocumentToDeleteException,
     PutXMLInObjectStoreException,
     RegisterUpdateDocIntoKernelException,
-    Pidv3Exception,
 )
 
 
@@ -394,7 +393,7 @@ class TestRegisterUpdateDocuments(TestCase):
             {},
         ]
         register_update_documents(**self.kwargs)
-        MockLogger.error.assert_any_call(
+        MockLogger.info.assert_any_call(
             'Could not put document "%s" in object store: %s',
             self.kwargs["xmls_to_preserve"][1],
             "Put Doc in Object Store Error",
@@ -476,7 +475,7 @@ class TestRegisterUpdateDocuments(TestCase):
         ]
 
         register_update_documents(**self.kwargs)
-        MockLogger.error.assert_any_call(
+        MockLogger.info.assert_any_call(
             'Could not register or update document "%s" in Kernel: %s',
             self.kwargs["xmls_to_preserve"][1],
             "Register Doc in Kernel Error",
