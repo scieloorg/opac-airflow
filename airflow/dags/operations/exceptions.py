@@ -14,6 +14,10 @@ class ObjectStoreError(Exception):
     ...
 
 
+class Pidv3Exception(Exception):
+    ...
+
+
 class RegisterUpdateDocIntoKernelException(Exception):
     ...
 
