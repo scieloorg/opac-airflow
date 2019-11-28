@@ -9,7 +9,7 @@ XML_FILE_CONTENT = b"""<?xml version="1.0" encoding="UTF-8"?>
             <publisher><publisher-name>Sociedade Brasileira de Anestesiologia</publisher-name><publisher-loc>Campinas, SP, Brazil</publisher-loc></publisher>
         </journal-meta>
         <article-meta>
-            <article-id pub-id-type="publisher-id" specific-use="scielo">FX6F3cbyYmmwvtGmMB7WCgr</article-id>
+            <article-id pub-id-type="publisher-id" specific-use="scielo-v3">FX6F3cbyYmmwvtGmMB7WCgr</article-id>
             <pub-date pub-type="epub">
                 <day>31</day>
                 <month>01</month>
