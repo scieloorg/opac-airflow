@@ -322,7 +322,7 @@ class SPS_Package:
     def scielo_id(self):
         """The scielo id of the main document.
         """
-        return self.xmltree.findtext(".//article-id[@specific-use='scielo']")
+        return self.xmltree.findtext(".//article-id[@specific-use='scielo-v3']")
 
     @property
     def original_language(self):

@@ -128,7 +128,7 @@ class TestDocumentsToDelete(TestCase):
         xml_file = etree.XML(XML_FILE_CONTENT)
         am_tag = xml_file.find(".//article-meta")
         am_tag.append(article_id)
-        scielo_id_tag = xml_file.find(".//article-id[@specific-use='scielo']")
+        scielo_id_tag = xml_file.find(".//article-id[@specific-use='scielo-v3']")
         am_tag.remove(scielo_id_tag)
         deleted_xml_file = etree.tostring(xml_file)
         MockZipFile = MagicMock()
