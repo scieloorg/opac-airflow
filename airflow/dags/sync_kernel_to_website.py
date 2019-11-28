@@ -470,6 +470,7 @@ def try_register_issues(
     endpoint do Kernel.
     :param issue_factory: função que recebe os dados retornados da função
     `fetch_data` e retorna uma instância da classe `Issue`, do `opac_schema`.
+    :param is_aop: booleano responsável por indicar se é cadastro de AOP ou fascículo regular, valor padrão False.
     """
     known_documents = {}
     orphans = []
