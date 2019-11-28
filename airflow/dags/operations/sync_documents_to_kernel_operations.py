@@ -22,8 +22,9 @@ from operations.docs_utils import (
     register_update_doc_into_kernel,
     put_assets_and_pdfs_in_object_store,
     put_xml_into_object_store,
-    issue_id,
+    get_bundle_id,
     register_document_to_documentsbundle,
+    get_or_create_bundle,
 )
 
 Logger = logging.getLogger(__name__)
@@ -142,10 +143,11 @@ def register_update_documents(sps_package, xmls_to_preserve):
     return synchronized_docs_metadata
 
 
-def link_documents_to_documentsbundle(documents, issn_index_json_path):
+def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_path):
     """
         Relaciona documentos com seu fascículos(DocumentsBundle).
 
+        :param kwargs['sps_package']: Path do pacote SPS com os documentos
         :param kwargs['documents']: Uma lista de dicionários contento os atributos necessários para a descoberta do fascículo.
 
             Exemplo contendo a lista de atributos(mínimo):
@@ -212,7 +214,7 @@ def link_documents_to_documentsbundle(documents, issn_index_json_path):
                     'Could not get journal ISSN ID: ISSN id "%s" not found', doc["issn"]
                 )
             else:
-                bundle_id = issue_id(issn_id=issn_id,
+                bundle_id = get_bundle_id(issn_id=issn_id,
                                      year=doc.get("year"),
                                      volume=doc.get("volume", None),
                                      number=doc.get("number", None),
@@ -242,9 +244,14 @@ def link_documents_to_documentsbundle(documents, issn_index_json_path):
 
             return items
 
+        is_aop_bundle = "ahead" in sps_package
         for bundle_id, new_items in bundle_id_doc.items():
             try:
-                conn_response = kernel_connect("/bundles/" + bundle_id, "GET")
+                conn_response = get_or_create_bundle(bundle_id, is_aop=is_aop_bundle)
+            except LinkDocumentToDocumentsBundleException as exc:
+                ret.append({"id": bundle_id, "status": exc.response.status_code})
+                Logger.info("Could not get bundle %: Bundle not found", bundle_id)
+            else:
                 current_items = conn_response.json()["items"]
                 payload = _update_items_list(new_items, current_items)
 
@@ -258,8 +265,6 @@ def link_documents_to_documentsbundle(documents, issn_index_json_path):
                     logging.info(
                         "The bundle %s items does not need to be updated." % bundle_id
                     )
-            except requests.exceptions.HTTPError as exc:
-                raise LinkDocumentToDocumentsBundleException(str(exc)) from None
         return ret
 
     Logger.info("link_documents_to_documentsbundle OUT")

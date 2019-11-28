@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 from deepdiff import DeepDiff
 
 from common import hooks
-from operations.docs_utils import issue_id
+from operations.docs_utils import get_bundle_id
 
 """
 Para o devido entendimento desta DAG pode-se ter como base a seguinte explicação.
@@ -182,7 +182,7 @@ def issue_as_kernel(issue: dict) -> dict:
     issn_id = issue.data.get("issue").get("v35")[0]["_"]
     _creation_date = parse_date(issue.publication_date)
 
-    _payload["_id"] = issue_id(
+    _payload["_id"] = get_bundle_id(
         issn_id,
         str(_creation_date.year),
         issue.volume,

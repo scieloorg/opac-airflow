@@ -4,8 +4,9 @@ import tempfile
 import builtins
 import json
 from unittest import TestCase, main
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, MagicMock
 
+import requests
 from airflow import DAG
 
 from operations.sync_documents_to_kernel_operations import (
@@ -19,6 +20,7 @@ from operations.exceptions import (
     DocumentToDeleteException,
     PutXMLInObjectStoreException,
     RegisterUpdateDocIntoKernelException,
+    LinkDocumentToDocumentsBundleException
 )
 
 
@@ -582,31 +584,39 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
 
     def test_if_link_documents_to_documentsbundle_return_none_when_param_document_empty(self):
 
-        self.assertIsNone(link_documents_to_documentsbundle([], None), None)
+        self.assertIsNone(link_documents_to_documentsbundle(
+            "path_to_sps_package/package.zip", [], None),
+            None
+        )
 
     @patch.object(builtins, "open")
     @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
     @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
-    @patch("operations.sync_documents_to_kernel_operations.issue_id")
+    @patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
     def test_link_documents_to_documentsbundle_logs_journal_issn_id_error(
-        self, mk_issue_id,  mk_regdocument, MockLogger, mk_open
+        self, mk_get_bundle_id,  mk_regdocument, mk_get_or_create_bundle, MockLogger, mk_open
     ):
-        mk_open.return_value.__enter__.return_value.read.return_value = "{}"
-        link_documents_to_documentsbundle(self.documents[:1], "/json/index.json")
+        mk_open.return_value.__enter__.return_value.read.return_value = '{}'
+        link_documents_to_documentsbundle(
+            "path_to_sps_package/package.zip", self.documents[:1], "/json/index.json"
+        )
         MockLogger.info.assert_any_call(
             'Could not get journal ISSN ID: ISSN id "%s" not found', "0034-8910"
         )
 
     @patch.object(builtins, "open")
-    @patch("operations.sync_documents_to_kernel_operations.kernel_connect")
+    @patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
     @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
-    @patch("operations.sync_documents_to_kernel_operations.issue_id")
-    def test_link_documents_to_documentsbundle_calls_issue_id_with_issn_id(
-        self, mk_issue_id,  mk_regdocument, mk_kernel_connect, mk_open
+    @patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
+    def test_link_documents_to_documentsbundle_calls_get_bundle_id_with_issn_id(
+        self, mk_get_bundle_id,  mk_regdocument, mk_get_or_create_bundle, mk_open
     ):
         mk_open.return_value.__enter__.return_value.read.return_value = '{"0034-8910": "0101-0101"}'
-        link_documents_to_documentsbundle(self.documents[:1], "/json/index.json")
-        mk_issue_id.assert_called_once_with(
+        link_documents_to_documentsbundle(
+            "path_to_sps_package/package.zip", self.documents[:1], "/json/index.json"
+        )
+        mk_get_bundle_id.assert_called_once_with(
             issn_id="0101-0101",
             year=self.documents[0]["year"],
             volume=self.documents[0].get("volume", None),
@@ -614,17 +624,17 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
             supplement=self.documents[0].get("supplement", None)
         )
 
-    @patch("operations.sync_documents_to_kernel_operations.kernel_connect")
+    @patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
     @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
-    @patch("operations.sync_documents_to_kernel_operations.issue_id")
+    @patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
     def test_if_link_documents_to_documentsbundle_register_on_document_store(
-        self, mk_issue_id,  mk_regdocument, mk_kernel_connect
+        self, mk_get_bundle_id,  mk_regdocument, mk_get_or_create_bundle
     ):
         mock_response = Mock(status_code=204)
 
         mk_regdocument.return_value = mock_response
 
-        mk_issue_id.side_effect = [
+        mk_get_bundle_id.side_effect = [
                                    '0034-8910-2014-v48-n2',
                                    '0034-8910-2014-v48-n2',
                                    '1518-8787-2014-v2-n2',
@@ -637,18 +647,22 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
                 index_file.write(self.issn_index_json)
 
             self.assertEqual(
-                link_documents_to_documentsbundle(self.documents, issn_index_json_path),
+                link_documents_to_documentsbundle(
+                    "path_to_sps_package/package.zip",
+                    self.documents,
+                    issn_index_json_path
+                ),
                 [
                     {'id': '0034-8910-2014-v48-n2', 'status': 204},
                     {'id': '1518-8787-2014-v2-n2', 'status': 204},
                     {'id': '1518-8787-2014-v2-n2-s1', 'status': 204}
                 ])
 
-    @patch("operations.sync_documents_to_kernel_operations.kernel_connect")
+    @patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
     @patch("operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle")
-    @patch("operations.sync_documents_to_kernel_operations.issue_id")
+    @patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
     def test_if_some_documents_are_not_register_on_document_store(
-        self, mk_issue_id,  mk_regdocument, mk_kernel_connect
+        self, mk_get_bundle_id,  mk_regdocument, mk_get_or_create_bundle
     ):
         mk_regdocument.side_effect = [
                                       Mock(status_code=204),
@@ -656,7 +670,7 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
                                       Mock(status_code=404)
                                       ]
 
-        mk_issue_id.side_effect = [
+        mk_get_bundle_id.side_effect = [
                                    '0034-8910-2014-v48-n2',
                                    '0034-8910-2014-v48-n2',
                                    '1518-8787-2014-v2-n2',
@@ -669,7 +683,11 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
                 index_file.write(self.issn_index_json)
 
             self.assertEqual(
-                link_documents_to_documentsbundle(self.documents, issn_index_json_path),
+                link_documents_to_documentsbundle(
+                    "path_to_sps_package/package.zip",
+                    self.documents,
+                    issn_index_json_path
+                ),
                 [
                     {'id': '0034-8910-2014-v48-n2', 'status': 204},
                     {'id': '1518-8787-2014-v2-n2', 'status': 422},
@@ -680,11 +698,11 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
     @patch(
         "operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle"
     )
-    @patch("operations.sync_documents_to_kernel_operations.kernel_connect")
-    @patch("operations.sync_documents_to_kernel_operations.issue_id")
+    @patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
+    @patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
     @patch.object(builtins, "open")
     def test_link_documents_to_documentsbundle_should_not_emit_an_update_call_if_the_payload_wont_change(
-        self, mk_open, mk_issue_id, mk_kernel_connect, mk_register_document_to_bundle
+        self, mk_open, mk_get_bundle_id, mk_get_or_create_bundle, mk_register_document_to_bundle
     ):
         new_document_to_link = self.documents[0]
         current_bundle_item_list = [
@@ -700,13 +718,15 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
         )
 
         # Bundle_id traduzido a partir do journal_issn_map
-        mk_issue_id.side_effect = ["0034-8910-2014-v48-n2"]
-        mk_kernel_connect.return_value.json.return_value.__getitem__.return_value = (
+        mk_get_bundle_id.side_effect = ["0034-8910-2014-v48-n2"]
+        mk_get_or_create_bundle.return_value.json.return_value.__getitem__.return_value = (
             current_bundle_item_list
         )
 
         link_documents_to_documentsbundle(
-            [new_document_to_link], "/some/random/json/path.json"
+            "path_to_sps_package/package.zip",
+            [new_document_to_link],
+            "/some/random/json/path.json"
         )
 
         # Não emita uma atualização do bundle se a nova lista for idêntica a atual
@@ -715,11 +735,11 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
     @patch(
         "operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle"
     )
-    @patch("operations.sync_documents_to_kernel_operations.kernel_connect")
-    @patch("operations.sync_documents_to_kernel_operations.issue_id")
+    @patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
+    @patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
     @patch.object(builtins, "open")
     def test_link_documents_to_documentsbundle_should_not_reset_item_list_when_new_documents_arrives(
-        self, mk_open, mk_issue_id, mk_kernel_connect, mk_register_document_to_bundle
+        self, mk_open, mk_get_bundle_id, mk_get_or_create_bundle, mk_register_document_to_bundle
     ):
         new_documents_to_link = self.documents[0:2]
         current_bundle_item_list = [
@@ -735,13 +755,15 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
         )
 
         # Bundle_id traduzido a partir do journal_issn_map
-        mk_issue_id.return_value = "0034-8910-2014-v48-n2"
-        mk_kernel_connect.return_value.json.return_value.__getitem__.return_value = (
+        mk_get_bundle_id.return_value = "0034-8910-2014-v48-n2"
+        mk_get_or_create_bundle.return_value.json.return_value.__getitem__.return_value = (
             current_bundle_item_list
         )
 
         link_documents_to_documentsbundle(
-            new_documents_to_link, "/some/random/json/path.json"
+            "path_to_sps_package/package.zip",
+            new_documents_to_link,
+            "/some/random/json/path.json"
         )
 
         # Lista produzida a partir dos documentos existes e dos novos
@@ -755,6 +777,88 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
 
         mk_register_document_to_bundle.assert_called_with(
             "0034-8910-2014-v48-n2", new_payload_list
+        )
+
+
+@patch("operations.sync_documents_to_kernel_operations.Logger")
+@patch(
+    "operations.sync_documents_to_kernel_operations.register_document_to_documentsbundle"
+)
+@patch("operations.sync_documents_to_kernel_operations.get_bundle_id")
+@patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
+class TestLinkDocumentToDocumentsbundleAOPs(TestCase):
+    def setUp(self):
+        self.documents = [
+            {
+                "scielo_id": "S0034-8910.2014048004923",
+                "issn": "0034-8910",
+                "order": "347",
+             },
+            {
+                "scielo_id": "S0034-8910.2014048004924",
+                "issn": "0034-8910",
+                "order": "348",
+             },
+            {
+                "scielo_id": "S0034-8910.20140078954641",
+                "issn": "1518-8787",
+                "order": "978",
+             },
+            {
+                "scielo_id": "S0034-8910.20140078954641",
+                "issn": "1518-8787",
+                "order": "979",
+             }
+        ]
+        self.issn_index_json = json.dumps({
+            "0034-8910": "0034-8910",
+            "1518-8787": "1518-8787",
+        })
+
+    @patch.object(builtins, "open")
+    def test_calls_get_or_create_bundle(
+        self,
+        mk_open,
+        mk_get_or_create_bundle,
+        mk_get_bundle_id,
+        mk_regdocument,
+        MockLogger
+    ):
+        mk_open.return_value.__enter__.return_value.read.return_value = (
+            '{"0034-8910": "0101-0101"}'
+        )
+        mk_get_bundle_id.return_value = "0101-0101-aop"
+        mk_get_or_create_bundle.return_value = MagicMock()
+        link_documents_to_documentsbundle(
+            "path_to_sps_package/2019nahead.zip", self.documents[:1], "/json/index.json"
+        )
+        mk_get_or_create_bundle.assert_called_with("0101-0101-aop", is_aop=True)
+
+    @patch.object(builtins, "open")
+    def test_get_or_create_bundle_raises_exception(
+        self,
+        mk_open,
+        mk_get_or_create_bundle,
+        mk_get_bundle_id,
+        mk_regdocument,
+        MockLogger
+    ):
+        def raise_exception(*args, **kwargs):
+            exc = LinkDocumentToDocumentsBundleException("Bundle not found")
+            exc.response = Mock(status_code=404)
+            raise exc
+
+        mk_open.return_value.__enter__.return_value.read.return_value = (
+            '{"0034-8910": "0101-0101"}'
+        )
+        mk_get_bundle_id.return_value = "0101-0101-aop"
+        mk_get_or_create_bundle.side_effect = raise_exception
+        result = link_documents_to_documentsbundle(
+            "path_to_sps_package/2019nahead.zip", self.documents[:1], "/json/index.json"
+        )
+        self.assertEqual(result, [{'id': '0101-0101-aop', 'status': 404}])
+        MockLogger.info.assert_called_with(
+            "Could not get bundle %: Bundle not found", "0101-0101-aop"
         )
 
 
