@@ -5,7 +5,7 @@ import json
 
 from airflow import DAG
 
-from sync_kernel_to_website import JournalFactory
+from sync_kernel_to_website import JournalFactory, IssueFactory
 from operations.sync_kernel_to_website_operations import (
     ArticleFactory,
     try_register_documents,
@@ -213,6 +213,47 @@ class ArticleFactoryTests(unittest.TestCase):
 
     def test_htmls_attibutes_should_be_populated_with_documents_languages(self):
         self.assertEqual([{"lang": "en"}, {"lang": "pt"}], self.document.htmls)
+
+
+@patch("operations.sync_kernel_to_website_operations.models.Article.objects")
+@patch("operations.sync_kernel_to_website_operations.models.Issue.objects")
+class ExAOPArticleFactoryTests(unittest.TestCase):
+    def setUp(self):
+        self.document_front = load_json_fixture(
+            "kernel-document-front-s1518-8787.2019053000621.json"
+        )
+        data = {
+            "id": "0101-0101",
+            "created": "2019-11-28T00:00:00.000000Z",
+            "metadata": {},
+        }
+        self.issue = models.Issue()
+        self.issue._id = "0101-0101-aop"
+        self.issue.year = "2019"
+        self.issue.number = "ahead"
+        self.issue.url_segment = "2019.nahead"
+
+    def test_sets_aop_url_segs(self, MockIssueObjects, MockArticleObjects):
+        MockArticle = MagicMock(
+            spec=models.Article,
+            aop_url_segs=None,
+            url_segment="10.151/S1518-8787.2019053000621"
+        )
+        MockArticle.issue = self.issue
+        MockArticleObjects.get.return_value = MockArticle
+        self.document = ArticleFactory(
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", "1", ""
+        )
+        self.assertIsNotNone(self.document.aop_url_segs)
+        self.assertIsInstance(self.document.aop_url_segs, models.AOPUrlSegments)
+        self.assertEqual(
+            self.document.aop_url_segs.url_seg_article,
+            "10.151/S1518-8787.2019053000621"
+        )
+        self.assertEqual(
+            self.document.aop_url_segs.url_seg_issue,
+            "2019.nahead"
+        )
 
 
 class RegisterDocumentTests(unittest.TestCase):
