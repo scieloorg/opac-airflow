@@ -217,6 +217,14 @@ def ArticleFactory(
     article.fpage_sequence = _nestget(data, "article_meta", 0, "pub_fpage_seq", 0)
     article.lpage = _nestget(data, "article_meta", 0, "pub_lpage", 0)
 
+    if article.issue is not None and article.issue.number == "ahead":
+        if article.aop_url_segs is None:
+            url_segs = {
+                "url_seg_article": article.url_segment,
+                "url_seg_issue": article.issue.url_segment,
+            }
+            article.aop_url_segs = models.AOPUrlSegments(**url_segs)
+
     # Issue vinculada
     issue = models.Issue.objects.get(_id=issue_id)
     article.issue = issue
