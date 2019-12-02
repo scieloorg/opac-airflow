@@ -295,9 +295,9 @@ def get_or_create_bundle(bundle_id, is_aop):
             try:
                 return hooks.kernel_connect("/bundles/" + bundle_id, "GET")
             except requests.exceptions.HTTPError as exc:
-                raise LinkDocumentToDocumentsBundleException(str(exc))
+                raise LinkDocumentToDocumentsBundleException(str(exc), response=exc.response)
         else:
-            raise LinkDocumentToDocumentsBundleException(str(exc))
+            raise LinkDocumentToDocumentsBundleException(str(exc), response=exc.response)
 
 
 def update_aop_bundle_items(issn_id, documents_list):
