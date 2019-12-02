@@ -12,6 +12,7 @@ from operations.exceptions import (
     PutXMLInObjectStoreException,
     RegisterUpdateDocIntoKernelException,
     LinkDocumentToDocumentsBundleException,
+    Pidv3Exception,
 )
 
 from operations.docs_utils import (
@@ -101,6 +102,7 @@ def register_update_documents(sps_package, xmls_to_preserve):
     Registra/atualiza documentos informados e seus respectivos ativos digitais e
     renditions no Minio e no Kernel.
      list docs_to_preserve: lista de XMLs para manter no Kernel (Registrar ou atualizar)
+     Não deve cadastrar documentos que não tenha ``scielo-id``
     """
     Logger.debug("register_update_documents IN")
     with ZipFile(sps_package) as zipfile:
@@ -115,8 +117,8 @@ def register_update_documents(sps_package, xmls_to_preserve):
             )
             try:
                 xml_data = put_xml_into_object_store(zipfile, xml_filename)
-            except PutXMLInObjectStoreException as exc:
-                Logger.info(
+            except (PutXMLInObjectStoreException, Pidv3Exception) as exc:
+                Logger.error(
                     'Could not put document "%s" in object store: %s',
                     xml_filename,
                     str(exc),
@@ -129,7 +131,7 @@ def register_update_documents(sps_package, xmls_to_preserve):
                     register_update_doc_into_kernel(_document_metadata)
 
                 except RegisterUpdateDocIntoKernelException as exc:
-                    Logger.info(
+                    Logger.error(
                         'Could not register or update document "%s" in Kernel: %s',
                         xml_filename,
                         str(exc),
@@ -140,7 +142,6 @@ def register_update_documents(sps_package, xmls_to_preserve):
     Logger.debug("register_update_documents OUT")
 
     return synchronized_docs_metadata
-
 
 def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_path):
     """

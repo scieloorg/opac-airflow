@@ -20,7 +20,8 @@ from operations.exceptions import (
     DocumentToDeleteException,
     PutXMLInObjectStoreException,
     RegisterUpdateDocIntoKernelException,
-    LinkDocumentToDocumentsBundleException
+    LinkDocumentToDocumentsBundleException,
+    Pidv3Exception
 )
 
 
@@ -395,10 +396,40 @@ class TestRegisterUpdateDocuments(TestCase):
             {},
         ]
         register_update_documents(**self.kwargs)
-        MockLogger.info.assert_any_call(
+        MockLogger.error.assert_any_call(
             'Could not put document "%s" in object store: %s',
             self.kwargs["xmls_to_preserve"][1],
             "Put Doc in Object Store Error",
+        )
+
+    @patch(
+        "operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
+    )
+    @patch(
+        "operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
+    )
+    @patch("operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
+    def test_register_update_documents_logs_error_if_put_xml_into_object_store_return_pidv3exception(
+        self,
+        MockZipFile,
+        MockLogger,
+        mk_put_xml_into_object_store,
+        mk_put_assets_and_pdfs_in_object_store,
+        mk_register_update_doc_into_kernel,
+    ):
+        MockZipFile.return_value.__enter__.return_value.read.return_value = b""
+        mk_put_xml_into_object_store.side_effect = [
+            {},
+            Pidv3Exception("Could not get scielo id v3"),
+            {},
+        ]
+        register_update_documents(**self.kwargs)
+        MockLogger.error.assert_any_call(
+            'Could not put document "%s" in object store: %s',
+            self.kwargs["xmls_to_preserve"][1],
+            "Could not get scielo id v3",
         )
 
     @patch(
@@ -477,7 +508,7 @@ class TestRegisterUpdateDocuments(TestCase):
         ]
 
         register_update_documents(**self.kwargs)
-        MockLogger.info.assert_any_call(
+        MockLogger.error.assert_any_call(
             'Could not register or update document "%s" in Kernel: %s',
             self.kwargs["xmls_to_preserve"][1],
             "Register Doc in Kernel Error",
@@ -508,6 +539,36 @@ class TestRegisterUpdateDocuments(TestCase):
 
         result = register_update_documents(**self.kwargs)
         self.assertEqual(result, expected)
+
+    @patch(
+        "operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel"
+    )
+    @patch(
+        "operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store"
+    )
+    @patch("operations.sync_documents_to_kernel_operations.put_xml_into_object_store")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
+    def test_register_update_documents_logs_error_if_put_xml_into_object_store_return_pidv3exception(
+        self,
+        MockZipFile,
+        MockLogger,
+        mk_put_xml_into_object_store,
+        mk_put_assets_and_pdfs_in_object_store,
+        mk_register_update_doc_into_kernel,
+    ):
+        MockZipFile.return_value.__enter__.return_value.read.return_value = b""
+        mk_put_xml_into_object_store.side_effect = [
+            {},
+            Pidv3Exception("Could not get scielo id v3"),
+            {},
+        ]
+        register_update_documents(**self.kwargs)
+        MockLogger.error.assert_any_call(
+            'Could not put document "%s" in object store: %s',
+            self.kwargs["xmls_to_preserve"][1],
+            "Could not get scielo id v3",
+        )
 
 
 @patch("operations.sync_documents_to_kernel_operations.Logger")

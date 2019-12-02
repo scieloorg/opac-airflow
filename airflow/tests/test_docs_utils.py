@@ -30,6 +30,7 @@ from operations.exceptions import (
     ObjectStoreError,
     RegisterUpdateDocIntoKernelException,
     LinkDocumentToDocumentsBundleException,
+    Pidv3Exception,
 )
 
 from tests.fixtures import XML_FILE_CONTENT
@@ -717,6 +718,25 @@ class TestPutXMLIntoObjectStore(TestCase):
         result = put_xml_into_object_store(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
         self.assertEqual(
             "http://minio/documentstore/1806-907X-rba-53-01-1-8.xml", result["xml_url"]
+        )
+
+    @patch("operations.docs_utils.put_object_in_object_store")
+    @patch("operations.docs_utils.get_xml_data")
+    def test_put_xml_into_object_store_error_if_empty_scielo_id(
+        self, mk_get_xml_data, mk_put_object_in_object_store
+    ):
+        xml = self.xml_data
+        del(xml['scielo_id'])
+
+        MockZipFile = Mock()
+        MockZipFile.read.return_value = b""
+        mk_get_xml_data.return_value = xml
+
+        with self.assertRaises(Pidv3Exception) as exc_info:
+            put_xml_into_object_store(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        self.assertEqual(
+            str(exc_info.exception),
+            'Could not get scielo id v3',
         )
 
 
