@@ -331,6 +331,10 @@ def JournalFactory(data):
         journal.editor_email = EMAIL_SPLIT_REGEX.split(contact.get("email", ""))[
             0
         ].strip()
+        journal.publisher_address = contact.get("address")
+        journal.publisher_city = contact.get("city")
+        journal.publisher_state = contact.get("state")
+        journal.publisher_country = contact.get("country")
 
     journal.online_submission_url = metadata.get("online_submission_url", "")
     journal.logo_url = metadata.get("logo_url", "")
