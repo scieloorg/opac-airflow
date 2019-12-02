@@ -843,6 +843,7 @@ class TestGetOrCreateBundleIssueBundle(TestCase):
         with self.assertRaises(LinkDocumentToDocumentsBundleException) as exc_info:
             get_or_create_bundle(bundle_id, False)
         self.assertEqual(str(exc_info.exception), "Bundle not found")
+        self.assertEqual(exc_info.exception.response, error.response)
         mk_create_aop_bundle.assert_not_called()
 
     def test_returns_kernel_response(self, mk_create_aop_bundle, mk_hooks):
@@ -885,11 +886,11 @@ class TestGetOrCreateBundleAOPBundle(TestCase):
         bundle_id = "0034-8910-aop"
         error = requests.exceptions.HTTPError("Bundle not found")
         error.response = Mock(status_code=http.client.NOT_FOUND)
-        MockResponse = Mock(spec=requests.Response)
         mk_hooks.kernel_connect.side_effect = error
         with self.assertRaises(LinkDocumentToDocumentsBundleException) as exc_info:
             get_or_create_bundle(bundle_id, False)
         self.assertEqual(str(exc_info.exception), "Bundle not found")
+        self.assertEqual(exc_info.exception.response, error.response)
 
 
 @patch("operations.docs_utils.hooks")

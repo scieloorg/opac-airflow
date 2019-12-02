@@ -19,4 +19,7 @@ class RegisterUpdateDocIntoKernelException(Exception):
 
 
 class LinkDocumentToDocumentsBundleException(Exception):
-    ...
+    def __init__(self, message, response=None, *args, **kwargs):
+        self.message = message
+        if response is not None:
+            self.response = response
