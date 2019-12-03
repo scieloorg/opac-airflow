@@ -1,6 +1,7 @@
 import logging
 from typing import Iterable, Generator, Dict, List, Tuple
 
+import requests
 from opac_schema.v1 import models
 
 import common.hooks as hooks
@@ -299,6 +300,14 @@ def try_register_documents(
                 "Issue '%s' can't be found in the website database.",
                 document_id,
                 issue_id,
+            )
+        except requests.exceptions.HTTPError as exc:
+            logging.error(
+                "Could not register document '%s'. "
+                "The code '%s' was returned during the request to '%s'.",
+                document_id,
+                exc.response.status_code,
+                exc.response.url,
             )
 
     return list(set(orphans))
