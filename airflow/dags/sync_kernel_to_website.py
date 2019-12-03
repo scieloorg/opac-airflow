@@ -29,7 +29,7 @@ from operations.sync_kernel_to_website_operations import (
     ArticleRenditionFactory,
     try_register_documents_renditions,
 )
-from common.hooks import mongo_connect
+from common.hooks import mongo_connect, kernel_connect
 
 failure_recipients = os.environ.get("EMIAL_ON_FAILURE_RECIPIENTS", None)
 EMIAL_ON_FAILURE_RECIPIENTS = (
@@ -53,8 +53,6 @@ dag = DAG(
     default_args=default_args,
     schedule_interval=None,
 )
-
-api_hook = HttpHook(http_conn_id="kernel_conn", method="GET")
 
 
 class EnqueuedState:
@@ -111,16 +109,11 @@ class Reader:
         return entities, last_timestamp
 
 
-@retry(
-    wait=tenacity.wait_exponential(),
-    stop=tenacity.stop_after_attempt(10),
-    retry=tenacity.retry_if_exception_type(requests.exceptions.ConnectionError),
-)
 def fetch_data(endpoint):
     """
     Obtém o JSON do endpoint do Kernel
     """
-    return api_hook.run(endpoint=endpoint).json()
+    return kernel_connect(endpoint=endpoint, method="GET").json()
 
 
 def fetch_changes(since):
