@@ -685,15 +685,23 @@ register_documents_renditions_task = PythonOperator(
 
 
 def delete_documents(ds, **kwargs):
+    mongo_connect()
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
     document_changes = filter_changes(tasks, "documents", "delete")
 
     for document in document_changes:
 
-        article = models.Article.objects.get(_id=get_id(document.get("id")))
-        article.is_public = False
-        article.save()
+        try:
+            article = models.Article.objects.get(_id=get_id(document.get("id")))
+            article.is_public = False
+            article.save()
+        except models.Article.DoesNotExist:
+            logging.info(
+                "Could not delete document '%s' "
+                "it does not exist in Website database",
+                get_id(document.get("id")),
+            )
 
     return tasks
 
