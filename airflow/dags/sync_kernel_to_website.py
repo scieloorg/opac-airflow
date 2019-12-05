@@ -395,9 +395,15 @@ def IssueFactory(data, journal_id, issue_order=None, _type="regular"):
     issue.spe_text = metadata.get("spe_text", "")
     issue.start_month = metadata.get("publication_month", 0)
     issue.end_month = metadata.get("publication_season", [0])[-1]
-    issue.year = '9999' if _type == 'ahead' else metadata.get("publication_year")
+
+    if _type == "ahead":
+        issue.year = issue.year or "9999"
+        issue.number = issue.number or "ahead"
+    else:
+        issue.year = metadata.get("publication_year", issue.year)
+        issue.number = metadata.get("number", issue.number)
+
     issue.volume = metadata.get("volume", "")
-    issue.number = 'ahead' if _type == 'ahead' else metadata.get("number", "")
     issue.order = metadata.get("order", 0)
     issue.pid = metadata.get("pid", "")
     issue.journal = models.Journal.objects.get(_id=journal_id)
