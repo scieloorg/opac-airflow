@@ -389,8 +389,14 @@ def IssueFactory(data, journal_id, issue_order=None, _type="regular"):
 
     metadata = data["metadata"]
 
-    issue = models.Issue()
-    issue._id = issue.iid = data.get("id")
+    try:
+        issue = models.Issue.objects.get(_id=data["id"])
+    except models.Issue.DoesNotExist:
+        issue = models.Issue()
+    else:
+        journal_id = journal_id or issue.journal._id
+
+    issue._id = issue.iid = data["id"]
     issue.type = metadata.get("type", _type)
     issue.spe_text = metadata.get("spe_text", "")
     issue.start_month = metadata.get("publication_month", 0)
@@ -481,23 +487,18 @@ def try_register_issues(
     for issue_id in issues:
         journal_id = get_journal_id(issue_id)
         logging.info('Registering issue "%s" to journal "%s"', issue_id, journal_id)
-        if journal_id is not None:
-            data = fetch_data(issue_id)
-            try:
-                if not is_aop:
-                    issue = issue_factory(
-                        data, journal_id, get_issue_order(issue_id)
-                        )
-                else:
-                    # Não é necessário o campo de ordenação(order) no ahead
-                    issue = issue_factory(data, journal_id, _type='ahead')
-                issue.save()
-            except models.Journal.DoesNotExist:
-                orphans.append(issue_id)
+        data = fetch_data(issue_id)
+        try:
+            if not is_aop:
+                issue = issue_factory(data, journal_id, get_issue_order(issue_id))
             else:
-                known_documents[issue_id] = data.get("items", [])
-        else:
+                # Não é necessário o campo de ordenação(order) no ahead
+                issue = issue_factory(data, journal_id, _type="ahead")
+            issue.save()
+        except models.Journal.DoesNotExist:
             orphans.append(issue_id)
+        else:
+            known_documents[issue_id] = data.get("items", [])
 
     return list(set(orphans)), known_documents
 
