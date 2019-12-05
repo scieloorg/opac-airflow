@@ -10,7 +10,7 @@ from lxml import etree
 
 from operations.docs_utils import (
     delete_doc_from_kernel,
-    document_to_delete,
+    is_document_to_delete,
     get_xml_data,
     files_sha1,
     register_update_doc_into_kernel,
@@ -58,7 +58,7 @@ class TestDocumentsToDelete(TestCase):
     def test_document_to_delete_reads_xml_from_zip(self, mk_etree, MockSPS_Package):
         MockSPS_Package.return_value.is_document_deletion = False
         MockZipFile = MagicMock()
-        document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        is_document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
         MockZipFile.read.assert_any_call("1806-907X-rba-53-01-1-8.xml")
 
     @patch("operations.docs_utils.SPS_Package")
@@ -69,7 +69,7 @@ class TestDocumentsToDelete(TestCase):
         MockZipFile = MagicMock()
         MockZipFile.read.side_effect = KeyError("File not found in the archive")
         with self.assertRaises(DocumentToDeleteException) as exc_info:
-            document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+            is_document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
         self.assertEqual(str(exc_info.exception), "'File not found in the archive'")
 
     @patch("operations.docs_utils.SPS_Package")
@@ -78,7 +78,7 @@ class TestDocumentsToDelete(TestCase):
         MockSPS_Package.return_value.is_document_deletion = False
         MockZipFile = MagicMock()
         MockZipFile.read.return_value = XML_FILE_CONTENT
-        document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        is_document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
         mk_etree.XMLParser.assert_called_once_with(
             remove_blank_text=True, no_network=True
         )
@@ -91,7 +91,7 @@ class TestDocumentsToDelete(TestCase):
         MockSPS_Package.return_value.is_document_deletion = False
         MockZipFile = MagicMock()
         MockZipFile.read.return_value = XML_FILE_CONTENT
-        document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        is_document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
         mk_etree.XML.assert_called_once_with(XML_FILE_CONTENT, MockParser)
 
     @patch("operations.docs_utils.SPS_Package")
@@ -103,7 +103,7 @@ class TestDocumentsToDelete(TestCase):
         mk_etree.XML.return_value = MockXML
         MockSPS_Package.return_value.is_document_deletion = False
         MockZipFile = MagicMock()
-        document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        is_document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
         MockSPS_Package.assert_called_once_with(MockXML, "1806-907X-rba-53-01-1-8.xml")
 
     @patch("operations.docs_utils.SPS_Package")
@@ -115,29 +115,14 @@ class TestDocumentsToDelete(TestCase):
         MockSPS_Package.side_effect = TypeError("XML error")
         MockZipFile = MagicMock()
         with self.assertRaises(DocumentToDeleteException) as exc_info:
-            document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+            is_document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
         self.assertEqual(str(exc_info.exception), "XML error")
 
-    def test_documents_to_delete_returns_none_if_xml_is_not_to_delete(self):
+    def test_documents_to_delete_returns_false_if_xml_is_not_to_delete(self):
         MockZipFile = MagicMock()
         MockZipFile.read.return_value = XML_FILE_CONTENT
-        result = document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
-        self.assertIsNone(result)
-
-    def test_documents_to_delete_raises_error_if_no_scielo_id_in_xml(self):
-        article_id = etree.Element("article-id")
-        article_id.set("specific-use", "delete")
-        xml_file = etree.XML(XML_FILE_CONTENT)
-        am_tag = xml_file.find(".//article-meta")
-        am_tag.append(article_id)
-        scielo_id_tag = xml_file.find(".//article-id[@specific-use='scielo-v3']")
-        am_tag.remove(scielo_id_tag)
-        deleted_xml_file = etree.tostring(xml_file)
-        MockZipFile = MagicMock()
-        MockZipFile.read.return_value = deleted_xml_file
-        with self.assertRaises(DocumentToDeleteException) as exc_info:
-            document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
-        self.assertEqual(str(exc_info.exception), "Missing element in XML")
+        is_doc_to_delete, __ = is_document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        self.assertFalse(is_doc_to_delete)
 
     def test_documents_to_delete_returns_documents_id_to_delete_and_xmls_to_delete(
         self
@@ -150,9 +135,12 @@ class TestDocumentsToDelete(TestCase):
         deleted_xml_file = etree.tostring(xml_file)
         MockZipFile = MagicMock()
         MockZipFile.read.return_value = deleted_xml_file
-        result = document_to_delete(MockZipFile, "1806-907X-rba-53-01-1-8.xml")
+        is_doc_to_delete, doc_scielo_pid = is_document_to_delete(
+            MockZipFile, "1806-907X-rba-53-01-1-8.xml"
+        )
+        self.assertTrue(is_doc_to_delete)
         self.assertEqual(
-            result, "FX6F3cbyYmmwvtGmMB7WCgr"
+            doc_scielo_pid, "FX6F3cbyYmmwvtGmMB7WCgr"
         )  # SciELO ID de XML_FILE_CONTENT
 
 

@@ -17,7 +17,7 @@ from operations.exceptions import (
 
 from operations.docs_utils import (
     delete_doc_from_kernel,
-    document_to_delete,
+    is_document_to_delete,
     register_update_doc_into_kernel,
     put_assets_and_pdfs_in_object_store,
     put_xml_into_object_store,
@@ -70,28 +70,32 @@ def delete_documents(sps_package, xmls_filenames):
                 len(xmls_filenames),
             )
             try:
-                doc_to_delete = document_to_delete(zipfile, sps_xml_file)
+                is_doc_to_delete, doc_id = is_document_to_delete(zipfile, sps_xml_file)
             except DocumentToDeleteException as exc:
-                Logger.info(
-                    'Could not delete document "%s": %s', sps_xml_file, str(exc)
-                )
+                Logger.error('Error reading document "%s": %s', sps_xml_file, str(exc))
             else:
-                if doc_to_delete:
+                if is_doc_to_delete:
                     xmls_to_delete.append(sps_xml_file)
+                    if doc_id is None:
+                        Logger.error(
+                            'Document "%s" will not be deleted because SciELO PID is None',
+                            sps_xml_file,
+                        )
+                        continue
                     try:
-                        delete_doc_from_kernel(doc_to_delete)
+                        delete_doc_from_kernel(doc_id)
                     except DeleteDocFromKernelException as exc:
                         Logger.info(
                             'Could not delete "%s" (scielo_id: "%s") from kernel: %s',
                             sps_xml_file,
-                            doc_to_delete,
-                            str(exc)
+                            doc_id,
+                            str(exc),
                         )
                     else:
                         Logger.info(
                             'Document "%s" (scielo_id: "%s") deleted from kernel',
                             sps_xml_file,
-                            doc_to_delete
+                            doc_id,
                         )
     Logger.debug("delete_documents OUT")
     return list(set(xmls_filenames) - set(xmls_to_delete))
