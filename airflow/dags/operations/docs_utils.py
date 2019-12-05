@@ -323,11 +323,15 @@ def update_aop_bundle_items(issn_id, documents_list):
             else:
                 aop_bundle_items = aop_bundle_resp.json()["items"]
                 documents_ids = [document["id"] for document in documents_list]
-                updated_aop_items = [
-                    aop_item
-                    for aop_item in aop_bundle_items
-                    if aop_item["id"] not in documents_ids
-                ]
+                updated_aop_items = []
+                for aop_item in aop_bundle_items:
+                    if aop_item["id"] not in documents_ids:
+                        updated_aop_items.append(aop_item)
+                    else:
+                        Logger.info(
+                            'Movindo ex-Ahead of Print "%s" to bundle',
+                            aop_item["id"],
+                        )
                 update_documents_in_bundle(
                     aop_bundle_id,
                     updated_aop_items
