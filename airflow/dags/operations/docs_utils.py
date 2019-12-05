@@ -28,7 +28,7 @@ def delete_doc_from_kernel(doc_to_delete):
         raise DeleteDocFromKernelException(str(exc)) from None
 
 
-def document_to_delete(zipfile, sps_xml_file):
+def is_document_to_delete(zipfile, sps_xml_file):
     parser = etree.XMLParser(remove_blank_text=True, no_network=True)
     try:
         metadata = SPS_Package(
@@ -37,10 +37,7 @@ def document_to_delete(zipfile, sps_xml_file):
     except (etree.XMLSyntaxError, TypeError, KeyError) as exc:
         raise DocumentToDeleteException(str(exc)) from None
     else:
-        if metadata.is_document_deletion:
-            if metadata.scielo_pid_v3 is None:
-                raise DocumentToDeleteException("Missing element in XML")
-            return metadata.scielo_pid_v3
+        return metadata.is_document_deletion, metadata.scielo_pid_v3
 
 
 def register_update_doc_into_kernel(xml_data):

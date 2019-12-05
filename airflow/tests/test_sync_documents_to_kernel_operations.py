@@ -83,26 +83,28 @@ class TestDeleteDocuments(TestCase):
             ],
         }
         self.docs_to_delete = [
-            "FX6F3cbyYmmwvtGmMB7WCgr",
-            "GZ5K2cbyYmmwvtGmMB71243",
-            "KU890cbyYmmwvtGmMB7JUk4",
+            (True, "FX6F3cbyYmmwvtGmMB7WCgr",),
+            (True, "GZ5K2cbyYmmwvtGmMB71243",),
+            (True, "KU890cbyYmmwvtGmMB7JUk4",),
         ]
 
     @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
-    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.is_document_to_delete")
     @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_delete_documents_opens_zip(
         self, MockZipFile, mk_document_to_delete, mk_delete_doc_from_kernel
     ):
+        mk_document_to_delete.return_value = (None, None,)
         delete_documents(**self.kwargs)
         MockZipFile.assert_called_once_with(self.kwargs["sps_package"])
 
     @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
-    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.is_document_to_delete")
     @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_delete_documents_calls_document_to_delete_for_each_xml(
         self, MockZipFile, mk_document_to_delete, mk_delete_doc_from_kernel
     ):
+        mk_document_to_delete.return_value = (None, None,)
         delete_documents(**self.kwargs)
         for sps_xml_file in self.kwargs["xmls_filenames"]:
             with self.subTest(sps_xml_file=sps_xml_file):
@@ -113,7 +115,7 @@ class TestDeleteDocuments(TestCase):
 
     @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
     @patch("operations.sync_documents_to_kernel_operations.Logger")
-    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.is_document_to_delete")
     @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_delete_documents_logs_error_if_document_to_delete_error(
         self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
@@ -123,26 +125,28 @@ class TestDeleteDocuments(TestCase):
         mk_delete_doc_from_kernel.assert_not_called()
         for xml_filename in self.kwargs["xmls_filenames"]:
             with self.subTest(xml_filename=xml_filename):
-                MockLogger.info.assert_any_call(
-                    'Could not delete document "%s": %s', xml_filename, "XML Error"
+                MockLogger.error.assert_any_call(
+                    'Error reading document "%s": %s', xml_filename, "XML Error"
                 )
 
     @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
     @patch("operations.sync_documents_to_kernel_operations.Logger")
-    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.is_document_to_delete")
     @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_delete_documents_calls_delete_doc_from_kernel(
         self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
     ):
         mk_document_to_delete.side_effect = self.docs_to_delete
         delete_documents(**self.kwargs)
-        for doc_to_delete in self.docs_to_delete:
-            with self.subTest(doc_to_delete=doc_to_delete):
+        for is_doc_to_delete, doc_to_delete in self.docs_to_delete:
+            with self.subTest(
+                is_doc_to_delete=is_doc_to_delete, doc_to_delete=doc_to_delete
+            ):
                 mk_delete_doc_from_kernel.assert_any_call(doc_to_delete)
 
     @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
     @patch("operations.sync_documents_to_kernel_operations.Logger")
-    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.is_document_to_delete")
     @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_delete_documents_logs_error_if_kernel_connect_error(
         self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
@@ -152,9 +156,10 @@ class TestDeleteDocuments(TestCase):
             "404 Client Error: Not Found"
         )
         delete_documents(**self.kwargs)
-        for sps_xml_file, doc_to_delete in zip(
+        for sps_xml_file, doc_to_delete_info in zip(
                 self.kwargs["xmls_filenames"], self.docs_to_delete
             ):
+            doc_to_delete = doc_to_delete_info[1]
             with self.subTest(sps_xml_file=sps_xml_file, doc_to_delete=doc_to_delete):
                 MockLogger.info.assert_any_call(
                     'Could not delete "%s" (scielo_id: "%s") from kernel: %s',
@@ -165,16 +170,17 @@ class TestDeleteDocuments(TestCase):
 
     @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
     @patch("operations.sync_documents_to_kernel_operations.Logger")
-    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.is_document_to_delete")
     @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_delete_documents_logs_document_deletion_success(
         self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
     ):
         mk_document_to_delete.side_effect = self.docs_to_delete
         delete_documents(**self.kwargs)
-        for sps_xml_file, doc_to_delete in zip(
+        for sps_xml_file, doc_to_delete_info in zip(
                 self.kwargs["xmls_filenames"], self.docs_to_delete
             ):
+            doc_to_delete = doc_to_delete_info[1]
             with self.subTest(sps_xml_file=sps_xml_file, doc_to_delete=doc_to_delete):
                 MockLogger.info.assert_any_call(
                     'Document "%s" (scielo_id: "%s") deleted from kernel',
@@ -184,15 +190,26 @@ class TestDeleteDocuments(TestCase):
 
     @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
     @patch("operations.sync_documents_to_kernel_operations.Logger")
-    @patch("operations.sync_documents_to_kernel_operations.document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.is_document_to_delete")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
+    def test_delete_documents_logs_error_if_no_scielo_doc_id(
+        self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
+    ):
+        mk_document_to_delete.side_effect = self.docs_to_delete[:2] + [(True, None,)]
+        result = delete_documents(**self.kwargs)
+        MockLogger.error.assert_any_call(
+            'Document "%s" will not be deleted because SciELO PID is None',
+            self.kwargs["xmls_filenames"][-1]
+        )
+
+    @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.is_document_to_delete")
     @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     def test_delete_documents_returns_xmls_to_preserve(
         self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
     ):
-        docs_to_delete = [
-            "FX6F3cbyYmmwvtGmMB7WCgr", "GZ5K2cbyYmmwvtGmMB71243", None
-        ]
-        mk_document_to_delete.side_effect = docs_to_delete
+        mk_document_to_delete.side_effect = self.docs_to_delete[:2] + [(False, None,)]
         result = delete_documents(**self.kwargs)
         self.assertEqual(
             result,
