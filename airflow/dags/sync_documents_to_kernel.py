@@ -23,7 +23,7 @@ import logging
 from datetime import datetime
 
 from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
 
 from operations import sync_documents_to_kernel_operations
 
@@ -44,6 +44,8 @@ def list_documents(dag_run, **kwargs):
     _xmls_filenames = sync_documents_to_kernel_operations.list_documents(_sps_package)
     if _xmls_filenames:
         kwargs["ti"].xcom_push(key="xmls_filenames", value=_xmls_filenames)
+    else:
+        return False
 
 
 def delete_documents(dag_run, **kwargs):
@@ -57,6 +59,8 @@ def delete_documents(dag_run, **kwargs):
         )
         if _xmls_to_preserve:
             kwargs["ti"].xcom_push(key="xmls_to_preserve", value=_xmls_to_preserve)
+        else:
+            return False
 
 
 def register_update_documents(dag_run, **kwargs):
@@ -70,6 +74,8 @@ def register_update_documents(dag_run, **kwargs):
         )
         if _documents:
             kwargs["ti"].xcom_push(key="documents", value=_documents)
+        else:
+            return False
 
 
 def link_documents_to_documentsbundle(dag_run, **kwargs):
@@ -98,21 +104,21 @@ list_documents_task = PythonOperator(
     dag=dag,
 )
 
-delete_documents_task = PythonOperator(
+delete_documents_task = ShortCircuitOperator(
     task_id="delete_docs_task_id",
     provide_context=True,
     python_callable=delete_documents,
     dag=dag,
 )
 
-register_update_documents_task = PythonOperator(
+register_update_documents_task = ShortCircuitOperator(
     task_id="register_update_docs_id",
     provide_context=True,
     python_callable=register_update_documents,
     dag=dag,
 )
 
-link_documents_task = PythonOperator(
+link_documents_task = ShortCircuitOperator(
     task_id="link_documents_task_id",
     provide_context=True,
     python_callable=link_documents_to_documentsbundle,
