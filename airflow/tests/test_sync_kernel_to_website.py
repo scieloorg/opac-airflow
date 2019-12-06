@@ -147,9 +147,14 @@ class ArticleFactoryTests(unittest.TestCase):
         self.assertTrue(hasattr(self.document, "pid"))
         self.assertTrue(hasattr(self.document, "doi"))
 
-        self.assertEqual("67TH7T7CyPPmgtVrGXhWXVs", self.document._id)
-        self.assertEqual("67TH7T7CyPPmgtVrGXhWXVs", self.document.aid)
-        self.assertEqual("10.11606/S1518-8787.2019053000621", self.document.doi)
+        self.assertEqual(self.document._id, "67TH7T7CyPPmgtVrGXhWXVs")
+        self.assertEqual(self.document.aid, "67TH7T7CyPPmgtVrGXhWXVs")
+        self.assertEqual(self.document.doi, "10.11606/S1518-8787.2019053000621")
+        self.assertEqual(self.document.scielo_pids, {
+            "v1": "S1518-8787(19)03000621",
+            "v2": "S1518-87872019053000621",
+            "v3": "67TH7T7CyPPmgtVrGXhWXVs",
+        })
 
     def test_has_authors_attribute(self):
         self.assertTrue(hasattr(self.document, "authors"))

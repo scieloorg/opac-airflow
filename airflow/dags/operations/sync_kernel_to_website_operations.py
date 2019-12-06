@@ -65,7 +65,17 @@ def ArticleFactory(
     # Identificadores
     article._id = document_id
     article.aid = document_id
-    article.pid = _nestget(data, "article_meta", 0, "article_publisher_id", 1)
+    # Lista de SciELO PIDs dentro de article_meta
+    scielo_pids = [
+        (
+            f"v{version}",
+            _nestget(data, "article_meta", 0, f"scielo_pid_v{version}", 0, default=None)
+        )
+        for version in range(1, 4)
+    ]
+    article.scielo_pids = {
+        version: value for version, value in scielo_pids if value is not None
+    }
     article.doi = _nestget(data, "article_meta", 0, "article_doi", 0)
 
     def _get_article_authors(data) -> Generator:
