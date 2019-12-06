@@ -44,6 +44,7 @@ def list_documents(dag_run, **kwargs):
     _xmls_filenames = sync_documents_to_kernel_operations.list_documents(_sps_package)
     if _xmls_filenames:
         kwargs["ti"].xcom_push(key="xmls_filenames", value=_xmls_filenames)
+        return True
     else:
         return False
 
@@ -53,14 +54,17 @@ def delete_documents(dag_run, **kwargs):
     _xmls_filenames = kwargs["ti"].xcom_pull(
         key="xmls_filenames", task_ids="list_docs_task_id"
     )
-    if _xmls_filenames:
-        _xmls_to_preserve = sync_documents_to_kernel_operations.delete_documents(
-            _sps_package, _xmls_filenames
-        )
-        if _xmls_to_preserve:
-            kwargs["ti"].xcom_push(key="xmls_to_preserve", value=_xmls_to_preserve)
-        else:
-            return False
+    if not _xmls_filenames:
+        return False
+
+    _xmls_to_preserve = sync_documents_to_kernel_operations.delete_documents(
+        _sps_package, _xmls_filenames
+    )
+    if _xmls_to_preserve:
+        kwargs["ti"].xcom_push(key="xmls_to_preserve", value=_xmls_to_preserve)
+        return True
+    else:
+        return False
 
 
 def register_update_documents(dag_run, **kwargs):
@@ -68,14 +72,17 @@ def register_update_documents(dag_run, **kwargs):
     _xmls_to_preserve = kwargs["ti"].xcom_pull(
         key="xmls_to_preserve", task_ids="delete_docs_task_id"
     )
-    if _xmls_to_preserve:
-        _documents = sync_documents_to_kernel_operations.register_update_documents(
-            _sps_package, _xmls_to_preserve
-        )
-        if _documents:
-            kwargs["ti"].xcom_push(key="documents", value=_documents)
-        else:
-            return False
+    if not _xmls_to_preserve:
+        return False
+
+    _documents = sync_documents_to_kernel_operations.register_update_documents(
+        _sps_package, _xmls_to_preserve
+    )
+    if _documents:
+        kwargs["ti"].xcom_push(key="documents", value=_documents)
+        return True
+    else:
+        return False
 
 
 def link_documents_to_documentsbundle(dag_run, **kwargs):
@@ -88,16 +95,21 @@ def link_documents_to_documentsbundle(dag_run, **kwargs):
         include_prior_dates=True
     )
 
-    if documents:
-        linked_bundle = sync_documents_to_kernel_operations.link_documents_to_documentsbundle(
-            _sps_package, documents, issn_index_json_path
-        )
+    if not documents:
+        return False
 
-        if linked_bundle:
-            kwargs["ti"].xcom_push(key="linked_bundle", value=linked_bundle)
+    linked_bundle = sync_documents_to_kernel_operations.link_documents_to_documentsbundle(
+        _sps_package, documents, issn_index_json_path
+    )
+
+    if linked_bundle:
+        kwargs["ti"].xcom_push(key="linked_bundle", value=linked_bundle)
+        return True
+    else:
+        return False
 
 
-list_documents_task = PythonOperator(
+list_documents_task = ShortCircuitOperator(
     task_id="list_docs_task_id",
     provide_context=True,
     python_callable=list_documents,
