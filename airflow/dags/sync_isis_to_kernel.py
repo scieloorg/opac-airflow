@@ -137,19 +137,19 @@ def journal_as_kernel(journal: Journal) -> dict:
         _payload["contact"]["address"] = journal.editor_address
 
     if journal.publisher_name:
-        institution_responsible_for = {"name": journal.publisher_name}
-        if journal.publisher_city:
-            institution_responsible_for["city"] = journal.publisher_city
-        if journal.publisher_state:
-            institution_responsible_for["state"] = journal.publisher_state
-        if journal.publisher_country:
-            country_code, country_name = journal.publisher_country
-            institution_responsible_for["country_code"] = country_code
-            institution_responsible_for["country"] = country_name
-
-        _payload["institution_responsible_for"] = [
-            institution_responsible_for
-        ]
+        institution_responsible_for = []
+        for name in journal.publisher_name:
+            item = {"name": name}
+            if journal.publisher_city:
+                item["city"] = journal.publisher_city
+            if journal.publisher_state:
+                item["state"] = journal.publisher_state
+            if journal.publisher_country:
+                country_code, country_name = journal.publisher_country
+                item["country_code"] = country_code
+                item["country"] = country_name
+            institution_responsible_for.append(item)
+        _payload["institution_responsible_for"] = tuple(institution_responsible_for)
 
     return _payload
 

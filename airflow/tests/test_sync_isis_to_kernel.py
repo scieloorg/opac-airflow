@@ -12,6 +12,7 @@ from sync_isis_to_kernel import (
     issue_as_kernel,
     issue_data_to_link,
     create_journal_issn_index,
+    journal_as_kernel,
 )
 from .test_sync_kernel_to_website import load_json_fixture
 
@@ -264,3 +265,44 @@ class TestIssueAsKernel(unittest.TestCase):
         mocked_issue.data = {"issue": {"v35": [{"_": "1234-0987"}]}}
         result = issue_as_kernel(mocked_issue)
         self.assertIsNotNone(result["_id"])
+
+class TestJournalAsKernel(unittest.TestCase):
+    def setUp(self):
+        self.mocked_journal = Mock()
+        self.mocked_journal.publisher_name = ["Casa Publicadora"]
+        self.mocked_journal.publisher_country = "BR", "Brasil"
+        self.mocked_journal.publisher_state = "MG"
+        self.mocked_journal.publisher_city = "Uberaba"
+        self.mocked_journal.mission = {}
+        self.mocked_journal.status_history = [
+            ('date', 'status', 'reason'),
+        ]
+        self.mocked_journal.sponsors = []
+
+    def test_journal_as_kernel_returns_name_of_institution_responsible_for(self):
+        mocked_journal = self.mocked_journal
+        result = journal_as_kernel(mocked_journal)
+        self.assertEqual(
+            "Casa Publicadora",
+            result["institution_responsible_for"][0]["name"])
+
+    def test_journal_as_kernel_returns_city_of_institution_responsible_for(self):
+        mocked_journal = self.mocked_journal
+        result = journal_as_kernel(mocked_journal)
+        self.assertEqual(
+            "Uberaba",
+            result["institution_responsible_for"][0]["city"])
+
+    def test_journal_as_kernel_returns_state_of_institution_responsible_for(self):
+        mocked_journal = self.mocked_journal
+        result = journal_as_kernel(mocked_journal)
+        self.assertEqual(
+            "MG",
+            result["institution_responsible_for"][0]["state"])
+
+    def test_journal_as_kernel_returns_country_of_institution_responsible_for(self):
+        mocked_journal = self.mocked_journal
+        result = journal_as_kernel(mocked_journal)
+        self.assertEqual(
+            "Brasil",
+            result["institution_responsible_for"][0]["country"])
