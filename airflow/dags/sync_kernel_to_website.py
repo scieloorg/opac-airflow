@@ -325,9 +325,22 @@ def JournalFactory(data):
             0
         ].strip()
         journal.publisher_address = contact.get("address")
-        journal.publisher_city = contact.get("city")
-        journal.publisher_state = contact.get("state")
-        journal.publisher_country = contact.get("country")
+
+    if metadata.get("institution_responsible_for"):
+        institutions = [
+            item
+            for item in metadata.get("institution_responsible_for", [{}])
+            if item.get("name")
+        ]
+        if institutions:
+            journal.publisher_name = ', '.join(
+                item.get("name")
+                for item in institutions
+            )
+            institution = institutions[0]
+            journal.publisher_city = institution.get("city")
+            journal.publisher_state = institution.get("state")
+            journal.publisher_country = institution.get("country")
 
     journal.online_submission_url = metadata.get("online_submission_url", "")
     journal.logo_url = metadata.get("logo_url", "")
