@@ -5,6 +5,7 @@ from unittest import TestCase, main
 from unittest.mock import patch, Mock, MagicMock
 
 import requests
+import botocore
 from airflow import DAG
 from lxml import etree
 
@@ -429,6 +430,7 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
                     self.xml_data["issn"],
                     self.xml_data["scielo_id"],
                     pdf["filename"],
+                    {"filename": pdf["filename"]},
                 )
 
     @patch("operations.docs_utils.Logger")
@@ -588,6 +590,55 @@ class TestPutObjectInObjectStore(TestCase):
 
     @patch("operations.docs_utils.files_sha1")
     @patch("operations.docs_utils.hooks")
+    def test_put_object_in_object_store_updates_metadata_object_if_it_is_not_none(
+        self, mk_hooks, mk_files_sha1
+    ):
+
+        MockFile = Mock()
+        mk_files_sha1.return_value = "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+        metadata = {"filename": "1806-907X-rba-53-01-1-8-pt.pdf"}
+        put_object_in_object_store(
+            MockFile,
+            "1806-907X",
+            "FX6F3cbyYmmwvtGmMB7WCgr",
+            "1806-907X-rba-53-01-1-8-pt.pdf",
+            metadata,
+        )
+        mk_hooks.update_metadata_in_object_store.assert_called_once_with(
+            "1806-907X/FX6F3cbyYmmwvtGmMB7WCgr/da39a3ee5e6b4b0d3255bfef95601890afd80709.pdf",
+            metadata,
+            "documentstore",
+        )
+
+    @patch("operations.docs_utils.Logger")
+    @patch("operations.docs_utils.files_sha1")
+    @patch("operations.docs_utils.hooks")
+    def test_put_object_in_object_store_logs_error_if_update_metadata_raises_exception(
+        self, mk_hooks, mk_files_sha1, MockLogger
+    ):
+
+        MockFile = Mock()
+        mk_files_sha1.return_value = "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+        metadata = {"filename": "1806-907X-rba-53-01-1-8-pt.pdf"}
+        filepath = "1806-907X/FX6F3cbyYmmwvtGmMB7WCgr/da39a3ee5e6b4b0d3255bfef95601890afd80709.pdf"
+        mk_hooks.update_metadata_in_object_store.side_effect = (
+            botocore.exceptions.BotoCoreError()
+        )
+        put_object_in_object_store(
+            MockFile,
+            "1806-907X",
+            "FX6F3cbyYmmwvtGmMB7WCgr",
+            "1806-907X-rba-53-01-1-8-pt.pdf",
+            metadata,
+        )
+        MockLogger.error.assert_called_once_with(
+            'Could not update "{}" object metadata: {}'.format(
+                filepath, "An unspecified error occurred",
+            )
+        )
+
+    @patch("operations.docs_utils.files_sha1")
+    @patch("operations.docs_utils.hooks")
     def test_put_object_in_object_store_raise_exception_error(
         self, mk_hooks, mk_files_sha1
     ):
@@ -599,7 +650,7 @@ class TestPutObjectInObjectStore(TestCase):
             "FX6F3cbyYmmwvtGmMB7WCgr",
             "da39a3ee5e6b4b0d3255bfef95601890afd80709.xml",
         )
-        mk_hooks.object_store_connect.side_effect = Exception("ConnectionError")
+        mk_hooks.object_store_connect.side_effect = botocore.exceptions.BotoCoreError()
         with self.assertRaises(ObjectStoreError) as exc_info:
             put_object_in_object_store(
                 MockFile,
@@ -609,7 +660,8 @@ class TestPutObjectInObjectStore(TestCase):
             )
         self.assertEqual(
             str(exc_info.exception),
-            'Could not put object "{}" in object store : ConnectionError'.format(
+            'Could not put object "{}" in object store : '
+            'An unspecified error occurred'.format(
                 filepath, str(exc_info)
             ),
         )

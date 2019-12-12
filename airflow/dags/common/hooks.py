@@ -67,6 +67,18 @@ def object_store_connect(bytes_data, filepath, bucket_name):
     return "{}/{}/{}".format(s3_host, bucket_name, filepath)
 
 
+@retry(wait=wait_exponential(), stop=stop_after_attempt(4))
+def update_metadata_in_object_store(filepath, metadata, bucket_name):
+    s3_hook = S3Hook(aws_conn_id="aws_default")
+    s3_object = s3_hook.get_key(key=filepath, bucket_name=bucket_name)
+    s3_object.metadata.update(metadata)
+    s3_object.copy_from(
+        CopySource={'Bucket': bucket_name, 'Key': filepath},
+        Metadata=s3_object.metadata,
+        MetadataDirective='REPLACE'
+    )
+
+
 @retry(wait=wait_exponential(), stop=stop_after_attempt(10))
 def mongo_connect():
     # TODO: Necessário adicionar um commando para adicionar previamente uma conexão, ver: https://github.com/puckel/docker-airflow/issues/75

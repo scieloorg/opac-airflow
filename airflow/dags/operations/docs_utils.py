@@ -4,6 +4,7 @@ import hashlib
 import http.client
 
 import requests
+import botocore
 from lxml import etree
 
 import common.hooks as hooks
@@ -125,7 +126,7 @@ def files_sha1(file):
     return _sum.hexdigest()
 
 
-def put_object_in_object_store(file, journal, scielo_id, filename):
+def put_object_in_object_store(file, journal, scielo_id, filename, metadata=None):
     """
     - Persistir no Minio
     - Adicionar em dict a URL do Minio
@@ -138,12 +139,24 @@ def put_object_in_object_store(file, journal, scielo_id, filename):
         journal, scielo_id, "{}{}".format(n_filename, file_extension)
     )
     try:
-        return hooks.object_store_connect(file, filepath, "documentstore")
-    except Exception as exc:
+        object_url = hooks.object_store_connect(file, filepath, "documentstore")
+    except botocore.exceptions.BotoCoreError as exc:
         raise ObjectStoreError(
             'Could not put object "{}" in object store : {}'.format(filepath, str(exc))
-        ) from None
-
+        )
+    else:
+        if metadata is not None:
+            try:
+                hooks.update_metadata_in_object_store(
+                    filepath, metadata, "documentstore"
+                )
+            except botocore.exceptions.BotoCoreError as exc:
+                Logger.error(
+                    'Could not update "{}" object metadata: {}'.format(
+                        filepath, str(exc)
+                    )
+                )
+        return object_url
 
 def put_assets_and_pdfs_in_object_store(zipfile, xml_data):
     """
@@ -203,6 +216,7 @@ def put_assets_and_pdfs_in_object_store(zipfile, xml_data):
                         xml_data["issn"],
                         xml_data["scielo_id"],
                         pdf["filename"],
+                        {"filename": pdf["filename"]},
                     ),
                 }
             )
