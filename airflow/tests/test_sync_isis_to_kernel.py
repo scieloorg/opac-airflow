@@ -266,6 +266,13 @@ class TestIssueAsKernel(unittest.TestCase):
         result = issue_as_kernel(mocked_issue)
         self.assertIsNotNone(result["_id"])
 
+    def test_issue_as_kernel_returns_pid(self):
+        mocked_issue = self.mocked_issue
+        mocked_issue.publisher_id = "0074-027619980002"
+        result = issue_as_kernel(mocked_issue)
+        self.assertEqual("0074-027619980002", result["pid"])
+
+
 class TestJournalAsKernel(unittest.TestCase):
     def setUp(self):
         self.mocked_journal = Mock()
