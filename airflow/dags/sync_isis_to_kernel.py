@@ -149,7 +149,7 @@ def journal_as_kernel(journal: Journal) -> dict:
                 item["country_code"] = country_code
                 item["country"] = country_name
             institution_responsible_for.append(item)
-    _payload["institution_responsible_for"] = tuple(institution_responsible_for)
+    _payload["institution_responsible_for"] = institution_responsible_for
 
     return _payload
 
