@@ -358,7 +358,14 @@ class ArticleRenditionFactoryTests(unittest.TestCase):
 
     def test_pdfs_attr_should_be_populated_with_rendition_pdf_data(self):
         self.assertEqual(
-            [{"lang": "en", "url": "//object-storage/file.pdf", "type": "pdf"}],
+            [
+                {
+                    "lang": "en",
+                    "url": "//object-storage/file.pdf",
+                    "type": "pdf",
+                    "filename": "filename.pdf",
+                }
+            ],
             self.article.pdfs,
         )
 
