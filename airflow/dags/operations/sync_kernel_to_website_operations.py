@@ -339,16 +339,16 @@ def ArticleRenditionFactory(article_id: str, data: List[dict]) -> models.Article
         models.Article: Artigo recuperado e atualizado com uma nova lista de assets."""
 
     article = models.Article.objects.get(_id=article_id)
-
-    def _get_pdfs(data: dict) -> List[dict]:
-        return [
-            {"lang": rendition["lang"], "url": rendition["url"], "type": "pdf"}
-            for rendition in data
-            if rendition["mimetype"] == "application/pdf"
-        ]
-
-    article.pdfs = list(_get_pdfs(data))
-
+    article.pdfs = [
+        {
+            "lang": rendition["lang"],
+            "url": rendition["url"],
+            "filename": rendition["filename"],
+            "type": "pdf",
+        }
+        for rendition in data
+        if rendition["mimetype"] == "application/pdf"
+    ]
     return article
 
 
