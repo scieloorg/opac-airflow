@@ -408,9 +408,9 @@ def IssueFactory(data, journal_id, issue_order=None, _type="regular"):
         issue = models.Issue()
     else:
         journal_id = journal_id or issue.journal._id
+        _type = "ahead" if _type == "ahead" or data["id"].endswith("-aop") else _type
 
     issue._id = issue.iid = data["id"]
-    issue.type = metadata.get("type", _type)
     issue.spe_text = metadata.get("spe_text", "")
     issue.start_month = metadata.get("publication_month", 0)
     issue.end_month = metadata.get("publication_season", [0])[-1]
@@ -467,6 +467,8 @@ def IssueFactory(data, journal_id, issue_order=None, _type="regular"):
         issue.type = "volume_issue"
     elif issue.number and "spe" in issue.number:
         issue.type = "special"
+    else:
+        issue.type = _type
 
     return issue
 
