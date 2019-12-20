@@ -173,6 +173,7 @@ def issue_as_kernel(issue: dict) -> dict:
     _payload = {}
     _payload["volume"] = issue.volume or ""
     _payload["number"] = issue.number or ""
+    _payload["pid"] = issue.publisher_id
 
     suppl = issue.supplement_volume or issue.supplement_number
     if suppl or issue.type is "supplement":
