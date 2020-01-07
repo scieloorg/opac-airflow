@@ -170,10 +170,14 @@ def issue_as_kernel(issue: dict) -> dict:
 
         return _date
 
+    def generate_scielo_issue_pid(issn_id, v36_field):
+        year = v36_field[0:4]
+        order = v36_field[4:].zfill(4)
+        return issn_id + year + order
+
     _payload = {}
     _payload["volume"] = issue.volume or ""
     _payload["number"] = issue.number or ""
-    _payload["pid"] = issue.publisher_id
 
     suppl = issue.supplement_volume or issue.supplement_number
     if suppl or issue.type is "supplement":
@@ -205,6 +209,9 @@ def issue_as_kernel(issue: dict) -> dict:
         _payload.get("supplement"),
     )
     _payload["publication_year"] = str(_creation_date.year)
+    _payload["pid"] = generate_scielo_issue_pid(
+        issn_id, issue.data.get("issue").get("v36")[0]["_"]
+    )
 
     return _payload
 

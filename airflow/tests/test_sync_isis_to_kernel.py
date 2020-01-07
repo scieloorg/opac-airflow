@@ -1,10 +1,10 @@
 import os
 import json
 import unittest
-
 from unittest.mock import Mock
 import tempfile
 
+from airflow import DAG
 from xylose.scielodocument import Issue
 
 from sync_isis_to_kernel import (
@@ -160,7 +160,9 @@ class TestIssueAsKernel(unittest.TestCase):
         self.mocked_issue = Mock()
         self.mocked_issue.start_month = None
         self.mocked_issue.end_month = None
-        self.mocked_issue.data = {"issue": {"v35": [{"_": "1234-0987"}]}}
+        self.mocked_issue.data = {
+            "issue": {"v35": [{"_": "1234-0987"}], "v36": [{"_": "20171001"}]}
+        }
         self.mocked_issue.publication_date = "2017-09"
         self.mocked_issue.volume = None
         self.mocked_issue.number = None
@@ -262,15 +264,19 @@ class TestIssueAsKernel(unittest.TestCase):
         mocked_issue.volume = "3"
         mocked_issue.supplement_volume = "0"
         mocked_issue.publication_date = "2013-09"
-        mocked_issue.data = {"issue": {"v35": [{"_": "1234-0987"}]}}
+        mocked_issue.data = {
+            "issue": {"v35": [{"_": "1234-0987"}], "v36": [{"_": "20131001"}]}
+        }
         result = issue_as_kernel(mocked_issue)
         self.assertIsNotNone(result["_id"])
 
     def test_issue_as_kernel_returns_pid(self):
         mocked_issue = self.mocked_issue
-        mocked_issue.publisher_id = "0074-027619980002"
+        mocked_issue.data = {
+            "issue": {"v35": [{"_": "1234-0987"}], "v36": [{"_": "201310"}]}
+        }
         result = issue_as_kernel(mocked_issue)
-        self.assertEqual("0074-027619980002", result["pid"])
+        self.assertEqual("1234-098720130010", result["pid"])
 
 
 class TestJournalAsKernel(unittest.TestCase):
