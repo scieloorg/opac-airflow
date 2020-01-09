@@ -205,18 +205,25 @@ def put_assets_and_pdfs_in_object_store(zipfile, xml_data):
                 str(exc),
             )
         else:
+            # filename = nome público do arquivo PDF
+            if pdf["lang"] in pdf["filename"]:
+                pdf_filename = "{}_{}.pdf".format(
+                    pdf["lang"], xml_data["xml_package_name"]
+                )
+            else:
+                pdf_filename = pdf["filename"]
             _pdfs.append(
                 {
                     "size_bytes": len(pdf_file),
-                    "filename": pdf["filename"],
+                    "filename": pdf_filename,
                     "lang": pdf["lang"],
                     "mimetype": pdf["mimetype"],
                     "data_url": put_object_in_object_store(
                         pdf_file,
                         xml_data["issn"],
                         xml_data["scielo_id"],
-                        pdf["filename"],
-                        {"filename": pdf["filename"]},
+                        pdf_filename,
+                        {"filename": pdf_filename},
                     ),
                 }
             )

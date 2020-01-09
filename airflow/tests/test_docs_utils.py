@@ -380,6 +380,7 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
         self.xml_data = {
             "issn": "1806-907X",
             "scielo_id": "FX6F3cbyYmmwvtGmMB7WCgr",
+            "xml_package_name": "1806-907X-rba-53-01-1-8",
             "assets": [
                 {"asset_id": "1806-907X-rba-53-01-1-8-g01.jpg"},
                 {"asset_id": "1806-907X-rba-53-01-1-8-g02.jpg"},
@@ -418,19 +419,28 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
     def test_put_assets_and_pdfs_in_object_store_reads_each_pdf_from_xml(
         self, mk_put_object_in_object_store
     ):
+        expected = []
+        for pdf in self.xml_data["pdfs"]:
+            if pdf["lang"] in pdf["filename"]:
+                pdf["public_filename"] = "{}_{}.pdf".format(
+                    pdf["lang"], self.xml_data["xml_package_name"]
+                )
+            else:
+                pdf["public_filename"] = pdf["filename"]
+            expected.append(pdf)
         MockZipFile = MagicMock()
         MockZipFile.read.return_value = b""
         put_assets_and_pdfs_in_object_store(MockZipFile, self.xml_data)
 
-        for pdf in self.xml_data["pdfs"]:
+        for pdf in expected:
             with self.subTest(pdf=pdf):
                 MockZipFile.read.assert_any_call(pdf["filename"])
                 mk_put_object_in_object_store.assert_any_call(
                     MockZipFile.read.return_value,
                     self.xml_data["issn"],
                     self.xml_data["scielo_id"],
-                    pdf["filename"],
-                    {"filename": pdf["filename"]},
+                    pdf["public_filename"],
+                    {"filename": pdf["public_filename"]},
                 )
 
     @patch("operations.docs_utils.Logger")
@@ -482,6 +492,9 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
         mk_put_object_in_object_store.side_effect = mk_minio_result
         expected["assets"][0]["asset_url"] = mk_minio_result[0]
         expected["pdfs"][0]["data_url"] = mk_minio_result[1]
+        expected["pdfs"][0]["filename"] = "{}_{}.pdf".format(
+            expected["pdfs"][0]["lang"], self.xml_data["xml_package_name"]
+        )
         expected["pdfs"][0]["size_bytes"] = 0
 
         result = put_assets_and_pdfs_in_object_store(MockZipFile, self.xml_data)
@@ -513,6 +526,14 @@ class TestPutAssetsAndPdfsInObjectStore(TestCase):
         self, mk_put_object_in_object_store
     ):
         expected = copy.deepcopy(self.xml_data)
+        expected_pdfs = []
+        for pdf in expected["pdfs"]:
+            if pdf["lang"] in pdf["filename"]:
+                pdf["filename"] = "{}_{}.pdf".format(
+                    pdf["lang"], self.xml_data["xml_package_name"]
+                )
+            expected_pdfs.append(pdf)
+        expected["pdfs"] = expected_pdfs
         pdfs_size = []
         for pdf in expected["pdfs"]:
             pdf["data_url"] = "http://minio/documentstore/{}".format(pdf["filename"])
