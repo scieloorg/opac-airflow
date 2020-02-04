@@ -49,6 +49,11 @@ dev_compose_add_kernel_conn:  ## Add default kernel_conn
 	    --conn_host=http://0.0.0.0 \
 	    --conn_port=6543
 
+dev_compose_add_postgres_report_conn:
+	@docker-compose -f $(COMPOSE_FILE_DEV) run --rm opac-airflow airflow connections \
+	-a --conn_type=Postgres \
+	--conn_id=postgres_report_connection
+
 dev_compose_rm_db:  ## Remove database
 	@docker-compose -f $(COMPOSE_FILE_DEV) run --rm opac-airflow rm airflow.db
 
@@ -88,6 +93,11 @@ compose_add_opac_conn:  ## Add default opac_conn
 	--conn_schema=opac \
 	--conn_port=27017 \
 	--conn_extra='{"authentication_source": "admin"}'
+
+compose_add_postgres_report_conn:
+	@docker-compose -f $(COMPOSE_FILE_PROD) run --rm opac-airflow airflow connections \
+	-a --conn_type=Postgres \
+	--conn_id=postgres_report_connection
 
 compose_add_kernel_conn:  ## Add default kernel_conn
 	@docker-compose -f $(COMPOSE_FILE_PROD) run --rm opac-airflow airflow connections \
