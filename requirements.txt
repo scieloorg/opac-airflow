@@ -3,4 +3,5 @@ xylose==1.35.1
 lxml==4.3.4
 pymongo==3.9.0
 deepdiff[murmur]==4.0.7
+feedparser==5.2.1
 git+https://github.com/scieloorg/opac_schema.git@master#egg=opac_schema
