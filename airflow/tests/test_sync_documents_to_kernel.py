@@ -62,6 +62,7 @@ class TestDeleteDocuments(TestCase):
     ):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+        mk_delete_documents.return_value = [], []
         delete_documents(**kwargs)
         mk_dag_run.conf.get.assert_called_once_with("sps_package")
 
@@ -69,6 +70,7 @@ class TestDeleteDocuments(TestCase):
     def test_delete_documents_gets_ti_xcom_info(self, mk_delete_documents):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+        mk_delete_documents.return_value = [], []
         delete_documents(**kwargs)
         kwargs["ti"].xcom_pull.assert_called_once_with(
             key="xmls_filenames", task_ids="list_docs_task_id"
@@ -96,6 +98,7 @@ class TestDeleteDocuments(TestCase):
         mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
         kwargs["ti"].xcom_pull.return_value = xmls_filenames
+        mk_delete_documents.return_value = xmls_filenames, []
         delete_documents(**kwargs)
         mk_delete_documents.assert_called_once_with(
             "path_to_sps_package/package.zip", xmls_filenames
@@ -116,7 +119,7 @@ class TestDeleteDocuments(TestCase):
         mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
         kwargs["ti"].xcom_pull.return_value = xmls_filenames
-        mk_delete_documents.return_value = xmls_to_preserve
+        mk_delete_documents.return_value = xmls_to_preserve, []
         delete_documents(**kwargs)
         kwargs["ti"].xcom_push.assert_called_once_with(
             key="xmls_to_preserve", value=xmls_to_preserve
