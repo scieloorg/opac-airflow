@@ -10,6 +10,9 @@ from tenacity import (
 from airflow.hooks.http_hook import HttpHook
 from airflow.hooks.S3_hook import S3Hook
 from airflow.hooks.base_hook import BaseHook
+from airflow.hooks.postgres_hook import PostgresHook
+from airflow.exceptions import AirflowException
+from psycopg2 import ProgrammingError
 
 from mongoengine import connect
 
@@ -92,3 +95,38 @@ def mongo_connect():
     )
 
     connect(host=uri, **conn.extra_dejson)
+
+
+def add_execution_in_database(
+    table, data={}, connection_id="postgres_report_connection"
+):
+    """Registra informações em um banco PostgreSQL de forma dinâmica."""
+
+    data = dict(data)
+
+    if data is None or len(data.keys()) == 0:
+        logging.info(
+            "Cannot insert `empty data` into the database. Please verify your data attributes."
+        )
+        return
+
+    hook = PostgresHook(postgres_conn_id=connection_id)
+
+    try:
+        hook.get_conn()
+    except AirflowException:
+        logging.info("Cannot insert data. Connection '%s' is not configured.", connection_id)
+        return
+
+    if data.get("payload"):
+        data["payload"] = json.dumps(data["payload"])
+
+    columns = list(data.keys())
+    values = list(data.values())
+
+    try:
+        hook.insert_rows(table, [values], target_fields=columns)
+    except (AirflowException, ProgrammingError) as exc:
+        logging.error(exc)
+    else:
+        logging.info("Registering `%s` into '%s' table.", data, table)
