@@ -54,7 +54,10 @@ def get_sps_packages(conf, **kwargs):
             run_id="manual__%s_%s" % (os.path.basename(sps_package), now.isoformat()),
             execution_date=now,
             replace_microseconds=False,
-            conf={"sps_package": sps_package},
+            conf={
+                "sps_package": sps_package,
+                "pre_syn_dag_run_id": kwargs.get("run_id"),
+            },
         )
     Logger.debug("create_all_subdags OUT")
 

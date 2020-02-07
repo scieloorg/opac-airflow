@@ -54,7 +54,7 @@ class TestGetSPSPackages(TestCase):
                     run_id=ANY,
                     execution_date=ANY,
                     replace_microseconds=False,
-                    conf={"sps_package": mk_sps_package},
+                    conf={"sps_package": mk_sps_package, "pre_syn_dag_run_id": ANY},
                 )
 
 
