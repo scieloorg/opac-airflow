@@ -19,6 +19,7 @@
             1. Envio de Email sobre pacote inválido
             2. Pensar em outras forma de verificar
 """
+import os
 import logging
 from datetime import datetime
 
@@ -26,6 +27,7 @@ from airflow import DAG
 from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
 
 from operations import sync_documents_to_kernel_operations
+from common.hooks import add_execution_in_database
 
 
 Logger = logging.getLogger(__name__)
@@ -57,9 +59,16 @@ def delete_documents(dag_run, **kwargs):
     if not _xmls_filenames:
         return False
 
-    _xmls_to_preserve = sync_documents_to_kernel_operations.delete_documents(
+    _xmls_to_preserve, executions = sync_documents_to_kernel_operations.delete_documents(
         _sps_package, _xmls_filenames
     )
+
+    for execution in executions:
+        execution["dag_run"] = kwargs.get("run_id")
+        execution["pre_sync_dag_run"] = dag_run.conf.get("pre_syn_dag_run_id")
+        execution["package_name"] = os.path.basename(_sps_package)
+        add_execution_in_database(table="xml_documents", data=execution)
+
     if _xmls_to_preserve:
         kwargs["ti"].xcom_push(key="xmls_to_preserve", value=_xmls_to_preserve)
         return True

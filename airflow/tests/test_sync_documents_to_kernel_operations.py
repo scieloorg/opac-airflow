@@ -210,7 +210,7 @@ class TestDeleteDocuments(TestCase):
         self, MockZipFile, mk_document_to_delete, MockLogger, mk_delete_doc_from_kernel
     ):
         mk_document_to_delete.side_effect = self.docs_to_delete[:2] + [(False, None,)]
-        result = delete_documents(**self.kwargs)
+        result, _ = delete_documents(**self.kwargs)
         self.assertEqual(
             result,
             list(

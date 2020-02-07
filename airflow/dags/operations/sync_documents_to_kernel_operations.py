@@ -3,6 +3,7 @@ import logging
 import json
 from zipfile import ZipFile
 from copy import deepcopy
+from typing import Dict, List, Tuple
 
 from deepdiff import DeepDiff
 
@@ -50,7 +51,9 @@ def list_documents(sps_package):
         return xmls_filenames
 
 
-def delete_documents(sps_package, xmls_filenames):
+def delete_documents(
+    sps_package: str, xmls_filenames: list
+) -> Tuple[List[str], List[dict]]:
     """
     Deleta documentos informados do Kernel
 
@@ -60,6 +63,8 @@ def delete_documents(sps_package, xmls_filenames):
     Logger.debug("delete_documents IN")
     Logger.info("Reading sps_package: %s" % sps_package)
     xmls_to_delete = []
+    executions = []
+
     with ZipFile(sps_package) as zipfile:
         for i, sps_xml_file in enumerate(xmls_filenames, 1):
             Logger.info(
@@ -69,10 +74,13 @@ def delete_documents(sps_package, xmls_filenames):
                 i,
                 len(xmls_filenames),
             )
+            execution = {"file_name": sps_xml_file, "deletion": True}
             try:
                 is_doc_to_delete, doc_id = is_document_to_delete(zipfile, sps_xml_file)
             except DocumentToDeleteException as exc:
                 Logger.error('Error reading document "%s": %s', sps_xml_file, str(exc))
+                execution.update({"failed": True, "error": str(exc)})
+                executions.append(execution)
             else:
                 if is_doc_to_delete:
                     xmls_to_delete.append(sps_xml_file)
@@ -81,6 +89,10 @@ def delete_documents(sps_package, xmls_filenames):
                             'Document "%s" will not be deleted because SciELO PID is None',
                             sps_xml_file,
                         )
+                        execution.update(
+                            {"failed": True, "error": "SciELO PID V3 is None"}
+                        )
+                        executions.append(execution)
                         continue
                     try:
                         delete_doc_from_kernel(doc_id)
@@ -91,14 +103,20 @@ def delete_documents(sps_package, xmls_filenames):
                             doc_id,
                             str(exc),
                         )
+                        execution.update(
+                            {"pid": doc_id, "failed": True, "error": str(exc)}
+                        )
                     else:
                         Logger.info(
                             'Document "%s" (scielo_id: "%s") deleted from kernel',
                             sps_xml_file,
                             doc_id,
                         )
+                        execution.update({"pid": doc_id, "file_name": sps_xml_file})
+                    executions.append(execution)
+
     Logger.debug("delete_documents OUT")
-    return list(set(xmls_filenames) - set(xmls_to_delete))
+    return (list(set(xmls_filenames) - set(xmls_to_delete)), executions)
 
 
 def register_update_documents(sps_package, xmls_to_preserve):
