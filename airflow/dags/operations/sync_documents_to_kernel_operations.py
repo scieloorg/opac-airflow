@@ -244,6 +244,7 @@ def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_pa
     issn_id = ''
     bundle_id = ''
     bundle_id_doc = {}
+    executions = []
 
     if documents:
         Logger.info('Reading ISSN index file %s', issn_index_json_path)
@@ -256,6 +257,14 @@ def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_pa
             except KeyError as exc:
                 Logger.info(
                     'Could not get journal ISSN ID: ISSN id "%s" not found', doc["issn"]
+                )
+                executions.append(
+                    {
+                        "pid": doc.get("scielo_id"),
+                        "bundle_id": None,
+                        "error": 'Could not get journal ISSN ID: ISSN id "%s" not found'
+                        % doc["issn"],
+                    }
                 )
             else:
                 bundle_id = get_bundle_id(issn_id=issn_id,
@@ -295,6 +304,15 @@ def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_pa
             except LinkDocumentToDocumentsBundleException as exc:
                 ret.append({"id": bundle_id, "status": exc.response.status_code})
                 Logger.info("Could not get bundle %: Bundle not found", bundle_id)
+                for new_item_relationship in new_items:
+                    executions.append(
+                        {
+                            "pid": new_item_relationship.get("id"),
+                            "bundle_id": bundle_id,
+                            "failed": True,
+                            "error": str(exc)
+                        }
+                    )
             else:
                 current_items = conn_response.json()["items"]
                 payload = _update_items_list(new_items, current_items)
@@ -306,15 +324,28 @@ def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_pa
                     logging.info(
                         "The bundle %s items list has been updated." % bundle_id
                     )
+
+                    for new_item_relationship in new_items:
+                        executions.append(
+                            {
+                                "pid": new_item_relationship.get("id"),
+                                "bundle_id": bundle_id,
+                            }
+                        )
                 else:
                     logging.info(
                         "The bundle %s items does not need to be updated." % bundle_id
                     )
                 if not is_aop_bundle:
                     try:
-                        update_aop_bundle_items(issn_id, payload)
+                        articles_removed_from_aop = update_aop_bundle_items(
+                            issn_id, payload
+                        )
                     except LinkDocumentToDocumentsBundleException as exc:
                         Logger.error(str(exc))
-        return ret
+                    else:
+                        executions.extend(articles_removed_from_aop)
+
+        return (ret, executions)
 
     Logger.info("link_documents_to_documentsbundle OUT")
