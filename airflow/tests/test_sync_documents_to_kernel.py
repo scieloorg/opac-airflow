@@ -133,6 +133,7 @@ class TestRegisterUpdateDocuments(TestCase):
     ):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+        mk_register_update_documents.return_value = [], []
         register_update_documents(**kwargs)
         mk_dag_run.conf.get.assert_called_once_with("sps_package")
 
@@ -140,6 +141,7 @@ class TestRegisterUpdateDocuments(TestCase):
     def test_register_update_documents_gets_ti_xcom_info(self, mk_register_update_documents):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+        mk_register_update_documents.return_value = [], []
         register_update_documents(**kwargs)
         kwargs["ti"].xcom_pull.assert_called_once_with(
             key="xmls_to_preserve", task_ids="delete_docs_task_id"
@@ -167,6 +169,7 @@ class TestRegisterUpdateDocuments(TestCase):
         mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
         kwargs["ti"].xcom_pull.return_value = xmls_filenames
+        mk_register_update_documents.return_value = [], []
         register_update_documents(**kwargs)
         mk_register_update_documents.assert_called_once_with(
             "path_to_sps_package/package.zip", xmls_filenames
@@ -183,7 +186,7 @@ class TestRegisterUpdateDocuments(TestCase):
         mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
         kwargs["ti"].xcom_pull.return_value = xmls_filenames
-        mk_register_update_documents.return_value = []
+        mk_register_update_documents.return_value = [], []
         register_update_documents(**kwargs)
         kwargs["ti"].xcom_push.assert_not_called()
 
@@ -202,7 +205,7 @@ class TestRegisterUpdateDocuments(TestCase):
         mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
         kwargs["ti"].xcom_pull.return_value = xmls_filenames
-        mk_register_update_documents.return_value = documents
+        mk_register_update_documents.return_value = documents, []
         register_update_documents(**kwargs)
         kwargs["ti"].xcom_push.assert_called_once_with(
             key="documents", value=documents

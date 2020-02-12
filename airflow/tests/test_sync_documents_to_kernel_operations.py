@@ -554,7 +554,7 @@ class TestRegisterUpdateDocuments(TestCase):
             None,
         ]
 
-        result = register_update_documents(**self.kwargs)
+        result, _ = register_update_documents(**self.kwargs)
         self.assertEqual(result, expected)
 
     @patch(

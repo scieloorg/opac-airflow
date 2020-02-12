@@ -126,6 +126,9 @@ def register_update_documents(sps_package, xmls_to_preserve):
      list docs_to_preserve: lista de XMLs para manter no Kernel (Registrar ou atualizar)
      Não deve cadastrar documentos que não tenha ``scielo-id``
     """
+
+    executions = []
+
     Logger.debug("register_update_documents IN")
     with ZipFile(sps_package) as zipfile:
         synchronized_docs_metadata = []
@@ -137,6 +140,9 @@ def register_update_documents(sps_package, xmls_to_preserve):
                 i,
                 len(xmls_to_preserve),
             )
+
+            execution = {"file_name": xml_filename}
+
             try:
                 xml_data = put_xml_into_object_store(zipfile, xml_filename)
             except (PutXMLInObjectStoreException, Pidv3Exception) as exc:
@@ -145,6 +151,7 @@ def register_update_documents(sps_package, xmls_to_preserve):
                     xml_filename,
                     str(exc),
                 )
+                execution.update({"failed": True, "error": str(exc)})
             else:
                 assets_and_pdfs_data = put_assets_and_pdfs_in_object_store(zipfile, xml_data)
                 _document_metadata = deepcopy(xml_data)
@@ -158,12 +165,26 @@ def register_update_documents(sps_package, xmls_to_preserve):
                         xml_filename,
                         str(exc),
                     )
+                    execution.update(
+                        {
+                            "pid": xml_data.get("scielo_id"),
+                            "failed": True,
+                            "error": str(exc),
+                        }
+                    )
                 else:
                     synchronized_docs_metadata.append(xml_data)
+                    execution.update(
+                        {
+                            "pid": xml_data.get("scielo_id"),
+                            "payload": _document_metadata,
+                        }
+                    )
+            executions.append(execution)
 
     Logger.debug("register_update_documents OUT")
 
-    return synchronized_docs_metadata
+    return (synchronized_docs_metadata, executions)
 
 def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_path):
     """
