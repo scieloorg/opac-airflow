@@ -84,9 +84,16 @@ def register_update_documents(dag_run, **kwargs):
     if not _xmls_to_preserve:
         return False
 
-    _documents = sync_documents_to_kernel_operations.register_update_documents(
+    _documents, executions = sync_documents_to_kernel_operations.register_update_documents(
         _sps_package, _xmls_to_preserve
     )
+
+    for execution in executions:
+        execution["dag_run"] = kwargs.get("run_id")
+        execution["pre_sync_dag_run"] = dag_run.conf.get("pre_syn_dag_run_id")
+        execution["package_name"] = os.path.basename(_sps_package)
+        add_execution_in_database(table="xml_documents", data=execution)
+
     if _documents:
         kwargs["ti"].xcom_push(key="documents", value=_documents)
         return True
