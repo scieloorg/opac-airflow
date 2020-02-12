@@ -318,6 +318,7 @@ def get_or_create_bundle(bundle_id, is_aop):
 
 
 def update_aop_bundle_items(issn_id, documents_list):
+    executions = []
     try:
         journal_resp = hooks.kernel_connect(f"/journals/{issn_id}", "GET")
     except requests.exceptions.HTTPError as exc:
@@ -343,7 +344,14 @@ def update_aop_bundle_items(issn_id, documents_list):
                             'Movindo ex-Ahead of Print "%s" to bundle',
                             aop_item["id"],
                         )
-                update_documents_in_bundle(
-                    aop_bundle_id,
-                    updated_aop_items
-                )
+                        executions.append(
+                            {
+                                "pid": aop_item["id"],
+                                "bundle_id": aop_bundle_id,
+                                "ex_ahead": True,
+                                "removed": True,
+                            }
+                        )
+
+                update_documents_in_bundle(aop_bundle_id, updated_aop_items)
+    return executions

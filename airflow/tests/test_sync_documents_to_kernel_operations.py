@@ -715,12 +715,11 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
             with open(issn_index_json_path, "w") as index_file:
                 index_file.write(self.issn_index_json)
 
+            result, _ = link_documents_to_documentsbundle(
+                "path_to_sps_package/package.zip", self.documents, issn_index_json_path
+            )
             self.assertEqual(
-                link_documents_to_documentsbundle(
-                    "path_to_sps_package/package.zip",
-                    self.documents,
-                    issn_index_json_path
-                ),
+                result,
                 [
                     {'id': '0034-8910-2014-v48-n2', 'status': 204},
                     {'id': '0034-8910-2014-v2-n2', 'status': 204},
@@ -753,12 +752,11 @@ class TestLinkDocumentToDocumentsbundle(TestCase):
             with open(issn_index_json_path, "w") as index_file:
                 index_file.write(self.issn_index_json)
 
+            result, _ = link_documents_to_documentsbundle(
+                "path_to_sps_package/package.zip", self.documents, issn_index_json_path
+            )
             self.assertEqual(
-                link_documents_to_documentsbundle(
-                    "path_to_sps_package/package.zip",
-                    self.documents,
-                    issn_index_json_path
-                ),
+                result,
                 [
                     {'id': '0034-8910-2014-v48-n2', 'status': 204},
                     {'id': '0034-8910-2014-v2-n2', 'status': 422},
@@ -982,7 +980,7 @@ class TestLinkDocumentToDocumentsbundleAOPs(TestCase):
         )
         mk_get_bundle_id.return_value = "0101-0101-aop"
         mk_get_or_create_bundle.side_effect = raise_exception
-        result = link_documents_to_documentsbundle(
+        result, _ = link_documents_to_documentsbundle(
             "path_to_sps_package/2019nahead.zip", self.documents[:1], "/json/index.json"
         )
         self.assertEqual(result, [{'id': '0101-0101-aop', 'status': 404}])

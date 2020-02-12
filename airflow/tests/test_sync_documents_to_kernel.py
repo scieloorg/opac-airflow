@@ -221,6 +221,7 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
     ):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+        mk_link_documents.return_value = [], []
         link_documents_to_documentsbundle(**kwargs)
         mk_dag_run.conf.get.assert_called_once_with("sps_package")
 
@@ -228,6 +229,7 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
 
+        mk_link_documents.return_value = [], []
         link_documents_to_documentsbundle(**kwargs)
 
         kwargs["ti"].xcom_pull.assert_any_call(
@@ -237,7 +239,7 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
     def test_link_documents_to_documentsbundle_gets_ti_xcom_title_json_path(self, mk_link_documents):
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
-
+        mk_link_documents.return_value = [], []
         link_documents_to_documentsbundle(**kwargs)
 
         kwargs["ti"].xcom_pull.assert_any_call(
@@ -289,6 +291,7 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
 
         kwargs["ti"].xcom_pull.side_effect = [documents, "/json/title.json"]
 
+        mk_link_documents.return_value = [], []
         link_documents_to_documentsbundle(**kwargs)
 
         mk_link_documents.assert_called_once_with(
@@ -336,7 +339,7 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
 
         kwargs["ti"].xcom_pull.return_value = documents
 
-        mk_link_documents.return_value = pushed_documents
+        mk_link_documents.return_value = pushed_documents, []
 
         link_documents_to_documentsbundle(**kwargs)
 

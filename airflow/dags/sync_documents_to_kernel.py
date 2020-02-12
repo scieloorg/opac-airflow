@@ -114,9 +114,15 @@ def link_documents_to_documentsbundle(dag_run, **kwargs):
     if not documents:
         return False
 
-    linked_bundle = sync_documents_to_kernel_operations.link_documents_to_documentsbundle(
+    linked_bundle, link_executions = sync_documents_to_kernel_operations.link_documents_to_documentsbundle(
         _sps_package, documents, issn_index_json_path
     )
+
+    for execution in link_executions:
+        execution["dag_run"] = kwargs.get("run_id")
+        execution["pre_sync_dag_run"] = dag_run.conf.get("pre_syn_dag_run_id")
+        execution["package_name"] = os.path.basename(_sps_package)
+        add_execution_in_database(table="xml_documentsbundle", data=execution)
 
     if linked_bundle:
         kwargs["ti"].xcom_push(key="linked_bundle", value=linked_bundle)
