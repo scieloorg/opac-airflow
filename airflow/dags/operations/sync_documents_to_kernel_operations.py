@@ -1,6 +1,8 @@
 import os
 import logging
 import json
+from tempfile import mkdtemp
+from packtools import SPPackage
 from zipfile import ZipFile
 from copy import deepcopy
 from typing import Dict, List, Tuple
@@ -119,6 +121,21 @@ def delete_documents(
     return (list(set(xmls_filenames) - set(xmls_to_delete)), executions)
 
 
+def optimize_sps_pkg_zip_file(sps_pkg_zip_file):
+    Logger.debug("optimize_sps_pkg_zip_file IN")
+    basename = os.path.basename(sps_package)
+    new_sps_pkg_zip_file = os.path.join(mkdtemp(), basename)
+
+    tmp_dir = mkdtemp()
+    package = SPPackage.from_file(sps_pkg_zip_file, tmp_dir)
+    package.optimise(
+        new_package_file_path=new_sps_pkg_zip_file,
+        preserve_files=False
+    )
+    Logger.debug("optimize_sps_pkg_zip_file OUT")
+    return new_sps_pkg_zip_file
+
+
 def register_update_documents(sps_package, xmls_to_preserve):
     """
     Registra/atualiza documentos informados e seus respectivos ativos digitais e
@@ -131,6 +148,7 @@ def register_update_documents(sps_package, xmls_to_preserve):
 
     Logger.debug("register_update_documents IN")
     with ZipFile(sps_package) as zipfile:
+
         synchronized_docs_metadata = []
         for i, xml_filename in enumerate(xmls_to_preserve):
             Logger.info(
