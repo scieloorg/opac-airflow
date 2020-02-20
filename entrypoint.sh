@@ -2,6 +2,7 @@
 set -e
 cmd="$@"
 
+
 if [ -z "$POSTGRES_USER" ]; then
     export POSTGRES_USER=postgres_user
 fi

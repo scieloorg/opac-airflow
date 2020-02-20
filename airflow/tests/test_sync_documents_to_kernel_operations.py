@@ -4,7 +4,8 @@ import tempfile
 import builtins
 import json
 from unittest import TestCase, main
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, Mock, MagicMock, ANY, mock_open, call
+from tempfile import mkdtemp, mkstemp
 
 import requests
 from airflow import DAG
@@ -12,6 +13,7 @@ from airflow import DAG
 from operations.sync_documents_to_kernel_operations import (
     list_documents,
     delete_documents,
+    optimize_sps_pkg_zip_file,
     register_update_documents,
     link_documents_to_documentsbundle,
 )
@@ -1006,6 +1008,28 @@ class TestLinkDocumentToDocumentsbundleAOPs(TestCase):
             "path_to_sps_package/2019nahead.zip", self.documents[:1], "/json/index.json"
         )
         mk_update_aop_bundle_items.assert_not_called()
+
+
+class TestOptimizeSPPackage(TestCase):
+
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.SPPackage")
+    def test_optimize_sps_pkg_zip_file_write_log_messages_in_and_out(
+        self,
+        MockSPPackage,
+        MockLogger,
+        MockZipFile,
+    ):
+        MockZipFile = mock_open
+        mock_optimise = Mock("optimise")
+        mock_optimise.return_value = None
+        mock_package = Mock("package")
+        mock_package.optimise = mock_optimise
+        MockSPPackage.from_file.return_value = mock_package
+
+        ret = optimize_sps_pkg_zip_file("dir/destination/rba_v53n1.zip")
+        assert ret.endswith("/rba_v53n1.zip") and ret != "dir/destination/rba_v53n1.zip"
 
 
 if __name__ == "__main__":
