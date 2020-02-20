@@ -186,6 +186,7 @@ link_documents_task = ShortCircuitOperator(
 )
 
 list_documents_task >> delete_documents_task
-delete_documents_task >> register_update_documents_task
+delete_documents_task >> optimize_package_task
+optimize_package_task >> register_update_documents_task
 register_update_documents_task >> link_documents_task
 
