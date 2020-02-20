@@ -159,4 +159,7 @@ link_documents_task = ShortCircuitOperator(
     dag=dag,
 )
 
-list_documents_task >> delete_documents_task >> register_update_documents_task >> link_documents_task
+list_documents_task >> delete_documents_task
+delete_documents_task >> register_update_documents_task
+register_update_documents_task >> link_documents_task
+
