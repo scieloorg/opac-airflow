@@ -8,6 +8,7 @@ from sync_documents_to_kernel import (
     delete_documents,
     register_update_documents,
     link_documents_to_documentsbundle,
+    optimize_package,
 )
 
 
@@ -346,6 +347,18 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
         kwargs["ti"].xcom_push.assert_called_once_with(
             key="linked_bundle", value=pushed_documents
         )
+
+
+class TestOptimizeDocuments(TestCase):
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.optimize_sps_pkg_zip_file")
+    def test_optimize_package_gets_sps_package_from_dag_run_conf(
+        self, mk_optimize_package
+    ):
+        mk_dag_run = MagicMock()
+        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+        mk_optimize_package.return_value = [], []
+        optimize_package(**kwargs)
+        mk_dag_run.conf.get.assert_called_once_with("sps_package")
 
 
 if __name__ == "__main__":

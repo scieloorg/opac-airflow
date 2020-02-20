@@ -76,6 +76,25 @@ def delete_documents(dag_run, **kwargs):
         return False
 
 
+def optimize_package(dag_run, **kwargs):
+    _sps_package = dag_run.conf.get("sps_package")
+    _xmls_to_preserve = kwargs["ti"].xcom_pull(
+        key="xmls_to_preserve", task_ids="delete_docs_task_id"
+    )
+    if not _xmls_to_preserve:
+        return False
+
+    _optimized_package = sync_documents_to_kernel_operations.optimize_sps_pkg_zip_file(
+        _sps_package
+    )
+    if _optimized_package:
+        kwargs["ti"].xcom_push(
+            key="optimized_package", value=_optimized_package)
+        return True
+    else:
+        return False
+
+
 def register_update_documents(dag_run, **kwargs):
     _sps_package = dag_run.conf.get("sps_package")
     _xmls_to_preserve = kwargs["ti"].xcom_pull(
@@ -142,6 +161,13 @@ delete_documents_task = ShortCircuitOperator(
     task_id="delete_docs_task_id",
     provide_context=True,
     python_callable=delete_documents,
+    dag=dag,
+)
+
+optimize_package_task = ShortCircuitOperator(
+    task_id="optimize_package_task_id",
+    provide_context=True,
+    python_callable=optimize_package,
     dag=dag,
 )
 
