@@ -379,6 +379,25 @@ class TestOptimizeDocuments(TestCase):
         mk_optimize_package.assert_not_called()
         kwargs["ti"].xcom_push.assert_not_called()
 
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.optimize_sps_pkg_zip_file")
+    def test_optimize_package_calls_optimize_package_operation(
+        self, mk_optimize_package
+    ):
+        xmls_filenames = [
+            "1806-907X-rba-53-01-1-8.xml",
+            "1806-907X-rba-53-01-9-18.xml",
+            "1806-907X-rba-53-01-19-25.xml",
+        ]
+        mk_dag_run = MagicMock()
+        mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
+        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+        kwargs["ti"].xcom_pull.return_value = xmls_filenames
+        mk_optimize_package.return_value = "path_to_otimized_package/package.zip"
+        optimize_package(**kwargs)
+        mk_optimize_package.assert_called_once_with(
+            "path_to_sps_package/package.zip"
+        )
+
 
 if __name__ == "__main__":
     main()
