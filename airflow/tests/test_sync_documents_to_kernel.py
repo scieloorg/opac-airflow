@@ -129,23 +129,16 @@ class TestDeleteDocuments(TestCase):
 
 class TestRegisterUpdateDocuments(TestCase):
     @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
-    def test_register_update_documents_gets_sps_package_from_dag_run_conf(
-        self, mk_register_update_documents
-    ):
-        mk_dag_run = MagicMock()
-        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
-        mk_register_update_documents.return_value = [], []
-        register_update_documents(**kwargs)
-        mk_dag_run.conf.get.assert_called_once_with("sps_package")
-
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
     def test_register_update_documents_gets_ti_xcom_info(self, mk_register_update_documents):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
         mk_register_update_documents.return_value = [], []
         register_update_documents(**kwargs)
-        kwargs["ti"].xcom_pull.assert_called_once_with(
+        kwargs["ti"].xcom_pull.assert_any_call(
             key="xmls_to_preserve", task_ids="delete_docs_task_id"
+        )
+        kwargs["ti"].xcom_pull.assert_any_call(
+            key="optimized_package", task_ids="optimize_package_task_id"
         )
 
     @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
@@ -169,11 +162,14 @@ class TestRegisterUpdateDocuments(TestCase):
         mk_dag_run = MagicMock()
         mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
-        kwargs["ti"].xcom_pull.return_value = xmls_filenames
+        kwargs["ti"].xcom_pull.side_effect = [
+            xmls_filenames,
+            "path_to_optimized_package/package.zip"
+        ]
         mk_register_update_documents.return_value = [], []
         register_update_documents(**kwargs)
         mk_register_update_documents.assert_called_once_with(
-            "path_to_sps_package/package.zip", xmls_filenames
+            "path_to_optimized_package/package.zip", xmls_filenames
         )
 
     @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
