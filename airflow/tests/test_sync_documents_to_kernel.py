@@ -370,5 +370,15 @@ class TestOptimizeDocuments(TestCase):
             key="xmls_to_preserve", task_ids="delete_docs_task_id"
         )
 
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.optimize_sps_pkg_zip_file")
+    def test_optimize_package_does_not_call_optimize_package_operation(self, mk_optimize_package):
+        mk_dag_run = MagicMock()
+        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+        kwargs["ti"].xcom_pull.return_value = None
+        optimize_package(**kwargs)
+        mk_optimize_package.assert_not_called()
+        kwargs["ti"].xcom_push.assert_not_called()
+
+
 if __name__ == "__main__":
     main()
