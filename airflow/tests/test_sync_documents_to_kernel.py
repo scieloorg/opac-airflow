@@ -360,6 +360,15 @@ class TestOptimizeDocuments(TestCase):
         optimize_package(**kwargs)
         mk_dag_run.conf.get.assert_called_once_with("sps_package")
 
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.optimize_sps_pkg_zip_file")
+    def test_optimize_package_gets_ti_xcom_info(self, mk_optimize_package):
+        mk_dag_run = MagicMock()
+        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+        mk_optimize_package.return_value = [], []
+        optimize_package(**kwargs)
+        kwargs["ti"].xcom_pull.assert_called_once_with(
+            key="xmls_to_preserve", task_ids="delete_docs_task_id"
+        )
 
 if __name__ == "__main__":
     main()
