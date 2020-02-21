@@ -96,6 +96,7 @@ def optimize_package(dag_run, **kwargs):
 
 
 def register_update_documents(dag_run, **kwargs):
+
     _xmls_to_preserve = kwargs["ti"].xcom_pull(
         key="xmls_to_preserve", task_ids="delete_docs_task_id"
     )
@@ -105,11 +106,10 @@ def register_update_documents(dag_run, **kwargs):
     _optimized_package = kwargs["ti"].xcom_pull(
         key="optimized_package", task_ids="optimize_package_task_id"
     )
-    if not _optimized_package:
-        return False
 
+    package = _optimized_package or dag_run.conf.get("sps_package")
     _documents, executions = sync_documents_to_kernel_operations.register_update_documents(
-        _optimized_package, _xmls_to_preserve
+        package, _xmls_to_preserve
     )
 
     for execution in executions:

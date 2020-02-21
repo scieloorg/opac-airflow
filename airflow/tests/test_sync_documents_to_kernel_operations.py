@@ -1015,12 +1015,15 @@ class TestOptimizeSPPackage(TestCase):
     @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     @patch("operations.sync_documents_to_kernel_operations.Logger")
     @patch("operations.sync_documents_to_kernel_operations.SPPackage")
+    @patch("operations.sync_documents_to_kernel_operations.os.path.isfile")
     def test_optimize_sps_pkg_zip_file_write_log_messages_in_and_out(
         self,
+        mock_isfile,
         MockSPPackage,
         MockLogger,
         MockZipFile,
     ):
+        mock_isfile.return_value = True
         MockZipFile = mock_open
         mock_optimise = Mock("optimise")
         mock_optimise.return_value = None
