@@ -121,17 +121,16 @@ def delete_documents(
     return (list(set(xmls_filenames) - set(xmls_to_delete)), executions)
 
 
-def optimize_sps_pkg_zip_file(sps_pkg_zip_file):
+def optimize_sps_pkg_zip_file(sps_pkg_zip_file, new_sps_zip_dir):
     """
     Recebe um zip `sps_pkg_zip_file` e
     Retorna seu zip otimizado `new_sps_pkg_zip_file`
     """
     Logger.debug("optimize_sps_pkg_zip_file IN")
     basename = os.path.basename(sps_pkg_zip_file)
-    new_sps_pkg_zip_file = os.path.join(mkdtemp(), basename)
+    new_sps_pkg_zip_file = os.path.join(new_sps_zip_dir, basename)
 
-    tmp_dir = mkdtemp()
-    package = SPPackage.from_file(sps_pkg_zip_file, tmp_dir)
+    package = SPPackage.from_file(sps_pkg_zip_file, mkdtemp())
     package.optimise(
         new_package_file_path=new_sps_pkg_zip_file,
         preserve_files=False

@@ -22,9 +22,11 @@
 import os
 import logging
 from datetime import datetime
+from tempfile import mkdtemp
 
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
+from airflow.models import Variable
 
 from operations import sync_documents_to_kernel_operations
 from common.hooks import add_execution_in_database
@@ -78,6 +80,7 @@ def delete_documents(dag_run, **kwargs):
 
 def optimize_package(dag_run, **kwargs):
     _sps_package = dag_run.conf.get("sps_package")
+    new_sps_zip_dir = Variable.get("NEW_SPS_ZIP_DIR", mkdtemp())
     _xmls_to_preserve = kwargs["ti"].xcom_pull(
         key="xmls_to_preserve", task_ids="delete_docs_task_id"
     )
@@ -85,14 +88,12 @@ def optimize_package(dag_run, **kwargs):
         return False
 
     _optimized_package = sync_documents_to_kernel_operations.optimize_sps_pkg_zip_file(
-        _sps_package
+        _sps_package, new_sps_zip_dir
     )
     if _optimized_package:
         kwargs["ti"].xcom_push(
             key="optimized_package", value=_optimized_package)
-        return True
-    else:
-        return False
+    return True
 
 
 def register_update_documents(dag_run, **kwargs):
