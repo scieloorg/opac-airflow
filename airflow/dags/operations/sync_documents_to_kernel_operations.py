@@ -130,13 +130,12 @@ def optimize_sps_pkg_zip_file(sps_pkg_zip_file):
     basename = os.path.basename(sps_pkg_zip_file)
     new_sps_pkg_zip_file = os.path.join(mkdtemp(), basename)
 
-    with ZipFile(sps_pkg_zip_file) as zipfile:
-        tmp_dir = mkdtemp()
-        package = SPPackage.from_file(zipfile, tmp_dir)
-        package.optimise(
-            new_package_file_path=new_sps_pkg_zip_file,
-            preserve_files=False
-        )
+    tmp_dir = mkdtemp()
+    package = SPPackage.from_file(sps_pkg_zip_file, tmp_dir)
+    package.optimise(
+        new_package_file_path=new_sps_pkg_zip_file,
+        preserve_files=False
+    )
     Logger.debug("optimize_sps_pkg_zip_file OUT")
     return new_sps_pkg_zip_file
 
