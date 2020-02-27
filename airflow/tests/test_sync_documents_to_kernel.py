@@ -1,5 +1,6 @@
 from unittest import TestCase, main
 from unittest.mock import patch, MagicMock
+from tempfile import mkdtemp
 
 from airflow import DAG
 
@@ -345,22 +346,30 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
         )
 
 
+
 class TestOptimizeDocuments(TestCase):
+
+    @patch("sync_documents_to_kernel.Variable")
     @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.optimize_sps_pkg_zip_file")
     def test_optimize_package_gets_sps_package_from_dag_run_conf(
-        self, mk_optimize_package
+        self, mk_optimize_package, mk_variable
     ):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
         mk_optimize_package.return_value = [], []
+        new_sps_zip_dir = mkdtemp()
+        mk_variable.get.return_value = new_sps_zip_dir
         optimize_package(**kwargs)
         mk_dag_run.conf.get.assert_called_once_with("sps_package")
 
+    @patch("sync_documents_to_kernel.Variable")
     @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.optimize_sps_pkg_zip_file")
-    def test_optimize_package_gets_ti_xcom_info(self, mk_optimize_package):
+    def test_optimize_package_gets_ti_xcom_info(self, mk_optimize_package, mk_variable):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
         mk_optimize_package.return_value = [], []
+        new_sps_zip_dir = mkdtemp()
+        mk_variable.get.return_value = new_sps_zip_dir
         optimize_package(**kwargs)
         kwargs["ti"].xcom_pull.assert_called_once_with(
             key="xmls_to_preserve", task_ids="delete_docs_task_id"
@@ -375,9 +384,10 @@ class TestOptimizeDocuments(TestCase):
         mk_optimize_package.assert_not_called()
         kwargs["ti"].xcom_push.assert_not_called()
 
+    @patch("sync_documents_to_kernel.Variable")
     @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.optimize_sps_pkg_zip_file")
     def test_optimize_package_calls_optimize_package_operation(
-        self, mk_optimize_package
+        self, mk_optimize_package, mk_variable
     ):
         xmls_filenames = [
             "1806-907X-rba-53-01-1-8.xml",
@@ -389,13 +399,16 @@ class TestOptimizeDocuments(TestCase):
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
         kwargs["ti"].xcom_pull.return_value = xmls_filenames
         mk_optimize_package.return_value = "path_to_otimized_package/package.zip"
+        new_sps_zip_dir = mkdtemp()
+        mk_variable.get.return_value = new_sps_zip_dir
         optimize_package(**kwargs)
         mk_optimize_package.assert_called_once_with(
-            "path_to_sps_package/package.zip"
+            "path_to_sps_package/package.zip", new_sps_zip_dir
         )
 
+    @patch("sync_documents_to_kernel.Variable")
     @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.optimize_sps_pkg_zip_file")
-    def test_optimize_package_does_not_push_if_none_was_optimized(self, mk_optimize_package):
+    def test_optimize_package_does_not_push_if_none_was_optimized(self, mk_optimize_package, mk_variable):
         xmls_filenames = [
             "1806-907X-rba-53-01-1-8.xml",
             "1806-907X-rba-53-01-9-18.xml",
@@ -406,11 +419,14 @@ class TestOptimizeDocuments(TestCase):
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
         kwargs["ti"].xcom_pull.return_value = xmls_filenames
         mk_optimize_package.return_value = None
+        new_sps_zip_dir = mkdtemp()
+        mk_variable.get.return_value = new_sps_zip_dir
         optimize_package(**kwargs)
         kwargs["ti"].xcom_push.assert_not_called()
 
+    @patch("sync_documents_to_kernel.Variable")
     @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.optimize_sps_pkg_zip_file")
-    def test_optimize_package_pushes_optimized_package(self, mk_optimize_package):
+    def test_optimize_package_pushes_optimized_package(self, mk_optimize_package, mk_variable):
         xmls_filenames = [
             "1806-907X-rba-53-01-1-8.xml",
             "1806-907X-rba-53-01-9-18.xml",
@@ -422,6 +438,8 @@ class TestOptimizeDocuments(TestCase):
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
         kwargs["ti"].xcom_pull.return_value = xmls_filenames
         mk_optimize_package.return_value = "path_to_otimized_package/package.zip"
+        new_sps_zip_dir = mkdtemp()
+        mk_variable.get.return_value = new_sps_zip_dir
         optimize_package(**kwargs)
         kwargs["ti"].xcom_push.assert_called_once_with(
             key="optimized_package", value="path_to_otimized_package/package.zip"

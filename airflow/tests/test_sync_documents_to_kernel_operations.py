@@ -1030,9 +1030,10 @@ class TestOptimizeSPPackage(TestCase):
         mock_package = Mock("package")
         mock_package.optimise = mock_optimise
         MockSPPackage.from_file.return_value = mock_package
+        new_sps_zip_dir = mkdtemp()
 
-        ret = optimize_sps_pkg_zip_file("dir/destination/rba_v53n1.zip")
-        assert ret.endswith("/rba_v53n1.zip") and ret != "dir/destination/rba_v53n1.zip"
+        ret = optimize_sps_pkg_zip_file("dir/destination/rba_v53n1.zip", new_sps_zip_dir)
+        self.assertEqual(ret, os.path.join(new_sps_zip_dir, "rba_v53n1.zip"))
 
 
 if __name__ == "__main__":

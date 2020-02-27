@@ -80,13 +80,13 @@ def delete_documents(dag_run, **kwargs):
 
 def optimize_package(dag_run, **kwargs):
     _sps_package = dag_run.conf.get("sps_package")
-    new_sps_zip_dir = Variable.get("NEW_SPS_ZIP_DIR", mkdtemp())
     _xmls_to_preserve = kwargs["ti"].xcom_pull(
         key="xmls_to_preserve", task_ids="delete_docs_task_id"
     )
     if not _xmls_to_preserve:
         return False
 
+    new_sps_zip_dir = Variable.get("NEW_SPS_ZIP_DIR", mkdtemp())
     _optimized_package = sync_documents_to_kernel_operations.optimize_sps_pkg_zip_file(
         _sps_package, new_sps_zip_dir
     )
