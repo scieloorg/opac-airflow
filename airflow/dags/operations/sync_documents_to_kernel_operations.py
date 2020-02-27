@@ -135,9 +135,12 @@ def optimize_sps_pkg_zip_file(sps_pkg_zip_file, new_sps_zip_dir):
         new_package_file_path=new_sps_pkg_zip_file,
         preserve_files=False
     )
-    Logger.debug("optimize_sps_pkg_zip_file OUT")
+
     if os.path.isfile(new_sps_pkg_zip_file):
+        Logger.debug("optimize_sps_pkg_zip_file OUT")
         return new_sps_pkg_zip_file
+
+    Logger.debug("optimize_sps_pkg_zip_file OUT")
 
 
 def register_update_documents(sps_package, xmls_to_preserve):
