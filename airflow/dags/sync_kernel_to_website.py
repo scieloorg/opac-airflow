@@ -285,8 +285,12 @@ def JournalFactory(data):
     """
     metadata = data["metadata"]
 
-    journal = models.Journal()
-    journal._id = journal.jid = data.get("id")
+    try:
+        journal = models.Journal.objects.get(_id=data.get("id"))
+    except models.Journal.DoesNotExist:
+        journal = models.Journal()
+        journal._id = journal.jid = data.get("id")
+
     journal.title = metadata.get("title", "")
     journal.title_iso = metadata.get("title_iso", "")
     journal.short_title = metadata.get("short_title", "")
@@ -343,7 +347,8 @@ def JournalFactory(data):
             journal.publisher_country = institution.get("country")
 
     journal.online_submission_url = metadata.get("online_submission_url", "")
-    journal.logo_url = metadata.get("logo_url", "")
+    if journal.logo_url is None or len(journal.logo_url) == 0:
+        journal.logo_url = metadata.get("logo_url", "")
     journal.current_status = metadata.get("status", {}).get("status")
 
     journal.created = data.get("created", "")

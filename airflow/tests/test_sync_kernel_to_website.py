@@ -25,6 +25,11 @@ def load_json_fixture(filename):
 
 class JournalFactoryTests(unittest.TestCase):
     def setUp(self):
+        self.journal_objects = patch(
+            "operations.sync_kernel_to_website_operations.models.Journal.objects"
+        )
+        JournalObjectsMock = self.journal_objects.start()
+        JournalObjectsMock.get.side_effect = models.Journal.DoesNotExist
         self.journal_data = load_json_fixture("kernel-journals-1678-4464.json")
         self.journal = JournalFactory(self.journal_data)
 
@@ -103,6 +108,22 @@ class JournalFactoryTests(unittest.TestCase):
 
     def test_attribute_updated(self):
         self.assertEqual(self.journal.updated, "2019-07-19T20:33:17.102106Z")
+
+
+class JournalFactoryExistsInWebsiteTests(unittest.TestCase):
+    def setUp(self):
+        self.journal_objects = patch(
+            "operations.sync_kernel_to_website_operations.models.Journal.objects"
+        )
+        MockJournal = MagicMock(spec=models.Journal)
+        MockJournal.logo_url = "/media/images/glogo.gif"
+        JournalObjectsMock = self.journal_objects.start()
+        JournalObjectsMock.get.return_value = MockJournal
+        self.journal_data = load_json_fixture("kernel-journals-1678-4464.json")
+        self.journal = JournalFactory(self.journal_data)
+
+    def test_preserves_logo_if_already_set(self):
+        self.assertEqual(self.journal.logo_url, "/media/images/glogo.gif")
 
 
 class ArticleFactoryTests(unittest.TestCase):
