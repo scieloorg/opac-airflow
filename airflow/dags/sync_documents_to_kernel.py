@@ -22,9 +22,11 @@
 import os
 import logging
 from datetime import datetime
+from tempfile import mkdtemp
 
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
+from airflow.models import Variable
 
 from operations import sync_documents_to_kernel_operations
 from common.hooks import add_execution_in_database
@@ -76,7 +78,7 @@ def delete_documents(dag_run, **kwargs):
         return False
 
 
-def register_update_documents(dag_run, **kwargs):
+def optimize_package(dag_run, **kwargs):
     _sps_package = dag_run.conf.get("sps_package")
     _xmls_to_preserve = kwargs["ti"].xcom_pull(
         key="xmls_to_preserve", task_ids="delete_docs_task_id"
@@ -84,14 +86,37 @@ def register_update_documents(dag_run, **kwargs):
     if not _xmls_to_preserve:
         return False
 
+    new_sps_zip_dir = Variable.get("NEW_SPS_ZIP_DIR", mkdtemp())
+    _optimized_package = sync_documents_to_kernel_operations.optimize_sps_pkg_zip_file(
+        _sps_package, new_sps_zip_dir
+    )
+    if _optimized_package:
+        kwargs["ti"].xcom_push(
+            key="optimized_package", value=_optimized_package)
+    return True
+
+
+def register_update_documents(dag_run, **kwargs):
+
+    _xmls_to_preserve = kwargs["ti"].xcom_pull(
+        key="xmls_to_preserve", task_ids="delete_docs_task_id"
+    )
+    if not _xmls_to_preserve:
+        return False
+
+    _optimized_package = kwargs["ti"].xcom_pull(
+        key="optimized_package", task_ids="optimize_package_task_id"
+    )
+
+    package = _optimized_package or dag_run.conf.get("sps_package")
     _documents, executions = sync_documents_to_kernel_operations.register_update_documents(
-        _sps_package, _xmls_to_preserve
+        package, _xmls_to_preserve
     )
 
     for execution in executions:
         execution["dag_run"] = kwargs.get("run_id")
         execution["pre_sync_dag_run"] = dag_run.conf.get("pre_syn_dag_run_id")
-        execution["package_name"] = os.path.basename(_sps_package)
+        execution["package_name"] = os.path.basename(_optimized_package)
         add_execution_in_database(table="xml_documents", data=execution)
 
     if _documents:
@@ -145,6 +170,13 @@ delete_documents_task = ShortCircuitOperator(
     dag=dag,
 )
 
+optimize_package_task = ShortCircuitOperator(
+    task_id="optimize_package_task_id",
+    provide_context=True,
+    python_callable=optimize_package,
+    dag=dag,
+)
+
 register_update_documents_task = ShortCircuitOperator(
     task_id="register_update_docs_id",
     provide_context=True,
@@ -159,4 +191,8 @@ link_documents_task = ShortCircuitOperator(
     dag=dag,
 )
 
-list_documents_task >> delete_documents_task >> register_update_documents_task >> link_documents_task
+list_documents_task >> delete_documents_task
+delete_documents_task >> optimize_package_task
+optimize_package_task >> register_update_documents_task
+register_update_documents_task >> link_documents_task
+
