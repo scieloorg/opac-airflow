@@ -25,9 +25,7 @@ def load_json_fixture(filename):
 
 class JournalFactoryTests(unittest.TestCase):
     def setUp(self):
-        self.journal_objects = patch(
-            "operations.sync_kernel_to_website_operations.models.Journal.objects"
-        )
+        self.journal_objects = patch("sync_kernel_to_website.models.Journal.objects")
         JournalObjectsMock = self.journal_objects.start()
         JournalObjectsMock.get.side_effect = models.Journal.DoesNotExist
         self.journal_data = load_json_fixture("kernel-journals-1678-4464.json")

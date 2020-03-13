@@ -289,8 +289,8 @@ def JournalFactory(data):
         journal = models.Journal.objects.get(_id=data.get("id"))
     except models.Journal.DoesNotExist:
         journal = models.Journal()
-        journal._id = journal.jid = data.get("id")
 
+    journal._id = journal.jid = data.get("id")
     journal.title = metadata.get("title", "")
     journal.title_iso = metadata.get("title_iso", "")
     journal.short_title = metadata.get("short_title", "")
@@ -428,10 +428,12 @@ def IssueFactory(data, journal_id, issue_order=None, _type="regular"):
         issue.number = metadata.get("number", issue.number)
 
     issue.volume = metadata.get("volume", "")
-    issue.order = metadata.get("order", 0)
+
+    if issue_order:
+        issue.order = issue_order
+
     issue.pid = metadata.get("pid", "")
     issue.journal = models.Journal.objects.get(_id=journal_id)
-    issue.order = issue_order
 
     def _get_issue_label(metadata: dict) -> str:
         """Produz o label esperado pelo OPAC de acordo com as regras aplicadas
