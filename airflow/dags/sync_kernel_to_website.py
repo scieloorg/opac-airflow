@@ -349,7 +349,7 @@ def JournalFactory(data):
     journal.online_submission_url = metadata.get("online_submission_url", "")
     if journal.logo_url is None or len(journal.logo_url) == 0:
         journal.logo_url = metadata.get("logo_url", "")
-    journal.current_status = metadata.get("status", {}).get("status")
+    journal.current_status = metadata.get("status_history", [{}])[-1].get("status")
 
     journal.created = data.get("created", "")
     journal.updated = data.get("updated", "")
