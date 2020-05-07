@@ -124,6 +124,76 @@ class JournalFactoryExistsInWebsiteTests(unittest.TestCase):
         self.assertEqual(self.journal.logo_url, "/media/images/glogo.gif")
 
 
+class IssueFactoryTests(unittest.TestCase):
+    def setUp(self):
+        self.mongo_connect_mock = patch(
+            "sync_kernel_to_website.mongo_connect"
+        )
+        self.mongo_connect_mock.start()
+        self.journal_objects = patch(
+            "sync_kernel_to_website.models.Journal.objects"
+        )
+        self.MockJournal = MagicMock(spec=models.Journal)
+        JournalObjectsMock = self.journal_objects.start()
+        JournalObjectsMock.get.return_value = self.MockJournal
+        self.issue_objects = patch("sync_kernel_to_website.models.Issue.objects")
+        IssueObjectsMock = self.issue_objects.start()
+        IssueObjectsMock.get.side_effect = models.Issue.DoesNotExist
+
+        self.issue_data = load_json_fixture("kernel-issues-0001-3714-1998-v29-n3.json")
+        self.issue = IssueFactory(self.issue_data, "0001-3714", "12345")
+
+    def tearDown(self):
+        self.mongo_connect_mock.stop()
+        self.journal_objects.stop()
+        self.issue_objects.stop()
+
+    def test_has_method_save(self):
+        self.assertTrue(hasattr(self.issue, "save"))
+
+    def test_attribute_mongodb_id(self):
+        self.assertEqual(self.issue._id, "0001-3714-1998-v29-n3")
+
+    def test_attribute_journal(self):
+        self.assertEqual(self.issue.journal, self.MockJournal)
+
+    def test_attribute_spe_text(self):
+        self.assertEqual(self.issue.spe_text, "")
+
+    def test_attribute_start_month(self):
+        self.assertEqual(self.issue.start_month, 9)
+
+    def test_attribute_end_month(self):
+        self.assertEqual(self.issue.end_month, 9)
+
+    def test_attribute_year(self):
+        self.assertEqual(self.issue.year, "1998")
+
+    def test_attribute_number(self):
+        self.assertEqual(self.issue.number, "3")
+
+    def test_attribute_volume(self):
+        self.assertEqual(self.issue.volume, "29")
+
+    def test_attribute_order(self):
+        self.assertEqual(self.issue.order, "12345")
+
+    def test_attribute_pid(self):
+        self.assertEqual(self.issue.pid, "0001-371419980003")
+
+    def test_attribute_label(self):
+        self.assertEqual(self.issue.label, "v29n3")
+
+    def test_attribute_suppl_text(self):
+        self.assertIsNone(self.issue.suppl_text)
+
+    def test_attribute_type(self):
+        self.assertEqual(self.issue.type, "regular")
+
+    def test_attribute_is_public(self):
+        self.assertTrue(self.issue.is_public)
+
+
 class ArticleFactoryTests(unittest.TestCase):
     def setUp(self):
         self.article_objects = patch(
