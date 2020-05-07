@@ -328,9 +328,9 @@
     "scielo_issn": "0102-311X",
     "print_issn": "0102-311X",
     "electronic_issn": "1678-4464",
-    "status": {
+    "status_history": [{
       "status": "current"
-    },
+    }],
     "subject_areas": [
       "HEALTH SCIENCES"
     ],
