@@ -314,6 +314,14 @@ class ArticleFactoryTests(unittest.TestCase):
     def test_htmls_attibutes_should_be_populated_with_documents_languages(self):
         self.assertEqual([{"lang": "en"}, {"lang": "pt"}], self.document.htmls)
 
+    def test_has_created_attribute(self):
+        self.assertTrue(hasattr(self.document, "created"))
+        self.assertIsNotNone(self.document.created)
+
+    def test_has_updated_attribute(self):
+        self.assertTrue(hasattr(self.document, "updated"))
+        self.assertIsNotNone(self.document.updated)
+
 
 @patch("operations.sync_kernel_to_website_operations.models.Article.objects")
 @patch("operations.sync_kernel_to_website_operations.models.Issue.objects")
