@@ -190,6 +190,12 @@ class IssueFactoryTests(unittest.TestCase):
     def test_attribute_type(self):
         self.assertEqual(self.issue.type, "regular")
 
+    def test_attribute_created(self):
+        self.assertEqual(self.issue.created, "1998-09-01T00:00:00.000000Z")
+
+    def test_attribute_updated(self):
+        self.assertEqual(self.issue.updated, "2020-04-28T20:16:24.459467Z")
+
     def test_attribute_is_public(self):
         self.assertTrue(self.issue.is_public)
 

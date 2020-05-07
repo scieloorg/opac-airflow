@@ -477,6 +477,9 @@ def IssueFactory(data, journal_id, issue_order=None, _type="regular"):
     else:
         issue.type = _type
 
+    issue.created = data.get("created", "")
+    issue.updated = data.get("updated", "")
+
     return issue
 
 
