@@ -417,8 +417,8 @@ def IssueFactory(data, journal_id, issue_order=None, _type="regular"):
 
     issue._id = issue.iid = data["id"]
     issue.spe_text = metadata.get("spe_text", "")
-    issue.start_month = metadata.get("publication_month", 0)
-    issue.end_month = metadata.get("publication_season", [0])[-1]
+    issue.start_month = metadata.get("publication_months", {"range": [0, 0]}).get("range", [0])[0]
+    issue.end_month = metadata.get("publication_months", {"range": [0, 0]}).get("range", [0])[-1]
 
     if _type == "ahead":
         issue.year = issue.year or "9999"
@@ -476,6 +476,9 @@ def IssueFactory(data, journal_id, issue_order=None, _type="regular"):
         issue.type = "special"
     else:
         issue.type = _type
+
+    issue.created = data.get("created", "")
+    issue.updated = data.get("updated", "")
 
     return issue
 

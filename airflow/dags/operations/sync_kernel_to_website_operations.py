@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Iterable, Generator, Dict, List, Tuple
 
 import requests
@@ -248,6 +249,9 @@ def ArticleFactory(
 
     # Campo de compatibilidade do OPAC
     article.htmls = [{"lang": lang} for lang in _get_languages(data)]
+
+    article.created = article.created or datetime.utcnow().isoformat()
+    article.updated = datetime.utcnow().isoformat()
 
     return article
 

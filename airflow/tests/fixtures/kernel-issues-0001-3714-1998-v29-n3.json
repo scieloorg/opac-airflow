@@ -1,0 +1,84 @@
+{
+    "_id": "0001-3714-1998-v29-n3",
+    "created": "1998-09-01T00:00:00.000000Z",
+    "updated": "2020-04-28T20:16:24.459467Z",
+    "items": [
+        {
+            "id": "bZX7rgXBcGQvrnDTmzbWzcT",
+            "order": "00208"
+        },
+        {
+            "id": "ccR6t3WVJ5zBjF8rjHHNF3y",
+            "order": "00228"
+        },
+        {
+            "id": "jNwCMvMDT9ZNKLKwKDd6pSJ",
+            "order": "00164"
+        },
+        {
+            "id": "dYJ4tzVhD3sNsbkRV6GgWHB",
+            "order": "00222"
+        },
+        {
+            "id": "8zSJvZ4fvBcFyn594CwyHQG",
+            "order": "00187"
+        },
+        {
+            "id": "MP6KG3V8rMsPwFKr4XPyCfG",
+            "order": "00197"
+        },
+        {
+            "id": "ycHKbKpGhmVbM3fjT8xLXHQ",
+            "order": "00213"
+        },
+        {
+            "id": "yMbDgprf3JrhS3fckGndyhy",
+            "order": "00183"
+        },
+        {
+            "id": "SDqNBws9vPCNxfNcsJfpqKL",
+            "order": "00167"
+        },
+        {
+            "id": "bYyxrmzfVh6PdMkp7vDBPwg",
+            "order": "00159"
+        },
+        {
+            "id": "NyQMYVKpfqQwyYjt7cm69jz",
+            "order": "00202"
+        },
+        {
+            "id": "Q7dtb49KL5S4KfrQKqPh7hc",
+            "order": "00219"
+        },
+        {
+            "id": "HsThZj7D5dNP55tRQwq8ynf",
+            "order": "00193"
+        },
+        {
+            "id": "k54PVgjsVYS4rwLXnhxQcZN",
+            "order": "00174"
+        },
+        {
+            "id": "zg9M58b9Z7bCQ9hwMjSdx6B",
+            "order": "00170"
+        },
+        {
+            "id": "gZ4wYHT3rDDxTvfk9hKmvTJ",
+            "order": "00179"
+        }
+    ],
+    "metadata": {
+        "publication_year": "1998",
+        "volume": "29",
+        "number": "3",
+        "publication_months": {
+            "range": [
+                9,
+                9
+            ]
+        },
+        "pid": "0001-371419980003"
+    },
+    "id": "0001-3714-1998-v29-n3"
+}
