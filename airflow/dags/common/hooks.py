@@ -12,6 +12,7 @@ from airflow.hooks.S3_hook import S3Hook
 from airflow.hooks.base_hook import BaseHook
 from airflow.hooks.postgres_hook import PostgresHook
 from airflow.exceptions import AirflowException
+from airflow.models import Variable
 from psycopg2 import ProgrammingError
 
 from mongoengine import connect
@@ -24,10 +25,18 @@ DEFAULT_HEADER = {
 }
 
 KERNEL_HOOK_BASE = HttpHook(http_conn_id="kernel_conn", method="GET")
+# HTTP_HOOK_RUN_RETRIES = Variable.get("HTTP_HOOK_RUN_RETRIES", 5)
+HTTP_HOOK_RUN_RETRIES = """
+    {% if var.value.HTTP_HOOK_RUN_RETRIES is defined %}
+        {{ var.value.HTTP_HOOK_RUN_RETRIES }}
+    {% else %}
+        5
+    {% endif %}
+"""
 
 @retry(
     wait=wait_exponential(),
-    stop=stop_after_attempt(4),
+    stop=stop_after_attempt(HTTP_HOOK_RUN_RETRIES),
     retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
 )
 def http_hook_run(api_hook, method, endpoint, data=None, headers=DEFAULT_HEADER, timeout=1):
