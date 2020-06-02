@@ -12,6 +12,7 @@ from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
+from airflow.operators.dagrun_operator import TriggerDagRunOperator
 from airflow.hooks.http_hook import HttpHook
 from airflow.exceptions import AirflowException
 from xylose.scielodocument import Journal, Issue
@@ -534,6 +535,12 @@ link_journals_and_issues_task = PythonOperator(
 )
 
 
+trigger_pre_sync_documents_to_kernel_dag_task = TriggerDagRunOperator(
+    task_id="trigger_pre_sync_documents_to_kernel_dag_task",
+    trigger_dag_id="pre_sync_documents_to_kernel",
+    dag=dag,
+)
+
 create_work_folders_task >> copy_mst_bases_to_work_folder_task >> extract_title_task
 extract_title_task >> extract_issue_task >> process_journals_task >> process_issues_task
-process_issues_task >> link_journals_and_issues_task
+process_issues_task >> link_journals_and_issues_task >> trigger_pre_sync_documents_to_kernel_dag_task
