@@ -7,10 +7,10 @@ clear
 echo === ATENCAO ===
 echo 
 echo Este arquivo executara os seguintes comandos
-echo SyncIsisToKernel.bat
+echo PrepSyncToKernel.bat
 echo GeraScielo.bat .. /scielo/web log/GeraPadrao.log adiciona
 echo 
 echo Tecle CONTROL-C para sair ou ENTER para continuar...
 
-SyncIsisToKernel.bat
+PrepSyncToKernel.bat
 GeraScielo.bat .. .. log/GeraPadrao.log adiciona
