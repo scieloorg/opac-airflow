@@ -8,7 +8,9 @@ Logger = logging.getLogger(__name__)
 
 def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
     """
-    Obtém Pacotes SPS através da Scilista, movendo os pacotes para o diretório de processamento do Airflow e gera lista dos paths dos pacotes SPS no diretório de processamento.
+    Obtém Pacotes SPS através da Scilista, movendo os pacotes para o diretório de 
+    processamento do Airflow e gera lista dos paths dos pacotes SPS no diretório de 
+    processamento.
 
     list scilista: lista com as linhas do arquivo scilista.lst
         rsp v10n4
@@ -25,14 +27,12 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
 
     with open(scilista_file_path) as scilista:
         for acron_issue in scilista.readlines():
-            zip_filename = "{}.zip".format("_".join(acron_issue.split()))
-            source = xc_dir_path / zip_filename
-            destination = proc_dir_path / zip_filename
-            Logger.info("Reading ZIP file: %s" % str(source))
-            if os.path.exists(str(source)):
-                Logger.info("Moving %s to %s" % (str(source), str(destination)))
-                shutil.move(str(source), str(destination))
-                sps_packages_list.append(str(destination))
+            filename_pattern = "*{}.zip".format("_".join(acron_issue.split()))
+            Logger.info("Reading ZIP files pattern: %s", filename_pattern)
+            for source in sorted(xc_dir_path.glob(filename_pattern)):
+                Logger.info("Moving %s to %s", str(source), str(proc_dir_path))
+                shutil.move(str(source), str(proc_dir_path))
+                sps_packages_list.append(str(proc_dir_path / source.name))
 
     Logger.debug("get_sps_packages OUT")
     return sps_packages_list
