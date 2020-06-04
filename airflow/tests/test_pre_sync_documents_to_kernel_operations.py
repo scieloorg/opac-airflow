@@ -39,13 +39,16 @@ class TestGetSPSPackages(TestCase):
         with scilista_file_path.open("w") as scilista_file:
             for line in scilista_lines:
                 scilista_file.write(line + "\n")
-                source_filenames.append("_".join(line.split()) + ".zip")
+                source_filenames += [
+                    "_".join([f"2020-01-01-00-0{i}-09090901"] + line.split()) + ".zip"
+                    for i in range(1, 4)
+                ]
         for filename in source_filenames:
             zip_filename = pathlib.Path(self.xc_dir_name) / filename
             with zipfile.ZipFile(zip_filename, "w") as zip_file:
                 zip_file.write(self.test_filepath)
 
-        get_sps_packages(**self.kwargs)
+        sps_packages = get_sps_packages(**self.kwargs)
         for filename in source_filenames:
             with self.subTest(filename=filename):
                 self.assertTrue(
@@ -53,6 +56,13 @@ class TestGetSPSPackages(TestCase):
                     .joinpath(filename)
                     .exists()
                 )
+        self.assertEqual(
+            sps_packages,
+            [
+                str(pathlib.Path(self.proc_dir_name).joinpath(filename))
+                for filename in source_filenames
+            ],
+        )
 
     def test_get_sps_packages_moves_anything_if_no_source_file(self):
         scilista_file_path = pathlib.Path(self.kwargs["scilista_file_path"])
