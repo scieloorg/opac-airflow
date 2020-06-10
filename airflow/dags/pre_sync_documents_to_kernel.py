@@ -3,14 +3,12 @@
     DAG responsável por preparar os pacotes SPS vindos do fluxo de ingestão para atualização do Kernel.
 
     Passos:
-        a. Obtém Pacotes SPS através da Scilista
-        b. Ler Pacotes SPS de acordo com a Scilista
-            - Diretório configurável, alimentado pelo XC
-        c. Não conseguiu ler pacotes
-            1. Envio de Email sobre pacote inválido
-            2. Pensar em outras forma de verificar
-        d. Deleta fascículos de acordo com a Scilista
-            1. Deletar o bundle no Kernel
+        a. Ler Scilista e determinar ação de cada fascículo
+        b. Se for comando para deleção de fascículo, ignora comando para fascículo
+        c. Senão
+            1. Move pacotes SPS referentes ao fascículo da Scilista, ordenados pelo nome
+               com data e hora
+            2. Dispara execução de DAG de sincronização para cada pacote
 """
 import os
 import logging
