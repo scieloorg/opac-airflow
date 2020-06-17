@@ -5,4 +5,4 @@ deepdiff[murmur]==4.0.7
 feedparser==5.2.1
 git+https://github.com/scieloorg/xylose.git@1.35.8#egg=xylose
 git+https://github.com/scieloorg/opac_schema.git@v2.54#egg=opac_schema
-git+https://github.com/scieloorg/packtools.git@2.6.0#egg=packtools
+git+https://github.com/scieloorg/packtools.git@2.6.4#egg=packtools
