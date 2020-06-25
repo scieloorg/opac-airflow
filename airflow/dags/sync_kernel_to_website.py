@@ -474,6 +474,12 @@ def IssueFactory(data, journal_id, issue_order=None, _type="regular"):
         issue.type = "volume_issue"
     elif issue.number and "spe" in issue.number:
         issue.type = "special"
+    elif _type == "ahead" and not data.get("items"):
+        """
+        Caso não haja nenhum artigo no bundle de ahead, ele é definido como
+        ``outdated_ahead``, para que não apareça na grade de fascículos
+        """
+        issue.type = "outdated_ahead"
     else:
         issue.type = _type
 
