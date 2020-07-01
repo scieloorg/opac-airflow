@@ -288,7 +288,8 @@ class TestJournalAsKernel(unittest.TestCase):
         self.mocked_journal.publisher_city = "Uberaba"
         self.mocked_journal.mission = {}
         self.mocked_journal.status_history = [
-            ('date', 'status', 'reason'),
+            ("2020-01-01", "current", ""),
+            ("2020-02-01", "deceased", "reason")
         ]
         self.mocked_journal.sponsors = []
 
@@ -319,3 +320,19 @@ class TestJournalAsKernel(unittest.TestCase):
         self.assertEqual(
             "Brasil",
             result["institution_responsible_for"][0]["country"])
+
+    def test_journal_as_kernel_returns_the_complete_status_history(self):
+        mocked_journal = self.mocked_journal
+        result = journal_as_kernel(mocked_journal)
+        self.assertEqual(
+            {"status": "current", "date": "2020-01-01T00:00:00.000000Z"},
+            result["status_history"][0],
+        )
+        self.assertEqual(
+            {
+                "date": "2020-02-01T00:00:00.000000Z",
+                "status": "deceased",
+                "reason": "reason",
+            },
+            result["status_history"][1],
+        )
