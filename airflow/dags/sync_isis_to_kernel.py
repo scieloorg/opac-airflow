@@ -21,6 +21,7 @@ from deepdiff import DeepDiff
 
 from common import hooks
 from operations.docs_utils import get_bundle_id
+from operations.sync_isis_to_kernel import parse_date_to_iso_format
 
 """
 Para o devido entendimento desta DAG pode-se ter como base a seguinte explicação.
@@ -106,13 +107,15 @@ def journal_as_kernel(journal: Journal) -> dict:
     _payload["print_issn"] = journal.print_issn or ""
     _payload["electronic_issn"] = journal.electronic_issn or ""
 
-    _payload["status"] = {}
-    if journal.status_history:
-        _status = journal.status_history[-1]
-        _payload["status"]["status"] = _status[1]
+    _payload["status_history"] = []
 
-        if _status[2]:
-            _payload["status"]["reason"] = _status[2]
+    for status in journal.status_history:
+        _status = {"status": status[1], "date": parse_date_to_iso_format(status[0])}
+
+        if status[2]:
+            _status["reason"] = status[2]
+
+        _payload["status_history"].append(_status)
 
     _payload["subject_areas"] = journal.subject_areas or []
 
