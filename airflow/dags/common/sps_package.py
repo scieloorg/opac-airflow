@@ -209,14 +209,17 @@ class SPS_Package:
 
     @property
     def number(self):
-        issue = dict(self.parse_article_meta).get("issue")
-        if issue:
-            if "s" in issue and "spe" not in issue:
-                if "-s" in issue:
-                    return issue[: issue.find("-s")]
-                if issue.startswith("s"):
-                    return None
-        return issue
+        if self.article_meta is not None:
+            issue_tag = self.article_meta.find("./issue")
+            if issue_tag is not None:
+                issue_tag_text = issue_tag.text.strip()
+                lower_value = issue_tag_text.lower()
+                if "sup" in lower_value:
+                    index = lower_value.find("sup")
+                    if index == 0:  # starts with "s"
+                        return None
+                    issue_tag_text = issue_tag_text[:index].strip()
+                return "".join(issue_tag_text.split())
 
     @property
     def supplement(self):
