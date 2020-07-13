@@ -224,7 +224,7 @@ class TestGetXMLData(TestCase):
         self.assertEqual(result["issn"], "1806-907X")
         self.assertEqual(result["year"], "2018")
         self.assertEqual(result["volume"], "53")
-        self.assertEqual(result["number"], "01")
+        self.assertEqual(result["number"], "1")
         self.assertEqual(
             result["assets"],
             [
