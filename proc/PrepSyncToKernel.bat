@@ -7,9 +7,8 @@
 # XC_KERNEL_GATE: path do diretório para copia dos pacotes como estao no momento que o processamento do GeraPadrao e iniciado
 
 
-ERRORFILE=PrepSyncToKernel.err
+ERRORFILE=/tmp/PrepSyncToKernel.err
 echo > $ERRORFILE
-
 
 echo ===============
 echo
@@ -42,27 +41,23 @@ then
 
         if [[ $(tr '[:upper:]' '[:lower:]' <<< "$DEL_COMMAND") = del ]];
         then
-            echo
-            echo "Package to delete: ${ACRON}_${ISSUE}"
+            echo "  Package to delete: ${ACRON}_${ISSUE}"
             echo
         else
             PACK_NAME="${XC_SPS_PACKAGES}/*${ACRON}_${ISSUE}.zip"
             if [ -e ${PACK_NAME} ];
             then
-                echo
-                echo "Moving pack ${PACK_NAME} to ${XC_KERNEL_GATE} ..."
+                echo "  Moving pack ${PACK_NAME} to ${XC_KERNEL_GATE} ..."
                 echo
                 mv ${PACK_NAME} ${XC_KERNEL_GATE}
             else
                 if [[ "$ISSUE" == *"ahead"* ]];
                 then
-                    echo
-                    echo "WARNING: Not found ${PACK_NAME} to move"
+                    echo "  WARNING: Not found ${PACK_NAME} to move"
                     echo "WARNING: Not found ${PACK_NAME} to move" >> $ERRORFILE
                     echo
                 else
-                    echo
-                    echo "ERROR: Not found ${PACK_NAME} to move"
+                    echo "  ERROR: Not found ${PACK_NAME} to move"
                     echo "ERROR: Not found ${PACK_NAME} to move" >> $ERRORFILE
                     echo
                 fi
