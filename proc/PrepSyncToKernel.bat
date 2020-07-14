@@ -14,6 +14,10 @@ echo "Copiando pacotes SPS para a área do Escalonador"
 echo
 echo ===============
 
+echo SCILISTA_PATH=$SCILISTA_PATH
+echo XC_SPS_PACKAGES=$XC_SPS_PACKAGES
+echo XC_KERNEL_GATE=$XC_KERNEL_GATE
+
 SCILISTA_PATH_TMP=/tmp/scilista.lst
 cp $SCILISTA_PATH $SCILISTA_PATH_TMP
 if [ -e $SCILISTA_PATH_TMP ];
@@ -28,8 +32,7 @@ then
         ISSUE="$(echo $LINE | cut -f2 -d ' ')"
         DEL_COMMAND="$(echo $LINE | cut -f3 -d ' ')"
         echo
-        echo "ACRON: $ACRON"
-        echo "ISSUE: $ISSUE"
+        echo "ACRON: $ACRON | ISSUE: $ISSUE"
         echo
 
         if [[ $(tr '[:upper:]' '[:lower:]' <<< "$DEL_COMMAND") = del ]];
@@ -60,6 +63,14 @@ then
         fi
     done < $SCILISTA_PATH
 
+    echo "--------------------------------------------------------"
+    echo "Number of items: "
+    echo "`cat ${SCILISTA_PATH_TMP} | wc -l` in ${SCILISTA_PATH} (original)"
+    echo "`cat ${SCILISTA_PATH} | wc -l` in ${SCILISTA_PATH} (no repetition)"
+    echo "`ls ${XC_SPS_PACKAGES} | wc -l` in ${XC_SPS_PACKAGES}"
+    echo "`ls ${XC_KERNEL_GATE} | wc -l` in ${XC_KERNEL_GATE}"
+    echo "--------------------------------------------------------"
+ 
     echo
     echo "Copiando scilista de $SCILISTA_PATH para a área do Escalonador em ${XC_KERNEL_GATE}"
     echo
