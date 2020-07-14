@@ -14,6 +14,7 @@ echo "Copiando pacotes SPS para a área do Escalonador"
 echo
 echo ===============
 
+
 if [ ! -z ${SCILISTA_PATH+x} ] && [ ! -z ${XC_SPS_PACKAGES+x} ] && [ ! -z ${XC_KERNEL_GATE+x} ];
 then
     while read LINE; do
@@ -32,12 +33,25 @@ then
             echo
         else
             PACK_NAME="${XC_SPS_PACKAGES}/*${ACRON}_${ISSUE}.zip"
-            echo
-            echo "Moving pack ${PACK_NAME} to ${XC_KERNEL_GATE} ..."
-            echo
-            mv ${PACK_NAME} ${XC_KERNEL_GATE}
+            if [ -e ${PACK_NAME} ];
+            then
+                echo
+                echo "Moving pack ${PACK_NAME} to ${XC_KERNEL_GATE} ..."
+                echo
+                mv ${PACK_NAME} ${XC_KERNEL_GATE}
+            else
+                if [[ "$ISSUE" == *"ahead"* ]];
+                then
+                    echo
+                    echo "WARNING: Not found ${PACK_NAME} to move"
+                    echo
+                else
+                    echo
+                    echo "ERROR: ${PACK_NAME} is expected to exist to be moved to ${XC_KERNEL_GATE}"
+                    echo
+                fi
+            fi
         fi
-
     done < $SCILISTA_PATH
 
     echo
