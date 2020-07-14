@@ -7,7 +7,7 @@
 # XC_KERNEL_GATE: path do diretório para copia dos pacotes como estao no momento que o processamento do GeraPadrao e iniciado
 
 echo ""
-echo "Executing /$0 from `pwd`"
+echo "Executing $0 from `pwd`"
 echo ""
 
 if [ -f PrepSyncToKernel.ini ];
