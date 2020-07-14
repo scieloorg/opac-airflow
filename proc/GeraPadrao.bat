@@ -10,7 +10,18 @@ echo Este arquivo executara os seguintes comandos
 echo PrepSyncToKernel.bat
 echo GeraScielo.bat .. /scielo/web log/GeraPadrao.log adiciona
 echo 
-echo Tecle CONTROL-C para sair ou ENTER para continuar...
 
-PrepSyncToKernel.bat
+PREP_LOG=log/PrepSyncToKernel.log
+PrepSyncToKernel.bat > $PREP_LOG
+
+if [ -f PrepSyncToKernel.ini ];
+then
+    . PrepSyncToKernel.ini
+fi
+
+if [ "" != "${XC_KERNEL_GATE}" ] && [ -e ${XC_KERNEL_GATE} ];
+then
+    cp $PREP_LOG ${XC_KERNEL_GATE}
+fi
+
 GeraScielo.bat .. .. log/GeraPadrao.log adiciona
