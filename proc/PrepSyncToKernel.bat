@@ -6,12 +6,67 @@
 # XC_SPS_PACKAGES: path do diretório com todos os pacotes gerados pelo XC
 # XC_KERNEL_GATE: path do diretório para copia dos pacotes como estao no momento que o processamento do GeraPadrao e iniciado
 
+echo ""
+echo "Executing /$0 from `pwd`"
+echo ""
 
 if [ -f PrepSyncToKernel.ini ];
 then
-    echo "Read variables from file PrepSyncToKernel.ini"
+    echo "VARIABLES read from file PrepSyncToKernel.ini"
     . PrepSyncToKernel.ini
+    echo
+    echo SCILISTA_PATH=$SCILISTA_PATH
+    echo XC_SPS_PACKAGES=$XC_SPS_PACKAGES
+    echo XC_KERNEL_GATE=$XC_KERNEL_GATE
+    echo
 fi
+
+if [ "" == "${SCILISTA_PATH}" ];
+then
+    echo "Missing required variable: SCILISTA_PATH"
+    ERROR=1
+else
+    if [ ! -f ${SCILISTA_PATH} ];
+    then
+        echo "Missing file: ${SCILISTA_PATH}"
+        ERROR=1
+    fi
+fi
+
+if [ "" == "${XC_SPS_PACKAGES}" ];
+then
+    echo "Missing required variable: XC_SPS_PACKAGES"
+    ERROR=1
+else
+    if [ ! -e ${XC_SPS_PACKAGES} ];
+    then
+        echo "Missing directory: ${XC_SPS_PACKAGES}. ${XC_SPS_PACKAGES} is not a directory. "
+        ERROR=1
+    fi
+fi
+
+if [ "" == "${XC_KERNEL_GATE}" ];
+then
+    echo "Missing required variable: XC_KERNEL_GATE"
+    ERROR=1
+else
+    if [ ! -e ${XC_KERNEL_GATE} ];
+    then
+        echo "Missing directory: ${XC_KERNEL_GATE}. ${XC_KERNEL_GATE} is not a directory. "
+        ERROR=1
+    fi
+fi
+
+if [ "$ERROR" == "1" ];
+then
+    echo
+    echo "SCILISTA_PATH, XC_SPS_PACKAGES e XC_KERNEL_GATE sao obrigatorias para a Syncronizacao com o Kernel."
+    echo "Verifique se as tres variaveis estao configuradas."
+    echo "A execucao do GeraPadrao seguira sem o Kernel."
+    echo
+    exit 1
+fi
+
 
 ERRORFILE=/tmp/PrepSyncToKernel.err
 echo > $ERRORFILE
@@ -24,7 +79,6 @@ echo
 echo SCILISTA_PATH=$SCILISTA_PATH
 echo XC_SPS_PACKAGES=$XC_SPS_PACKAGES
 echo XC_KERNEL_GATE=$XC_KERNEL_GATE
-echo ERRORFILE=$ERRORFILE
 echo
 echo ===============
 
@@ -35,7 +89,7 @@ then
     cat $SCILISTA_PATH_TMP | sort -u > $SCILISTA_PATH
 fi
 
-if [ ! -z ${SCILISTA_PATH+x} ] && [ ! -z ${XC_SPS_PACKAGES+x} ] && [ ! -z ${XC_KERNEL_GATE+x} ];
+if [ -f ${SCILISTA_PATH} ] && [ -e ${XC_SPS_PACKAGES} ] && [ -e ${XC_KERNEL_GATE} ];
 then
     while read LINE; do
         ACRON="$(echo $LINE | cut -f1 -d ' ')"
@@ -98,4 +152,5 @@ else
     echo "A execucao do proc seguira sem o Kernel."
     echo
     echo ===============
+    exit 1
 fi
