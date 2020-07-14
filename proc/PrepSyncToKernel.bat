@@ -7,16 +7,21 @@
 # XC_KERNEL_GATE: path do diretório para copia dos pacotes como estao no momento que o processamento do GeraPadrao e iniciado
 
 
+ERRORFILE=PrepSyncToKernel.err
+echo > $ERRORFILE
+
+
 echo ===============
 echo
 echo "Prepara Sincronizacao com o Kernel..."
 echo "Copiando pacotes SPS para a área do Escalonador"
 echo
-echo ===============
-
 echo SCILISTA_PATH=$SCILISTA_PATH
 echo XC_SPS_PACKAGES=$XC_SPS_PACKAGES
 echo XC_KERNEL_GATE=$XC_KERNEL_GATE
+echo ERRORFILE=$ERRORFILE
+echo
+echo ===============
 
 SCILISTA_PATH_TMP=/tmp/scilista.lst
 cp $SCILISTA_PATH $SCILISTA_PATH_TMP
@@ -53,10 +58,12 @@ then
                 then
                     echo
                     echo "WARNING: Not found ${PACK_NAME} to move"
+                    echo "WARNING: Not found ${PACK_NAME} to move" >> $ERRORFILE
                     echo
                 else
                     echo
-                    echo "ERROR: ${PACK_NAME} is expected to exist to be moved to ${XC_KERNEL_GATE}"
+                    echo "ERROR: Not found ${PACK_NAME} to move"
+                    echo "ERROR: Not found ${PACK_NAME} to move" >> $ERRORFILE
                     echo
                 fi
             fi
@@ -69,6 +76,9 @@ then
     echo "`cat ${SCILISTA_PATH} | wc -l` in ${SCILISTA_PATH} (no repetition)"
     echo "`ls ${XC_SPS_PACKAGES} | wc -l` in ${XC_SPS_PACKAGES}"
     echo "`ls ${XC_KERNEL_GATE} | wc -l` in ${XC_KERNEL_GATE}"
+    echo "--------------------------------------------------------"
+    grep WARNING $ERRORFILE
+    grep ERROR $ERRORFILE
     echo "--------------------------------------------------------"
  
     echo
