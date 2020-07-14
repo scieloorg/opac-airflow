@@ -33,9 +33,9 @@ then
         else
             PACK_NAME="${XC_SPS_PACKAGES}/*${ACRON}_${ISSUE}.zip"
             echo
-            echo "Copying pack ${PACK_NAME} to ${XC_KERNEL_GATE} ..."
+            echo "Moving pack ${PACK_NAME} to ${XC_KERNEL_GATE} ..."
             echo
-            cp ${PACK_NAME} ${XC_KERNEL_GATE}
+            mv ${PACK_NAME} ${XC_KERNEL_GATE}
         fi
 
     done < $SCILISTA_PATH
