@@ -14,6 +14,12 @@ echo "Copiando pacotes SPS para a área do Escalonador"
 echo
 echo ===============
 
+SCILISTA_PATH_TMP=/tmp/scilista.lst
+cp $SCILISTA_PATH $SCILISTA_PATH_TMP
+if [ -e $SCILISTA_PATH_TMP ];
+then
+    cat $SCILISTA_PATH_TMP | sort -u > $SCILISTA_PATH
+fi
 
 if [ ! -z ${SCILISTA_PATH+x} ] && [ ! -z ${XC_SPS_PACKAGES+x} ] && [ ! -z ${XC_KERNEL_GATE+x} ];
 then
