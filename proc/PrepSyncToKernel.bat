@@ -7,6 +7,12 @@
 # XC_KERNEL_GATE: path do diretório para copia dos pacotes como estao no momento que o processamento do GeraPadrao e iniciado
 
 
+if [ -f PrepSyncToKernel.ini ];
+then
+    echo "Read variables from file PrepSyncToKernel.ini"
+    . PrepSyncToKernel.ini
+fi
+
 ERRORFILE=/tmp/PrepSyncToKernel.err
 echo > $ERRORFILE
 
