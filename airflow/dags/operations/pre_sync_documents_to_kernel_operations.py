@@ -30,9 +30,9 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
     failures = []
 
     with open(scilista_file_path) as scilista:
-        for row in scilista.readlines():
+        for scilista_item in scilista.readlines():
             # Verifica se comando DEL está indicado no fascículo
-            acron_issue = row.strip().split()
+            acron_issue = scilista_item.strip().split()
             if len(acron_issue) != 2:
                 continue
             filename_pattern = "*{}.zip".format("_".join(acron_issue))
@@ -48,10 +48,10 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
                     shutil.copy(str(source), str(proc_dir_path))
                     sps_packages_list.append(str(proc_dir_path / source.name))
             except FileNotFoundError as e:
-                row = row.strip()
-                Logger.exception("Missing SPS Package of %s %s in '%s': %s",
-                    acron_issue[0], acron_issue[1], xc_dir_name, e)
-                failures.append(row)
+                scilista_item = scilista_item.strip()
+                Logger.exception("Missing SPS Package of %s in '%s': %s",
+                    scilista_item, xc_dir_name, e)
+                failures.append(scilista_item)
 
     if failures:
         raise GetSPSPackagesFromGeraPadraoError(
