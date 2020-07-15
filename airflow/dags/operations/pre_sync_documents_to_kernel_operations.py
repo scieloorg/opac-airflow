@@ -33,7 +33,12 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
                 continue
             filename_pattern = "*{}.zip".format("_".join(acron_issue))
             Logger.info("Reading ZIP files pattern: %s", filename_pattern)
-            for source in sorted(xc_dir_path.glob(filename_pattern)):
+            files = xc_dir_path.glob(filename_pattern)
+            if not files:
+                raise FileNotFoundError(
+                    "Not found files which pattern is '{}'".format(
+                        filename_pattern))
+            for source in sorted(files):
                 Logger.info("Copying %s to %s", str(source), str(proc_dir_path))
                 shutil.copy(str(source), str(proc_dir_path))
                 sps_packages_list.append(str(proc_dir_path / source.name))
