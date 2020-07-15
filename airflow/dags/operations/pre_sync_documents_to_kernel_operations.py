@@ -26,10 +26,11 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
     sps_packages_list = []
 
     with open(scilista_file_path) as scilista:
-        for acron_issue in scilista.readlines():
+        for row in scilista.readlines():
             # Verifica se comando DEL está indicado no fascículo
-            if not acron_issue.strip().lower().endswith("del"):
-                filename_pattern = "*{}.zip".format("_".join(acron_issue.split()))
+            acron_issue = row.strip().split()
+            if len(acron_issue) == 2:
+                filename_pattern = "*{}.zip".format("_".join(acron_issue))
                 Logger.info("Reading ZIP files pattern: %s", filename_pattern)
                 for source in sorted(xc_dir_path.glob(filename_pattern)):
                     Logger.info("Moving %s to %s", str(source), str(proc_dir_path))
