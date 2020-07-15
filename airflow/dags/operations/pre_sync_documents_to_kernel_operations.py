@@ -34,8 +34,8 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
             filename_pattern = "*{}.zip".format("_".join(acron_issue))
             Logger.info("Reading ZIP files pattern: %s", filename_pattern)
             for source in sorted(xc_dir_path.glob(filename_pattern)):
-                Logger.info("Moving %s to %s", str(source), str(proc_dir_path))
-                shutil.move(str(source), str(proc_dir_path))
+                Logger.info("Copying %s to %s", str(source), str(proc_dir_path))
+                shutil.copy(str(source), str(proc_dir_path))
                 sps_packages_list.append(str(proc_dir_path / source.name))
 
     Logger.debug("get_sps_packages OUT")
