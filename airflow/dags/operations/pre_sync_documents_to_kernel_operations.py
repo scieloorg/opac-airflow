@@ -1,9 +1,12 @@
-import os
 import logging
 import shutil
 from pathlib import Path
 
 Logger = logging.getLogger(__name__)
+
+
+class GetSPSPackagesFromGeraPadraoError(Exception):
+    pass
 
 
 def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
@@ -24,6 +27,7 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
     xc_dir_path = Path(xc_dir_name)
     proc_dir_path = Path(proc_dir_name)
     sps_packages_list = []
+    failures = []
 
     with open(scilista_file_path) as scilista:
         for row in scilista.readlines():
@@ -44,8 +48,16 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
                     shutil.copy(str(source), str(proc_dir_path))
                     sps_packages_list.append(str(proc_dir_path / source.name))
             except FileNotFoundError as e:
+                row = row.strip()
                 Logger.exception("Missing SPS Package of %s %s in '%s': %s",
                     acron_issue[0], acron_issue[1], xc_dir_name, e)
+                failures.append(row)
+
+    if failures:
+        raise GetSPSPackagesFromGeraPadraoError(
+            "In {}, not found {} SPS packages: {}".format(
+                str(xc_dir_path), len(failures), ", ".join(failures))
+            )
 
     Logger.debug("get_sps_packages OUT")
     return sps_packages_list
