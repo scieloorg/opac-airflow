@@ -90,7 +90,7 @@ class TestGetSPSPackages(TestCase):
             ],
         )
 
-    def test_get_sps_packages_moves_anything_if_no_source_file(self):
+    def test_get_sps_packages_moves_nothing_if_no_source_file(self):
         scilista_file_path = pathlib.Path(self.kwargs["scilista_file_path"])
         package = "rba v53n2"
         scilista_file_path.write_text(package)
