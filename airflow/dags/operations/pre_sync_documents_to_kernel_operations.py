@@ -6,10 +6,6 @@ from pathlib import Path
 Logger = logging.getLogger(__name__)
 
 
-class GetSPSPackagesFromGeraPadraoError(Exception):
-    pass
-
-
 def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
     """
     Obtém Pacotes SPS através da Scilista, movendo os pacotes para o diretório de 
