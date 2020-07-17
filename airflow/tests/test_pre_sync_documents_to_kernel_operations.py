@@ -40,7 +40,7 @@ class TestGetSPSPackages(TestCase):
             for line in scilista_lines:
                 scilista_file.write(line + "\n")
                 source_filenames += [
-                    "_".join([f"2020-01-01-00-0{i}-09090901"] + line.split()) + ".zip"
+                    "_".join([f"2020-01-01-00-0{i}-09-090901"] + line.split()) + ".zip"
                     for i in range(1, 4)
                 ]
         for filename in source_filenames:
@@ -73,7 +73,7 @@ class TestGetSPSPackages(TestCase):
                 scilista_file.write(line + "\n")
                 if not line.endswith("del"):
                     source_filenames += [
-                        "_".join([f"2020-01-01-00-0{i}-09090901"] + line.split()) + ".zip"
+                        "_".join([f"2020-01-01-00-0{i}-09-090901"] + line.split()) + ".zip"
                         for i in range(1, 4)
                     ]
         for filename in source_filenames:
@@ -90,12 +90,12 @@ class TestGetSPSPackages(TestCase):
             ],
         )
 
-    def test_get_sps_packages_moves_anything_if_no_source_file(self):
+    def test_get_sps_packages_moves_nothing_if_no_source_file(self):
         scilista_file_path = pathlib.Path(self.kwargs["scilista_file_path"])
         package = "rba v53n2"
         scilista_file_path.write_text(package)
         source_filenames = [
-            "rba_v53n1", "rba_2019nahead", "rsp_v10n4s1"
+            "2020-05-22-10-00-34-480190_rba_v53n1", "2020-05-22-10-00-34-480190_rba_2019nahead", "2020-05-22-10-00-34-480190_rsp_v10n4s1"
         ]
         for filename in source_filenames:
             zip_filename = pathlib.Path(self.xc_dir_name) / filename
@@ -107,6 +107,24 @@ class TestGetSPSPackages(TestCase):
             pathlib.Path(self.kwargs["proc_dir_name"])
             .joinpath("_".join(package.split()) + ".zip")
             .exists()
+        )
+
+    def test_get_sps_packages_must_not_move_brag_if_there_is_ag_in_scilista(self):
+        scilista_file_path = pathlib.Path(self.kwargs["scilista_file_path"])
+        package = "ag 2019nahead"
+        scilista_file_path.write_text(package)
+        source_filenames = ("2020-05-22-10-00-34-480190_brag_2019nahead.zip\n"
+                            "2020-05-22-10-00-34-480190_ag_2019nahead.zip").splitlines()
+        for filename in source_filenames:
+            zip_filename = pathlib.Path(self.xc_dir_name) / filename
+            with zipfile.ZipFile(zip_filename, "w") as zip_file:
+                zip_file.write(self.test_filepath)
+
+        result = get_sps_packages(**self.kwargs)
+        self.assertEqual(
+            [str(pathlib.Path(
+                self.kwargs["proc_dir_name"]) / "2020-05-22-10-00-34-480190_ag_2019nahead.zip")],
+            result
         )
 
 
