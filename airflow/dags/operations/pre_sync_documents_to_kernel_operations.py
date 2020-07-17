@@ -5,6 +5,10 @@ from pathlib import Path
 
 Logger = logging.getLogger(__name__)
 
+PREFIX_PATTERN = "[0-9]" * 4
+PREFIX_PATTERN += ("-" + ("[0-9]" * 2)) * 5
+PREFIX_PATTERN += "-" + ("[0-9]" * 6)
+
 
 def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
     """
@@ -30,7 +34,8 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
             acron_issue = scilista_item.strip().split()
             if len(acron_issue) != 2:
                 continue
-            filename_pattern = "*{}.zip".format("_".join(acron_issue))
+            filename_pattern = "{}_{}.zip".format(
+                PREFIX_PATTERN, "_".join(acron_issue))
             Logger.info("Reading ZIP files pattern: %s", filename_pattern)
 
             # verifica na origem
