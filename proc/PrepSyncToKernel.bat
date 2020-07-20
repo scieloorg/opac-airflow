@@ -104,7 +104,7 @@ then
             echo "  Package to delete: ${ACRON}_${ISSUE}"
             echo
         else
-            PATTERN="${XC_SPS_PACKAGES}/*${ACRON}_${ISSUE}.zip"
+            PATTERN="${XC_SPS_PACKAGES}/*_${ACRON}_${ISSUE}.zip"
             for PACK_FILE in ${PATTERN};
             do
                 echo ${PACK_FILE}
