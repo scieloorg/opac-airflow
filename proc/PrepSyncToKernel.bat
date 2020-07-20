@@ -104,24 +104,29 @@ then
             echo "  Package to delete: ${ACRON}_${ISSUE}"
             echo
         else
-            PACK_NAME="${XC_SPS_PACKAGES}/*${ACRON}_${ISSUE}.zip"
-            if [ -e ${PACK_NAME} ];
-            then
-                echo "  Moving pack ${PACK_NAME} to ${XC_KERNEL_GATE} ..."
-                echo
-                mv ${PACK_NAME} ${XC_KERNEL_GATE}
-            else
-                if [[ "$ISSUE" == *"ahead"* ]];
+            PATTERN="${XC_SPS_PACKAGES}/*_${ACRON}_${ISSUE}.zip"
+            for PACK_FILE in ${PATTERN};
+            do
+                echo ${PACK_FILE}
+                echo -------------------
+                if [ -f "${PACK_FILE}" ];
                 then
-                    echo "  WARNING: Not found ${PACK_NAME} to move"
-                    echo "WARNING: Not found ${PACK_NAME} to move" >> $ERRORFILE
+                    echo "  Moving pack ${PACK_FILE} to ${XC_KERNEL_GATE} ..."
                     echo
+                    mv "${PACK_FILE}" ${XC_KERNEL_GATE}
                 else
-                    echo "  ERROR: Not found ${PACK_NAME} to move"
-                    echo "ERROR: Not found ${PACK_NAME} to move" >> $ERRORFILE
-                    echo
+                    if [[ "$ISSUE" == *"ahead"* ]];
+                    then
+                        echo "  WARNING: Not found ${PACK_FILE} to move"
+                        echo "WARNING: Not found ${PACK_FILE} to move" >> $ERRORFILE
+                        echo
+                    else
+                        echo "  ERROR: Not found ${PACK_FILE} to move"
+                        echo "ERROR: Not found ${PACK_FILE} to move" >> $ERRORFILE
+                        echo
+                    fi
                 fi
-            fi
+            done
         fi
     done < $SCILISTA_PATH
 
