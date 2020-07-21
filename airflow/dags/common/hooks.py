@@ -16,6 +16,7 @@ from airflow.models import Variable
 from psycopg2 import ProgrammingError
 
 from mongoengine import connect
+from sqlalchemy.exc import OperationalError
 
 
 Logger = logging.getLogger(__name__)
@@ -25,14 +26,11 @@ DEFAULT_HEADER = {
 }
 
 KERNEL_HOOK_BASE = HttpHook(http_conn_id="kernel_conn", method="GET")
-# HTTP_HOOK_RUN_RETRIES = Variable.get("HTTP_HOOK_RUN_RETRIES", 5)
-HTTP_HOOK_RUN_RETRIES = """
-    {% if var.value.HTTP_HOOK_RUN_RETRIES is defined %}
-        {{ var.value.HTTP_HOOK_RUN_RETRIES }}
-    {% else %}
-        5
-    {% endif %}
-"""
+
+try:
+    HTTP_HOOK_RUN_RETRIES = int(Variable.get("HTTP_HOOK_RUN_RETRIES", 5))
+except (OperationalError, ValueError):
+    HTTP_HOOK_RUN_RETRIES = 5
 
 @retry(
     wait=wait_exponential(),
