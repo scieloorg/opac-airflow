@@ -4,11 +4,13 @@ import pathlib
 from unittest import TestCase, main
 from unittest.mock import patch, MagicMock, ANY
 
+import pendulum
 from airflow import DAG
 
 from pre_sync_documents_to_kernel import (
     get_scilista_file_path,
     get_sps_packages,
+    start_sync_packages,
 )
 
 
@@ -62,6 +64,26 @@ class TestGetScilistaFilePath(TestCase):
 
 
 class TestGetSPSPackages(TestCase):
+    def setUp(self):
+        self.dir_source = tempfile.mkdtemp()
+        self.dir_dest = tempfile.mkdtemp()
+        self._execution_date = pendulum.now(pendulum.timezone("America/Sao_Paulo"))
+        self._scilista_basename = "scilista-{}.lst".format(
+            self._execution_date.to_date_string()
+        )
+        self._scilista_path = pathlib.Path(self.dir_source) / self._scilista_basename
+        self._scilista_path.write_text("package 01")
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+            "execution_date": self._execution_date,
+        }
+
+    def tearDown(self):
+        shutil.rmtree(self.dir_source)
+        shutil.rmtree(self.dir_dest)
+
     @patch("pre_sync_documents_to_kernel.Variable.get")
     def test_get_sps_packages_raises_error_if_no_xc_dir_from_variable(
         self, mk_variable_get
@@ -71,27 +93,38 @@ class TestGetSPSPackages(TestCase):
 
     @patch("pre_sync_documents_to_kernel.pre_sync_documents_to_kernel_operations.get_sps_packages")
     @patch("pre_sync_documents_to_kernel.Variable.get")
-    @patch("pre_sync_documents_to_kernel.trigger_dag")
-    def test_get_sps_packages_calls_get_sps_packages_operation(
-        self, mk_trigger_dag, mk_variable_get, mk_get_sps_packages
+    def test_get_sps_packages_returns_true_to_execute_trigger_dags(
+        self, mk_variable_get, mk_get_sps_packages
     ):
-
         mk_variable_get.side_effect = [
-            "dir/path/scilista.lst",
-            "dir/source",
-            "dir/destination",
+            self.dir_source,
+            self.dir_dest,
         ]
-        kwargs = {"ti": MagicMock(), "conf": None}
-        get_sps_packages(**kwargs)
-        mk_get_sps_packages.assert_called_once_with(
-            "dir/path/scilista.lst", "dir/source", "dir/destination"
+        _sps_packages = ["package_01", "package_02", "package_03"]
+        mk_get_sps_packages.return_value = _sps_packages
+        _exec_start_sync_packages = get_sps_packages(**self.kwargs)
         )
+        self.assertTrue(_exec_start_sync_packages)
 
     @patch("pre_sync_documents_to_kernel.pre_sync_documents_to_kernel_operations.get_sps_packages")
     @patch("pre_sync_documents_to_kernel.Variable.get")
+    def test_get_sps_packages_returns_false_to_execute_trigger_dags(
+        self, mk_variable_get, mk_get_sps_packages
+    ):
+        mk_variable_get.side_effect = [
+            self.dir_source,
+            self.dir_dest,
+        ]
+        mk_get_sps_packages.return_value = []
+        _exec_start_sync_packages = get_sps_packages(**self.kwargs)
+        self.assertFalse(_exec_start_sync_packages)
+
+
+class TestStartSyncPackages(TestCase):
+    @patch("pre_sync_documents_to_kernel.Variable.get")
     @patch("pre_sync_documents_to_kernel.trigger_dag")
-    def test_get_sps_packages_calls_trigger_dag_for_each_package(
-        self, mk_trigger_dag, mk_variable_get, mk_get_sps_packages
+    def test_start_sync_packages_calls_trigger_dag_for_each_package(
+        self, mk_trigger_dag, mk_variable_get
     ):
         kwargs = {"ti": MagicMock(), "conf": None}
         mk_sps_packages = [
@@ -100,8 +133,8 @@ class TestGetSPSPackages(TestCase):
             "dir/destination/rba_v53n1.zip",
             "dir/destination/rsp_v10n2-3.zip",
         ]
-        mk_get_sps_packages.return_value = mk_sps_packages
-        get_sps_packages(**kwargs)
+        kwargs["ti"].xcom_pull.return_value = mk_sps_packages
+        start_sync_packages(**kwargs)
         for mk_sps_package in mk_sps_packages:
             with self.subTest(mk_sps_package=mk_sps_package):
                 mk_trigger_dag.assert_any_call(
