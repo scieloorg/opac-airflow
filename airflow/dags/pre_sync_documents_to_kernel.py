@@ -39,7 +39,13 @@ dag = DAG(
 )
 
 
-def get_scilista_file_path(xc_sps_packages_dir, proc_sps_packages_dir, execution_date):
+def get_scilista_file_path(
+    xc_sps_packages_dir: Path, proc_sps_packages_dir: Path, execution_date: str
+) -> str:
+    """Garante que a scilista usada será a do diretório de PROC. Quando for a primeira
+    execução da DAG, a lista será copiada para o diretório de PROC. Caso contrário, a 
+    mesma será mantida.
+    """
     _scilista_filename = f"scilista-{execution_date}.lst"
     _proc_scilista_file_path = proc_sps_packages_dir / _scilista_filename
     if _proc_scilista_file_path.is_file():
@@ -59,6 +65,12 @@ def get_scilista_file_path(xc_sps_packages_dir, proc_sps_packages_dir, execution
 
 
 def get_sps_packages(conf, **kwargs):
+    """Executa ``pre_sync_documents_to_kernel_operations.get_sps_packages`` com a 
+    scilista referente à DagRun. Todos os pacotes obtidos serão armazenados em 
+    diretório identificado pelo DAG_RUN_ID junto com a scilista. Caso esta DAG seja 
+    reexecutada, os mesmos pacotes serão sincronizados anteriormente serão novamente 
+    sincronizados.
+    """
     _xc_sps_packages_dir = Path(Variable.get("XC_SPS_PACKAGES_DIR"))
     _proc_sps_packages_dir = Path(Variable.get("PROC_SPS_PACKAGES_DIR")) / kwargs["run_id"]
     if not _proc_sps_packages_dir.is_dir():
@@ -67,7 +79,7 @@ def get_sps_packages(conf, **kwargs):
     _scilista_file_path = get_scilista_file_path(
         _xc_sps_packages_dir,
         _proc_sps_packages_dir,
-        kwargs["execution_date"].to_date_string(),
+        kwargs["execution_date"].to_date_string(), # Data da primeira execução da DAG
     )
     _sps_packages = pre_sync_documents_to_kernel_operations.get_sps_packages(
         _scilista_file_path,
@@ -77,6 +89,9 @@ def get_sps_packages(conf, **kwargs):
 
 
 def start_sync_packages(conf, **kwargs):
+    """Executa trigger de dags de sincronização de documentos com o Kernel, cada uma com
+    um pacote SPS da lista armazenada pela tarefa anterior.
+    """
     _sps_packages = kwargs["ti"].xcom_pull(key="sps_packages") or []
     for sps_package in _sps_packages:
         Logger.info("Triggering an external dag with package %s" % sps_package)
