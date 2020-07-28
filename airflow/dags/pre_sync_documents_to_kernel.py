@@ -70,6 +70,7 @@ def get_sps_packages(conf, **kwargs):
     diretório identificado pelo DAG_RUN_ID junto com a scilista. Caso esta DAG seja 
     reexecutada, os mesmos pacotes serão sincronizados anteriormente serão novamente 
     sincronizados.
+    Armazena os pacotes em XCom para a próxima tarefa.
     """
     _xc_sps_packages_dir = Path(Variable.get("XC_SPS_PACKAGES_DIR"))
     _proc_sps_packages_dir = Path(Variable.get("PROC_SPS_PACKAGES_DIR")) / kwargs["run_id"]
@@ -86,6 +87,12 @@ def get_sps_packages(conf, **kwargs):
         _xc_sps_packages_dir,
         _proc_sps_packages_dir,
     )
+
+    if _sps_packages:
+        kwargs["ti"].xcom_push(key="sps_packages", value=_sps_packages)
+        return True
+    else:
+        return False
 
 
 def start_sync_packages(conf, **kwargs):
