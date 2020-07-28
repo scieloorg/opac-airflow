@@ -31,6 +31,10 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
 
     package_paths_list = proc_dir_path / "sps_packages.lst"
     if package_paths_list.is_file():
+        Logger.info(
+            'Pre-sync already done. Returning packages from "%s" file',
+            package_paths_list,
+        )
         return package_paths_list.read_text().split("\n")
 
     with open(scilista_file_path) as scilista:
@@ -65,6 +69,7 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
                     filename_pattern, str(xc_dir_path), str(proc_dir_path))
 
     if sps_packages_list:
+        Logger.info('Saving SPS packages list in "%s" file', package_paths_list)
         package_paths_list.write_text("\n".join(sps_packages_list))
 
     Logger.debug("get_sps_packages OUT")
