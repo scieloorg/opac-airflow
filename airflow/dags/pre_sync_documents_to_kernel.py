@@ -18,7 +18,7 @@ from pathlib import Path
 
 from airflow import DAG
 from airflow.models import Variable
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
 from airflow.utils import timezone
 from airflow.api.common.experimental.trigger_dag import trigger_dag
 
@@ -116,11 +116,18 @@ def start_sync_packages(conf, **kwargs):
     Logger.debug("create_all_subdags OUT")
 
 
-get_sps_packages_task = PythonOperator(
+get_sps_packages_task = ShortCircuitOperator(
     task_id="get_sps_packages_task_id",
     provide_context=True,
     python_callable=get_sps_packages,
     dag=dag,
 )
 
-get_sps_packages_task
+start_sync_packages_task = PythonOperator(
+    task_id="start_sync_packages_task_id",
+    provide_context=True,
+    python_callable=start_sync_packages,
+    dag=dag,
+)
+
+get_sps_packages_task >> start_sync_packages_task
