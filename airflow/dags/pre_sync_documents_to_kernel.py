@@ -14,6 +14,7 @@ import os
 import logging
 import shutil
 from datetime import datetime
+from pathlib import Path
 
 from airflow import DAG
 from airflow.models import Variable
@@ -58,13 +59,26 @@ def get_scilista_file_path(xc_sps_packages_dir, proc_sps_packages_dir, execution
 
 
 def get_sps_packages(conf, **kwargs):
-    Logger.debug("create_all_subdags IN")
-    sps_packages = pre_sync_documents_to_kernel_operations.get_sps_packages(
-        Variable.get("SCILISTA_FILE_PATH"),
-        Variable.get("XC_SPS_PACKAGES_DIR"),
-        Variable.get("PROC_SPS_PACKAGES_DIR"),
+    _xc_sps_packages_dir = Path(Variable.get("XC_SPS_PACKAGES_DIR"))
+    _proc_sps_packages_dir = Path(Variable.get("PROC_SPS_PACKAGES_DIR")) / kwargs["run_id"]
+    if not _proc_sps_packages_dir.is_dir():
+        _proc_sps_packages_dir.mkdir()
+
+    _scilista_file_path = get_scilista_file_path(
+        _xc_sps_packages_dir,
+        _proc_sps_packages_dir,
+        kwargs["execution_date"].to_date_string(),
     )
-    for sps_package in sps_packages:
+    _sps_packages = pre_sync_documents_to_kernel_operations.get_sps_packages(
+        _scilista_file_path,
+        _xc_sps_packages_dir,
+        _proc_sps_packages_dir,
+    )
+
+
+def start_sync_packages(conf, **kwargs):
+    _sps_packages = kwargs["ti"].xcom_pull(key="sps_packages") or []
+    for sps_package in _sps_packages:
         Logger.info("Triggering an external dag with package %s" % sps_package)
         now = timezone.utcnow()
         trigger_dag(
