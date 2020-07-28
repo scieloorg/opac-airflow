@@ -1,9 +1,64 @@
+import tempfile
+import shutil
+import pathlib
 from unittest import TestCase, main
 from unittest.mock import patch, MagicMock, ANY
 
 from airflow import DAG
 
-from pre_sync_documents_to_kernel import get_sps_packages
+from pre_sync_documents_to_kernel import (
+    get_scilista_file_path,
+    get_sps_packages,
+)
+
+
+class TestGetScilistaFilePath(TestCase):
+    def setUp(self):
+        self.gate_dir = tempfile.mkdtemp()
+        self.proc_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.gate_dir)
+        shutil.rmtree(self.proc_dir)
+
+    def test_scilista_does_not_exist_in_origin(self):
+        with self.assertRaises(FileNotFoundError) as exc_info:
+            get_scilista_file_path(
+                pathlib.Path("no/dir/path"),
+                pathlib.Path(self.proc_dir),
+                "2020-12-31",
+            )
+        self.assertIn(str(exc_info.exception), "no/dir/path/scilista-2020-12-31.lst")
+
+    def test_scilista_already_exists_in_proc(self):
+        scilista_path_origin = pathlib.Path(self.gate_dir) / "scilista-2020-01-01.lst"
+        scilista_path_origin.write_text("acron v1n22")
+        scilista_path_proc = pathlib.Path(self.proc_dir) / "scilista-2020-01-01.lst"
+        scilista_path_proc.write_text("acron v1n20")
+        _scilista_file_path = get_scilista_file_path(
+            pathlib.Path(self.gate_dir),
+            pathlib.Path(self.proc_dir),
+            "2020-01-01",
+        )
+
+        self.assertEqual(
+            _scilista_file_path,
+            str(pathlib.Path(self.proc_dir) / "scilista-2020-01-01.lst")
+        )
+        self.assertEqual(scilista_path_proc.read_text(), "acron v1n20")
+
+    def test_scilista_must_be_copied(self):
+        scilista_path = pathlib.Path(self.gate_dir) / "scilista-2020-01-01.lst"
+        scilista_path.write_text("acron v1n20")
+        _scilista_file_path = get_scilista_file_path(
+            pathlib.Path(self.gate_dir),
+            pathlib.Path(self.proc_dir),
+            "2020-01-01",
+        )
+        self.assertEqual(
+            _scilista_file_path,
+            str(pathlib.Path(self.proc_dir) / "scilista-2020-01-01.lst")
+        )
 
 
 class TestGetSPSPackages(TestCase):
