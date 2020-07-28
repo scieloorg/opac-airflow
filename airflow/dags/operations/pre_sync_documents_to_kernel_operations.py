@@ -29,6 +29,10 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
     proc_dir_path = Path(proc_dir_name)
     sps_packages_list = []
 
+    package_paths_list = proc_dir_path / "sps_packages.lst"
+    if package_paths_list.is_file():
+        return package_paths_list.read_text().split("\n")
+
     with open(scilista_file_path) as scilista:
         for scilista_item in scilista.readlines():
             acron_issue = scilista_item.strip().split()
