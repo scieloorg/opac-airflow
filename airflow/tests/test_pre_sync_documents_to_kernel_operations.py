@@ -156,6 +156,16 @@ class TestGetSPSPackages(TestCase):
             result
         )
 
+    def test_get_sps_packages_must_return_packages_list_if_sps_packages_lst_exists(self):
+        package_paths_list = [
+            str(pathlib.Path(self.proc_dir_name) / f"package_0{seq}.zip")
+            for seq in range(1, 4)
+        ]
+        package_paths_list_file = pathlib.Path(self.proc_dir_name) / "sps_packages.lst"
+        package_paths_list_file.write_text("\n".join(package_paths_list))
+        result = get_sps_packages(**self.kwargs)
+        self.assertEqual(result, package_paths_list)
+
 
 if __name__ == "__main__":
     main()
