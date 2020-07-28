@@ -16,7 +16,7 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
     processamento do Airflow e gera lista dos paths dos pacotes SPS no diretório de 
     processamento.
 
-    list scilista: lista com as linhas do arquivo scilista.lst
+    list scilista: lista com as linhas do arquivo scilista
         rsp v10n4
         rsp 2018nahead
         csp v4n2-3
@@ -59,6 +59,9 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
                 Logger.exception(
                     "Missing files which pattern is '%s' in %s and in %s",
                     filename_pattern, str(xc_dir_path), str(proc_dir_path))
+
+    if sps_packages_list:
+        package_paths_list.write_text("\n".join(sps_packages_list))
 
     Logger.debug("get_sps_packages OUT")
     return sps_packages_list

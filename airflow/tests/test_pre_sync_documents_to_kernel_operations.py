@@ -64,6 +64,35 @@ class TestGetSPSPackages(TestCase):
             ],
         )
 
+    def test_get_sps_packages_creates_sps_packages_list_file(self):
+        scilista_lines = ["rba v53n1", "rba 2019nahead", "rsp v10n4s1"]
+        source_filenames = []
+        scilista_file_path = pathlib.Path(self.kwargs["scilista_file_path"])
+        with scilista_file_path.open("w") as scilista_file:
+            for line in scilista_lines:
+                scilista_file.write(line + "\n")
+                source_filenames += [
+                    "_".join([f"2020-01-01-00-0{i}-09-090901"] + line.split()) + ".zip"
+                    for i in range(1, 4)
+                ]
+        for filename in source_filenames:
+            zip_filename = pathlib.Path(self.xc_dir_name) / filename
+            with zipfile.ZipFile(zip_filename, "w") as zip_file:
+                zip_file.write(self.test_filepath)
+
+        sps_packages = get_sps_packages(**self.kwargs)
+        package_paths_list = pathlib.Path(self.proc_dir_name) / "sps_packages.lst"
+        self.assertTrue(package_paths_list.is_file())
+        sps_packages_list = package_paths_list.read_text().split("\n")
+        self.assertEqual(
+            sps_packages_list,
+            [
+                str(pathlib.Path(self.proc_dir_name).joinpath(filename))
+                for filename in source_filenames
+            ],
+        )
+
+
     def test_get_sps_packages_ignores_del_command_in_scilista(self):
         scilista_lines = ["rba v53n1", "rba 2019nahead", "rsp v10n4s1 del", "rsp v10n4s1", "csp v35nspe del"]
         source_filenames = []
