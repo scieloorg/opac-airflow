@@ -103,6 +103,8 @@ class TestGetSPSPackages(TestCase):
         _sps_packages = ["package_01", "package_02", "package_03"]
         mk_get_sps_packages.return_value = _sps_packages
         _exec_start_sync_packages = get_sps_packages(**self.kwargs)
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            key='sps_packages', value=_sps_packages
         )
         self.assertTrue(_exec_start_sync_packages)
 
@@ -117,6 +119,7 @@ class TestGetSPSPackages(TestCase):
         ]
         mk_get_sps_packages.return_value = []
         _exec_start_sync_packages = get_sps_packages(**self.kwargs)
+        self.kwargs["ti"].xcom_push.assert_not_called()
         self.assertFalse(_exec_start_sync_packages)
 
 
