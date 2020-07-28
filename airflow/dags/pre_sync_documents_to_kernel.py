@@ -12,6 +12,7 @@
 """
 import os
 import logging
+import shutil
 from datetime import datetime
 
 from airflow import DAG
@@ -35,6 +36,25 @@ default_args = {
 dag = DAG(
     dag_id="pre_sync_documents_to_kernel", default_args=default_args, schedule_interval=None
 )
+
+
+def get_scilista_file_path(xc_sps_packages_dir, proc_sps_packages_dir, execution_date):
+    _scilista_filename = f"scilista-{execution_date}.lst"
+    _proc_scilista_file_path = proc_sps_packages_dir / _scilista_filename
+    if _proc_scilista_file_path.is_file():
+        Logger.info('Proc scilista "%s" already exists', _proc_scilista_file_path)
+    else:
+        _origin_scilista_file_path = xc_sps_packages_dir / _scilista_filename
+        if not _origin_scilista_file_path.is_file():
+            raise FileNotFoundError(_origin_scilista_file_path)
+
+        Logger.info(
+            'Copying original scilista "%s" to proc "%s"',
+            _origin_scilista_file_path,
+            _proc_scilista_file_path,
+        )
+        shutil.copy(_origin_scilista_file_path, _proc_scilista_file_path)
+    return str(_proc_scilista_file_path)
 
 
 def get_sps_packages(conf, **kwargs):
