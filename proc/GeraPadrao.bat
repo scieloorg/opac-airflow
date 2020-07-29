@@ -11,7 +11,7 @@ echo PrepSyncToKernel.bat
 echo GeraScielo.bat .. /scielo/web log/GeraPadrao.log adiciona
 echo 
 
-PREP_LOG=log/PrepSyncToKernel.log
+PREP_LOG=log/PrepSyncToKernel-$(date "+%Y-%m-%d").log
 PrepSyncToKernel.bat > $PREP_LOG
 
 if [ -f PrepSyncToKernel.ini ];
