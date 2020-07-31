@@ -4,9 +4,9 @@ rem para o SciELO Publishing Framework
 PREP_LOG=log/PrepSyncToKernel-$(date "+%Y-%m-%d").log
 PrepSyncToKernel.bat > $PREP_LOG
 
-if [ -f PrepSyncToKernel.ini ];
+if [ -f SyncToKernel.ini ];
 then
-    . PrepSyncToKernel.ini
+    . SyncToKernel.ini
 fi
 
 if [ "" != "${XC_KERNEL_GATE}" ] && [ -e ${XC_KERNEL_GATE} ];
