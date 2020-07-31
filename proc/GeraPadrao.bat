@@ -1,27 +1,19 @@
 export PATH=$PATH:.
 export TABS=tabs
-rem Este arquivo ?uma chamada para o 
-rem GeraScielo.bat com par?etros STANDARD
+rem Este arquivo eh uma chamada para: 
+rem Preparação da sincronização dos dados para o Kernel
+rem GeraScielo.bat com parametros STANDARD
+
 
 clear
 echo === ATENCAO ===
 echo 
 echo Este arquivo executara os seguintes comandos
-echo PrepSyncToKernel.bat
+echo nohup CallPrepSyncToKernel.bat > /tmp/CallPrepSyncToKernel.out&
 echo GeraScielo.bat .. /scielo/web log/GeraPadrao.log adiciona
 echo 
 
-PREP_LOG=log/PrepSyncToKernel-$(date "+%Y-%m-%d").log
-PrepSyncToKernel.bat > $PREP_LOG
 
-if [ -f PrepSyncToKernel.ini ];
-then
-    . PrepSyncToKernel.ini
-fi
-
-if [ "" != "${XC_KERNEL_GATE}" ] && [ -e ${XC_KERNEL_GATE} ];
-then
-    cp $PREP_LOG ${XC_KERNEL_GATE}
-fi
+nohup CallPrepSyncToKernel.bat > /tmp/CallPrepSyncToKernel.out&
 
 GeraScielo.bat .. .. log/GeraPadrao.log adiciona
