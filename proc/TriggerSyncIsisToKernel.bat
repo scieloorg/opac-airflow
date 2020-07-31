@@ -4,10 +4,16 @@ then
     . SyncToKernel.ini
 fi
 
-if [ "" != "${OPAC_AIRFLOW}" ];
+if [ "" == "${OPAC_AIRFLOW}" ];
 then
-	curl -X POST \
-      ${OPAC_AIRFLOW}/api/experimental/dags/sync_isis_to_kernel/dag_runs \
-      -H 'Cache-Control: no-cache' \
-      -H 'Content-Type: application/json'
+    echo "MISSING OPAC_AIRFLOW"
+else
+    URL="${OPAC_AIRFLOW}/api/experimental/dags/sync_isis_to_kernel/dag_runs"
+    echo "curl -X POST ${URL} -H 'Cache-Control: no-cache' -H 'Content-Type: application/json' -d '{}' -v"
+    curl -X POST \
+        ${URL} \
+        -H 'Cache-Control: no-cache' \
+        -H 'Content-Type: application/json' \
+        -d '{}' \
+        -v
 fi

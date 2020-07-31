@@ -9,13 +9,14 @@ clear
 echo === ATENCAO ===
 echo 
 echo Este arquivo executara os seguintes comandos
-echo nohup CallPrepSyncToKernel.bat > /tmp/CallPrepSyncToKernel.out&
+echo "nohup ./CallPrepSyncToKernel.bat > /tmp/CallPrepSyncToKernel.out&"
 echo GeraScielo.bat .. /scielo/web log/GeraPadrao.log adiciona
+echo "nohup ./CallTriggerSyncIsisToKernel.bat > /tmp/CallTriggerSyncIsisToKernel.out&"
 echo 
 
 
-nohup CallPrepSyncToKernel.bat > /tmp/CallPrepSyncToKernel.out&
+nohup ./CallPrepSyncToKernel.bat > /tmp/CallPrepSyncToKernel.out&
 
 GeraScielo.bat .. .. log/GeraPadrao.log adiciona
 
-nohup TriggerSyncIsisToKernel.bat > /tmp/CallTriggerSyncIsisToKernel.out&
+nohup ./CallTriggerSyncIsisToKernel.bat > /tmp/CallTriggerSyncIsisToKernel.out&
