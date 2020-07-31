@@ -1,8 +1,8 @@
-rem Disponibiliza pacotes SPS resultantes do XML Converter + scilista + log
-rem para o SciELO Publishing Framework 
+# Disponibiliza pacotes SPS resultantes do XML Converter + scilista + log
+# para o SciELO Publishing Framework 
 
 PREP_LOG=log/PrepSyncToKernel-$(date "+%Y-%m-%d").log
-PrepSyncToKernel.bat > $PREP_LOG
+./PrepSyncToKernel.bat > $PREP_LOG
 
 if [ -f SyncToKernel.ini ];
 then
