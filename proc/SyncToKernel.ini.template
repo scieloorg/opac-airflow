@@ -1,3 +1,4 @@
 SCILISTA_PATH=xlista
 XC_SPS_PACKAGES=origem
 XC_KERNEL_GATE=destino
+OPAC_AIRFLOW=http://localhost:8080

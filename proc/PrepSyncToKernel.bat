@@ -12,10 +12,10 @@ echo ""
 echo "$TODAY_DATE - Executing $0 from `pwd`"
 echo ""
 
-if [ -f PrepSyncToKernel.ini ];
+if [ -f SyncToKernel.ini ];
 then
-    echo "VARIABLES read from file PrepSyncToKernel.ini"
-    . PrepSyncToKernel.ini
+    echo "VARIABLES read from file SyncToKernel.ini"
+    . SyncToKernel.ini
     echo
     echo SCILISTA_PATH=$SCILISTA_PATH
     echo XC_SPS_PACKAGES=$XC_SPS_PACKAGES
