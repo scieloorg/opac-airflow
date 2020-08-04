@@ -1,0 +1,32 @@
+/*
+Gera lista de uri para um dado item da scilista
+Formato aplicado para a base `../bases-work/<acron>/<acron>`
+Resultando em uma saída similar a
+
+/scielo.php?script=sci_serial&pid=0001-3765
+/scielo.php?script=sci_issues&pid=0001-3765
+/scielo.php?script=sci_issuetoc&pid=0001-376520200005
+/scielo.php?script=sci_arttext&pid=S0001-37652020000501101
+
+*/
+
+,if v706='i' then
+    ,'/scielo.php?script=sci_serial&pid=',
+    ,v35,
+    ,#,
+    ,'/scielo.php?script=sci_issues&pid=',
+    ,v35,
+    ,#,
+    ,'/scielo.php?script=sci_issuetoc&pid=',
+    ,v35,v36*0.4,mid(f(val(v36*4.4)+10000,1,0),2,4),
+    ,#,
+,else
+    ,if v706='h' then
+        ,'/scielo.php?script=sci_arttext&pid=S',v35,
+        ,ref(l('I=',v9990),
+            ,v36*0.4,
+            ,mid(f(val(v36*4.4)+10000,1,0),2,4)),
+        ,mid(f(val(v121*0.5)+100000,1,0),2,5),
+        ,#,
+    ,fi,
+,fi,
