@@ -20,3 +20,4 @@ nohup ./CallPrepSyncToKernel.bat > /tmp/CallPrepSyncToKernel.out&
 GeraScielo.bat .. .. log/GeraPadrao.log adiciona
 
 nohup ./CallTriggerSyncIsisToKernel.bat > /tmp/CallTriggerSyncIsisToKernel.out&
+nohup ./CallGeraUriList.bat > /tmp/CallGeraUriList.out&
