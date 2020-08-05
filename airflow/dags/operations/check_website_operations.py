@@ -18,3 +18,15 @@ def check_website_uri_list(uri_list_file_path, website_url_list, report_dir):
     Logger.debug("check_website_uri_list IN")
 
     Logger.debug("check_website_uri_list OUT")
+
+
+def concat_website_url_and_uri_list_items(website_url_list, uri_list_items):
+    if not website_url_list or not uri_list_items:
+        return []
+    items = []
+    for website_url in website_url_list:
+        items.extend([
+            website_url + uri
+            for uri in uri_list_items
+        ])
+    return items
