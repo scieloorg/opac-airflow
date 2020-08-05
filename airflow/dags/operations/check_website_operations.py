@@ -1,7 +1,6 @@
-import os
 import logging
-import shutil
-from pathlib import Path
+
+import requests
 
 Logger = logging.getLogger(__name__)
 
@@ -30,3 +29,27 @@ def concat_website_url_and_uri_list_items(website_url_list, uri_list_items):
             for uri in uri_list_items
         ])
     return items
+
+
+def check_uri_list(uri_list_items):
+    """Acessa uma lista de URI e retorna as que falharam"""
+    failures = []
+    for uri in uri_list_items:
+        if not access_uri(uri):
+            failures.append(uri)
+    return failures
+
+
+def access_uri(uri):
+    """Acessa uma URI e reporta o seu status de resposta"""
+    response = requests.head(uri)
+    
+    if response.status_code in (200, 301, 302):
+        return True
+    else:
+        Logger.error(
+            "The URL '%s' is not available. Returned the status code '%s'.",
+            uri,
+            response.status_code,
+        )
+        return False
