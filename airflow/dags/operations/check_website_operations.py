@@ -1,6 +1,7 @@
 import logging
 
 import requests
+import time
 
 Logger = logging.getLogger(__name__)
 
@@ -42,14 +43,49 @@ def check_uri_list(uri_list_items):
 
 def access_uri(uri):
     """Acessa uma URI e reporta o seu status de resposta"""
-    response = requests.head(uri)
-    
+    response = requests.head(uri, timeout=10)
+
     if response.status_code in (200, 301, 302):
         return True
-    else:
-        Logger.error(
-            "The URL '%s' is not available. Returned the status code '%s'.",
-            uri,
-            response.status_code,
-        )
-        return False
+
+    if response.status_code in (429, 500, 502, 503, 504):
+        return wait_and_retry_to_access_uri(uri)
+
+    Logger.error(
+        "The URL '%s' returned the status code '%s'.",
+        uri,
+        response.status_code,
+    )
+    return False
+
+
+def retry_after():
+    return (5, 10, 20, 40, 80, 160, 320, 640, )
+
+
+def wait_and_retry_to_access_uri(uri):
+    """
+    Aguarda `t` segundos e tenta novamente até que status_code nao seja
+    um destes (429, 500, 502, 503, 504)
+    """
+    available = False
+    total_secs = 0
+    for t in retry_after():
+        Logger.info("Retry to access '%s' after %is", uri, t)
+        total_secs += t
+        time.sleep(t)
+        response = requests.head(uri, timeout=10)
+
+        if response.status_code in (429, 500, 502, 503, 504):
+            continue
+
+        available = response.status_code in (200, 301, 302)
+        break
+
+    Logger.info(
+        "The URL '%s' returned the status code '%s' after %is",
+        uri,
+        response.status_code,
+        total_secs
+    )
+    return available

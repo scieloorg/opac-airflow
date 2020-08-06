@@ -1,9 +1,5 @@
-import tempfile
-import shutil
-import pathlib
-import zipfile
-from unittest import TestCase, main
-from unittest.mock import patch, MagicMock, Mock
+from unittest import TestCase
+from unittest.mock import patch
 
 from airflow import DAG
 
@@ -39,42 +35,82 @@ class TestConcatWebsiteUrlAndUriListItems(TestCase):
             items)
 
 
+class MockResponse:
+
+    def __init__(self, code):
+        self.status_code = code
+
+
 class TestCheckUriList(TestCase):
 
     @patch('operations.check_website_operations.requests.head')
     def test_check_uri_list_for_status_code_200_returns_empty_list(self, mock_req_head):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_req_head.side_effect = [mock_response, mock_response, ]
+        mock_req_head.side_effect = [MockResponse(200), MockResponse(200), ]
         uri_list = ["goodURI1", "goodURI2", ]
         result = check_uri_list(uri_list)
         self.assertEqual([], result)
 
     @patch('operations.check_website_operations.requests.head')
     def test_check_uri_list_for_status_code_301_returns_empty_list(self, mock_req_head):
-        mock_response = MagicMock()
-        mock_response.status_code = 301
-        mock_req_head.side_effect = [mock_response]
+        mock_req_head.side_effect = [MockResponse(301)]
         uri_list = ["URI"]
         result = check_uri_list(uri_list)
         self.assertEqual([], result)
 
     @patch('operations.check_website_operations.requests.head')
     def test_check_uri_list_for_status_code_302_returns_empty_list(self, mock_req_head):
-        mock_response = MagicMock()
-        mock_response.status_code = 302
-        mock_req_head.side_effect = [mock_response]
+        mock_req_head.side_effect = [MockResponse(302)]
         uri_list = ["URI"]
         result = check_uri_list(uri_list)
         self.assertEqual([], result)
 
     @patch('operations.check_website_operations.requests.head')
     def test_check_uri_list_for_status_code_404_returns_failure_list(self, mock_req_head):
-        mock_response = MagicMock()
-        mock_response.status_code = 404
-        mock_req_head.side_effect = [mock_response]
+        mock_req_head.side_effect = [MockResponse(404)]
         uri_list = ["BAD_URI"]
         result = check_uri_list(uri_list)
         self.assertEqual(
             uri_list,
             result)
+
+    @patch('operations.check_website_operations.requests.head')
+    def test_check_uri_list_for_status_code_429_returns_failure_list(self, mock_req_head):
+        mock_req_head.side_effect = [MockResponse(429), MockResponse(404)]
+        uri_list = ["BAD_URI"]
+        result = check_uri_list(uri_list)
+        self.assertEqual(
+            uri_list,
+            result)
+
+    @patch('operations.check_website_operations.retry_after')
+    @patch('operations.check_website_operations.requests.head')
+    def test_check_uri_list_for_status_code_200_after_retries_returns_failure_list(self, mock_req_head, mock_retry_after):
+        mock_retry_after.return_value = [
+            0.1, 0.2, 0.4, 0.8, 1,
+        ]
+        mock_req_head.side_effect = [
+            MockResponse(429),
+            MockResponse(502),
+            MockResponse(503),
+            MockResponse(504),
+            MockResponse(500),
+            MockResponse(200),
+        ]
+        uri_list = ["GOOD_URI"]
+        result = check_uri_list(uri_list)
+        self.assertEqual([], result)
+
+    @patch('operations.check_website_operations.retry_after')
+    @patch('operations.check_website_operations.requests.head')
+    def test_check_uri_list_for_status_code_404_after_retries_returns_failure_list(self, mock_req_head, mock_retry_after):
+        mock_retry_after.return_value = [
+            0.1, 0.2, 0.4, 0.8, 1,
+        ]
+        mock_req_head.side_effect = [
+            MockResponse(429),
+            MockResponse(502),
+            MockResponse(404),
+        ]
+        uri_list = ["BAD_URI"]
+        result = check_uri_list(uri_list)
+        self.assertEqual(["BAD_URI"], result)
