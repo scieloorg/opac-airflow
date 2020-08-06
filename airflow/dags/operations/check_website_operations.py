@@ -6,7 +6,7 @@ import time
 Logger = logging.getLogger(__name__)
 
 
-def check_website_uri_list(uri_list_file_path, website_url_list, report_dir):
+def check_website_uri_list(uri_list_file_path, website_url_list):
     """
     Verifica o acesso de cada item da `uri_list_file_path`
     Exemplo de seu conteúdo:
@@ -17,7 +17,30 @@ def check_website_uri_list(uri_list_file_path, website_url_list, report_dir):
     """
     Logger.debug("check_website_uri_list IN")
 
+    uri_list_items = read_file(uri_list_file_path)
+
+    uri_list_items = concat_website_url_and_uri_list_items(
+        website_url_list, uri_list_items)
+
+    total = len(uri_list_items)
+    Logger.info("Quantidade de URI: %i", total)
+    unavailable_uri_items = check_uri_list(uri_list_items)
+
+    if unavailable_uri_items:
+        Logger.info(
+            "Não encontrados (%i/%i):\n%s",
+            len(unavailable_uri_items), total,
+            "\n".join(unavailable_uri_items))
+    else:
+        Logger.info("Encontrados: %i/%i", total, total)
+
     Logger.debug("check_website_uri_list OUT")
+
+
+def read_file(uri_list_file_path):
+    with open(uri_list_file_path) as fp:
+        uri_list_items = fp.readlines()
+    return uri_list_items
 
 
 def concat_website_url_and_uri_list_items(website_url_list, uri_list_items):
