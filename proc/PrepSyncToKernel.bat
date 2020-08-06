@@ -115,7 +115,7 @@ then
                 then
                     echo "  Moving pack ${PACK_FILE} to ${XC_KERNEL_GATE} ..."
                     echo
-                    mv "${PACK_FILE}" ${XC_KERNEL_GATE}
+                    rsync -qa --inplace --remove-source-files "${PACK_FILE}" ${XC_KERNEL_GATE}
                 else
                     if [[ "$ISSUE" == *"ahead"* ]];
                     then
