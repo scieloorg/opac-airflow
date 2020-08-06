@@ -14,7 +14,7 @@ RUN pip install --upgrade pip
 
 RUN apk add --no-cache --virtual .build-deps \
         make gcc g++ libstdc++ libxml2-dev libxslt-dev jpeg-dev zlib-dev \
-    && apk add libxml2 libxslt curl postgresql-dev \
+    && apk add libxml2 libxslt curl postgresql-dev tiff tiff-dev \
     && pip install --no-cache-dir -r requirements.txt \
     && apk --purge del .build-deps
 
