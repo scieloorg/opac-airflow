@@ -16,6 +16,8 @@ from airflow.hooks.http_hook import HttpHook
 from airflow.hooks.base_hook import BaseHook
 from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
+from airflow.operators.dagrun_operator import TriggerDagRunOperator
+
 
 import requests
 
@@ -856,6 +858,12 @@ register_last_issues_task = PythonOperator(
     dag=dag,
 )
 
+trigger_check_website_dag_task = TriggerDagRunOperator(
+    task_id="trigger_check_website_dag_task",
+    trigger_dag_id="check_website",
+    dag=dag,
+)
+
 http_kernel_check >> read_changes_task
 
 register_journals_task << read_changes_task
@@ -873,3 +881,5 @@ delete_issues_task << delete_journals_task
 delete_documents_task << delete_issues_task
 
 register_last_issues_task << delete_documents_task
+
+register_last_issues_task >> trigger_check_website_dag_task
