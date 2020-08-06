@@ -66,15 +66,13 @@ def check_website_uri_list(conf, **kwargs):
     """Executa ``check_website.check_website_uri_list`` com a 
     uri_list referente à DagRun. 
     """
-    _website_url_list = dag_run.conf.get("WEBSITE_URL_LIST")
-    _report_dir = dag_run.conf.get("WEBSITE_URI_AVAILABILITY_REPORT_DIR")
+    _website_url_list = Variable.get("WEBSITE_URL_LIST", "")
+    _website_url_list = _website_url_list.split(",")
+
     _xc_sps_packages_dir = Path(Variable.get("XC_SPS_PACKAGES_DIR"))
     _proc_sps_packages_dir = Path(Variable.get("PROC_SPS_PACKAGES_DIR")) / kwargs["run_id"]
     if not _proc_sps_packages_dir.is_dir():
         _proc_sps_packages_dir.mkdir()
-    _report_dir = Path(Variable.get("WEBSITE_URI_AVAILABILITY_REPORT_DIR")) / kwargs["run_id"]
-    if not _report_dir.is_dir():
-        _report_dir.mkdir()
 
     _uri_list_file_path = get_uri_list_file_path(
         _xc_sps_packages_dir,
@@ -84,7 +82,6 @@ def check_website_uri_list(conf, **kwargs):
     check_website_operations.check_website_uri_list(
         _uri_list_file_path,
         _website_url_list,
-        _report_dir,
     )
 
 
