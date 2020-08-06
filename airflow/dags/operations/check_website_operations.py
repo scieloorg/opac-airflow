@@ -1,7 +1,9 @@
 import logging
-
 import requests
 import time
+
+from urllib3.exceptions import MaxRetryError, NewConnectionError
+
 
 Logger = logging.getLogger(__name__)
 
@@ -16,6 +18,11 @@ def check_website_uri_list(uri_list_file_path, website_url_list):
         /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
     """
     Logger.debug("check_website_uri_list IN")
+
+    if not website_url_list:
+        raise ValueError(
+            "Unable to check the Web site resources are available "
+            "because no Website URL was informed")
 
     uri_list_items = read_file(uri_list_file_path)
 
@@ -39,7 +46,7 @@ def check_website_uri_list(uri_list_file_path, website_url_list):
 
 def read_file(uri_list_file_path):
     with open(uri_list_file_path) as fp:
-        uri_list_items = fp.readlines()
+        uri_list_items = fp.read().splitlines()
     return uri_list_items
 
 
@@ -48,10 +55,9 @@ def concat_website_url_and_uri_list_items(website_url_list, uri_list_items):
         return []
     items = []
     for website_url in website_url_list:
-        items.extend([
-            website_url + uri
-            for uri in uri_list_items
-        ])
+        for uri in uri_list_items:
+            if uri:
+                items.append(str(website_url) + str(uri))
     return items
 
 
@@ -64,9 +70,28 @@ def check_uri_list(uri_list_items):
     return failures
 
 
+def requests_head(uri):
+    try:
+        response = requests.head(uri, timeout=10)
+    except (requests.exceptions.ConnectionError,
+            MaxRetryError,
+            NewConnectionError) as e:
+        Logger.error(
+            "The URL '%s': %s",
+            uri,
+            e,
+        )
+        return False
+    else:
+        return response
+
+
 def access_uri(uri):
     """Acessa uma URI e reporta o seu status de resposta"""
-    response = requests.head(uri, timeout=10)
+
+    response = requests_head(uri)
+    if not response:
+        return False
 
     if response.status_code in (200, 301, 302):
         return True
@@ -97,7 +122,12 @@ def wait_and_retry_to_access_uri(uri):
         Logger.info("Retry to access '%s' after %is", uri, t)
         total_secs += t
         time.sleep(t)
-        response = requests.head(uri, timeout=10)
+
+        response = requests_head(uri)
+
+        if not response:
+            available = False
+            break
 
         if response.status_code in (429, 500, 502, 503, 504):
             continue

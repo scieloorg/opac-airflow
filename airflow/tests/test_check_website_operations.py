@@ -132,10 +132,29 @@ class TestCheckUriList(TestCase):
 
 class TestCheckWebsiteUriList(TestCase):
 
+    def test_check_website_uri_list_raises_value_error_because_website_urls_are_missing(self):
+        with self.assertRaises(ValueError):
+            check_website_uri_list('/path/uri_list_file_path.lst', [])
+
+    @patch("operations.check_website_operations.Logger.info")
+    @patch("operations.check_website_operations.read_file")
+    def test_check_website_uri_list_informs_zero_uri(self, mock_read_file, mock_info):
+        mock_read_file.return_value = []
+        uri_list_file_path = "/tmp/uri_list_2010-10-09.lst"
+        website_url_list = ["http://www.scielo.br", "https://newscielo.br"]
+        check_website_uri_list(uri_list_file_path, website_url_list)
+        self.assertEqual(
+            mock_info.call_args_list,
+            [
+                call('Quantidade de URI: %i', 0),
+                call("Encontrados: %i/%i", 0, 0),
+            ]
+        )
+
     @patch("operations.check_website_operations.Logger.info")
     @patch("operations.check_website_operations.requests.head")
     @patch("operations.check_website_operations.read_file")
-    def test_check_website_uri_list_inform_that_all_were_found(self, mock_read_file, mock_head, mock_info):
+    def test_check_website_uri_list_informs_that_all_were_found(self, mock_read_file, mock_head, mock_info):
         mock_read_file.return_value = (
             "/scielo.php?script=sci_serial&pid=0001-3765\n"
             "/scielo.php?script=sci_issues&pid=0001-3765\n"
@@ -167,7 +186,7 @@ class TestCheckWebsiteUriList(TestCase):
     @patch("operations.check_website_operations.Logger.info")
     @patch("operations.check_website_operations.requests.head")
     @patch("operations.check_website_operations.read_file")
-    def test_check_website_uri_list_inform_that_some_of_uri_items_were_not_found(self, mock_read_file, mock_head, mock_info):
+    def test_check_website_uri_list_informs_that_some_of_uri_items_were_not_found(self, mock_read_file, mock_head, mock_info):
         mock_read_file.return_value = (
             "/scielo.php?script=sci_serial&pid=0001-3765\n"
             "/scielo.php?script=sci_issues&pid=0001-3765\n"
