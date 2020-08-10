@@ -5,8 +5,9 @@
 
 ACRON=$1
 ISSUE=$2
+MX=$3
 
-$CISIS_DIR/mx ../bases-work/${ACRON}/${ACRON} \
+$MX ../bases-work/${ACRON}/${ACRON} \
     btell=0 \
     "bool=I=${ISSUE} or H=${ISSUE}" \
     lw=9000 \

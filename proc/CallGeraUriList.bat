@@ -47,7 +47,7 @@ fi
 
 TMP_SCRIPT=/tmp/GeraUriList_$(date "+%Y-%m-%d-%H%M%s").bat
 
-$CISIS_DIR/mx "seq=scilista.lst " lw=9000 "pft=if p(v1) and p(v2) and a(v3) then './GeraUriList.bat ',v1,' ',v2/ fi" now >${TMP_SCRIPT}
+$CISIS_DIR/mx "seq=scilista.lst " lw=9000 "pft=if p(v1) and p(v2) and a(v3) then './GeraUriList.bat ',v1,' ',v2,' $CISIS_DIR/mx'/ fi" now >${TMP_SCRIPT}
 
 chmod 755 ${TMP_SCRIPT}
 
