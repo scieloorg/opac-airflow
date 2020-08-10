@@ -15,9 +15,9 @@ echo "nohup ./CallTriggerSyncIsisToKernel.bat > /tmp/CallTriggerSyncIsisToKernel
 echo 
 
 
-nohup ./CallPrepSyncToKernel.bat > /tmp/CallPrepSyncToKernel.out&
+nohup ./CallPrepSyncToKernel.bat > /tmp/CallPrepSyncToKernel.out 2>&1 &
 
 GeraScielo.bat .. .. log/GeraPadrao.log adiciona
 
-nohup ./CallTriggerSyncIsisToKernel.bat > /tmp/CallTriggerSyncIsisToKernel.out&
-nohup ./CallGeraUriList.bat > /tmp/CallGeraUriList.out&
+nohup ./CallTriggerSyncIsisToKernel.bat > /tmp/CallTriggerSyncIsisToKernel.out 2>&1 &
+nohup ./CallGeraUriList.bat > /tmp/CallGeraUriList.out 2>&1 &
