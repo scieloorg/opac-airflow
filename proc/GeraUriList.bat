@@ -8,7 +8,7 @@ ISSUE=$2
 
 $CISIS_DIR/mx ../bases-work/${ACRON}/${ACRON} \
     btell=0 \
-    bool=${ISSUE} \
+    "bool=I=${ISSUE} or H=${ISSUE}" \
     lw=9000 \
     "proc='a9999{${ACRON}{a9990{${ISSUE}{'" \
     pft=@pft/gera_uri_list.pft \
