@@ -14,10 +14,10 @@ echo GeraScielo.bat .. /scielo/web log/GeraPadrao.log adiciona
 echo "nohup ./CallTriggerSyncIsisToKernel.bat > /tmp/CallTriggerSyncIsisToKernel.out&"
 echo 
 
-
-nohup ./CallPrepSyncToKernel.bat > /tmp/CallPrepSyncToKernel.out 2>&1 &
+GERAPADRAO_ID=$(date "+%Y-%m-%d-%H%M%s")
+nohup ./CallPrepSyncToKernel.bat ${GERAPADRAO_ID} > /tmp/CallPrepSyncToKernel.out 2>&1 &
 
 GeraScielo.bat .. .. log/GeraPadrao.log adiciona
 
-nohup ./CallTriggerSyncIsisToKernel.bat > /tmp/CallTriggerSyncIsisToKernel.out 2>&1 &
-nohup ./CallGeraUriList.bat > /tmp/CallGeraUriList.out 2>&1 &
+nohup ./CallTriggerSyncIsisToKernel.bat  ${GERAPADRAO_ID} > /tmp/CallTriggerSyncIsisToKernel.out 2>&1 &
+nohup ./CallGeraUriList.bat  ${GERAPADRAO_ID} > /tmp/CallGeraUriList.out 2>&1 &
