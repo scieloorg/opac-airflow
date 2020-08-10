@@ -6,11 +6,12 @@
 if [ -f SyncToKernel.ini ];
 then
     echo "VARIABLES read from file SyncToKernel.ini"
-    . SyncToKernel.ini
+    . ./SyncToKernel.ini
     echo
     echo SCILISTA_PATH=$SCILISTA_PATH
     echo XC_SPS_PACKAGES=$XC_SPS_PACKAGES
     echo XC_KERNEL_GATE=$XC_KERNEL_GATE
+    echo CISIS_DIR=$CISIS_DIR
     echo
 fi
 
@@ -25,11 +26,19 @@ else
         ERROR=1
     fi
 fi
+if [ "" == "${CISIS_DIR}" ];
+then
+    echo "Missing required variable: CISIS_DIR"
+    ERROR=1
+else
+    if [ ! -f ${CISIS_DIR} ];
+    then
+        echo "Missing file: ${CISIS_DIR} "
+        ERROR=1
+    fi
+fi
 if [ "$ERROR" == "1" ];
 then
-    echo
-    echo "XC_KERNEL_GATE eh obrigatorio para gerar a lista de URI"
-    echo
     exit 1
 fi
 
