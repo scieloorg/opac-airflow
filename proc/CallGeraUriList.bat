@@ -42,11 +42,18 @@ then
     exit 1
 fi
 
-$CISIS_DIR/mx "seq=scilista.lst " lw=9000 "pft=if p(v1) and p(v2) and a(v3) then './GeraUriList.bat ',v1,' ',v2/ fi" now >/tmp/GeraURI.bat
+# Garante que o valor de `TMP_SCRIPT` seja sempre novo
+# evitando de executar um script antigo
 
-chmod 755 /tmp/GeraURI.bat
+TMP_SCRIPT=/tmp/GeraUriList_$(date "+%Y-%m-%d-%H%M%s").bat
+
+$CISIS_DIR/mx "seq=scilista.lst " lw=9000 "pft=if p(v1) and p(v2) and a(v3) then './GeraUriList.bat ',v1,' ',v2/ fi" now >${TMP_SCRIPT}
+
+chmod 755 ${TMP_SCRIPT}
 
 URI_LIST=${XC_KERNEL_GATE}/uri_list_$(date "+%Y-%m-%d").lst
 
-/tmp/GeraURI.bat > ${URI_LIST}
+${TMP_SCRIPT} > ${URI_LIST}
+
+rm ${TMP_SCRIPT}
 
