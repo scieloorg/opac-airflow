@@ -3,6 +3,8 @@
 # ou após as bases-work/acron/acron estarem atualizadas
 # A lista fica disponibilizada em XC_KERNEL_GATE
 
+RUN_ID=$1
+
 if [ -f SyncToKernel.ini ];
 then
     echo "VARIABLES read from file SyncToKernel.ini"
@@ -51,7 +53,7 @@ $CISIS_DIR/mx "seq=scilista.lst " lw=9000 "pft=if p(v1) and p(v2) and a(v3) then
 
 chmod 755 ${TMP_SCRIPT}
 
-URI_LIST=${XC_KERNEL_GATE}/uri_list_$(date "+%Y-%m-%d").lst
+URI_LIST=${XC_KERNEL_GATE}/uri_list_${RUN_ID}.lst
 
 ${TMP_SCRIPT} > ${URI_LIST}
 
