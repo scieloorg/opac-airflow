@@ -33,9 +33,9 @@ then
     echo "Missing required variable: CISIS_DIR"
     ERROR=1
 else
-    if [ ! -f ${CISIS_DIR} ];
+    if [ ! -f ${CISIS_DIR}/mx ];
     then
-        echo "Missing file: ${CISIS_DIR} "
+        echo "Missing file: ${CISIS_DIR}/mx "
         ERROR=1
     fi
 fi
