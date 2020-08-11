@@ -6,10 +6,10 @@
 # XC_SPS_PACKAGES: path do diretório com todos os pacotes gerados pelo XC
 # XC_KERNEL_GATE: path do diretório para copia dos pacotes como estao no momento que o processamento do GeraPadrao e iniciado
 
-TODAY_DATE=$(date "+%Y-%m-%d")
+ID_PROC=$1
 
 echo ""
-echo "$TODAY_DATE - Executing $0 from `pwd`"
+echo "${ID_PROC} - Executing $0 from `pwd`"
 echo ""
 
 if [ -f SyncToKernel.ini ];
@@ -144,10 +144,10 @@ then
     echo "--------------------------------------------------------"
  
     echo
-    echo "Copiando scilista de $SCILISTA_PATH para a área do Escalonador em ${XC_KERNEL_GATE}/scilista-$TODAY_DATE.lst"
+    echo "Copiando scilista de $SCILISTA_PATH para a área do Escalonador em ${XC_KERNEL_GATE}/scilista-${ID_PROC}.lst"
     echo
 
-    cp ${SCILISTA_PATH} "${XC_KERNEL_GATE}/scilista-$TODAY_DATE.lst"
+    cp ${SCILISTA_PATH} "${XC_KERNEL_GATE}/scilista-${ID_PROC}.lst"
 
     echo
     echo "SPS Packages and Scilista copied successfully!"
