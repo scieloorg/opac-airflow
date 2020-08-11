@@ -40,21 +40,23 @@ dag = DAG(
 
 
 def get_scilista_file_path(
-    xc_sps_packages_dir: Path, proc_sps_packages_dir: Path, execution_date: str
+    xc_sps_packages_dir: Path, proc_sps_packages_dir: Path, gerapadrao_id: str
 ) -> str:
     """Garante que a scilista usada será a do diretório de PROC. Quando for a primeira
     execução da DAG, a lista será copiada para o diretório de PROC. Caso contrário, a 
     mesma será mantida.
     """
-    _scilista_filename = f"scilista-{execution_date}.lst"
-    _proc_scilista_file_path = proc_sps_packages_dir / _scilista_filename
-    if _proc_scilista_file_path.is_file():
+    proc_dir_scilista_list = list(proc_sps_packages_dir.glob(f"scilista-*.lst"))
+    if proc_dir_scilista_list:
+        _proc_scilista_file_path = proc_dir_scilista_list[0]
         Logger.info('Proc scilista "%s" already exists', _proc_scilista_file_path)
     else:
+        _scilista_filename = f"scilista-{gerapadrao_id}.lst"
         _origin_scilista_file_path = xc_sps_packages_dir / _scilista_filename
         if not _origin_scilista_file_path.is_file():
             raise FileNotFoundError(_origin_scilista_file_path)
 
+        _proc_scilista_file_path = proc_sps_packages_dir / _scilista_filename
         Logger.info(
             'Copying original scilista "%s" to proc "%s"',
             _origin_scilista_file_path,
@@ -80,7 +82,7 @@ def get_sps_packages(conf, **kwargs):
     _scilista_file_path = get_scilista_file_path(
         _xc_sps_packages_dir,
         _proc_sps_packages_dir,
-        kwargs["execution_date"].to_date_string(), # Data da primeira execução da DAG
+        Variable.get("GERAPADRAO_ID_FOR_SCILISTA"),
     )
     _sps_packages = pre_sync_documents_to_kernel_operations.get_sps_packages(
         _scilista_file_path,
