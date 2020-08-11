@@ -69,8 +69,7 @@ def check_website_uri_list(conf, **kwargs):
     gerapadrao_id_items = Variable.get(
         "GERAPADRAO_ID_FOR_URI_LIST", default_var=[], deserialize_json=True)
 
-    _website_url_list = Variable.get("WEBSITE_URL_LIST", "")
-    _website_url_list = _website_url_list.split(",")
+    _website_url_list = Variable.get("WEBSITE_URL_LIST", default_var=[], deserialize_json=True)
     _xc_sps_packages_dir = Path(Variable.get("XC_SPS_PACKAGES_DIR"))
     _proc_sps_packages_dir = Path(Variable.get("PROC_SPS_PACKAGES_DIR")) / kwargs["run_id"]
     if not _proc_sps_packages_dir.is_dir():
