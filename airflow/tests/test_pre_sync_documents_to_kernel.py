@@ -28,38 +28,38 @@ class TestGetScilistaFilePath(TestCase):
             get_scilista_file_path(
                 pathlib.Path("no/dir/path"),
                 pathlib.Path(self.proc_dir),
-                "2020-12-31",
+                "2020-12-31-08172297086458",
             )
-        self.assertIn(str(exc_info.exception), "no/dir/path/scilista-2020-12-31.lst")
+        self.assertIn(str(exc_info.exception), "no/dir/path/scilista-2020-12-31-08172297086458.lst")
 
     def test_scilista_already_exists_in_proc(self):
-        scilista_path_origin = pathlib.Path(self.gate_dir) / "scilista-2020-01-01.lst"
+        scilista_path_origin = pathlib.Path(self.gate_dir) / "scilista-2020-01-01-12204897086458.lst"
         scilista_path_origin.write_text("acron v1n22")
-        scilista_path_proc = pathlib.Path(self.proc_dir) / "scilista-2020-01-01.lst"
+        scilista_path_proc = pathlib.Path(self.proc_dir) / "scilista-2020-01-01-10204897086458.lst"
         scilista_path_proc.write_text("acron v1n20")
         _scilista_file_path = get_scilista_file_path(
             pathlib.Path(self.gate_dir),
             pathlib.Path(self.proc_dir),
-            "2020-01-01",
+            "2020-01-01-10204897086458",
         )
 
         self.assertEqual(
             _scilista_file_path,
-            str(pathlib.Path(self.proc_dir) / "scilista-2020-01-01.lst")
+            str(pathlib.Path(self.proc_dir) / "scilista-2020-01-01-10204897086458.lst")
         )
         self.assertEqual(scilista_path_proc.read_text(), "acron v1n20")
 
     def test_scilista_must_be_copied(self):
-        scilista_path = pathlib.Path(self.gate_dir) / "scilista-2020-01-01.lst"
+        scilista_path = pathlib.Path(self.gate_dir) / "scilista-2020-01-01-19032697086458.lst"
         scilista_path.write_text("acron v1n20")
         _scilista_file_path = get_scilista_file_path(
             pathlib.Path(self.gate_dir),
             pathlib.Path(self.proc_dir),
-            "2020-01-01",
+            "2020-01-01-19032697086458",
         )
         self.assertEqual(
             _scilista_file_path,
-            str(pathlib.Path(self.proc_dir) / "scilista-2020-01-01.lst")
+            str(pathlib.Path(self.proc_dir) / "scilista-2020-01-01-19032697086458.lst")
         )
 
 
@@ -67,17 +67,14 @@ class TestGetSPSPackages(TestCase):
     def setUp(self):
         self.dir_source = tempfile.mkdtemp()
         self.dir_dest = tempfile.mkdtemp()
-        self._execution_date = pendulum.now(pendulum.timezone("America/Sao_Paulo"))
-        self._scilista_basename = "scilista-{}.lst".format(
-            self._execution_date.to_date_string()
-        )
+        self.id_proc_gerapadrao = "2020-01-01-16412600000000"
+        self._scilista_basename = f"scilista-{self.id_proc_gerapadrao}.lst"
         self._scilista_path = pathlib.Path(self.dir_source) / self._scilista_basename
         self._scilista_path.write_text("package 01")
         self.kwargs = {
             "ti": MagicMock(),
             "conf": None,
             "run_id": "test_run_id",
-            "execution_date": self._execution_date,
         }
 
     def tearDown(self):
@@ -99,6 +96,7 @@ class TestGetSPSPackages(TestCase):
         mk_variable_get.side_effect = [
             self.dir_source,
             self.dir_dest,
+            self.id_proc_gerapadrao,
         ]
         _sps_packages = ["package_01", "package_02", "package_03"]
         mk_get_sps_packages.return_value = _sps_packages
@@ -116,6 +114,7 @@ class TestGetSPSPackages(TestCase):
         mk_variable_get.side_effect = [
             self.dir_source,
             self.dir_dest,
+            self.id_proc_gerapadrao,
         ]
         mk_get_sps_packages.return_value = []
         _exec_start_sync_packages = get_sps_packages(**self.kwargs)
