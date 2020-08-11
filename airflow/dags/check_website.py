@@ -66,23 +66,28 @@ def check_website_uri_list(conf, **kwargs):
     """Executa ``check_website.check_website_uri_list`` com a 
     uri_list referente à DagRun. 
     """
+    gerapadrao_id_items = Variable.get(
+        "GERAPADRAO_ID_FOR_URI_LIST", default_var=[], deserialize_json=True)
+
     _website_url_list = Variable.get("WEBSITE_URL_LIST", "")
     _website_url_list = _website_url_list.split(",")
-
     _xc_sps_packages_dir = Path(Variable.get("XC_SPS_PACKAGES_DIR"))
     _proc_sps_packages_dir = Path(Variable.get("PROC_SPS_PACKAGES_DIR")) / kwargs["run_id"]
     if not _proc_sps_packages_dir.is_dir():
         _proc_sps_packages_dir.mkdir()
 
-    _uri_list_file_path = get_uri_list_file_path(
-        _xc_sps_packages_dir,
-        _proc_sps_packages_dir,
-        kwargs["execution_date"].to_date_string(), # Data da primeira execução da DAG
-    )
-    check_website_operations.check_website_uri_list(
-        _uri_list_file_path,
-        _website_url_list,
-    )
+    for gerapadrao_id in gerapadrao_id_items:
+        _uri_list_file_path = get_uri_list_file_path(
+            _xc_sps_packages_dir,
+            _proc_sps_packages_dir,
+            gerapadrao_id,
+        )
+        check_website_operations.check_website_uri_list(
+            _uri_list_file_path,
+            _website_url_list,
+        )
+    # atribui um str vazia para sinalizar que o valor foi usado
+    Variable.set("GERAPADRAO_ID_FOR_URI_LIST", [], serialize_json=True)
 
 
 check_website_uri_list_task = PythonOperator(
