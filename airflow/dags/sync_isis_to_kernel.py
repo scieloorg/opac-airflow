@@ -464,6 +464,21 @@ def link_journals_and_issues(**kwargs):
     update_journals_and_issues_link(journal_issues)
 
 
+def get_gerapadrao_id(**kwargs):
+    # obtem o novo valor para `GERAPADRAO_ID` a partir de `dag_run.conf`
+    gerapadrao_id = kwargs["dag_run"].conf.get("GERAPADRAO_ID")
+
+    if gerapadrao_id:
+        # atribui o valor novo para as variáveis
+        Variable.set("GERAPADRAO_ID", gerapadrao_id)
+        Variable.set("GERAPADRAO_ID_FOR_SCILISTA", gerapadrao_id)
+        items = Variable.get("GERAPADRAO_ID_FOR_URI_LIST", default_var=[],
+                             deserialize_json=True)
+        items.append(gerapadrao_id)
+        Variable.set("GERAPADRAO_ID_FOR_URI_LIST",
+                     items, serialize_json=True)
+
+
 CREATE_FOLDER_TEMPLATES = """
     mkdir -p '{{ var.value.WORK_FOLDER_PATH }}/{{ run_id }}/isis' && \
     mkdir -p '{{ var.value.WORK_FOLDER_PATH }}/{{ run_id }}/json'"""
@@ -478,7 +493,6 @@ java -cp {{ params.classpath}} org.python.util.jython {{ params.isis2json }} -t 
 create_work_folders_task = BashOperator(
     task_id="create_work_folders_task", bash_command=CREATE_FOLDER_TEMPLATES, dag=dag
 )
-
 
 copy_mst_bases_to_work_folder_task = PythonOperator(
     task_id="copy_mst_bases_to_work_folder_task",
@@ -538,12 +552,19 @@ link_journals_and_issues_task = PythonOperator(
 )
 
 
+get_gerapadrao_id_task = PythonOperator(
+    task_id="get_gerapadrao_id_task",
+    python_callable=get_gerapadrao_id,
+    dag=dag,
+    provide_context=True,
+)
+
 trigger_pre_sync_documents_to_kernel_dag_task = TriggerDagRunOperator(
     task_id="trigger_pre_sync_documents_to_kernel_dag_task",
     trigger_dag_id="pre_sync_documents_to_kernel",
     dag=dag,
 )
-
+get_gerapadrao_id_task >> create_work_folders_task
 create_work_folders_task >> copy_mst_bases_to_work_folder_task >> extract_title_task
 extract_title_task >> extract_issue_task >> process_journals_task >> process_issues_task
 process_issues_task >> link_journals_and_issues_task >> trigger_pre_sync_documents_to_kernel_dag_task

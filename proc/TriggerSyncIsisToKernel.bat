@@ -1,3 +1,5 @@
+GERAPADRAO_ID=$1
+
 if [ -f SyncToKernel.ini ];
 then
     echo "VARIABLES read from file SyncToKernel.ini"
@@ -9,11 +11,13 @@ then
     echo "MISSING OPAC_AIRFLOW"
 else
     URL="${OPAC_AIRFLOW}/api/experimental/dags/sync_isis_to_kernel/dag_runs"
-    echo "curl -X POST ${URL} -H 'Cache-Control: no-cache' -H 'Content-Type: application/json' -d '{}' -v"
+    CONF="{\"conf\": {\"GERAPADRAO_ID\": \"${GERAPADRAO_ID}\"} }"
+
+    echo "curl -X POST ${URL} -H 'Cache-Control: no-cache' -H 'Content-Type: application/json' -d '${CONF}' -v"
     curl -X POST \
         ${URL} \
         -H 'Cache-Control: no-cache' \
         -H 'Content-Type: application/json' \
-        -d '{}' \
+        -d "${CONF}" \
         -v
 fi

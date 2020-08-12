@@ -3,14 +3,17 @@
 # ou após as bases-work/acron/acron estarem atualizadas
 # A lista fica disponibilizada em XC_KERNEL_GATE
 
+GERAPADRAO_ID=$1
+
 if [ -f SyncToKernel.ini ];
 then
     echo "VARIABLES read from file SyncToKernel.ini"
-    . SyncToKernel.ini
+    . ./SyncToKernel.ini
     echo
     echo SCILISTA_PATH=$SCILISTA_PATH
     echo XC_SPS_PACKAGES=$XC_SPS_PACKAGES
     echo XC_KERNEL_GATE=$XC_KERNEL_GATE
+    echo CISIS_DIR=$CISIS_DIR
     echo
 fi
 
@@ -25,19 +28,34 @@ else
         ERROR=1
     fi
 fi
+if [ "" == "${CISIS_DIR}" ];
+then
+    echo "Missing required variable: CISIS_DIR"
+    ERROR=1
+else
+    if [ ! -f ${CISIS_DIR}/mx ];
+    then
+        echo "Missing file: ${CISIS_DIR}/mx "
+        ERROR=1
+    fi
+fi
 if [ "$ERROR" == "1" ];
 then
-    echo
-    echo "XC_KERNEL_GATE eh obrigatorio para gerar a lista de URI"
-    echo
     exit 1
 fi
 
-$CISIS_DIR/mx "seq=scilista.lst " lw=9000 "pft=if p(v1) and p(v2) and a(v3) then './GeraUriList.bat ',v1,' ',v2/ fi" now >/tmp/GeraURI.bat
+# Garante que o valor de `TMP_SCRIPT` seja sempre novo
+# evitando de executar um script antigo
 
-chmod 755 /tmp/GeraURI.bat
+TMP_SCRIPT=/tmp/GeraUriList_$(date "+%Y-%m-%d-%H%M%s").bat
 
-URI_LIST=${XC_KERNEL_GATE}/uri_list_$(date "+%Y-%m-%d").lst
+$CISIS_DIR/mx "seq=scilista.lst " lw=9000 "pft=if p(v1) and p(v2) and a(v3) then './GeraUriList.bat ',v1,' ',v2,' $CISIS_DIR/mx'/ fi" now >${TMP_SCRIPT}
 
-/tmp/GeraURI.bat > ${URI_LIST}
+chmod 755 ${TMP_SCRIPT}
+
+URI_LIST=${XC_KERNEL_GATE}/uri_list_${GERAPADRAO_ID}.lst
+
+${TMP_SCRIPT} > ${URI_LIST}
+
+rm ${TMP_SCRIPT}
 
