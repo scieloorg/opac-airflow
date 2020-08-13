@@ -102,6 +102,12 @@ then
         echo "ACRON: $ACRON | ISSUE: $ISSUE"
         echo
 
+        if [ "${ACRON}" = "" ] && [ "${ISSUE}" = "" ];
+        then
+            echo "Blank line, continue"
+            continue
+        fi
+
         if [[ $(tr '[:upper:]' '[:lower:]' <<< "$DEL_COMMAND") = del ]];
         then
             echo "  Package to delete: ${ACRON}_${ISSUE}"
@@ -136,7 +142,7 @@ then
 
     echo "--------------------------------------------------------"
     echo "Number of items: "
-    echo "`cat ${SCILISTA_PATH_TMP} | wc -l` in ${SCILISTA_PATH} (original)"
+    echo "`cat ${SCILISTA_PATH_TMP} | wc -l` in ${SCILISTA_PATH_TMP} (original)"
     echo "`cat ${SCILISTA_PATH} | wc -l` in ${SCILISTA_PATH} (no repetition)"
     echo "`ls ${XC_SPS_PACKAGES} | wc -l` in ${XC_SPS_PACKAGES}"
     echo "`ls ${XC_KERNEL_GATE} | wc -l` in ${XC_KERNEL_GATE}"
