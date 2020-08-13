@@ -94,6 +94,7 @@ fi
 if [ -f ${SCILISTA_PATH} ] && [ -e ${XC_SPS_PACKAGES} ] && [ -e ${XC_KERNEL_GATE} ];
 then
     while read LINE; do
+        echo "LINE: ${LINE}"
         ACRON="$(echo $LINE | cut -f1 -d ' ')"
         ISSUE="$(echo $LINE | cut -f2 -d ' ')"
         DEL_COMMAND="$(echo $LINE | cut -f3 -d ' ')"
