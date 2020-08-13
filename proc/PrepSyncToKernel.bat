@@ -15,7 +15,7 @@ echo ""
 if [ -f SyncToKernel.ini ];
 then
     echo "VARIABLES read from file SyncToKernel.ini"
-    . SyncToKernel.ini
+    . ./SyncToKernel.ini
     echo
     echo SCILISTA_PATH=$SCILISTA_PATH
     echo XC_SPS_PACKAGES=$XC_SPS_PACKAGES
