@@ -84,7 +84,7 @@ $ airflow webserver
 * `XC_SPS_PACKAGES_DIR`: Diretório de origem dos pacotes SPS a serem sincronizados
 * `PROC_SPS_PACKAGES_DIR`: Diretório de destino dos pacotes SPS a serem sincronizados
 * `NEW_SPS_ZIP_DIR`: Diretório de destino dos pacotes SPS otimizados
-* `WEBSITE_URL_LIST`: Lista de URL de SciELO Website para validar a disponibilidade de recursos. String com vírgula como separador. Exemplo: http://www.scielo.br,https://new.scielo.br
+* `WEBSITE_URL_LIST`: Lista de URL de SciELO Website para validar a disponibilidade de recursos. Exemplo: ["http://www.scielo.br", "https://new.scielo.br"]
 
 
 ## Variáveis de ambiente:
