@@ -8,7 +8,7 @@ TRIGGER_LOG=log/TriggerSyncIsisToKernel-${GERAPADRAO_ID}.log
 
 if [ -f SyncToKernel.ini ];
 then
-    . SyncToKernel.ini
+    . ./SyncToKernel.ini
 fi
 
 if [ "" != "${XC_KERNEL_GATE}" ] && [ -e ${XC_KERNEL_GATE} ];

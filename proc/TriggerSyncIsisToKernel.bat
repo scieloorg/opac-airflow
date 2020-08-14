@@ -3,7 +3,7 @@ GERAPADRAO_ID=$1
 if [ -f SyncToKernel.ini ];
 then
     echo "VARIABLES read from file SyncToKernel.ini"
-    . SyncToKernel.ini
+    . ./SyncToKernel.ini
 fi
 
 if [ "" == "${OPAC_AIRFLOW}" ];

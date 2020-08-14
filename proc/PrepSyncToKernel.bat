@@ -15,7 +15,7 @@ echo ""
 if [ -f SyncToKernel.ini ];
 then
     echo "VARIABLES read from file SyncToKernel.ini"
-    . SyncToKernel.ini
+    . ./SyncToKernel.ini
     echo
     echo SCILISTA_PATH=$SCILISTA_PATH
     echo XC_SPS_PACKAGES=$XC_SPS_PACKAGES
@@ -94,12 +94,19 @@ fi
 if [ -f ${SCILISTA_PATH} ] && [ -e ${XC_SPS_PACKAGES} ] && [ -e ${XC_KERNEL_GATE} ];
 then
     while read LINE; do
+        echo "LINE: ${LINE}"
         ACRON="$(echo $LINE | cut -f1 -d ' ')"
         ISSUE="$(echo $LINE | cut -f2 -d ' ')"
         DEL_COMMAND="$(echo $LINE | cut -f3 -d ' ')"
         echo
         echo "ACRON: $ACRON | ISSUE: $ISSUE"
         echo
+
+        if [ "${ACRON}" = "" ] && [ "${ISSUE}" = "" ];
+        then
+            echo "Blank line, continue"
+            continue
+        fi
 
         if [[ $(tr '[:upper:]' '[:lower:]' <<< "$DEL_COMMAND") = del ]];
         then
@@ -115,7 +122,7 @@ then
                 then
                     echo "  Moving pack ${PACK_FILE} to ${XC_KERNEL_GATE} ..."
                     echo
-                    rsync -qa --inplace --remove-source-files "${PACK_FILE}" ${XC_KERNEL_GATE}
+                    mv "${PACK_FILE}" ${XC_KERNEL_GATE}
                 else
                     if [[ "$ISSUE" == *"ahead"* ]];
                     then
@@ -134,7 +141,7 @@ then
 
     echo "--------------------------------------------------------"
     echo "Number of items: "
-    echo "`cat ${SCILISTA_PATH_TMP} | wc -l` in ${SCILISTA_PATH} (original)"
+    echo "`cat ${SCILISTA_PATH_TMP} | wc -l` in ${SCILISTA_PATH_TMP} (original)"
     echo "`cat ${SCILISTA_PATH} | wc -l` in ${SCILISTA_PATH} (no repetition)"
     echo "`ls ${XC_SPS_PACKAGES} | wc -l` in ${XC_SPS_PACKAGES}"
     echo "`ls ${XC_KERNEL_GATE} | wc -l` in ${XC_KERNEL_GATE}"

@@ -6,7 +6,7 @@ PREP_LOG=log/PrepSyncToKernel-$1.log
 
 if [ -f SyncToKernel.ini ];
 then
-    . SyncToKernel.ini
+    . ./SyncToKernel.ini
 fi
 
 if [ "" != "${XC_KERNEL_GATE}" ] && [ -e ${XC_KERNEL_GATE} ];
