@@ -7,6 +7,7 @@
 # XC_KERNEL_GATE: path do diretório para copia dos pacotes como estao no momento que o processamento do GeraPadrao e iniciado
 
 ID_PROC=$1
+SCILISTA_PATH_TMP=/tmp/scilista-${ID_PROC}.lst
 
 echo ""
 echo "${ID_PROC} - Executing $0 from `pwd`"
@@ -34,6 +35,8 @@ else
         ERROR=1
     fi
 fi
+
+cp ${SCILISTA_PATH} ${SCILISTA_PATH_TMP}
 
 if [ "" == "${XC_SPS_PACKAGES}" ];
 then
@@ -84,8 +87,6 @@ echo XC_KERNEL_GATE=$XC_KERNEL_GATE
 echo
 echo ===============
 
-SCILISTA_PATH_TMP=/tmp/scilista.lst
-cp $SCILISTA_PATH $SCILISTA_PATH_TMP
 if [ -e $SCILISTA_PATH_TMP ];
 then
     cat $SCILISTA_PATH_TMP | sort -u > $SCILISTA_PATH
