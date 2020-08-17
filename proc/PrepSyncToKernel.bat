@@ -159,7 +159,7 @@ then
     echo "--------------------------------------------------------"
  
     echo
-    echo "SPS Packages and Scilista copied successfully!"
+    echo "PrepSyncToKernel finalizado"
     echo
 else
     echo
