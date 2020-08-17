@@ -7,6 +7,7 @@
 # XC_KERNEL_GATE: path do diretório para copia dos pacotes como estao no momento que o processamento do GeraPadrao e iniciado
 
 ID_PROC=$1
+SCILISTA_PATH_TMP=/tmp/scilista-${ID_PROC}.lst
 
 echo ""
 echo "${ID_PROC} - Executing $0 from `pwd`"
@@ -34,6 +35,8 @@ else
         ERROR=1
     fi
 fi
+
+cp ${SCILISTA_PATH} ${SCILISTA_PATH_TMP}
 
 if [ "" == "${XC_SPS_PACKAGES}" ];
 then
@@ -84,14 +87,19 @@ echo XC_KERNEL_GATE=$XC_KERNEL_GATE
 echo
 echo ===============
 
-SCILISTA_PATH_TMP=/tmp/scilista.lst
-cp $SCILISTA_PATH $SCILISTA_PATH_TMP
-if [ -e $SCILISTA_PATH_TMP ];
+AIRFLOW_SCILISTA_PATH=${XC_KERNEL_GATE}/scilista-${ID_PROC}.lst
+
+if [ -f ${SCILISTA_PATH_TMP} ];
 then
-    cat $SCILISTA_PATH_TMP | sort -u > $SCILISTA_PATH
+    echo
+    echo "Removendo duplicidade de scilista ${SCILISTA_PATH_TMP}"
+    echo "e copiando para a área do Escalonador em ${AIRFLOW_SCILISTA_PATH}"
+    echo
+
+    cat ${SCILISTA_PATH_TMP} | sort -u > ${AIRFLOW_SCILISTA_PATH}
 fi
 
-if [ -f ${SCILISTA_PATH} ] && [ -e ${XC_SPS_PACKAGES} ] && [ -e ${XC_KERNEL_GATE} ];
+if [ -f ${AIRFLOW_SCILISTA_PATH} ] && [ -e ${XC_SPS_PACKAGES} ] && [ -e ${XC_KERNEL_GATE} ];
 then
     while read LINE; do
         echo "LINE: ${LINE}"
@@ -137,12 +145,12 @@ then
                 fi
             done
         fi
-    done < $SCILISTA_PATH
+    done < ${AIRFLOW_SCILISTA_PATH}
 
     echo "--------------------------------------------------------"
     echo "Number of items: "
     echo "`cat ${SCILISTA_PATH_TMP} | wc -l` in ${SCILISTA_PATH_TMP} (original)"
-    echo "`cat ${SCILISTA_PATH} | wc -l` in ${SCILISTA_PATH} (no repetition)"
+    echo "`cat ${AIRFLOW_SCILISTA_PATH} | wc -l` in ${AIRFLOW_SCILISTA_PATH} (no repetition)"
     echo "`ls ${XC_SPS_PACKAGES} | wc -l` in ${XC_SPS_PACKAGES}"
     echo "`ls ${XC_KERNEL_GATE} | wc -l` in ${XC_KERNEL_GATE}"
     echo "--------------------------------------------------------"
@@ -151,13 +159,7 @@ then
     echo "--------------------------------------------------------"
  
     echo
-    echo "Copiando scilista de $SCILISTA_PATH para a área do Escalonador em ${XC_KERNEL_GATE}/scilista-${ID_PROC}.lst"
-    echo
-
-    cp ${SCILISTA_PATH} "${XC_KERNEL_GATE}/scilista-${ID_PROC}.lst"
-
-    echo
-    echo "SPS Packages and Scilista copied successfully!"
+    echo "PrepSyncToKernel finalizado"
     echo
 else
     echo
