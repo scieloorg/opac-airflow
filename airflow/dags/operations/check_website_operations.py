@@ -4,8 +4,33 @@ import time
 
 from urllib3.exceptions import MaxRetryError, NewConnectionError
 
+from bs4 import BeautifulSoup
+
 
 Logger = logging.getLogger(__name__)
+
+
+def get_webpage_content(uri):
+    response = access_uri(uri)
+    return response.text
+
+
+def get_webpage_href_and_src(content):
+    href_items = {}
+
+    soup = BeautifulSoup(content)
+
+    href_items["href"] = [
+        link.get('href')
+        for link in soup.find_all('a')
+        if link.get('href')
+    ]
+    href_items["src"] = [
+        link.get('src')
+        for link in soup.find_all(attrs={"src": True})
+        if link.get('src')
+    ]
+    return href_items
 
 
 def check_website_uri_list(uri_list_file_path, website_url_list):
@@ -70,9 +95,9 @@ def check_uri_list(uri_list_items):
     return failures
 
 
-def requests_head(uri):
+def requests_get(uri):
     try:
-        response = requests.head(uri, timeout=10)
+        response = requests.get(uri, timeout=10)
     except (requests.exceptions.ConnectionError,
             MaxRetryError,
             NewConnectionError) as e:
@@ -89,12 +114,12 @@ def requests_head(uri):
 def access_uri(uri):
     """Acessa uma URI e reporta o seu status de resposta"""
 
-    response = requests_head(uri)
+    response = requests_get(uri)
     if not response:
         return False
 
     if response.status_code in (200, 301, 302):
-        return True
+        return response
 
     if response.status_code in (429, 500, 502, 503, 504):
         return wait_and_retry_to_access_uri(uri)
@@ -123,7 +148,7 @@ def wait_and_retry_to_access_uri(uri):
         total_secs += t
         time.sleep(t)
 
-        response = requests_head(uri)
+        response = requests_get(uri)
 
         if not response:
             available = False
@@ -132,8 +157,8 @@ def wait_and_retry_to_access_uri(uri):
         if response.status_code in (429, 500, 502, 503, 504):
             continue
 
-        available = response.status_code in (200, 301, 302)
-        break
+        if response.status_code in (200, 301, 302):
+            available = response
 
     Logger.info(
         "The URL '%s' returned the status code '%s' after %is",

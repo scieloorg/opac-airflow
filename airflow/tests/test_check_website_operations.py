@@ -7,6 +7,8 @@ from operations.check_website_operations import (
     concat_website_url_and_uri_list_items,
     check_uri_list,
     check_website_uri_list,
+    get_webpage_href_and_src,
+    get_webpage_content,
 )
 
 
@@ -225,3 +227,39 @@ class TestCheckWebsiteUriList(TestCase):
                     ])),
             ]
         )
+
+
+class TestGetWebpageHrefAndSrc(TestCase):
+
+    def test_get_webpage_href_and_src_returns_src_and_href(self):
+        content = """<root>
+            <img src="bla.jpg"/>
+            <p><x src="g.jpg"/></p>
+            <a href="d.jpg"/>
+            </root>"""
+        expected = {
+            "href": ["d.jpg"],
+            "src": ["bla.jpg", "g.jpg"],
+        }
+        result = get_webpage_href_and_src(content)
+        self.assertEqual(expected, result)
+
+    def test_get_webpage_href_and_src_returns_src(self):
+        content = """<root>
+            <p><img src="bla.jpg"/></p><x src="g.jpg"/>
+            </root>"""
+        expected = {
+            "href": [],
+            "src": ["bla.jpg", "g.jpg"],
+        }
+        result = get_webpage_href_and_src(content)
+        self.assertEqual(expected, result)
+
+    def test_get_webpage_href_and_src_returns_href(self):
+        content = '<root><a href="d.jpg"/></root>'
+        expected = {
+            "href": ["d.jpg"],
+            "src": [],
+        }
+        result = get_webpage_href_and_src(content)
+        self.assertEqual(expected, result)
