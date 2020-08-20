@@ -4,6 +4,7 @@ import time
 
 from urllib3.exceptions import MaxRetryError, NewConnectionError
 
+
 from bs4 import BeautifulSoup
 
 
@@ -31,6 +32,11 @@ def get_webpage_href_and_src(content):
         if link.get('src')
     ]
     return href_items
+
+
+def not_found_expected_uri_items_in_web_page(
+        expected_uri_items, web_page_uri_items):
+    return set(expected_uri_items) - set(web_page_uri_items)
 
 
 def check_website_uri_list(uri_list_file_path, website_url_list):
@@ -159,6 +165,7 @@ def wait_and_retry_to_access_uri(uri):
 
         if response.status_code in (200, 301, 302):
             available = response
+        break
 
     Logger.info(
         "The URL '%s' returned the status code '%s' after %is",

@@ -9,6 +9,7 @@ from operations.check_website_operations import (
     check_website_uri_list,
     get_webpage_href_and_src,
     get_webpage_content,
+    not_found_expected_uri_items_in_web_page,
 )
 
 
@@ -59,28 +60,28 @@ class MockLogger:
 
 class TestCheckUriList(TestCase):
 
-    @patch('operations.check_website_operations.requests.head')
+    @patch('operations.check_website_operations.requests.get')
     def test_check_uri_list_for_status_code_200_returns_empty_list(self, mock_req_head):
         mock_req_head.side_effect = [MockResponse(200), MockResponse(200), ]
         uri_list = ["goodURI1", "goodURI2", ]
         result = check_uri_list(uri_list)
         self.assertEqual([], result)
 
-    @patch('operations.check_website_operations.requests.head')
+    @patch('operations.check_website_operations.requests.get')
     def test_check_uri_list_for_status_code_301_returns_empty_list(self, mock_req_head):
         mock_req_head.side_effect = [MockResponse(301)]
         uri_list = ["URI"]
         result = check_uri_list(uri_list)
         self.assertEqual([], result)
 
-    @patch('operations.check_website_operations.requests.head')
+    @patch('operations.check_website_operations.requests.get')
     def test_check_uri_list_for_status_code_302_returns_empty_list(self, mock_req_head):
         mock_req_head.side_effect = [MockResponse(302)]
         uri_list = ["URI"]
         result = check_uri_list(uri_list)
         self.assertEqual([], result)
 
-    @patch('operations.check_website_operations.requests.head')
+    @patch('operations.check_website_operations.requests.get')
     def test_check_uri_list_for_status_code_404_returns_failure_list(self, mock_req_head):
         mock_req_head.side_effect = [MockResponse(404)]
         uri_list = ["BAD_URI"]
@@ -89,7 +90,7 @@ class TestCheckUriList(TestCase):
             uri_list,
             result)
 
-    @patch('operations.check_website_operations.requests.head')
+    @patch('operations.check_website_operations.requests.get')
     def test_check_uri_list_for_status_code_429_returns_failure_list(self, mock_req_head):
         mock_req_head.side_effect = [MockResponse(429), MockResponse(404)]
         uri_list = ["BAD_URI"]
@@ -99,7 +100,7 @@ class TestCheckUriList(TestCase):
             result)
 
     @patch('operations.check_website_operations.retry_after')
-    @patch('operations.check_website_operations.requests.head')
+    @patch('operations.check_website_operations.requests.get')
     def test_check_uri_list_for_status_code_200_after_retries_returns_failure_list(self, mock_req_head, mock_retry_after):
         mock_retry_after.return_value = [
             0.1, 0.2, 0.4, 0.8, 1,
@@ -117,7 +118,7 @@ class TestCheckUriList(TestCase):
         self.assertEqual([], result)
 
     @patch('operations.check_website_operations.retry_after')
-    @patch('operations.check_website_operations.requests.head')
+    @patch('operations.check_website_operations.requests.get')
     def test_check_uri_list_for_status_code_404_after_retries_returns_failure_list(self, mock_req_head, mock_retry_after):
         mock_retry_after.return_value = [
             0.1, 0.2, 0.4, 0.8, 1,
@@ -154,7 +155,7 @@ class TestCheckWebsiteUriList(TestCase):
         )
 
     @patch("operations.check_website_operations.Logger.info")
-    @patch("operations.check_website_operations.requests.head")
+    @patch("operations.check_website_operations.requests.get")
     @patch("operations.check_website_operations.read_file")
     def test_check_website_uri_list_informs_that_all_were_found(self, mock_read_file, mock_head, mock_info):
         mock_read_file.return_value = (
@@ -164,7 +165,6 @@ class TestCheckWebsiteUriList(TestCase):
             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101\n"
         ).split()
         mock_head.side_effect = [
-            MockResponse(200),
             MockResponse(200),
             MockResponse(200),
             MockResponse(200),
@@ -186,14 +186,14 @@ class TestCheckWebsiteUriList(TestCase):
         )
 
     @patch("operations.check_website_operations.Logger.info")
-    @patch("operations.check_website_operations.requests.head")
+    @patch("operations.check_website_operations.requests.get")
     @patch("operations.check_website_operations.read_file")
     def test_check_website_uri_list_informs_that_some_of_uri_items_were_not_found(self, mock_read_file, mock_head, mock_info):
         mock_read_file.return_value = (
             "/scielo.php?script=sci_serial&pid=0001-3765\n"
             "/scielo.php?script=sci_issues&pid=0001-3765\n"
             "/scielo.php?script=sci_issuetoc&pid=0001-376520200005\n"
-            "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101\n"
+            "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101"
         ).split()
         mock_head.side_effect = [
             MockResponse(200),
@@ -202,6 +202,7 @@ class TestCheckWebsiteUriList(TestCase):
             MockResponse(200),
             MockResponse(500),
             MockResponse(404),
+            MockResponse(200),
             MockResponse(200),
             MockResponse(200),
             MockResponse(200),
@@ -263,3 +264,46 @@ class TestGetWebpageHrefAndSrc(TestCase):
         }
         result = get_webpage_href_and_src(content)
         self.assertEqual(expected, result)
+
+
+class TestNotFoundExpectedUriItemsInWebPage(TestCase):
+
+    def test_not_found_expected_uri_items_in_web_page_returns_empty_set(self):
+        expected_uri_items = [
+            "a.png",
+            "b.png",
+        ]
+        web_page_uri_items = [
+            "a.png",
+            "b.png",
+        ]
+        result = not_found_expected_uri_items_in_web_page(
+            expected_uri_items, web_page_uri_items)
+        self.assertEqual(set(), result)
+
+    def test_not_found_expected_uri_items_in_web_page_returns_a_b(self):
+        expected_uri_items = [
+            "a.png",
+            "b.png",
+        ]
+        web_page_uri_items = [
+            "x.png",
+            "y.png",
+        ]
+        result = not_found_expected_uri_items_in_web_page(
+            expected_uri_items, web_page_uri_items)
+        self.assertEqual({"a.png", "b.png"}, result)
+
+    def test_not_found_expected_uri_items_in_web_page_returns_b(self):
+        expected_uri_items = [
+            "a.png",
+            "b.png",
+        ]
+        web_page_uri_items = [
+            "a.png",
+            "y.png",
+        ]
+        result = not_found_expected_uri_items_in_web_page(
+            expected_uri_items, web_page_uri_items)
+        self.assertEqual({"b.png"}, result)
+
