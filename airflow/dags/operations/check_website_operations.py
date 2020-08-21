@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 Logger = logging.getLogger(__name__)
 
 
-def get_document_uri(data):
+def get_document_webpage_uri(data):
     """
     Recebe data
     retorna uri no padrao /j/:acron/a/:id_doc?format=pdf&lang=es
@@ -25,7 +25,7 @@ def get_document_uri(data):
     return uri
 
 
-def get_document_uri_list(doc_id, acron, lang_and_format):
+def get_document_webpage_uri_list(doc_id, acron, lang_and_format):
     """
     Retorna
         [
@@ -50,7 +50,7 @@ def get_document_uri_list(doc_id, acron, lang_and_format):
             "acron": acron,
         }
         data.update(lang_and_fmt)
-        data["uri"] = get_document_uri(data)
+        data["uri"] = get_document_webpage_uri(data)
         del data["acron"]
         uri_items.append(data)
     return uri_items

@@ -10,8 +10,8 @@ from operations.check_website_operations import (
     get_webpage_href_and_src,
     get_webpage_content,
     not_found_expected_uri_items_in_web_page,
-    get_document_uri,
-    get_document_uri_list,
+    get_document_webpage_uri,
+    get_document_webpage_uri_list,
 )
 
 
@@ -312,44 +312,44 @@ class TestNotFoundExpectedUriItemsInWebPage(TestCase):
 
 class TestGetDocumentUri(TestCase):
 
-    def test_get_document_uri_returns_uri_with_all_the_parameters(self):
+    def test_get_document_webpage_uri_returns_uri_with_all_the_parameters(self):
         data = {
             "acron": "abcdef", "doc_id": "klamciekdoalei", "format": "x",
             "lang": "vv"
         }
         expected = "/j/abcdef/a/klamciekdoalei?format=x&lang=vv"
-        result = get_document_uri(data)
+        result = get_document_webpage_uri(data)
         self.assertEqual(expected, result)
 
-    def test_get_document_uri_returns_uri_without_lang(self):
+    def test_get_document_webpage_uri_returns_uri_without_lang(self):
         data = {
             "acron": "abcdef", "doc_id": "klamciekdoalei", "format": "x",
         }
         expected = "/j/abcdef/a/klamciekdoalei?format=x"
-        result = get_document_uri(data)
+        result = get_document_webpage_uri(data)
         self.assertEqual(expected, result)
 
-    def test_get_document_uri_returns_uri_without_format(self):
+    def test_get_document_webpage_uri_returns_uri_without_format(self):
         data = {
             "acron": "abcdef", "doc_id": "klamciekdoalei",
             "lang": "vv"
         }
         expected = "/j/abcdef/a/klamciekdoalei?lang=vv"
-        result = get_document_uri(data)
+        result = get_document_webpage_uri(data)
         self.assertEqual(expected, result)
 
-    def test_get_document_uri_returns_uri_without_format_and_without_lang(self):
+    def test_get_document_webpage_uri_returns_uri_without_format_and_without_lang(self):
         data = {
             "acron": "abcdef", "doc_id": "klamciekdoalei",
         }
         expected = "/j/abcdef/a/klamciekdoalei"
-        result = get_document_uri(data)
+        result = get_document_webpage_uri(data)
         self.assertEqual(expected, result)
 
 
-class Testget_document_uri_list(TestCase):
+class TestGetDocumentWebpageUriList(TestCase):
 
-    def test_get_document_uri_list_returns_uri_data_list(self):
+    def test_get_document_webpage_uri_list_returns_uri_data_list(self):
         doc_id = "ldld"
         acron = "xjk"
         lang_and_format = [
@@ -384,6 +384,6 @@ class Testget_document_uri_list(TestCase):
                 "format": "pdf",
             },
         ]
-        result = get_document_uri_list(doc_id, acron, lang_and_format)
+        result = get_document_webpage_uri_list(doc_id, acron, lang_and_format)
         self.assertEqual(expected, result)
 
