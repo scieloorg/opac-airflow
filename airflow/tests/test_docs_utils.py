@@ -24,6 +24,7 @@ from operations.docs_utils import (
     create_aop_bundle,
     update_aop_bundle_items,
     get_document_format_and_langs,
+    get_document_assets_data,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -1090,6 +1091,48 @@ class TestGetDocumentFormatAndLangs(TestCase):
             {"lang": "es", "format": "pdf"},
         ]
         result = get_document_format_and_langs(current_version)
+        self.assertEqual(expected, result)
+
+
+class Testget_document_assets_data(TestCase):
+
+    def test_get_document_assets_data(self):
+        data = {}
+        data["assets"] = {
+            "a01.png": [
+                ["2020-08-10T11:38:46.759859Z", "https://..a01.png"],
+            ],
+            "a01.jpg": [
+                ["2020-08-10T11:38:46.759859Z", "https://..a01.jpg"],
+            ],
+            "a02.png": [
+                ["2019-08-10T11:38:46.759859Z", "https://vrsao1/a02.png"],
+                ["2020-08-10T11:38:46.759859Z", "https://vrsao2/a02.png"],
+            ],
+            "a02.jpg": [
+                ["2020-08-10T11:38:46.759859Z", "https://vrsao2/a02.jpg"],
+            ],
+        }
+        expected = [
+            {
+                "prefix": "a01",
+                "uri_alternatives": ["https://..a01.png", "https://..a01.jpg"],
+                "asset_alternatives": [
+                    {"asset_id": "a01.png", "uri": "https://..a01.png"},
+                    {"asset_id": "a01.jpg", "uri": "https://..a01.jpg"},
+                ],
+            },
+            {
+                "prefix": "a02",
+                "uri_alternatives": [
+                    "https://vrsao2/a02.png", "https://vrsao2/a02.jpg"],
+                "asset_alternatives": [
+                    {"asset_id": "a02.png", "uri": "https://vrsao2/a02.png"},
+                    {"asset_id": "a02.jpg", "uri": "https://vrsao2/a02.jpg"},
+                ],
+            },
+        ]
+        result = get_document_assets_data(data)
         self.assertEqual(expected, result)
 
 

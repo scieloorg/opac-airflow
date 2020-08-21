@@ -66,6 +66,41 @@ def get_document_format_and_langs(current_version):
     return format_and_langs
 
 
+def get_document_assets_data(current_version):
+    """
+    Retorna os dados dos ativos da versão atual de um documento registrado
+    no Kernel
+    """
+    LAST_VERSION = -1
+    # agrupa items que representam o mesmo ativo
+    assets_by_prefix = {}
+    assets = current_version.get("assets") or {}
+    for asset_id, asset in assets.items():
+        prefix, ext = os.path.splitext(asset_id)
+        prefix = prefix.replace(".thumbnail", "")
+        assets_by_prefix[prefix] = assets_by_prefix.get(prefix) or []
+        assets_by_prefix[prefix].append(
+            {
+                "asset_id": asset_id,
+                "uri": asset[LAST_VERSION][1],
+            }
+        )
+    # cria lista dos grupos de ativos digitais
+    assets = []
+    for prefix, asset_alternatives in assets_by_prefix.items():
+        assets.append(
+            {
+                "prefix": prefix,
+                "uri_alternatives": [
+                    alternative["uri"]
+                    for alternative in asset_alternatives
+                ],
+                "asset_alternatives": asset_alternatives,
+            }
+        )
+    return assets
+
+
 def delete_doc_from_kernel(doc_to_delete):
     try:
         response = hooks.kernel_connect("/documents/" + doc_to_delete, "DELETE")
