@@ -16,10 +16,24 @@ from operations.exceptions import (
     RegisterUpdateDocIntoKernelException,
     LinkDocumentToDocumentsBundleException,
     Pidv3Exception,
+    GetDocManifestFromKernelException,
 )
 from common.sps_package import SPS_Package
 
 Logger = logging.getLogger(__name__)
+
+
+def get_document_manifest(doc_id):
+    try:
+        return hooks.kernel_connect(
+            "/documents/" + doc_id + "/manifest", "GET"
+        )
+    except requests.exceptions.HTTPError as exc:
+        raise GetDocManifestFromKernelException(
+            'Could not GET document "{}" in Kernel : {}'.format(
+                doc_id, str(exc)
+            )
+        ) from None
 
 
 def delete_doc_from_kernel(doc_to_delete):

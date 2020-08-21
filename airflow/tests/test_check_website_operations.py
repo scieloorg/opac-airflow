@@ -10,6 +10,7 @@ from operations.check_website_operations import (
     get_webpage_href_and_src,
     get_webpage_content,
     not_found_expected_uri_items_in_web_page,
+    get_document_uri,
 )
 
 
@@ -306,4 +307,41 @@ class TestNotFoundExpectedUriItemsInWebPage(TestCase):
         result = not_found_expected_uri_items_in_web_page(
             expected_uri_items, web_page_uri_items)
         self.assertEqual({"b.png"}, result)
+
+
+class TestGetDocumentUri(TestCase):
+
+    def test_get_document_uri_returns_uri_with_all_the_parameters(self):
+        data = {
+            "acron": "abcdef", "doc_id": "klamciekdoalei", "format": "x",
+            "lang": "vv"
+        }
+        expected = "/j/abcdef/a/klamciekdoalei?format=x&lang=vv"
+        result = get_document_uri(data)
+        self.assertEqual(expected, result)
+
+    def test_get_document_uri_returns_uri_without_lang(self):
+        data = {
+            "acron": "abcdef", "doc_id": "klamciekdoalei", "format": "x",
+        }
+        expected = "/j/abcdef/a/klamciekdoalei?format=x"
+        result = get_document_uri(data)
+        self.assertEqual(expected, result)
+
+    def test_get_document_uri_returns_uri_without_format(self):
+        data = {
+            "acron": "abcdef", "doc_id": "klamciekdoalei",
+            "lang": "vv"
+        }
+        expected = "/j/abcdef/a/klamciekdoalei?lang=vv"
+        result = get_document_uri(data)
+        self.assertEqual(expected, result)
+
+    def test_get_document_uri_returns_uri_without_format_and_without_lang(self):
+        data = {
+            "acron": "abcdef", "doc_id": "klamciekdoalei",
+        }
+        expected = "/j/abcdef/a/klamciekdoalei"
+        result = get_document_uri(data)
+        self.assertEqual(expected, result)
 

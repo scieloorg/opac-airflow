@@ -1,14 +1,28 @@
 import logging
 import requests
 import time
-
 from urllib3.exceptions import MaxRetryError, NewConnectionError
-
 
 from bs4 import BeautifulSoup
 
 
 Logger = logging.getLogger(__name__)
+
+
+def get_document_uri(data):
+    """
+    Recebe data
+    retorna uri no padrao /j/:acron/a/:id_doc?format=pdf&lang=es
+    """
+    uri = "/j/{}/a/{}".format(data['acron'], data['doc_id'])
+    query_items = [
+        "{}={}".format(name, data.get(name))
+        for name in ("format", "lang")
+        if data.get(name)
+    ]
+    if len(query_items):
+        uri += "?" + "&".join(query_items)
+    return uri
 
 
 def get_webpage_content(uri):

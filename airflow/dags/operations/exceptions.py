@@ -1,3 +1,7 @@
+class GetDocManifestFromKernelException(Exception):
+    ...
+
+
 class DeleteDocFromKernelException(Exception):
     ...
 
