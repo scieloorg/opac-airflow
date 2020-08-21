@@ -9,6 +9,23 @@ from bs4 import BeautifulSoup
 Logger = logging.getLogger(__name__)
 
 
+def get_classic_document_webpage_uri(data):
+    """
+    Recebe data
+    retorna uri no padrao
+    /scielo.php?script=sci_arttext&pid=S0001-37652020000501101&tlng=lang
+    /scielo.php?script=sci_pdf&pid=S0001-37652020000501101&tlng=lang
+    """
+    if data.get("format") == "pdf":
+        script = "sci_pdf"
+    else:
+        script = "sci_arttext"
+    uri = "/scielo.php?script={}&pid={}".format(script, data['doc_id'])
+    if data.get("lang"):
+        uri += "&tlng={}".format(data.get("lang"))
+    return uri
+
+
 def get_document_webpage_uri(data):
     """
     Recebe data
@@ -25,7 +42,7 @@ def get_document_webpage_uri(data):
     return uri
 
 
-def get_document_webpage_uri_list(doc_id, acron, lang_and_format):
+def get_document_webpage_uri_list(doc_id, lang_and_format, acron=None, doc_webpage_uri_function=None):
     """
     Retorna
         [
@@ -43,6 +60,9 @@ def get_document_webpage_uri_list(doc_id, acron, lang_and_format):
             },
         ]
     """
+    doc_webpage_uri_function = doc_webpage_uri_function or get_classic_document_webpage_uri
+    if doc_webpage_uri_function == get_document_webpage_uri and not acron:
+        raise ValueError("get_document_webpage_uri_list requires `acron`")
     uri_items = []
     for lang_and_fmt in lang_and_format:
         data = {
@@ -50,7 +70,7 @@ def get_document_webpage_uri_list(doc_id, acron, lang_and_format):
             "acron": acron,
         }
         data.update(lang_and_fmt)
-        data["uri"] = get_document_webpage_uri(data)
+        data["uri"] = doc_webpage_uri_function(data)
         del data["acron"]
         uri_items.append(data)
     return uri_items

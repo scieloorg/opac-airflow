@@ -349,7 +349,7 @@ class TestGetDocumentUri(TestCase):
 
 class TestGetDocumentWebpageUriList(TestCase):
 
-    def test_get_document_webpage_uri_list_returns_uri_data_list(self):
+    def test_get_document_webpage_uri_list_returns_uri_data_list_using_new_pattern(self):
         doc_id = "ldld"
         acron = "xjk"
         lang_and_format = [
@@ -384,6 +384,53 @@ class TestGetDocumentWebpageUriList(TestCase):
                 "format": "pdf",
             },
         ]
-        result = get_document_webpage_uri_list(doc_id, acron, lang_and_format)
+        result = get_document_webpage_uri_list(doc_id, lang_and_format, acron, get_document_webpage_uri)
+        self.assertEqual(expected, result)
+
+    def test_get_document_webpage_uri_list_raises_value_error_if_acron_is_none_and_using_new_uri_pattern(self):
+        doc_id = "ldld"
+        with self.assertRaises(ValueError):
+            get_document_webpage_uri_list(doc_id, [], None, get_document_webpage_uri)
+
+    def test_get_document_webpage_uri_list_raises_value_error_if_acron_is_empty_str_and_using_new_uri_pattern(self):
+        doc_id = "ldld"
+        with self.assertRaises(ValueError):
+            get_document_webpage_uri_list(doc_id, [], "", get_document_webpage_uri)
+
+    def test_get_document_webpage_uri_list_returns_uri_data_list_using_classic_pattern(self):
+        doc_id = "ldld"
+        lang_and_format = [
+            {"lang": "en", "format": "html"},
+            {"lang": "en", "format": "pdf"},
+            {"lang": "es", "format": "html"},
+            {"lang": "es", "format": "pdf"},
+        ]
+        expected = [
+            {
+                "doc_id": "ldld",
+                "lang": "en",
+                "uri": "/scielo.php?script=sci_arttext&pid=ldld&tlng=en",
+                "format": "html",
+            },
+            {
+                "doc_id": "ldld",
+                "lang": "en",
+                "uri": "/scielo.php?script=sci_pdf&pid=ldld&tlng=en",
+                "format": "pdf",
+            },
+            {
+                "doc_id": "ldld",
+                "lang": "es",
+                "uri": "/scielo.php?script=sci_arttext&pid=ldld&tlng=es",
+                "format": "html",
+            },
+            {
+                "doc_id": "ldld",
+                "lang": "es",
+                "uri": "/scielo.php?script=sci_pdf&pid=ldld&tlng=es",
+                "format": "pdf",
+            },
+        ]
+        result = get_document_webpage_uri_list(doc_id, lang_and_format)
         self.assertEqual(expected, result)
 
