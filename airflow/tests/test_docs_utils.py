@@ -25,6 +25,7 @@ from operations.docs_utils import (
     update_aop_bundle_items,
     get_document_format_and_langs,
     get_document_assets_data,
+    get_document_renditions_data,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -1133,6 +1134,45 @@ class Testget_document_assets_data(TestCase):
             },
         ]
         result = get_document_assets_data(data)
+        self.assertEqual(expected, result)
+
+
+class Testget_document_renditions_data(TestCase):
+
+    def test_get_document_renditions_data(self):
+        data = {}
+        data["renditions"] = [
+            {
+                "data": [
+                    {
+                        "url": "URI 1 versão 1",
+                    },
+                    {
+                        "url": "URI 1 versão 2",
+                    },
+                ],
+                "lang": "en",
+            },
+            {
+                "data": [
+                    {
+                        "url": "URI 2 versão 1",
+                    },
+                ],
+                "lang": "pt",
+            },
+        ]
+        expected = [
+            {
+                "lang": "en",
+                "uri": "URI 1 versão 2",
+            },
+            {
+                "lang": "pt",
+                "uri": "URI 2 versão 1",
+            },
+        ]
+        result = get_document_renditions_data(data)
         self.assertEqual(expected, result)
 
 

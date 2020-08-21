@@ -101,6 +101,22 @@ def get_document_assets_data(current_version):
     return assets
 
 
+def get_document_renditions_data(current_version):
+    """
+    Retorna os dados das manifestações da versão atual de um documento
+    registrado no Kernel
+    """
+    renditions = []
+    for rendition in current_version.get("renditions") or []:
+        renditions.append(
+            {
+                "lang": rendition["lang"],
+                "uri": rendition["data"][-1]["url"],
+            }
+        )
+    return renditions
+
+
 def delete_doc_from_kernel(doc_to_delete):
     try:
         response = hooks.kernel_connect("/documents/" + doc_to_delete, "DELETE")
