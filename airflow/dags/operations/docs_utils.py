@@ -7,6 +7,7 @@ import requests
 import botocore
 from lxml import etree
 
+from common.sps_package import SPS_Package
 import common.hooks as hooks
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -18,7 +19,7 @@ from operations.exceptions import (
     Pidv3Exception,
     GetDocManifestFromKernelException,
 )
-from common.sps_package import SPS_Package
+
 
 Logger = logging.getLogger(__name__)
 

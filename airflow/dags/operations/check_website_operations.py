@@ -25,6 +25,20 @@ def get_document_uri(data):
     return uri
 
 
+def get_document_uri_list(doc_id, acron, lang_and_format):
+    uri_items = []
+    for lang_and_fmt in lang_and_format:
+        data = {
+            "doc_id": doc_id,
+            "acron": acron,
+        }
+        data.update(lang_and_fmt)
+        data["uri"] = get_document_uri(data)
+        del data["acron"]
+        uri_items.append(data)
+    return uri_items
+
+
 def get_webpage_content(uri):
     response = access_uri(uri)
     return response.text

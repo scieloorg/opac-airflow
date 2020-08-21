@@ -11,6 +11,7 @@ from operations.check_website_operations import (
     get_webpage_content,
     not_found_expected_uri_items_in_web_page,
     get_document_uri,
+    get_document_uri_list,
 )
 
 
@@ -343,5 +344,46 @@ class TestGetDocumentUri(TestCase):
         }
         expected = "/j/abcdef/a/klamciekdoalei"
         result = get_document_uri(data)
+        self.assertEqual(expected, result)
+
+
+class Testget_document_uri_list(TestCase):
+
+    def test_get_document_uri_list_returns_uri_data_list(self):
+        doc_id = "ldld"
+        acron = "xjk"
+        lang_and_format = [
+            {"lang": "en", "format": "html"},
+            {"lang": "en", "format": "pdf"},
+            {"lang": "es", "format": "html"},
+            {"lang": "es", "format": "pdf"},
+        ]
+        expected = [
+            {
+                "doc_id": "ldld",
+                "lang": "en",
+                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "format": "html",
+            },
+            {
+                "doc_id": "ldld",
+                "lang": "en",
+                "uri": "/j/xjk/a/ldld?format=pdf&lang=en",
+                "format": "pdf",
+            },
+            {
+                "doc_id": "ldld",
+                "lang": "es",
+                "uri": "/j/xjk/a/ldld?format=html&lang=es",
+                "format": "html",
+            },
+            {
+                "doc_id": "ldld",
+                "lang": "es",
+                "uri": "/j/xjk/a/ldld?format=pdf&lang=es",
+                "format": "pdf",
+            },
+        ]
+        result = get_document_uri_list(doc_id, acron, lang_and_format)
         self.assertEqual(expected, result)
 
