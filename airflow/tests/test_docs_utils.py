@@ -23,6 +23,7 @@ from operations.docs_utils import (
     get_or_create_bundle,
     create_aop_bundle,
     update_aop_bundle_items,
+    get_document_format_and_langs,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -1062,6 +1063,34 @@ class TestUpdateAOPBundle(TestCase):
         mk_update_documents_in_bundle.assert_called_once_with(
             "0034-8910-aop", updated_docs_list
         )
+
+
+class TestGetDocumentFormatAndLangs(TestCase):
+
+    @patch("operations.docs_utils.etree")
+    @patch("operations.docs_utils.SPS_Package")
+    def test_get_document_format_and_langs_returns_(self, mock_SPSPackage, mock_etree):
+        current_version = {
+            "data": "bla.xml",
+            "renditions": [
+                {"lang": "en"},
+                {"lang": "es"},
+            ]
+        }
+        mock_etree.XML.return_value = ""
+        mock_sps_package = MagicMock()
+        mock_sps_package.original_language = "en"
+        mock_sps_package.translation_languages = ["es"]
+
+        mock_SPSPackage.return_value = mock_sps_package
+        expected = [
+            {"lang": "en", "format": "html"},
+            {"lang": "es", "format": "html"},
+            {"lang": "en", "format": "pdf"},
+            {"lang": "es", "format": "pdf"},
+        ]
+        result = get_document_format_and_langs(current_version)
+        self.assertEqual(expected, result)
 
 
 if __name__ == "__main__":

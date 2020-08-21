@@ -37,6 +37,35 @@ def get_document_manifest(doc_id):
         ) from None
 
 
+def get_document_format_and_langs(current_version):
+    """
+    Retorna formato (html e pdf) e idiomas da versão corrente
+    """
+    sps_package = SPS_Package(etree.XML(current_version["data"]))
+    format_and_langs = []
+    format_and_langs.append(
+        {
+            "lang": sps_package.original_language,
+            "format": "html",
+        }
+    )
+    for lang in sps_package.translation_languages or []:
+        format_and_langs.append(
+            {
+                "lang": lang,
+                "format": "html",
+            }
+        )
+    for rendition in current_version.get("renditions") or []:
+        format_and_langs.append(
+            {
+                "lang": rendition["lang"],
+                "format": "pdf",
+            }
+        )
+    return format_and_langs
+
+
 def delete_doc_from_kernel(doc_to_delete):
     try:
         response = hooks.kernel_connect("/documents/" + doc_to_delete, "DELETE")

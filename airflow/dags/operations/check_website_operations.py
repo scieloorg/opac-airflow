@@ -26,6 +26,23 @@ def get_document_uri(data):
 
 
 def get_document_uri_list(doc_id, acron, lang_and_format):
+    """
+    Retorna
+        [
+            {
+                "doc_id": "",
+                "lang": "",
+                "format": "",
+                "uri": "",
+            },
+            {
+                "doc_id": "",
+                "lang": "",
+                "format": "",
+                "uri": "",
+            },
+        ]
+    """
     uri_items = []
     for lang_and_fmt in lang_and_format:
         data = {
