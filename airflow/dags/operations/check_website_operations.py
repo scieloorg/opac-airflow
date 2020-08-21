@@ -77,8 +77,9 @@ def get_document_webpage_uri_list(doc_id, lang_and_format, acron=None, doc_webpa
 
 
 def get_webpage_content(uri):
-    response = access_uri(uri)
-    return response.text
+    response = access_uri(uri, requests.get)
+    if response:
+        return response.text
 
 
 def get_webpage_href_and_src(content):
@@ -166,9 +167,10 @@ def check_uri_list(uri_list_items):
     return failures
 
 
-def requests_get(uri):
+def requests_get(uri, function=None):
     try:
-        response = requests.get(uri, timeout=10)
+        function = function or requests.head
+        response = function(uri, timeout=10)
     except (requests.exceptions.ConnectionError,
             MaxRetryError,
             NewConnectionError) as e:
@@ -182,10 +184,10 @@ def requests_get(uri):
         return response
 
 
-def access_uri(uri):
+def access_uri(uri, function=None):
     """Acessa uma URI e reporta o seu status de resposta"""
-
-    response = requests_get(uri)
+    function = function or requests.head
+    response = requests_get(uri, function)
     if not response:
         return False
 
@@ -193,7 +195,7 @@ def access_uri(uri):
         return response
 
     if response.status_code in (429, 500, 502, 503, 504):
-        return wait_and_retry_to_access_uri(uri)
+        return wait_and_retry_to_access_uri(uri, function)
 
     Logger.error(
         "The URL '%s' returned the status code '%s'.",
@@ -207,11 +209,12 @@ def retry_after():
     return (5, 10, 20, 40, 80, 160, 320, 640, )
 
 
-def wait_and_retry_to_access_uri(uri):
+def wait_and_retry_to_access_uri(uri, function=None):
     """
     Aguarda `t` segundos e tenta novamente até que status_code nao seja
     um destes (429, 500, 502, 503, 504)
     """
+    function = function or requests.head
     available = False
     total_secs = 0
     for t in retry_after():
@@ -219,7 +222,7 @@ def wait_and_retry_to_access_uri(uri):
         total_secs += t
         time.sleep(t)
 
-        response = requests_get(uri)
+        response = requests_get(uri, function)
 
         if not response:
             available = False

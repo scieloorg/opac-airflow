@@ -8,7 +8,6 @@ from operations.check_website_operations import (
     check_uri_list,
     check_website_uri_list,
     get_webpage_href_and_src,
-    get_webpage_content,
     not_found_expected_uri_items_in_web_page,
     get_document_webpage_uri,
     get_document_webpage_uri_list,
@@ -62,28 +61,28 @@ class MockLogger:
 
 class TestCheckUriList(TestCase):
 
-    @patch('operations.check_website_operations.requests.get')
+    @patch('operations.check_website_operations.requests.head')
     def test_check_uri_list_for_status_code_200_returns_empty_list(self, mock_req_head):
         mock_req_head.side_effect = [MockResponse(200), MockResponse(200), ]
         uri_list = ["goodURI1", "goodURI2", ]
         result = check_uri_list(uri_list)
         self.assertEqual([], result)
 
-    @patch('operations.check_website_operations.requests.get')
+    @patch('operations.check_website_operations.requests.head')
     def test_check_uri_list_for_status_code_301_returns_empty_list(self, mock_req_head):
         mock_req_head.side_effect = [MockResponse(301)]
         uri_list = ["URI"]
         result = check_uri_list(uri_list)
         self.assertEqual([], result)
 
-    @patch('operations.check_website_operations.requests.get')
+    @patch('operations.check_website_operations.requests.head')
     def test_check_uri_list_for_status_code_302_returns_empty_list(self, mock_req_head):
         mock_req_head.side_effect = [MockResponse(302)]
         uri_list = ["URI"]
         result = check_uri_list(uri_list)
         self.assertEqual([], result)
 
-    @patch('operations.check_website_operations.requests.get')
+    @patch('operations.check_website_operations.requests.head')
     def test_check_uri_list_for_status_code_404_returns_failure_list(self, mock_req_head):
         mock_req_head.side_effect = [MockResponse(404)]
         uri_list = ["BAD_URI"]
@@ -92,7 +91,7 @@ class TestCheckUriList(TestCase):
             uri_list,
             result)
 
-    @patch('operations.check_website_operations.requests.get')
+    @patch('operations.check_website_operations.requests.head')
     def test_check_uri_list_for_status_code_429_returns_failure_list(self, mock_req_head):
         mock_req_head.side_effect = [MockResponse(429), MockResponse(404)]
         uri_list = ["BAD_URI"]
@@ -102,7 +101,7 @@ class TestCheckUriList(TestCase):
             result)
 
     @patch('operations.check_website_operations.retry_after')
-    @patch('operations.check_website_operations.requests.get')
+    @patch('operations.check_website_operations.requests.head')
     def test_check_uri_list_for_status_code_200_after_retries_returns_failure_list(self, mock_req_head, mock_retry_after):
         mock_retry_after.return_value = [
             0.1, 0.2, 0.4, 0.8, 1,
@@ -120,7 +119,7 @@ class TestCheckUriList(TestCase):
         self.assertEqual([], result)
 
     @patch('operations.check_website_operations.retry_after')
-    @patch('operations.check_website_operations.requests.get')
+    @patch('operations.check_website_operations.requests.head')
     def test_check_uri_list_for_status_code_404_after_retries_returns_failure_list(self, mock_req_head, mock_retry_after):
         mock_retry_after.return_value = [
             0.1, 0.2, 0.4, 0.8, 1,
@@ -157,7 +156,7 @@ class TestCheckWebsiteUriList(TestCase):
         )
 
     @patch("operations.check_website_operations.Logger.info")
-    @patch("operations.check_website_operations.requests.get")
+    @patch("operations.check_website_operations.requests.head")
     @patch("operations.check_website_operations.read_file")
     def test_check_website_uri_list_informs_that_all_were_found(self, mock_read_file, mock_head, mock_info):
         mock_read_file.return_value = (
@@ -188,7 +187,7 @@ class TestCheckWebsiteUriList(TestCase):
         )
 
     @patch("operations.check_website_operations.Logger.info")
-    @patch("operations.check_website_operations.requests.get")
+    @patch("operations.check_website_operations.requests.head")
     @patch("operations.check_website_operations.read_file")
     def test_check_website_uri_list_informs_that_some_of_uri_items_were_not_found(self, mock_read_file, mock_head, mock_info):
         mock_read_file.return_value = (
