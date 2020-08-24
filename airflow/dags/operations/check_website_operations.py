@@ -44,8 +44,10 @@ def get_document_webpage_uri(data):
     return uri
 
 
-def get_document_webpage_uri_list(website_pid, lang_and_format, acron=None, doc_webpage_uri_function=None):
+def get_document_webpage_uri_list(doc_id, doc_data_list, doc_webpage_uri_function=None):
     """
+    Acrescenta aos items (dicionários) da lista `doc_data_list`, as chaves:
+        "doc_id", "uri"
     Retorna
         [
             {
@@ -62,21 +64,25 @@ def get_document_webpage_uri_list(website_pid, lang_and_format, acron=None, doc_
             },
         ]
     """
+    acron = None
+    pid_v2 = None
+    if len(doc_data_list):
+        doc_data = doc_data_list[0]
+        acron = doc_data.get("acron")
+        pid_v2 = doc_data.get("pid_v2")
     doc_webpage_uri_function = doc_webpage_uri_function or get_classic_document_webpage_uri
     if doc_webpage_uri_function == get_document_webpage_uri and not acron:
         raise ValueError("get_document_webpage_uri_list requires `acron`")
-    if doc_webpage_uri_function == get_classic_document_webpage_uri and not is_pid_v2(website_pid):
+    if doc_webpage_uri_function == get_classic_document_webpage_uri and not is_pid_v2(pid_v2):
         raise ValueError("get_document_webpage_uri_list requires `pid v2`")
     uri_items = []
-    for lang_and_fmt in lang_and_format:
+    for doc_data in doc_data_list:
         data = {
-            "doc_id": website_pid,
-            "acron": acron,
+            "doc_id": doc_id,
         }
-        data.update(lang_and_fmt)
-        data["uri"] = doc_webpage_uri_function(data)
-        del data["acron"]
-        uri_items.append(data)
+        doc_data.update(data)
+        doc_data["uri"] = doc_webpage_uri_function(doc_data)
+        uri_items.append(doc_data)
     return uri_items
 
 

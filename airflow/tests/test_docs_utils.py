@@ -23,7 +23,7 @@ from operations.docs_utils import (
     get_or_create_bundle,
     create_aop_bundle,
     update_aop_bundle_items,
-    get_document_format_and_langs,
+    get_document_data_to_generate_uri,
     get_document_assets_data,
     get_document_renditions_data,
 )
@@ -1067,9 +1067,9 @@ class TestUpdateAOPBundle(TestCase):
         )
 
 
-class TestGetDocumentFormatAndLangs(TestCase):
+class TestGetDocumentDataToGenerateUri(TestCase):
 
-    def test_get_document_format_and_langs_returns_(self):
+    def test_get_document_data_to_generate_uri_returns_(self):
         current_version = {
             "data": "bla.xml",
             "renditions": [
@@ -1080,14 +1080,21 @@ class TestGetDocumentFormatAndLangs(TestCase):
         mock_sps_package = MagicMock()
         mock_sps_package.original_language = "en"
         mock_sps_package.translation_languages = ["es"]
+        mock_sps_package.scielo_pid_v2 = "xxxx"
+        mock_sps_package.acron = "abc"
+        mock_sps_package.package_name = "artigo-1234"
 
         expected = [
-            {"lang": "en", "format": "html"},
-            {"lang": "es", "format": "html"},
-            {"lang": "en", "format": "pdf"},
-            {"lang": "es", "format": "pdf"},
+            {"lang": "en", "format": "html", "pid_v2": "xxxx", "acron": "abc",
+             "doc_id_for_human": "artigo-1234"},
+            {"lang": "es", "format": "html", "pid_v2": "xxxx", "acron": "abc",
+             "doc_id_for_human": "artigo-1234"},
+            {"lang": "en", "format": "pdf", "pid_v2": "xxxx", "acron": "abc",
+             "doc_id_for_human": "artigo-1234"},
+            {"lang": "es", "format": "pdf", "pid_v2": "xxxx", "acron": "abc",
+             "doc_id_for_human": "artigo-1234"},
         ]
-        result = get_document_format_and_langs(current_version, mock_sps_package)
+        result = get_document_data_to_generate_uri(current_version, mock_sps_package)
         self.assertEqual(expected, result)
 
 

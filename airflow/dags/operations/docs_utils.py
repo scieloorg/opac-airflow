@@ -25,7 +25,7 @@ Logger = logging.getLogger(__name__)
 
 
 def is_pid_v2(value):
-    return value[0] == "S" and value[-1].isdigit() and len(value) == 23
+    return bool(value and value[0] == "S" and value[-1].isdigit() and len(value) == 23)
 
 
 def get_document_manifest(doc_id):
@@ -48,40 +48,44 @@ def get_document_sps_package(current_version):
     return SPS_Package(etree.XML(current_version["data"]))
 
 
-def get_document_pid_v2(sps_package=None):
+def get_document_data_to_generate_uri(current_version, sps_package=None):
     """
-    Retorna pid versão 2
-    """
-    return sps_package.scielo_pid_v2
-
-
-def get_document_format_and_langs(current_version, sps_package=None):
-    """
-    Retorna formato (html e pdf) e idiomas da versão corrente
+    Retorna formato (html e pdf) e idiomas da versão corrente entre outros
+    dados do documento
     """
     sps_package = sps_package or get_document_sps_package(current_version)
-    format_and_langs = []
-    format_and_langs.append(
+    data = []
+    data.append(
         {
             "lang": sps_package.original_language,
             "format": "html",
+            "pid_v2": sps_package.scielo_pid_v2,
+            "acron": sps_package.acron,
+            "doc_id_for_human": sps_package.package_name,
+
         }
     )
     for lang in sps_package.translation_languages or []:
-        format_and_langs.append(
+        data.append(
             {
                 "lang": lang,
                 "format": "html",
+                "pid_v2": sps_package.scielo_pid_v2,
+                "acron": sps_package.acron,
+                "doc_id_for_human": sps_package.package_name,
             }
         )
     for rendition in current_version.get("renditions") or []:
-        format_and_langs.append(
+        data.append(
             {
                 "lang": rendition["lang"],
                 "format": "pdf",
+                "pid_v2": sps_package.scielo_pid_v2,
+                "acron": sps_package.acron,
+                "doc_id_for_human": sps_package.package_name,
             }
         )
-    return format_and_langs
+    return data
 
 
 def get_document_assets_data(current_version):

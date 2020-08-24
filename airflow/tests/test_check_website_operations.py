@@ -350,86 +350,117 @@ class TestGetDocumentWebpageUriList(TestCase):
 
     def test_get_document_webpage_uri_list_returns_uri_data_list_using_new_pattern(self):
         doc_id = "ldld"
-        acron = "xjk"
-        lang_and_format = [
-            {"lang": "en", "format": "html"},
-            {"lang": "en", "format": "pdf"},
-            {"lang": "es", "format": "html"},
-            {"lang": "es", "format": "pdf"},
+        doc_data_list = [
+            {"lang": "en", "format": "html", "pid_v2": "pid-v2",
+             "acron": "xjk", "doc_id_for_human": "artigo-1234"},
+            {"lang": "en", "format": "pdf", "pid_v2": "pid-v2",
+             "acron": "xjk", "doc_id_for_human": "artigo-1234"},
+            {"lang": "es", "format": "html", "pid_v2": "pid-v2",
+             "acron": "xjk", "doc_id_for_human": "artigo-1234"},
+            {"lang": "es", "format": "pdf", "pid_v2": "pid-v2",
+             "acron": "xjk", "doc_id_for_human": "artigo-1234"},
         ]
         expected = [
             {
-                "doc_id": "ldld",
                 "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=html&lang=en",
-                "format": "html",
             },
             {
-                "doc_id": "ldld",
                 "lang": "en",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=pdf&lang=en",
-                "format": "pdf",
             },
             {
-                "doc_id": "ldld",
                 "lang": "es",
-                "uri": "/j/xjk/a/ldld?format=html&lang=es",
                 "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=es",
             },
             {
-                "doc_id": "ldld",
                 "lang": "es",
-                "uri": "/j/xjk/a/ldld?format=pdf&lang=es",
                 "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=pdf&lang=es",
             },
         ]
-        result = get_document_webpage_uri_list(doc_id, lang_and_format, acron, get_document_webpage_uri)
+        result = get_document_webpage_uri_list(doc_id, doc_data_list, get_document_webpage_uri)
         self.assertEqual(expected, result)
 
     def test_get_document_webpage_uri_list_raises_value_error_if_acron_is_none_and_using_new_uri_pattern(self):
         doc_id = "ldld"
         with self.assertRaises(ValueError):
-            get_document_webpage_uri_list(doc_id, [], None, get_document_webpage_uri)
+            get_document_webpage_uri_list(doc_id, [], get_document_webpage_uri)
 
     def test_get_document_webpage_uri_list_raises_value_error_if_acron_is_empty_str_and_using_new_uri_pattern(self):
         doc_id = "ldld"
         with self.assertRaises(ValueError):
-            get_document_webpage_uri_list(doc_id, [], "", get_document_webpage_uri)
+            get_document_webpage_uri_list(doc_id, [], get_document_webpage_uri)
 
     def test_get_document_webpage_uri_list_returns_uri_data_list_using_classic_pattern(self):
         doc_id = "S1234-56782000123412313"
-        lang_and_format = [
-            {"lang": "en", "format": "html"},
-            {"lang": "en", "format": "pdf"},
-            {"lang": "es", "format": "html"},
-            {"lang": "es", "format": "pdf"},
+        doc_data_list = [
+            {"lang": "en", "format": "html",
+             "pid_v2": "S1234-56782000123412313",
+             "acron": "xjk", "doc_id_for_human": "artigo-1234"},
+            {"lang": "en", "format": "pdf",
+             "pid_v2": "S1234-56782000123412313",
+             "acron": "xjk", "doc_id_for_human": "artigo-1234"},
+            {"lang": "es", "format": "html",
+             "pid_v2": "S1234-56782000123412313",
+             "acron": "xjk", "doc_id_for_human": "artigo-1234"},
+            {"lang": "es", "format": "pdf",
+             "pid_v2": "S1234-56782000123412313",
+             "acron": "xjk", "doc_id_for_human": "artigo-1234"},
         ]
         expected = [
             {
-                "doc_id": "S1234-56782000123412313",
                 "lang": "en",
+                "format": "html",
+                "pid_v2": "S1234-56782000123412313",
+                "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "S1234-56782000123412313",
                 "uri": "/scielo.php?script=sci_arttext&pid=S1234-56782000123412313&tlng=en",
-                "format": "html",
             },
             {
-                "doc_id": "S1234-56782000123412313",
                 "lang": "en",
+                "format": "pdf",
+                "pid_v2": "S1234-56782000123412313",
+                "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "S1234-56782000123412313",
                 "uri": "/scielo.php?script=sci_pdf&pid=S1234-56782000123412313&tlng=en",
-                "format": "pdf",
             },
             {
-                "doc_id": "S1234-56782000123412313",
                 "lang": "es",
-                "uri": "/scielo.php?script=sci_arttext&pid=S1234-56782000123412313&tlng=es",
                 "format": "html",
+                "pid_v2": "S1234-56782000123412313",
+                "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "S1234-56782000123412313",
+                "uri": "/scielo.php?script=sci_arttext&pid=S1234-56782000123412313&tlng=es",
             },
             {
-                "doc_id": "S1234-56782000123412313",
                 "lang": "es",
-                "uri": "/scielo.php?script=sci_pdf&pid=S1234-56782000123412313&tlng=es",
                 "format": "pdf",
+                "pid_v2": "S1234-56782000123412313",
+                "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "S1234-56782000123412313",
+                "uri": "/scielo.php?script=sci_pdf&pid=S1234-56782000123412313&tlng=es",
             },
         ]
-        result = get_document_webpage_uri_list(doc_id, lang_and_format)
+        result = get_document_webpage_uri_list(doc_id, doc_data_list)
         self.assertEqual(expected, result)
 
