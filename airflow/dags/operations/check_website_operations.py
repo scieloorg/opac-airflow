@@ -5,10 +5,80 @@ from urllib3.exceptions import MaxRetryError, NewConnectionError
 
 from bs4 import BeautifulSoup
 
-from operations.docs_utils import is_pid_v2
-
+from operations.docs_utils import (
+    is_pid_v2,
+    get_document_manifest,
+    get_document_data_to_generate_uri,
+    get_document_assets_data,
+    get_document_renditions_data,
+)
 
 Logger = logging.getLogger(__name__)
+
+
+def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
+                                 assets_data, other_versions_uri_data):
+    """
+    Verifica os recursos de um documento, comparando os recursos registrados
+    no Kernel com os recursos indicados na página do documento no site público
+
+    Args:
+        uri_items_expected_in_webpage (list): Lista de recursos que foram encontrados
+            dentro da página do documento
+        assets_data (list of dict, retorno de `get_document_assets_data`):
+            Dados de uri dos ativos digitais.
+        other_versions_uri_data (list of dict,
+            mesmo formato `retornado de get_document_webpage_uri_list`):
+            Dados da uri de outras páginas do documento,
+            ou seja, outro idioma e outro formato
+
+    Returns:
+        list of dict: resultado da verficação de cada recurso avaliado,
+            mais dados do recurso
+    """
+    results = []
+    for asset_data in assets_data:
+        # {"prefix": prefix, "uri_alternatives": [],}
+        uri_result = {}
+        uri_result["type"] = "asset"
+        uri_result["id"] = asset_data["prefix"]
+        uri_result["found"] = False
+        for uri in asset_data["uri_alternatives"]:
+            if uri in uri_items_expected_in_webpage:
+                # se uma das alternativas foi encontrada no html, found é True
+                # e é desnecessário continuar procurando
+                uri_result["uri"] = uri
+                uri_result["found"] = True
+                break
+        if uri_result["found"] is False:
+            uri_result["uri"] = asset_data["uri_alternatives"]
+        results.append(uri_result)
+
+    for other_version_uri_data in other_versions_uri_data:
+        # {"doc_id": "", "lang": "", "format": "", "uri": ""},
+        uri_result = {}
+        uri_result["type"] = other_version_uri_data["format"]
+        uri_result["id"] = other_version_uri_data["lang"]
+        uri_result["found"] = False
+        uri_list = (
+            get_document_webpage_uri(
+                other_version_uri_data, ("format", "lang")),
+            get_document_webpage_uri(
+                other_version_uri_data, ("lang", "format")),
+            get_document_webpage_uri(
+                other_version_uri_data, ("format",))
+        )
+        for uri in uri_list:
+            if uri in uri_items_expected_in_webpage:
+                # se uma das alternativas foi encontrada no html, found é True
+                # e é desnecessário continuar procurando
+                uri_result["uri"] = uri
+                uri_result["found"] = True
+                break
+        if uri_result["found"] is False:
+            uri_result["uri"] = uri_list
+        results.append(uri_result)
+    return results
 
 
 def get_classic_document_webpage_uri(data):
@@ -28,15 +98,16 @@ def get_classic_document_webpage_uri(data):
     return uri
 
 
-def get_document_webpage_uri(data):
+def get_document_webpage_uri(data, query_param_names=None):
     """
     Recebe data
     retorna uri no padrao /j/:acron/a/:id_doc?format=pdf&lang=es
     """
     uri = "/j/{}/a/{}".format(data['acron'], data['doc_id'])
+    query_param_names = query_param_names or ("format", "lang")
     query_items = [
         "{}={}".format(name, data.get(name))
-        for name in ("format", "lang")
+        for name in query_param_names
         if data.get(name)
     ]
     if len(query_items):
