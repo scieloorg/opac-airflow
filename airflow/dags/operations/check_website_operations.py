@@ -42,15 +42,15 @@ def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
         uri_result = {}
         uri_result["type"] = "asset"
         uri_result["id"] = asset_data["prefix"]
-        uri_result["found"] = False
+        uri_result["present_in_html"] = False
         for uri in asset_data["uri_alternatives"]:
             if uri in uri_items_expected_in_webpage:
                 # se uma das alternativas foi encontrada no html, found é True
                 # e é desnecessário continuar procurando
                 uri_result["uri"] = uri
-                uri_result["found"] = True
+                uri_result["present_in_html"] = True
                 break
-        if uri_result["found"] is False:
+        if uri_result["present_in_html"] is False:
             uri_result["uri"] = asset_data["uri_alternatives"]
         results.append(uri_result)
 
@@ -59,16 +59,16 @@ def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
         uri_result = {}
         uri_result["type"] = other_version_uri_data["format"]
         uri_result["id"] = other_version_uri_data["lang"]
-        uri_result["found"] = False
+        uri_result["present_in_html"] = False
         uri_list = get_document_webpage_uri_altenatives(other_version_uri_data)
         for uri in uri_list:
             if uri in uri_items_expected_in_webpage:
                 # se uma das alternativas foi encontrada no html, found é True
                 # e é desnecessário continuar procurando
                 uri_result["uri"] = uri
-                uri_result["found"] = True
+                uri_result["present_in_html"] = True
                 break
-        if uri_result["found"] is False:
+        if uri_result["present_in_html"] is False:
             uri_result["uri"] = uri_list
         results.append(uri_result)
     return results
@@ -203,11 +203,11 @@ def check_document_html(uri, assets_data, other_versions_data):
         # lista de uri encontrada dentro da página
         href_and_src_items = get_webpage_href_and_src(content)
         webpage_inner_uri_list = list(set(
-            href_and_src_items.get("href").values() +
-            href_and_src_items.get("src").values()
+            href_and_src_items.get("href") +
+            href_and_src_items.get("src")
         ))
 
-        # verifica se as uri esperadas estão presente no html da página
+        # verifica se as uri esperadas estão present_in_htmle no html da página
         # do documento, dados os dados dos ativos digitais e das
         # demais versões (formato e idioma) do documento
         checking_result = check_uri_items_expected_in_webpage(
@@ -215,6 +215,39 @@ def check_document_html(uri, assets_data, other_versions_data):
         )
         return True, checking_result
     return False, []
+
+
+def check_document_uri_items(website_url, doc_data_list, assets_data):
+    report = []
+    for doc_data in doc_data_list:
+        doc_uri = website_url + doc_data.get("uri")
+        result = doc_data.copy()
+        Logger.info("Verificando página do documento: %s", doc_uri)
+        if doc_data.get("format") == "html":
+            # lista de uri para outro idioma e/ou formato
+            other_versions_data = list(doc_data_list)
+            other_versions_data.remove(doc_data)
+            available, components_result = check_document_html(
+                                        doc_uri,
+                                        assets_data,
+                                        other_versions_data)
+            result.update(
+                {
+                    "uri": doc_uri,
+                    "available": available,
+                    "components": components_result,
+                }
+            )
+            report.append(result)
+        else:
+            result.update(
+                {
+                    "uri": doc_uri,
+                    "available": bool(access_uri(doc_uri)),
+                }
+            )
+            report.append(result)
+    return report
 
 
 def check_website_uri_list(uri_list_file_path, website_url_list):
