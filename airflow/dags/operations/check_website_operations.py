@@ -17,24 +17,24 @@ Logger = logging.getLogger(__name__)
 
 
 def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
-                                 assets_data, other_versions_uri_data):
+                                 assets_data, other_versions_data):
     """
     Verifica os recursos de um documento, comparando os recursos registrados
     no Kernel com os recursos indicados na página do documento no site público
 
     Args:
-        uri_items_expected_in_webpage (list): Lista de recursos que foram encontrados
-            dentro da página do documento
+        uri_items_expected_in_webpage (list): Lista de recursos que
+            foram encontrados dentro da página do documento
         assets_data (list of dict, retorno de `get_document_assets_data`):
-            Dados de uri dos ativos digitais.
-        other_versions_uri_data (list of dict,
+            Dados de ativos digitais para formar uri.
+        other_versions_data (list of dict,
             mesmo formato `retornado de get_document_webpage_uri_list`):
-            Dados da uri de outras páginas do documento,
-            ou seja, outro idioma e outro formato
+            Dados de outras versões do documento,
+            ou seja, outro idioma e outro formato, para formar sua uri
 
     Returns:
         list of dict: resultado da verficação de cada recurso avaliado,
-            mais dados do recurso
+            mais dados do recurso, cujas chaves são: type, id, found, uri
     """
     results = []
     for asset_data in assets_data:
@@ -54,7 +54,7 @@ def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
             uri_result["uri"] = asset_data["uri_alternatives"]
         results.append(uri_result)
 
-    for other_version_uri_data in other_versions_uri_data:
+    for other_version_uri_data in other_versions_data:
         # {"doc_id": "", "lang": "", "format": "", "uri": ""},
         uri_result = {}
         uri_result["type"] = other_version_uri_data["format"]
@@ -195,6 +195,26 @@ def get_webpage_href_and_src(content):
 def not_found_expected_uri_items_in_web_page(
         expected_uri_items, web_page_uri_items):
     return set(expected_uri_items) - set(web_page_uri_items)
+
+
+def check_document_html(uri, assets_data, other_versions_data):
+    content = get_webpage_content(uri)
+    if content:
+        # lista de uri encontrada dentro da página
+        href_and_src_items = get_webpage_href_and_src(content)
+        webpage_inner_uri_list = list(set(
+            href_and_src_items.get("href").values() +
+            href_and_src_items.get("src").values()
+        ))
+
+        # verifica se as uri esperadas estão presente no html da página
+        # do documento, dados os dados dos ativos digitais e das
+        # demais versões (formato e idioma) do documento
+        checking_result = check_uri_items_expected_in_webpage(
+            webpage_inner_uri_list, assets_data, other_versions_data
+        )
+        return True, checking_result
+    return False, []
 
 
 def check_website_uri_list(uri_list_file_path, website_url_list):
