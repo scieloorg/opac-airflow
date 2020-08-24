@@ -574,7 +574,7 @@ class TestCheckWebpageInnerUriList(TestCase):
                 "id": "asset_uri_2",
                 "found": False,
                 "uri": [
-                    "asset_uri_1.tiff", "asset_uri_1.jpg", "asset_uri_1.png"],
+                    "asset_uri_2.tiff", "asset_uri_2.jpg", "asset_uri_2.png"],
             },
         ]
         result = check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
@@ -623,6 +623,9 @@ class TestCheckWebpageInnerUriList(TestCase):
                         "/j/xyz/a/lokiujyht?format=pdf&lang=es",
                         "/j/xyz/a/lokiujyht?lang=es&format=pdf",
                         "/j/xyz/a/lokiujyht?format=pdf",
+                        "/j/xyz/a/lokiujyht/?format=pdf&lang=es",
+                        "/j/xyz/a/lokiujyht/?lang=es&format=pdf",
+                        "/j/xyz/a/lokiujyht/?format=pdf",
                     ]
             },
             {
@@ -673,6 +676,9 @@ class TestCheckWebpageInnerUriList(TestCase):
                         "/j/xyz/a/lokiujyht?format=html&lang=en",
                         "/j/xyz/a/lokiujyht?lang=en&format=html",
                         "/j/xyz/a/lokiujyht?format=html",
+                        "/j/xyz/a/lokiujyht/?format=html&lang=en",
+                        "/j/xyz/a/lokiujyht/?lang=en&format=html",
+                        "/j/xyz/a/lokiujyht/?format=html",
                     ],
             },
             {

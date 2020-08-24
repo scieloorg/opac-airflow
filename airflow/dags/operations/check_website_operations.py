@@ -60,14 +60,7 @@ def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
         uri_result["type"] = other_version_uri_data["format"]
         uri_result["id"] = other_version_uri_data["lang"]
         uri_result["found"] = False
-        uri_list = (
-            get_document_webpage_uri(
-                other_version_uri_data, ("format", "lang")),
-            get_document_webpage_uri(
-                other_version_uri_data, ("lang", "format")),
-            get_document_webpage_uri(
-                other_version_uri_data, ("format",))
-        )
+        uri_list = get_document_webpage_uri_altenatives(other_version_uri_data)
         for uri in uri_list:
             if uri in uri_items_expected_in_webpage:
                 # se uma das alternativas foi encontrada no html, found é True
@@ -79,6 +72,24 @@ def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
             uri_result["uri"] = uri_list
         results.append(uri_result)
     return results
+
+
+def get_document_webpage_uri_altenatives(data):
+    """
+    Retorna as variações de uri do documento no padrão:
+        /j/:acron/a/:id_doc?format=pdf&lang=es
+    """
+    _data = data.copy()
+    if "lang" in data.keys():
+        del _data["lang"]
+    items = [
+        get_document_webpage_uri(data, ("format", "lang")),
+        get_document_webpage_uri(data, ("lang", "format")),
+        get_document_webpage_uri(data, ("format",)),
+    ]
+    for item in list(items):
+        items.append(item.replace("?", "/?"))
+    return items
 
 
 def get_classic_document_webpage_uri(data):
