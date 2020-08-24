@@ -5,6 +5,8 @@ from urllib3.exceptions import MaxRetryError, NewConnectionError
 
 from bs4 import BeautifulSoup
 
+from operations.docs_utils import is_pid_v2
+
 
 Logger = logging.getLogger(__name__)
 
@@ -42,7 +44,7 @@ def get_document_webpage_uri(data):
     return uri
 
 
-def get_document_webpage_uri_list(doc_id, lang_and_format, acron=None, doc_webpage_uri_function=None):
+def get_document_webpage_uri_list(website_pid, lang_and_format, acron=None, doc_webpage_uri_function=None):
     """
     Retorna
         [
@@ -63,10 +65,12 @@ def get_document_webpage_uri_list(doc_id, lang_and_format, acron=None, doc_webpa
     doc_webpage_uri_function = doc_webpage_uri_function or get_classic_document_webpage_uri
     if doc_webpage_uri_function == get_document_webpage_uri and not acron:
         raise ValueError("get_document_webpage_uri_list requires `acron`")
+    if doc_webpage_uri_function == get_classic_document_webpage_uri and not is_pid_v2(website_pid):
+        raise ValueError("get_document_webpage_uri_list requires `pid v2`")
     uri_items = []
     for lang_and_fmt in lang_and_format:
         data = {
-            "doc_id": doc_id,
+            "doc_id": website_pid,
             "acron": acron,
         }
         data.update(lang_and_fmt)

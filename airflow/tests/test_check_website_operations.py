@@ -397,7 +397,7 @@ class TestGetDocumentWebpageUriList(TestCase):
             get_document_webpage_uri_list(doc_id, [], "", get_document_webpage_uri)
 
     def test_get_document_webpage_uri_list_returns_uri_data_list_using_classic_pattern(self):
-        doc_id = "ldld"
+        doc_id = "S1234-56782000123412313"
         lang_and_format = [
             {"lang": "en", "format": "html"},
             {"lang": "en", "format": "pdf"},
@@ -406,27 +406,27 @@ class TestGetDocumentWebpageUriList(TestCase):
         ]
         expected = [
             {
-                "doc_id": "ldld",
+                "doc_id": "S1234-56782000123412313",
                 "lang": "en",
-                "uri": "/scielo.php?script=sci_arttext&pid=ldld&tlng=en",
+                "uri": "/scielo.php?script=sci_arttext&pid=S1234-56782000123412313&tlng=en",
                 "format": "html",
             },
             {
-                "doc_id": "ldld",
+                "doc_id": "S1234-56782000123412313",
                 "lang": "en",
-                "uri": "/scielo.php?script=sci_pdf&pid=ldld&tlng=en",
+                "uri": "/scielo.php?script=sci_pdf&pid=S1234-56782000123412313&tlng=en",
                 "format": "pdf",
             },
             {
-                "doc_id": "ldld",
+                "doc_id": "S1234-56782000123412313",
                 "lang": "es",
-                "uri": "/scielo.php?script=sci_arttext&pid=ldld&tlng=es",
+                "uri": "/scielo.php?script=sci_arttext&pid=S1234-56782000123412313&tlng=es",
                 "format": "html",
             },
             {
-                "doc_id": "ldld",
+                "doc_id": "S1234-56782000123412313",
                 "lang": "es",
-                "uri": "/scielo.php?script=sci_pdf&pid=ldld&tlng=es",
+                "uri": "/scielo.php?script=sci_pdf&pid=S1234-56782000123412313&tlng=es",
                 "format": "pdf",
             },
         ]

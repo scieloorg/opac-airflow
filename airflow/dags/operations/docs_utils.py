@@ -24,6 +24,10 @@ from operations.exceptions import (
 Logger = logging.getLogger(__name__)
 
 
+def is_pid_v2(value):
+    return value[0] == "S" and value[-1].isdigit() and len(value) == 23
+
+
 def get_document_manifest(doc_id):
     try:
         return hooks.kernel_connect(
