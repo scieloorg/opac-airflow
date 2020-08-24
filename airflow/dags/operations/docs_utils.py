@@ -37,11 +37,25 @@ def get_document_manifest(doc_id):
         ) from None
 
 
-def get_document_format_and_langs(current_version):
+def get_document_sps_package(current_version):
+    """
+    Retorna SPS_Package()
+    """
+    return SPS_Package(etree.XML(current_version["data"]))
+
+
+def get_document_pid_v2(sps_package=None):
+    """
+    Retorna pid versão 2
+    """
+    return sps_package.scielo_pid_v2
+
+
+def get_document_format_and_langs(current_version, sps_package=None):
     """
     Retorna formato (html e pdf) e idiomas da versão corrente
     """
-    sps_package = SPS_Package(etree.XML(current_version["data"]))
+    sps_package = sps_package or get_document_sps_package(current_version)
     format_and_langs = []
     format_and_langs.append(
         {

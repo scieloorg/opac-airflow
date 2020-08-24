@@ -1069,9 +1069,7 @@ class TestUpdateAOPBundle(TestCase):
 
 class TestGetDocumentFormatAndLangs(TestCase):
 
-    @patch("operations.docs_utils.etree")
-    @patch("operations.docs_utils.SPS_Package")
-    def test_get_document_format_and_langs_returns_(self, mock_SPSPackage, mock_etree):
+    def test_get_document_format_and_langs_returns_(self):
         current_version = {
             "data": "bla.xml",
             "renditions": [
@@ -1079,19 +1077,17 @@ class TestGetDocumentFormatAndLangs(TestCase):
                 {"lang": "es"},
             ]
         }
-        mock_etree.XML.return_value = ""
         mock_sps_package = MagicMock()
         mock_sps_package.original_language = "en"
         mock_sps_package.translation_languages = ["es"]
 
-        mock_SPSPackage.return_value = mock_sps_package
         expected = [
             {"lang": "en", "format": "html"},
             {"lang": "es", "format": "html"},
             {"lang": "en", "format": "pdf"},
             {"lang": "es", "format": "pdf"},
         ]
-        result = get_document_format_and_langs(current_version)
+        result = get_document_format_and_langs(current_version, mock_sps_package)
         self.assertEqual(expected, result)
 
 
