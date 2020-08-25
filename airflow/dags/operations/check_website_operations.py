@@ -79,14 +79,13 @@ def get_document_webpage_uri_altenatives(data):
     Retorna as variações de uri do documento no padrão:
         /j/:acron/a/:id_doc?format=pdf&lang=es
     """
-    _data = data.copy()
-    if "lang" in data.keys():
-        del _data["lang"]
     items = [
         get_document_webpage_uri(data, ("format", "lang")),
         get_document_webpage_uri(data, ("lang", "format")),
         get_document_webpage_uri(data, ("format",)),
     ]
+    if data.get("format") == "html":
+        items.append(get_document_webpage_uri(data, ("lang", )))
     for item in list(items):
         items.append(item.replace("?", "/?"))
     return items
@@ -210,11 +209,11 @@ def check_document_html(uri, assets_data, other_versions_data):
         # verifica se as uri esperadas estão present_in_htmle no html da página
         # do documento, dados os dados dos ativos digitais e das
         # demais versões (formato e idioma) do documento
-        checking_result = check_uri_items_expected_in_webpage(
+        components_result = check_uri_items_expected_in_webpage(
             webpage_inner_uri_list, assets_data, other_versions_data
         )
-        return True, checking_result
-    return False, []
+        return {"available": True, "components": components_result}
+    return {"available": False}
 
 
 def check_document_uri_items(website_url, doc_data_list, assets_data):
@@ -227,17 +226,18 @@ def check_document_uri_items(website_url, doc_data_list, assets_data):
             # lista de uri para outro idioma e/ou formato
             other_versions_data = list(doc_data_list)
             other_versions_data.remove(doc_data)
-            available, components_result = check_document_html(
+            components_result = check_document_html(
                                         doc_uri,
                                         assets_data,
                                         other_versions_data)
             result.update(
                 {
                     "uri": doc_uri,
-                    "available": available,
-                    "components": components_result,
                 }
             )
+            result.update(components_result)
+            if components_result is not None:
+                result.update()
             report.append(result)
         else:
             result.update(
