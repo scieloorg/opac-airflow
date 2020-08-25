@@ -16,6 +16,7 @@ from operations.check_website_operations import (
     check_document_html,
     check_document_assets_availability,
     check_document_renditions_availability,
+    format_document_versions_availability_to_register,
 )
 
 
@@ -991,7 +992,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                             "/j/xjk/a/ldld/?format=pdf",
                         ],
                     },
-                ]
+                ],
+                "existing_uri_in_html": [],
             },
             {
                 "lang": "en",
@@ -1129,7 +1131,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                             "/j/xjk/a/ldld/?lang=es",
                         ],
                     },
-                ]
+                ],
+                "existing_uri_in_html": []
             },
             {
                 "lang": "es",
@@ -1226,7 +1229,8 @@ class TestCheckDocumentHtml(TestCase):
                         "/j/xjk/a/ldld/?lang=en",
                     ],
                 },
-            ]
+            ],
+            "existing_uri_in_html": []
         }
         result = check_document_html(uri, assets_data, other_versions_data)
         self.assertEqual(expected, result)
@@ -1353,4 +1357,99 @@ class TestCheckDocumentRenditionsAvailability(TestCase):
         rendition = []
         expected = []
         result = check_document_renditions_availability(rendition)
+        self.assertEqual(expected, result)
+
+
+class TestFormatDocumentVersionsAvailabilityToRegister(TestCase):
+
+    def test_format_document_versions_availability_to_register(self):
+        data = {
+            "doc_id": "DMKLOLSJ",
+            "pid_v2": "S1234-12342020123412345",
+            "doc_id_for_human": "1234-1234-acron-45-9-12345",
+            "format": "html",
+            "lang": "en",
+            "uri": "/j/acron/a/DOC/?format=html&lang=en",
+            "available": True,
+            "components": [
+                {
+                    "type": "asset",
+                    "id": "1234-1234-acron-45-9-12345-f01",
+                    "present_in_html": True,
+                    "uri": "https://1234-1234-acron-45-9-12345-f01.jpg",
+                },
+                {
+                    "type": "asset",
+                    "id": "1234-1234-acron-45-9-12345-f02",
+                    "present_in_html": False,
+                    "uri": [
+                        "https://1234-1234-acron-45-9-12345-f02.jpg"],
+                },
+                {
+                    "type": "pdf",
+                    "id": "en",
+                    "present_in_html": True,
+                    "uri": "/j/acron/a/DOC/?format=pdf&lang=en",
+                },
+            ],
+            "existing_uri_in_html": [
+                '/j/acron/a/DOC/?format=pdf&lang=en',
+                'https://1234-1234-acron-45-9-12345-f01.jpg']
+        }
+
+        extra_data = {"chave": "valor", "chave2": "valor 2"}
+        expected = [
+            {
+                "chave": "valor",
+                "chave2": "valor 2",
+                "annotation": "",
+                "doc_id": "DMKLOLSJ",
+                "pid_v2": "S1234-12342020123412345",
+                "doc_id_for_human": "1234-1234-acron-45-9-12345",
+                "type": "html",
+                "id": "en",
+                "uri": "/j/acron/a/DOC/?format=html&lang=en",
+                "status": "available",
+            },
+            {
+                "chave": "valor",
+                "chave2": "valor 2",
+                "annotation": "",
+                "doc_id": "DMKLOLSJ",
+                "pid_v2": "S1234-12342020123412345",
+                "doc_id_for_human": "1234-1234-acron-45-9-12345",
+                "type": "asset",
+                "id": "1234-1234-acron-45-9-12345-f01",
+                "uri": "https://1234-1234-acron-45-9-12345-f01.jpg",
+                "status": "present in HTML",
+            },
+            {
+                "chave": "valor",
+                "chave2": "valor 2",
+                "annotation": ("Existing in HTML:\n"
+                               "/j/acron/a/DOC/?format=pdf&lang=en\n"
+                               "https://1234-1234-acron-45-9-12345-f01.jpg"),
+                "doc_id": "DMKLOLSJ",
+                "pid_v2": "S1234-12342020123412345",
+                "doc_id_for_human": "1234-1234-acron-45-9-12345",
+                "type": "asset",
+                "id": "1234-1234-acron-45-9-12345-f02",
+                "uri": str(["https://1234-1234-acron-45-9-12345-f02.jpg"]),
+                "status": "absent in HTML",
+            },
+            {
+                "chave": "valor",
+                "chave2": "valor 2",
+                "annotation": "",
+                "doc_id": "DMKLOLSJ",
+                "pid_v2": "S1234-12342020123412345",
+                "doc_id_for_human": "1234-1234-acron-45-9-12345",
+                "type": "pdf",
+                "id": "en",
+                "uri": "/j/acron/a/DOC/?format=pdf&lang=en",
+                "status": "present in HTML",
+            },
+        ]
+        result = format_document_versions_availability_to_register(
+            data, extra_data)
         self.assertEqual(expected, result)

@@ -5,6 +5,8 @@ from urllib3.exceptions import MaxRetryError, NewConnectionError
 
 from bs4 import BeautifulSoup
 
+
+from common.hooks import add_execution_in_database
 from operations.docs_utils import (
     is_pid_v2,
     get_document_manifest,
@@ -34,7 +36,8 @@ def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
 
     Returns:
         list of dict: resultado da verficação de cada recurso avaliado,
-            mais dados do recurso, cujas chaves são: type, id, found, uri
+            mais dados do recurso, cujas chaves são:
+            type, id, present_in_html, uri
     """
     results = []
     for asset_data in assets_data:
@@ -228,7 +231,13 @@ def check_document_html(uri, assets_data, other_versions_data):
     components_result = check_uri_items_expected_in_webpage(
         webpage_inner_uri_list, assets_data, other_versions_data
     )
-    return {"available": True, "components": components_result}
+    result = {"available": True, "components": components_result}
+    for compo in components_result:
+        if compo.get("present_in_html") is False:
+            result.update(
+                {"existing_uri_in_html": sorted(webpage_inner_uri_list)})
+            break
+    return result
 
 
 def check_document_versions_availability(website_url, doc_data_list, assets_data):
@@ -473,3 +482,60 @@ def wait_and_retry_to_access_uri(uri, function=None):
         total_secs
     )
     return available
+
+
+def format_document_versions_availability_to_register(
+        document_versions_availability, extra_data={}):
+    """
+    Formata os dados da avaliação da disponibilidade de uma versão do documento
+    para linhas em uma tabela
+
+    Args:
+        document_versions_availability (dict): dados do documento para
+            identificação e para formar URI
+            {
+                "lang": sps_package.original_language,
+                "format": "html",
+                "pid_v2": sps_package.scielo_pid_v2,
+                "acron": sps_package.acron,
+                "doc_id_for_human": sps_package.package_name,
+                "doc_id": "",
+                "uri": "",
+                "available": bool,
+                "components": [
+                    {"type": "", "id": "",
+                     "present_in_html": bool, "uri": "" or []
+                ]
+            }
+    """
+    rows = []
+    doc_data = extra_data.copy()
+    doc_data["annotation"] = ""
+    for name in ("doc_id", "pid_v2", "doc_id_for_human"):
+        doc_data[name] = document_versions_availability[name]
+    doc_data_result = doc_data.copy()
+    doc_data_result["type"] = document_versions_availability["format"]
+    doc_data_result["id"] = document_versions_availability["lang"]
+    doc_data_result["uri"] = document_versions_availability["uri"]
+    doc_data_result["status"] = ("available"
+                                 if document_versions_availability["available"]
+                                 else "not available")
+
+    # linha sobre dada versão do documento
+    rows.append(doc_data_result)
+
+    for component in document_versions_availability.get("components") or []:
+        row = doc_data.copy()
+        row.update(component)
+        if component["present_in_html"] is False:
+            row["uri"] = str(row["uri"])
+            row["annotation"] = "Existing in HTML:\n{}".format(
+                    "\n".join(
+                        document_versions_availability["existing_uri_in_html"])
+                    )
+        row["status"] = ("present in HTML"
+                         if component["present_in_html"]
+                         else "absent in HTML")
+        del row["present_in_html"]
+        rows.append(row)
+    return rows
