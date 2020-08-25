@@ -28,7 +28,7 @@ def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
         assets_data (list of dict, retorno de `get_document_assets_data`):
             Dados de ativos digitais para formar uri.
         other_versions_data (list of dict,
-            mesmo formato `retornado de get_document_webpage_uri_list`):
+            mesmo formato `retornado de get_document_versions_data`):
             Dados de outras versões do documento,
             ou seja, outro idioma e outro formato, para formar sua uri
 
@@ -125,25 +125,19 @@ def get_document_webpage_uri(data, query_param_names=None):
     return uri
 
 
-def get_document_webpage_uri_list(doc_id, doc_data_list, doc_webpage_uri_function=None):
+def get_document_versions_data(doc_id, doc_data_list, doc_webpage_uri_function=None):
     """
-    Acrescenta aos items (dicionários) da lista `doc_data_list`, as chaves:
-        "doc_id", "uri"
-    Retorna
-        [
-            {
-                "doc_id": "",
-                "lang": "",
-                "format": "",
-                "uri": "",
-            },
-            {
-                "doc_id": "",
-                "lang": "",
-                "format": "",
-                "uri": "",
-            },
-        ]
+    Gera `uri` para as várias versões do documento
+
+    Args:
+        doc_id (str): ID do documento (Kernel)
+        doc_data_list (list of dict): dicionário contém dados do documento
+            suficientes para sua identificação e formação de URI
+        doc_webpage_uri_function (callable): função que forma a URI
+
+    Returns:
+        dict: mesmo conteúdo da lista `doc_data_list`, sendo que cada elemento
+            terá as chaves novas, "uri" e "doc_id"
     """
     acron = None
     pid_v2 = None
@@ -153,9 +147,9 @@ def get_document_webpage_uri_list(doc_id, doc_data_list, doc_webpage_uri_functio
         pid_v2 = doc_data.get("pid_v2")
     doc_webpage_uri_function = doc_webpage_uri_function or get_classic_document_webpage_uri
     if doc_webpage_uri_function == get_document_webpage_uri and not acron:
-        raise ValueError("get_document_webpage_uri_list requires `acron`")
+        raise ValueError("get_document_versions_data requires `acron`")
     if doc_webpage_uri_function == get_classic_document_webpage_uri and not is_pid_v2(pid_v2):
-        raise ValueError("get_document_webpage_uri_list requires `pid v2`")
+        raise ValueError("get_document_versions_data requires `pid v2`")
     uri_items = []
     for doc_data in doc_data_list:
         data = {
@@ -316,6 +310,29 @@ def check_document_assets_availability(assets_data):
             result = item.copy()
             result.update({"available": bool(access_uri(uri))})
             report.append(result)
+    return report
+
+
+def check_document_renditions_availability(renditions):
+    """
+    Verifica a disponibilidade cada manifestação, usando a URI, tal como
+    a manifestação foi registrada, ou seja, a URI do Object Store
+
+    Args:
+        renditions (list of dict): retorno de
+            `docs_utils.get_document_renditions_data`
+    Returns:
+        report (list of dict): mesma lista de dicionários da entrada, sendo
+            que cada elemento da lista, recebe mais uma chave, "available",
+            cujo conteúdo é True para disponível e False para indisponível
+    """
+    report = []
+    for item in renditions:
+        uri = item.get("uri")
+        Logger.info("Verificando %s", uri)
+        result = item.copy()
+        result.update({"available": bool(access_uri(uri))})
+        report.append(result)
     return report
 
 

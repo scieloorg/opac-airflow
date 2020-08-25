@@ -10,11 +10,12 @@ from operations.check_website_operations import (
     get_webpage_href_and_src,
     not_found_expected_uri_items_in_web_page,
     get_document_webpage_uri,
-    get_document_webpage_uri_list,
+    get_document_versions_data,
     check_uri_items_expected_in_webpage,
     check_document_versions_availability,
     check_document_html,
     check_document_assets_availability,
+    check_document_renditions_availability,
 )
 
 
@@ -350,9 +351,9 @@ class TestGetDocumentUri(TestCase):
         self.assertEqual(expected, result)
 
 
-class TestGetDocumentWebpageUriList(TestCase):
+class TestGetDocumentVersionsData(TestCase):
 
-    def test_get_document_webpage_uri_list_returns_uri_data_list_using_new_pattern(self):
+    def test_get_document_versions_data_returns_uri_data_list_using_new_pattern(self):
         doc_id = "ldld"
         doc_data_list = [
             {"lang": "en", "format": "html", "pid_v2": "pid-v2",
@@ -398,20 +399,20 @@ class TestGetDocumentWebpageUriList(TestCase):
                 "uri": "/j/xjk/a/ldld?format=pdf&lang=es",
             },
         ]
-        result = get_document_webpage_uri_list(doc_id, doc_data_list, get_document_webpage_uri)
+        result = get_document_versions_data(doc_id, doc_data_list, get_document_webpage_uri)
         self.assertEqual(expected, result)
 
-    def test_get_document_webpage_uri_list_raises_value_error_if_acron_is_none_and_using_new_uri_pattern(self):
+    def test_get_document_versions_data_raises_value_error_if_acron_is_none_and_using_new_uri_pattern(self):
         doc_id = "ldld"
         with self.assertRaises(ValueError):
-            get_document_webpage_uri_list(doc_id, [], get_document_webpage_uri)
+            get_document_versions_data(doc_id, [], get_document_webpage_uri)
 
-    def test_get_document_webpage_uri_list_raises_value_error_if_acron_is_empty_str_and_using_new_uri_pattern(self):
+    def test_get_document_versions_data_raises_value_error_if_acron_is_empty_str_and_using_new_uri_pattern(self):
         doc_id = "ldld"
         with self.assertRaises(ValueError):
-            get_document_webpage_uri_list(doc_id, [], get_document_webpage_uri)
+            get_document_versions_data(doc_id, [], get_document_webpage_uri)
 
-    def test_get_document_webpage_uri_list_returns_uri_data_list_using_classic_pattern(self):
+    def test_get_document_versions_data_returns_uri_data_list_using_classic_pattern(self):
         doc_id = "S1234-56782000123412313"
         doc_data_list = [
             {"lang": "en", "format": "html",
@@ -465,7 +466,7 @@ class TestGetDocumentWebpageUriList(TestCase):
                 "uri": "/scielo.php?script=sci_pdf&pid=S1234-56782000123412313&tlng=es",
             },
         ]
-        result = get_document_webpage_uri_list(doc_id, doc_data_list)
+        result = get_document_versions_data(doc_id, doc_data_list)
         self.assertEqual(expected, result)
 
 
@@ -1316,4 +1317,40 @@ class TestCheckDocumentAssetsAvailability(TestCase):
         assets_data = []
         expected = []
         result = check_document_assets_availability(assets_data)
+        self.assertEqual(expected, result)
+
+
+class TestCheckDocumentRenditionsAvailability(TestCase):
+    @patch("operations.check_website_operations.access_uri")
+    def test_check_document_assets_availability_returns_one_of_three_is_false(self, mock_access_uri):
+        mock_access_uri.side_effect = [not None, False]
+        renditions = [
+            {
+                "lang": "es",
+                "uri": "uri de original.pdf no object store",
+            },
+            {
+                "lang": "en",
+                "uri": "uri de original-en.pdf  no object store",
+            }
+        ]
+        expected = [
+            {
+                "lang": "es",
+                "uri": "uri de original.pdf no object store",
+                "available": True,
+            },
+            {
+                "lang": "en",
+                "uri": "uri de original-en.pdf  no object store",
+                "available": False,
+            }
+        ]
+        result = check_document_renditions_availability(renditions)
+        self.assertListEqual(expected, result)
+
+    def test_check_document_renditions_availability_returns_empty_list(self):
+        rendition = []
+        expected = []
+        result = check_document_renditions_availability(rendition)
         self.assertEqual(expected, result)
