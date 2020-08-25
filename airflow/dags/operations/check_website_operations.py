@@ -605,3 +605,47 @@ def format_document_items_availability_to_register(document_data,
         del row["available"]
         rows.append(row)
     return rows
+
+
+def check_document_availability(doc_id, website_url, extra_data, netlocs):
+    """
+    Verifica a disponibilidade do documento `doc_id`, verificando a
+    disponibilidade de todas as versões (HTML/PDF/idiomas) e de todos os ativos
+    digitais. Também verifica se os ativos digitais e as demais versões estão
+    mencionadas (`@href`/`@src`) no conteúdo do HTML
+    """
+    LAST_VERSION = -1
+    document_manifest = get_document_manifest(doc_id)
+    current_version = document_manifest["versions"][LAST_VERSION]
+    doc_data = get_document_data_to_generate_uri(current_version)
+
+    document_versions_data = get_document_versions_data(doc_id, doc_data)
+    assets_data = get_document_assets_data(current_version)
+    renditions_data = get_document_renditions_data(current_version)
+    versions_availability = check_document_versions_availability(
+                website_url,
+                document_versions_data,
+                assets_data,
+                netlocs
+            )
+    renditions_availability = check_document_renditions_availability(
+                renditions_data
+            )
+    assets_availability = check_document_assets_availability(assets_data)
+
+    for version in versions_availability:
+        for row in format_document_versions_availability_to_register(
+                version, extra_data):
+            add_execution_in_database("availability", row)
+
+    for asset_availability in assets_availability:
+        for row in format_document_items_availability_to_register(
+                versions_availability[0],
+                asset_availability, extra_data):
+            add_execution_in_database("availability", row)
+
+    for rendition_availability in renditions_availability:
+        for row in format_document_items_availability_to_register(
+                versions_availability[0],
+                rendition_availability, extra_data):
+            add_execution_in_database("availability", row)
