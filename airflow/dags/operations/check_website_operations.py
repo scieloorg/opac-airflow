@@ -237,7 +237,7 @@ def check_document_html(uri, assets_data, other_versions_data):
     return {"available": True, "components": components_result}
 
 
-def check_document_uri_items_availability(website_url, doc_data_list, assets_data):
+def check_document_versions_availability(website_url, doc_data_list, assets_data):
     """
     Verifica a disponibilidade do documento nos respectivos formatos e idiomas.
     No caso, do HTML, inclui a verificação se os ativos digitais e outras

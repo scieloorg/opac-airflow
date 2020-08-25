@@ -12,7 +12,7 @@ from operations.check_website_operations import (
     get_document_webpage_uri,
     get_document_webpage_uri_list,
     check_uri_items_expected_in_webpage,
-    check_document_uri_items_availability,
+    check_document_versions_availability,
     check_document_html,
     check_document_assets_availability,
 )
@@ -708,7 +708,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
 
     @patch("operations.check_website_operations.get_webpage_content")
     @patch("operations.check_website_operations.access_uri")
-    def test_check_document_uri_items_availability_returns_success(self, mock_access_uri,
+    def test_check_document_versions_availability_returns_success(self, mock_access_uri,
                                                     mock_get_webpage_content):
         website_url = "https://www.scielo.br"
         doc_data_list = [
@@ -876,12 +876,12 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "available": True,
             },
         ]
-        result = check_document_uri_items_availability(website_url, doc_data_list, assets_data)
+        result = check_document_versions_availability(website_url, doc_data_list, assets_data)
         self.assertListEqual(expected, result)
 
     @patch("operations.check_website_operations.get_webpage_content")
     @patch("operations.check_website_operations.access_uri")
-    def test_check_document_uri_items_availability_returns_pdf_is_not_available_although_it_is_present_in_html(self, mock_access_uri,
+    def test_check_document_versions_availability_returns_pdf_is_not_available_although_it_is_present_in_html(self, mock_access_uri,
                                                     mock_get_webpage_content):
         website_url = "https://www.scielo.br"
         doc_data_list = [
@@ -936,12 +936,12 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "available": False,
             },
         ]
-        result = check_document_uri_items_availability(website_url, doc_data_list, assets_data)
+        result = check_document_versions_availability(website_url, doc_data_list, assets_data)
         self.assertListEqual(expected, result)
 
     @patch("operations.check_website_operations.get_webpage_content")
     @patch("operations.check_website_operations.access_uri")
-    def test_check_document_uri_items_availability_returns_pdf_is_available_although_it_is_not_present_in_html(self, mock_access_uri,
+    def test_check_document_versions_availability_returns_pdf_is_available_although_it_is_not_present_in_html(self, mock_access_uri,
                                                     mock_get_webpage_content):
         website_url = "https://www.scielo.br"
         doc_data_list = [
@@ -1002,12 +1002,12 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "available": True,
             },
         ]
-        result = check_document_uri_items_availability(website_url, doc_data_list, assets_data)
+        result = check_document_versions_availability(website_url, doc_data_list, assets_data)
         self.assertListEqual(expected, result)
 
     @patch("operations.check_website_operations.get_webpage_content")
     @patch("operations.check_website_operations.access_uri")
-    def test_check_document_uri_items_availability_returns_html_es_is_not_available_although_it_is_present_in_html_en(self, mock_access_uri,
+    def test_check_document_versions_availability_returns_html_es_is_not_available_although_it_is_present_in_html_en(self, mock_access_uri,
                                                     mock_get_webpage_content):
         website_url = "https://www.scielo.br"
         doc_data_list = [
@@ -1066,12 +1066,12 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "available": False,
             },
         ]
-        result = check_document_uri_items_availability(website_url, doc_data_list, assets_data)
+        result = check_document_versions_availability(website_url, doc_data_list, assets_data)
         self.assertListEqual(expected, result)
 
     @patch("operations.check_website_operations.get_webpage_content")
     @patch("operations.check_website_operations.access_uri")
-    def test_check_document_uri_items_availability_returns_html_es_is_available_although_it_is_not_present_in_html_en(self, mock_access_uri,
+    def test_check_document_versions_availability_returns_html_es_is_available_although_it_is_not_present_in_html_en(self, mock_access_uri,
                                                     mock_get_webpage_content):
         website_url = "https://www.scielo.br"
         doc_data_list = [
@@ -1148,7 +1148,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 ]
             },
         ]
-        result = check_document_uri_items_availability(website_url, doc_data_list, assets_data)
+        result = check_document_versions_availability(website_url, doc_data_list, assets_data)
         self.assertListEqual(expected, result)
 
 
