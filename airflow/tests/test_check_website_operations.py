@@ -7,8 +7,7 @@ from operations.check_website_operations import (
     concat_website_url_and_uri_list_items,
     check_uri_list,
     check_website_uri_list,
-    get_webpage_href_and_src,
-    not_found_expected_uri_items_in_web_page,
+    find_uri_items,
     get_document_webpage_uri,
     get_document_versions_data,
     check_uri_items_expected_in_webpage,
@@ -237,82 +236,31 @@ class TestCheckWebsiteUriList(TestCase):
         )
 
 
-class TestGetWebpageHrefAndSrc(TestCase):
+class TestFindUriItems(TestCase):
 
-    def test_get_webpage_href_and_src_returns_src_and_href(self):
+    def test_find_uri_items_returns_src_and_href(self):
         content = """<root>
             <img src="bla.jpg"/>
             <p><x src="g.jpg"/></p>
             <a href="d.jpg"/>
             </root>"""
-        expected = {
-            "href": ["d.jpg"],
-            "src": ["bla.jpg", "g.jpg"],
-        }
-        result = get_webpage_href_and_src(content)
+        expected = ["bla.jpg", "d.jpg", "g.jpg"]
+        result = find_uri_items(content)
         self.assertEqual(expected, result)
 
-    def test_get_webpage_href_and_src_returns_src(self):
+    def test_find_uri_items_returns_src(self):
         content = """<root>
             <p><img src="bla.jpg"/></p><x src="g.jpg"/>
             </root>"""
-        expected = {
-            "href": [],
-            "src": ["bla.jpg", "g.jpg"],
-        }
-        result = get_webpage_href_and_src(content)
+        expected = ["bla.jpg", "g.jpg"]
+        result = find_uri_items(content)
         self.assertEqual(expected, result)
 
-    def test_get_webpage_href_and_src_returns_href(self):
+    def test_find_uri_items_returns_href(self):
         content = '<root><a href="d.jpg"/></root>'
-        expected = {
-            "href": ["d.jpg"],
-            "src": [],
-        }
-        result = get_webpage_href_and_src(content)
+        expected = ["d.jpg"]
+        result = find_uri_items(content)
         self.assertEqual(expected, result)
-
-
-class TestNotFoundExpectedUriItemsInWebPage(TestCase):
-
-    def test_not_found_expected_uri_items_in_web_page_returns_empty_set(self):
-        expected_uri_items = [
-            "a.png",
-            "b.png",
-        ]
-        web_page_uri_items = [
-            "a.png",
-            "b.png",
-        ]
-        result = not_found_expected_uri_items_in_web_page(
-            expected_uri_items, web_page_uri_items)
-        self.assertEqual(set(), result)
-
-    def test_not_found_expected_uri_items_in_web_page_returns_a_b(self):
-        expected_uri_items = [
-            "a.png",
-            "b.png",
-        ]
-        web_page_uri_items = [
-            "x.png",
-            "y.png",
-        ]
-        result = not_found_expected_uri_items_in_web_page(
-            expected_uri_items, web_page_uri_items)
-        self.assertEqual({"a.png", "b.png"}, result)
-
-    def test_not_found_expected_uri_items_in_web_page_returns_b(self):
-        expected_uri_items = [
-            "a.png",
-            "b.png",
-        ]
-        web_page_uri_items = [
-            "a.png",
-            "y.png",
-        ]
-        result = not_found_expected_uri_items_in_web_page(
-            expected_uri_items, web_page_uri_items)
-        self.assertEqual({"b.png"}, result)
 
 
 class TestGetDocumentUri(TestCase):

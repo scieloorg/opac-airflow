@@ -2,9 +2,9 @@ import logging
 import requests
 import time
 from urllib3.exceptions import MaxRetryError, NewConnectionError
+from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
-
 
 from common.hooks import add_execution_in_database
 from operations.docs_utils import (
@@ -170,30 +170,57 @@ def get_webpage_content(uri):
         return response.text
 
 
-def get_webpage_href_and_src(content):
-    href_items = {}
-
+def find_uri_items(content):
     soup = BeautifulSoup(content)
 
-    href_items["href"] = [
+    uri_items = [
         link.get('href')
         for link in soup.find_all('a')
         if link.get('href')
     ]
-    href_items["src"] = [
-        link.get('src')
-        for link in soup.find_all(attrs={"src": True})
-        if link.get('src')
-    ]
-    return href_items
+    uri_items.extend(
+        [
+            link.get('src')
+            for link in soup.find_all(attrs={"src": True})
+            if link.get('src')
+        ]
+    )
+    return sorted(list(set(uri_items)))
 
 
-def not_found_expected_uri_items_in_web_page(
-        expected_uri_items, web_page_uri_items):
-    return set(expected_uri_items) - set(web_page_uri_items)
+def filter_uri_list(uri_items, netlocs):
+    """
+    Retorna uri list filtrada por netlocs, ou seja, apenas as URI cujo domínio
+    está informado na lista `netlocs`
+    No entanto, se netlocs ausente ou é uma lista vazia, retorna `uri_items`
+    sem filtrar
+
+    Args:
+        uri_items (list): lista de URI
+        netlocs (list): lista de domínios
+
+    Returns:
+        list: a mesma lista de entrada, se netlocs é vazio ou None, ou
+            lista filtrada, apenas URI cujo domínio está presente na lista
+            `netlocs`
+
+    >>> u = urlparse('https://www.cwi.nl:80/%7Eguido/Python.html')
+    >>> u
+        ParseResult(
+            scheme='https', netloc='www.cwi.nl:80',
+            path='/%7Eguido/Python.html', params='', query='', fragment='')
+    """
+    if not netlocs:
+        return uri_items
+    items = []
+    for uri in uri_items:
+        parsed = urlparse(uri)
+        if parsed.netloc in netlocs:
+            items.append(uri)
+    return items
 
 
-def check_document_html(uri, assets_data, other_versions_data):
+def check_document_html(uri, assets_data, other_versions_data, netlocs=None):
     """
     Verifica se, no documento HTML, os ativos digitais e outras
     versões do documento (HTML e PDF) estão mencionados,
@@ -207,6 +234,9 @@ def check_document_html(uri, assets_data, other_versions_data):
             o documento.
             Um documento pode ter várias URI devido à variação de formatos e
             idiomas
+        netlocs (list): lista de URL de sites para selecionar as URIs
+            encontradas dentro HTML para serem verificadas as presenças de
+            ativos digitais e versões do documento
     Returns:
         report (dict):
             `available` (bool),
@@ -219,11 +249,7 @@ def check_document_html(uri, assets_data, other_versions_data):
         return {"available": False}
 
     # lista de uri encontrada dentro da página
-    href_and_src_items = get_webpage_href_and_src(content)
-    webpage_inner_uri_list = list(set(
-        href_and_src_items.get("href") +
-        href_and_src_items.get("src")
-    ))
+    webpage_inner_uri_list = filter_uri_list(find_uri_items(content), netlocs)
 
     # verifica se as uri esperadas estão present_in_htmle no html da página
     # do documento, dados os dados dos ativos digitais e das
@@ -240,7 +266,7 @@ def check_document_html(uri, assets_data, other_versions_data):
     return result
 
 
-def check_document_versions_availability(website_url, doc_data_list, assets_data):
+def check_document_versions_availability(website_url, doc_data_list, assets_data, netlocs=None):
     """
     Verifica a disponibilidade do documento nos respectivos formatos e idiomas.
     No caso, do HTML, inclui a verificação se os ativos digitais e outras
@@ -255,6 +281,9 @@ def check_document_versions_availability(website_url, doc_data_list, assets_data
             idiomas
         assets_data (list of dict): dicionário contém dados do ativo digital
             como URI e identificação
+        netlocs (list): lista de URL de sites para selecionar as URIs
+            encontradas dentro HTML para serem verificadas as presenças de
+            ativos digitais e versões do documento
 
     Returns:
         report (list of dict): mesma lista `doc_data_list`, sendo que cada
@@ -277,7 +306,8 @@ def check_document_versions_availability(website_url, doc_data_list, assets_data
             components_result = check_document_html(
                                         doc_uri,
                                         assets_data,
-                                        other_versions_data)
+                                        other_versions_data,
+                                        netlocs)
             result.update(
                 {
                     "uri": doc_uri,
