@@ -198,22 +198,23 @@ def not_found_expected_uri_items_in_web_page(
 
 def check_document_html(uri, assets_data, other_versions_data):
     content = get_webpage_content(uri)
-    if content:
-        # lista de uri encontrada dentro da página
-        href_and_src_items = get_webpage_href_and_src(content)
-        webpage_inner_uri_list = list(set(
-            href_and_src_items.get("href") +
-            href_and_src_items.get("src")
-        ))
+    if content is None:
+        return {"available": False}
 
-        # verifica se as uri esperadas estão present_in_htmle no html da página
-        # do documento, dados os dados dos ativos digitais e das
-        # demais versões (formato e idioma) do documento
-        components_result = check_uri_items_expected_in_webpage(
-            webpage_inner_uri_list, assets_data, other_versions_data
-        )
-        return {"available": True, "components": components_result}
-    return {"available": False}
+    # lista de uri encontrada dentro da página
+    href_and_src_items = get_webpage_href_and_src(content)
+    webpage_inner_uri_list = list(set(
+        href_and_src_items.get("href") +
+        href_and_src_items.get("src")
+    ))
+
+    # verifica se as uri esperadas estão present_in_htmle no html da página
+    # do documento, dados os dados dos ativos digitais e das
+    # demais versões (formato e idioma) do documento
+    components_result = check_uri_items_expected_in_webpage(
+        webpage_inner_uri_list, assets_data, other_versions_data
+    )
+    return {"available": True, "components": components_result}
 
 
 def check_document_uri_items(website_url, doc_data_list, assets_data):

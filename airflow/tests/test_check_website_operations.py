@@ -13,6 +13,7 @@ from operations.check_website_operations import (
     get_document_webpage_uri_list,
     check_uri_items_expected_in_webpage,
     check_document_uri_items,
+    check_document_html,
 )
 
 
@@ -1033,7 +1034,7 @@ class TestCheckDocumentUriItems(TestCase):
             Versão ingles no formato html
             <a href="/j/xjk/a/ldld?format=html&lang=es"/>
             """,
-            False,
+            None,
         ]
         mock_access_uri.return_value = False
         expected = [
@@ -1148,3 +1149,127 @@ class TestCheckDocumentUriItems(TestCase):
         ]
         result = check_document_uri_items(website_url, doc_data_list, assets_data)
         self.assertListEqual(expected, result)
+
+
+class TestCheckDocumentHtml(TestCase):
+
+    @patch("operations.check_website_operations.get_webpage_content")
+    def test_check_document_html_returns_not_available(self, mock_content):
+        mock_content.return_value = None
+        uri = "https://..."
+        assets_data = []
+        other_versions_data = []
+        expected = {"available": False}
+        result = check_document_html(uri, assets_data, other_versions_data)
+        self.assertEqual(expected, result)
+
+    @patch("operations.check_website_operations.get_webpage_content")
+    def test_check_document_html_returns_available_and_empty_components(self, mock_content):
+        mock_content.return_value = ""
+        uri = "https://..."
+        assets_data = []
+        other_versions_data = []
+        expected = {
+            "available": True,
+            "components": [],
+        }
+        result = check_document_html(uri, assets_data, other_versions_data)
+        self.assertEqual(expected, result)
+
+    @patch("operations.check_website_operations.get_webpage_content")
+    def test_check_document_html_returns_available_and_components_are_absent(self, mock_content):
+        mock_content.return_value = ""
+        uri = "https://..."
+
+        assets_data = [
+            {
+                "prefix": "asset_uri_1",
+                "uri_alternatives": [
+                    "asset_uri_1.tiff", "asset_uri_1.jpg", "asset_uri_1.png"]
+            },
+        ]
+        other_versions_data = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+            },
+        ]
+        expected = {
+            "available": True,
+            "components": [
+                {
+                    "type": "asset",
+                    "id": "asset_uri_1",
+                    "present_in_html": False,
+                    "uri": [
+                        "asset_uri_1.tiff", "asset_uri_1.jpg",
+                        "asset_uri_1.png"],
+                },
+                {
+                    "type": "html",
+                    "id": "en",
+                    "present_in_html": False,
+                    "uri": [
+                        "/j/xjk/a/ldld?format=html&lang=en",
+                        "/j/xjk/a/ldld?lang=en&format=html",
+                        "/j/xjk/a/ldld?format=html",
+                        "/j/xjk/a/ldld?lang=en",
+                        "/j/xjk/a/ldld/?format=html&lang=en",
+                        "/j/xjk/a/ldld/?lang=en&format=html",
+                        "/j/xjk/a/ldld/?format=html",
+                        "/j/xjk/a/ldld/?lang=en",
+                    ],
+                },
+            ]
+        }
+        result = check_document_html(uri, assets_data, other_versions_data)
+        self.assertEqual(expected, result)
+
+    @patch("operations.check_website_operations.get_webpage_content")
+    def test_check_document_html_returns_available_and_components_are_present(self, mock_content):
+        mock_content.return_value = """
+        <img src="asset_uri_1.jpg"/>
+        <a href="/j/xjk/a/ldld?lang=en"/>
+        """
+        uri = "https://..."
+
+        assets_data = [
+            {
+                "prefix": "asset_uri_1",
+                "uri_alternatives": [
+                    "asset_uri_1.tiff", "asset_uri_1.jpg", "asset_uri_1.png"]
+            },
+        ]
+        other_versions_data = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+            },
+        ]
+        expected = {
+            "available": True,
+            "components": [
+                {
+                    "type": "asset",
+                    "id": "asset_uri_1",
+                    "present_in_html": True,
+                    "uri": "asset_uri_1.jpg"
+                },
+                {
+                    "type": "html",
+                    "id": "en",
+                    "present_in_html": True,
+                    "uri": "/j/xjk/a/ldld?lang=en",
+                },
+            ]
+        }
+        result = check_document_html(uri, assets_data, other_versions_data)
+        self.assertEqual(expected, result)
