@@ -14,6 +14,7 @@ from operations.check_website_operations import (
     check_uri_items_expected_in_webpage,
     check_document_uri_items,
     check_document_html,
+    check_document_assets_availability,
 )
 
 
@@ -1272,4 +1273,47 @@ class TestCheckDocumentHtml(TestCase):
             ]
         }
         result = check_document_html(uri, assets_data, other_versions_data)
+        self.assertEqual(expected, result)
+
+
+class TestCheckDocumentAssetsAvailability(TestCase):
+    @patch("operations.check_website_operations.access_uri")
+    def test_check_document_assets_availability_returns_one_of_three_is_false(self, mock_access_uri):
+        mock_access_uri.side_effect = [not None, False, not None]
+        assets_data = [
+            {
+                "prefix": "a01",
+                "asset_alternatives": [
+                    {"asset_id": "a01.png",
+                     "uri": "uri de a01.png no object store"},
+                    {"asset_id": "a01.jpg",
+                     "uri": "uri de a01.jpg no object store"},
+                ]
+            },
+            {
+                "prefix": "a02",
+                "asset_alternatives": [
+                    {"asset_id": "a02.png",
+                     "uri": "uri de a02.png no object store"},
+                ]
+            }
+        ]
+        expected = [
+            {"asset_id": "a01.png",
+             "uri": "uri de a01.png no object store",
+             "available": True},
+            {"asset_id": "a01.jpg",
+             "uri": "uri de a01.jpg no object store",
+             "available": False},
+            {"asset_id": "a02.png",
+             "uri": "uri de a02.png no object store",
+             "available": True},
+        ]
+        result = check_document_assets_availability(assets_data)
+        self.assertListEqual(expected, result)
+
+    def test_check_document_assets_availability_returns_empty_list(self):
+        assets_data = []
+        expected = []
+        result = check_document_assets_availability(assets_data)
         self.assertEqual(expected, result)

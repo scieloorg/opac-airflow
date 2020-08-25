@@ -251,6 +251,30 @@ def check_document_uri_items(website_url, doc_data_list, assets_data):
     return report
 
 
+def check_document_assets_availability(assets_data):
+    """
+    Verifica a disponibilidade cada ativo digital, usando a URI, tal como
+    o ativo foi registrado, ou seja, a URI do Object Store
+
+    Args:
+        assets_data (list of dict): retorno de
+            `docs_utils.get_document_assets_data`
+    Returns:
+        report (list of dict): mesma lista de dicionários da entrada, sendo
+            que cada elemento da lista, recebe mais uma chave, "available",
+            cujo conteúdo é True para disponível e False para indisponível
+    """
+    report = []
+    for asset_data in assets_data:
+        for item in asset_data["asset_alternatives"]:
+            uri = item.get("uri")
+            Logger.info("Verificando %s", uri)
+            result = item.copy()
+            result.update({"available": bool(access_uri(uri))})
+            report.append(result)
+    return report
+
+
 def check_website_uri_list(uri_list_file_path, website_url_list):
     """
     Verifica o acesso de cada item da `uri_list_file_path`
