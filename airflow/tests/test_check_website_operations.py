@@ -16,6 +16,7 @@ from operations.check_website_operations import (
     check_document_assets_availability,
     check_document_renditions_availability,
     format_document_versions_availability_to_register,
+    format_document_items_availability_to_register,
 )
 
 
@@ -1401,3 +1402,56 @@ class TestFormatDocumentVersionsAvailabilityToRegister(TestCase):
         result = format_document_versions_availability_to_register(
             data, extra_data)
         self.assertEqual(expected, result)
+
+
+class TestFormatDocumentItemsAvailabilityToRegister(TestCase):
+
+    def test_format_document_items_availability_to_register(self):
+        document_data = {
+            "doc_id": "DMKLOLSJ",
+            "pid_v2": "S1234-12342020123412345",
+            "doc_id_for_human": "1234-1234-acron-45-9-12345",
+        }
+        document_items_availability = [
+            {
+                "type": "asset",
+                "id": "1234-1234-acron-45-9-12345-f01",
+                "available": False,
+                "uri": "https://1234-1234-acron-45-9-12345-f01.jpg",
+            },
+            {
+                "type": "asset",
+                "id": "1234-1234-acron-45-9-12345-f02",
+                "available": True,
+                "uri": "https://1234-1234-acron-45-9-12345-f02.jpg",
+            },
+        ]
+        extra_data = {"chave": "valor", "chave2": "valor 2"}
+        expected = [
+            {
+                "chave": "valor", "chave2": "valor 2",
+                "annotation": "",
+                "doc_id": "DMKLOLSJ",
+                "pid_v2": "S1234-12342020123412345",
+                "doc_id_for_human": "1234-1234-acron-45-9-12345",
+                "type": "asset",
+                "id": "1234-1234-acron-45-9-12345-f01",
+                "uri": "https://1234-1234-acron-45-9-12345-f01.jpg",
+                "status": "not available",
+            },
+            {
+                "chave": "valor", "chave2": "valor 2",
+                "annotation": "",
+                "doc_id": "DMKLOLSJ",
+                "pid_v2": "S1234-12342020123412345",
+                "doc_id_for_human": "1234-1234-acron-45-9-12345",
+                "type": "asset",
+                "id": "1234-1234-acron-45-9-12345-f02",
+                "uri": "https://1234-1234-acron-45-9-12345-f02.jpg",
+                "status": "available",
+            },
+        ]
+        result = format_document_items_availability_to_register(
+            document_data, document_items_availability, extra_data)
+        self.assertEqual(expected, result)
+

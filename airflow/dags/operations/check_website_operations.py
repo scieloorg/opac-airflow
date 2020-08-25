@@ -551,7 +551,7 @@ def format_document_versions_availability_to_register(
                                  if document_versions_availability["available"]
                                  else "not available")
 
-    # linha sobre dada versão do documento
+    # linha sobre cada versão do documento
     rows.append(doc_data_result)
 
     for component in document_versions_availability.get("components") or []:
@@ -567,5 +567,41 @@ def format_document_versions_availability_to_register(
                          if component["present_in_html"]
                          else "absent in HTML")
         del row["present_in_html"]
+        rows.append(row)
+    return rows
+
+
+def format_document_items_availability_to_register(document_data,
+        document_items_availability, extra_data={}):
+    """
+    Formata os dados da avaliação da disponibilidade de items (ativos digitais
+    e renditions) de um documento para linhas em uma tabela
+
+    Args:
+        document_data (dict): dados do documento
+        document_items_availability (list of dict): dados do documento para
+            identificação e para formar URI
+            {
+                "type": "tipo",
+                "id": "identificação do item",
+                "uri": "",
+                "available": bool,
+            }
+    Returns:
+        list
+    """
+    rows = []
+    doc_data = extra_data.copy()
+    doc_data["annotation"] = ""
+    for name in ("doc_id", "pid_v2", "doc_id_for_human"):
+        doc_data[name] = document_data[name]
+
+    for doc_item_availability in document_items_availability or []:
+        row = doc_data.copy()
+        row.update(doc_item_availability)
+        row["status"] = ("available"
+                         if doc_item_availability["available"]
+                         else "not available")
+        del row["available"]
         rows.append(row)
     return rows
