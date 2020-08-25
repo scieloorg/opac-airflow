@@ -197,6 +197,26 @@ def not_found_expected_uri_items_in_web_page(
 
 
 def check_document_html(uri, assets_data, other_versions_data):
+    """
+    Verifica se, no documento HTML, os ativos digitais e outras
+    versões do documento (HTML e PDF) estão mencionados,
+    ou seja, em `img/@src` e/ou `*[@href]`
+
+    Args:
+        uri (str): URL do documento HTML no site público
+        assets_data (list of dict): dicionário contém dados do ativo digital
+        other_versions_data (list of dict): dicionário contém metadados do
+            documento suficientes para formar URI e também identificar
+            o documento.
+            Um documento pode ter várias URI devido à variação de formatos e
+            idiomas
+    Returns:
+        report (dict):
+            `available` (bool),
+            `components` (list of dict): validação de cada ativos digital, ou
+                menção às demais versões do documento (HTML/PDF/idiomas)
+
+    """
     content = get_webpage_content(uri)
     if content is None:
         return {"available": False}
@@ -217,7 +237,31 @@ def check_document_html(uri, assets_data, other_versions_data):
     return {"available": True, "components": components_result}
 
 
-def check_document_uri_items(website_url, doc_data_list, assets_data):
+def check_document_uri_items_availability(website_url, doc_data_list, assets_data):
+    """
+    Verifica a disponibilidade do documento nos respectivos formatos e idiomas.
+    No caso, do HTML, inclui a verificação se os ativos digitais e outras
+    versões do documento (HTML e PDF) estão mencionadas dentro do HTML,
+    ou seja, em `img/@src` e/ou `*[@href]`
+
+    Args:
+        website_url (str): URL do site público
+        doc_data_list (list of dict): dicionário contém metadados do documento
+            suficientes para formar URI e também identificar o documento.
+            Um documento pode ter várias URI devido à variação de formatos e
+            idiomas
+        assets_data (list of dict): dicionário contém dados do ativo digital
+            como URI e identificação
+
+    Returns:
+        report (list of dict): mesma lista `doc_data_list`, sendo que cada
+            elemento, recebe novas chaves e valores:
+            `uri` (formada com os dados),
+            `available` (bool),
+            `components` (list of dict): validação de cada ativos digital, ou
+                menção às demais versões do documento (HTML/PDF/idiomas)
+
+    """
     report = []
     for doc_data in doc_data_list:
         doc_uri = website_url + doc_data.get("uri")
