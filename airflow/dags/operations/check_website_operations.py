@@ -629,7 +629,7 @@ def format_document_items_availability_to_register(document_data,
     return rows
 
 
-def check_document_availability(doc_id, website_url, extra_data, netlocs):
+def check_document_availability(doc_id, website_url, netlocs):
     """
     Verifica a disponibilidade do documento `doc_id`, verificando a
     disponibilidade de todas as versões (HTML/PDF/idiomas) e de todos os ativos
@@ -654,7 +654,15 @@ def check_document_availability(doc_id, website_url, extra_data, netlocs):
                 renditions_data
             )
     assets_availability = check_document_assets_availability(assets_data)
+    return versions_availability, renditions_availability, assets_availability
 
+
+def format_document_availability_data_to_register(
+            versions_availability,
+            assets_availability,
+            renditions_availability,
+            extra_data,
+        ):
     for version in versions_availability:
         for row in format_document_versions_availability_to_register(
                 version, extra_data):
