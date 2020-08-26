@@ -1,5 +1,5 @@
 from unittest import TestCase
-from unittest.mock import patch, call
+from unittest.mock import patch, call, MagicMock
 
 from airflow import DAG
 
@@ -17,6 +17,7 @@ from operations.check_website_operations import (
     check_document_renditions_availability,
     format_document_versions_availability_to_register,
     format_document_items_availability_to_register,
+    get_kernel_document_id_from_classic_document_uri,
 )
 
 
@@ -1455,3 +1456,25 @@ class TestFormatDocumentItemsAvailabilityToRegister(TestCase):
             document_data, document_items_availability, extra_data)
         self.assertEqual(expected, result)
 
+
+class Testget_kernel_document_id_from_classic_document_uri(TestCase):
+
+    @patch("operations.check_website_operations.access_uri")
+    def test_get_kernel_document_id_from_classic_document_uri_returns_doc_id(self, mock_access_uri):
+        classic_uri = "https://new.scielo.br/scielo.php?pid=S1234-12342020123412345&script=sci_arttext"
+        response = MagicMock()
+        response.headers = {
+            "Location":
+            "https://new.scielo.br/j/axy/a/QP3q9cMWqBGyHjpRsJ6CyVb"}
+        mock_access_uri.return_value = response
+        expected = "QP3q9cMWqBGyHjpRsJ6CyVb"
+        result = get_kernel_document_id_from_classic_document_uri(classic_uri)
+        self.assertEqual(expected, result)
+
+    @patch("operations.check_website_operations.access_uri")
+    def test_get_kernel_document_id_from_classic_document_uri_returns_none(self, mock_access_uri):
+        classic_uri = "https://new.scielo.br/scielo.php?pid=S1234-12342020123412345&script=sci_arttext"
+        mock_access_uri.return_value = None
+        expected = None
+        result = get_kernel_document_id_from_classic_document_uri(classic_uri)
+        self.assertEqual(expected, result)

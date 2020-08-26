@@ -18,6 +18,28 @@ from operations.docs_utils import (
 Logger = logging.getLogger(__name__)
 
 
+def get_kernel_document_id_from_classic_document_uri(classic_website_document_uri):
+    """
+    >>> resp = requests.head("https://new.scielo.br/scielo.php?script=sci_arttext&pid=S0100-40422020000700987")
+    >>> parsed = urlparse(resp.headers.get('Location'))
+    >>> parsed
+    ParseResult(scheme='https', netloc='new.scielo.br', path='/j/qn/a/RsJ6CyVbQP3q9cMWqBGyHjp/', params='', query='', fragment='')
+    """
+    resp = access_uri(classic_website_document_uri, requests.head)
+    if resp:
+        redirected_location = resp.headers.get('Location')
+        if redirected_location:
+            parsed = urlparse(redirected_location)
+            if parsed.path:
+                #  path='/j/qn/a/RsJ6CyVbQP3q9cMWqBGyHjp/'
+                splitted = [item for item in parsed.path.split("/") if item]
+                if splitted:
+                    doc_id = splitted[-1]
+                    if len(doc_id) == 23:
+                        # RsJ6CyVbQP3q9cMWqBGyHjp
+                        return doc_id
+
+
 def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
                                  assets_data, other_versions_data):
     """
