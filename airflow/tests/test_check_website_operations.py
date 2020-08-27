@@ -9,13 +9,13 @@ from operations.check_website_operations import (
     check_website_uri_list,
     find_uri_items,
     get_document_webpage_uri,
-    get_document_versions_data,
+    get_document_webpages_data,
     check_uri_items_expected_in_webpage,
-    check_document_versions_availability,
+    check_document_webpages_availability,
     check_document_html,
     check_document_assets_availability,
     check_document_renditions_availability,
-    format_document_versions_availability_to_register,
+    format_document_webpage_availability_to_register,
     format_document_items_availability_to_register,
     get_kernel_document_id_from_classic_document_uri,
     do_request,
@@ -31,7 +31,7 @@ class TestDoRequest(TestCase):
         mock_get.return_value = mock_response
         result = do_request("https://uri.org/8793/")
         self.assertEqual(200, result.status_code)
-
+        
     @patch("operations.check_website_operations.requests_get")
     def test_do_request_returns_none(self, mock_get):
         mock_get.return_value = False
@@ -353,7 +353,7 @@ class TestGetDocumentUri(TestCase):
 
 class TestGetDocumentVersionsData(TestCase):
 
-    def test_get_document_versions_data_returns_uri_data_list_using_new_pattern(self):
+    def test_get_document_webpages_data_returns_uri_data_list_using_new_pattern(self):
         doc_id = "ldld"
         doc_data_list = [
             {"lang": "en", "format": "html", "pid_v2": "pid-v2",
@@ -399,20 +399,20 @@ class TestGetDocumentVersionsData(TestCase):
                 "uri": "/j/xjk/a/ldld?format=pdf&lang=es",
             },
         ]
-        result = get_document_versions_data(doc_id, doc_data_list, get_document_webpage_uri)
+        result = get_document_webpages_data(doc_id, doc_data_list, get_document_webpage_uri)
         self.assertEqual(expected, result)
 
-    def test_get_document_versions_data_raises_value_error_if_acron_is_none_and_using_new_uri_pattern(self):
+    def test_get_document_webpages_data_raises_value_error_if_acron_is_none_and_using_new_uri_pattern(self):
         doc_id = "ldld"
         with self.assertRaises(ValueError):
-            get_document_versions_data(doc_id, [], get_document_webpage_uri)
+            get_document_webpages_data(doc_id, [], get_document_webpage_uri)
 
-    def test_get_document_versions_data_raises_value_error_if_acron_is_empty_str_and_using_new_uri_pattern(self):
+    def test_get_document_webpages_data_raises_value_error_if_acron_is_empty_str_and_using_new_uri_pattern(self):
         doc_id = "ldld"
         with self.assertRaises(ValueError):
-            get_document_versions_data(doc_id, [], get_document_webpage_uri)
+            get_document_webpages_data(doc_id, [], get_document_webpage_uri)
 
-    def test_get_document_versions_data_returns_uri_data_list_using_classic_pattern(self):
+    def test_get_document_webpages_data_returns_uri_data_list_using_classic_pattern(self):
         doc_id = "S1234-56782000123412313"
         doc_data_list = [
             {"lang": "en", "format": "html",
@@ -466,7 +466,7 @@ class TestGetDocumentVersionsData(TestCase):
                 "uri": "/scielo.php?script=sci_pdf&pid=S1234-56782000123412313&tlng=es",
             },
         ]
-        result = get_document_versions_data(doc_id, doc_data_list)
+        result = get_document_webpages_data(doc_id, doc_data_list)
         self.assertEqual(expected, result)
 
 
@@ -492,7 +492,7 @@ class TestCheckWebpageInnerUriList(TestCase):
                     "asset_uri_2.tiff", "asset_uri_2.jpg", "asset_uri_2.png"]
             }
         ]
-        other_versions_uri_data = [
+        other_webpages_uri_data = [
             {
                 "lang": "en",
                 "format": "html",
@@ -545,7 +545,7 @@ class TestCheckWebpageInnerUriList(TestCase):
             },
         ]
         result = check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
-                    assets_data, other_versions_uri_data)
+                    assets_data, other_webpages_uri_data)
         self.assertEqual(expected, result)
 
     def test_check_uri_items_expected_in_webpage_returns_not_found_asset_uri(self):
@@ -564,7 +564,7 @@ class TestCheckWebpageInnerUriList(TestCase):
                     "asset_uri_2.tiff", "asset_uri_2.jpg", "asset_uri_2.png"]
             }
         ]
-        other_versions_uri_data = [
+        other_webpages_uri_data = [
         ]
         expected = [
             {
@@ -582,7 +582,7 @@ class TestCheckWebpageInnerUriList(TestCase):
             },
         ]
         result = check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
-                    assets_data, other_versions_uri_data)
+                    assets_data, other_webpages_uri_data)
         self.assertEqual(expected, result)
 
     def test_check_uri_items_expected_in_webpage_returns_not_found_pdf(self):
@@ -592,7 +592,7 @@ class TestCheckWebpageInnerUriList(TestCase):
         ]
         assets_data = [
         ]
-        other_versions_uri_data = [
+        other_webpages_uri_data = [
             {
                 "lang": "en",
                 "format": "html",
@@ -641,7 +641,7 @@ class TestCheckWebpageInnerUriList(TestCase):
         ]
         result = check_uri_items_expected_in_webpage(
                     uri_items_expected_in_webpage,
-                    assets_data, other_versions_uri_data)
+                    assets_data, other_webpages_uri_data)
         self.assertEqual(expected, result)
 
     def test_check_uri_items_expected_in_webpage_returns_not_found_html(self):
@@ -651,7 +651,7 @@ class TestCheckWebpageInnerUriList(TestCase):
         ]
         assets_data = [
         ]
-        other_versions_uri_data = [
+        other_webpages_uri_data = [
             {
                 "lang": "en",
                 "format": "html",
@@ -701,7 +701,7 @@ class TestCheckWebpageInnerUriList(TestCase):
             },
         ]
         result = check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
-                    assets_data, other_versions_uri_data)
+                    assets_data, other_webpages_uri_data)
         self.assertEqual(expected, result)
 
 
@@ -709,7 +709,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
 
     @patch("operations.check_website_operations.get_webpage_content")
     @patch("operations.check_website_operations.do_request")
-    def test_check_document_versions_availability_returns_success(self, mock_do_request,
+    def test_check_document_webpages_availability_returns_success(self, mock_do_request,
                                                     mock_get_webpage_content):
         website_url = "https://www.scielo.br"
         doc_data_list = [
@@ -877,12 +877,12 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "available": True,
             },
         ]
-        result = check_document_versions_availability(website_url, doc_data_list, assets_data)
+        result = check_document_webpages_availability(website_url, doc_data_list, assets_data)
         self.assertListEqual(expected, result)
 
     @patch("operations.check_website_operations.get_webpage_content")
     @patch("operations.check_website_operations.do_request")
-    def test_check_document_versions_availability_returns_pdf_is_not_available_although_it_is_present_in_html(self, mock_do_request,
+    def test_check_document_webpages_availability_returns_pdf_is_not_available_although_it_is_present_in_html(self, mock_do_request,
                                                     mock_get_webpage_content):
         website_url = "https://www.scielo.br"
         doc_data_list = [
@@ -937,12 +937,12 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "available": False,
             },
         ]
-        result = check_document_versions_availability(website_url, doc_data_list, assets_data)
+        result = check_document_webpages_availability(website_url, doc_data_list, assets_data)
         self.assertListEqual(expected, result)
 
     @patch("operations.check_website_operations.get_webpage_content")
     @patch("operations.check_website_operations.do_request")
-    def test_check_document_versions_availability_returns_pdf_is_available_although_it_is_not_present_in_html(self, mock_do_request,
+    def test_check_document_webpages_availability_returns_pdf_is_available_although_it_is_not_present_in_html(self, mock_do_request,
                                                     mock_get_webpage_content):
         website_url = "https://www.scielo.br"
         doc_data_list = [
@@ -1004,12 +1004,12 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "available": True,
             },
         ]
-        result = check_document_versions_availability(website_url, doc_data_list, assets_data)
+        result = check_document_webpages_availability(website_url, doc_data_list, assets_data)
         self.assertListEqual(expected, result)
 
     @patch("operations.check_website_operations.get_webpage_content")
     @patch("operations.check_website_operations.do_request")
-    def test_check_document_versions_availability_returns_html_es_is_not_available_although_it_is_present_in_html_en(self, mock_do_request,
+    def test_check_document_webpages_availability_returns_html_es_is_not_available_although_it_is_present_in_html_en(self, mock_do_request,
                                                     mock_get_webpage_content):
         website_url = "https://www.scielo.br"
         doc_data_list = [
@@ -1068,12 +1068,12 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "available": False,
             },
         ]
-        result = check_document_versions_availability(website_url, doc_data_list, assets_data)
+        result = check_document_webpages_availability(website_url, doc_data_list, assets_data)
         self.assertListEqual(expected, result)
 
     @patch("operations.check_website_operations.get_webpage_content")
     @patch("operations.check_website_operations.do_request")
-    def test_check_document_versions_availability_returns_html_es_is_available_although_it_is_not_present_in_html_en(self, mock_do_request,
+    def test_check_document_webpages_availability_returns_html_es_is_available_although_it_is_not_present_in_html_en(self, mock_do_request,
                                                     mock_get_webpage_content):
         website_url = "https://www.scielo.br"
         doc_data_list = [
@@ -1151,7 +1151,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 ]
             },
         ]
-        result = check_document_versions_availability(website_url, doc_data_list, assets_data)
+        result = check_document_webpages_availability(website_url, doc_data_list, assets_data)
         self.assertListEqual(expected, result)
 
 
@@ -1162,9 +1162,9 @@ class TestCheckDocumentHtml(TestCase):
         mock_content.return_value = None
         uri = "https://..."
         assets_data = []
-        other_versions_data = []
+        other_webpages_data = []
         expected = {"available": False}
-        result = check_document_html(uri, assets_data, other_versions_data)
+        result = check_document_html(uri, assets_data, other_webpages_data)
         self.assertEqual(expected, result)
 
     @patch("operations.check_website_operations.get_webpage_content")
@@ -1172,12 +1172,12 @@ class TestCheckDocumentHtml(TestCase):
         mock_content.return_value = ""
         uri = "https://..."
         assets_data = []
-        other_versions_data = []
+        other_webpages_data = []
         expected = {
             "available": True,
             "components": [],
         }
-        result = check_document_html(uri, assets_data, other_versions_data)
+        result = check_document_html(uri, assets_data, other_webpages_data)
         self.assertEqual(expected, result)
 
     @patch("operations.check_website_operations.get_webpage_content")
@@ -1192,7 +1192,7 @@ class TestCheckDocumentHtml(TestCase):
                     "asset_uri_1.tiff", "asset_uri_1.jpg", "asset_uri_1.png"]
             },
         ]
-        other_versions_data = [
+        other_webpages_data = [
             {
                 "lang": "en",
                 "format": "html",
@@ -1231,7 +1231,7 @@ class TestCheckDocumentHtml(TestCase):
             ],
             "existing_uri_in_html": []
         }
-        result = check_document_html(uri, assets_data, other_versions_data)
+        result = check_document_html(uri, assets_data, other_webpages_data)
         self.assertEqual(expected, result)
 
     @patch("operations.check_website_operations.get_webpage_content")
@@ -1249,7 +1249,7 @@ class TestCheckDocumentHtml(TestCase):
                     "asset_uri_1.tiff", "asset_uri_1.jpg", "asset_uri_1.png"]
             },
         ]
-        other_versions_data = [
+        other_webpages_data = [
             {
                 "lang": "en",
                 "format": "html",
@@ -1276,7 +1276,7 @@ class TestCheckDocumentHtml(TestCase):
                 },
             ]
         }
-        result = check_document_html(uri, assets_data, other_versions_data)
+        result = check_document_html(uri, assets_data, other_webpages_data)
         self.assertEqual(expected, result)
 
 
@@ -1361,7 +1361,7 @@ class TestCheckDocumentRenditionsAvailability(TestCase):
 
 class TestFormatDocumentVersionsAvailabilityToRegister(TestCase):
 
-    def test_format_document_versions_availability_to_register(self):
+    def test_format_document_webpage_availability_to_register(self):
         data = {
             "doc_id": "DMKLOLSJ",
             "pid_v2": "S1234-12342020123412345",
@@ -1449,7 +1449,7 @@ class TestFormatDocumentVersionsAvailabilityToRegister(TestCase):
                 "status": "present in HTML",
             },
         ]
-        result = format_document_versions_availability_to_register(
+        result = format_document_webpage_availability_to_register(
             data, extra_data)
         self.assertEqual(expected, result)
 

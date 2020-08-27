@@ -90,7 +90,7 @@ def get_kernel_document_id_from_classic_document_uri(classic_website_document_ur
 
 
 def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
-                                 assets_data, other_versions_data):
+                                 assets_data, other_webpages_data):
     """
     Verifica os recursos de um documento, comparando os recursos registrados
     no Kernel com os recursos indicados na página do documento no site público
@@ -100,9 +100,9 @@ def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
             foram encontrados dentro da página do documento
         assets_data (list of dict, retorno de `get_document_assets_data`):
             Dados de ativos digitais para formar uri.
-        other_versions_data (list of dict,
-            mesmo formato `retornado de get_document_versions_data`):
-            Dados de outras versões do documento,
+        other_webpages_data (list of dict,
+            mesmo formato `retornado de get_document_webpages_data`):
+            Dados de outras _webpages_ do documento,
             ou seja, outro idioma e outro formato, para formar sua uri
 
     Returns:
@@ -128,7 +128,7 @@ def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
             uri_result["uri"] = asset_data["uri_alternatives"]
         results.append(uri_result)
 
-    for other_version_uri_data in other_versions_data:
+    for other_version_uri_data in other_webpages_data:
         # {"doc_id": "", "lang": "", "format": "", "uri": ""},
         uri_result = {}
         uri_result["type"] = other_version_uri_data["format"]
@@ -199,9 +199,9 @@ def get_document_webpage_uri(data, query_param_names=None):
     return uri
 
 
-def get_document_versions_data(doc_id, doc_data_list, doc_webpage_uri_function=None):
+def get_document_webpages_data(doc_id, doc_data_list, doc_webpage_uri_function=None):
     """
-    Gera `uri` para as várias versões do documento
+    Gera `uri` para as várias _webpages_ do documento
 
     Args:
         doc_id (str): ID do documento (Kernel)
@@ -221,9 +221,9 @@ def get_document_versions_data(doc_id, doc_data_list, doc_webpage_uri_function=N
         pid_v2 = doc_data.get("pid_v2")
     doc_webpage_uri_function = doc_webpage_uri_function or get_classic_document_webpage_uri
     if doc_webpage_uri_function == get_document_webpage_uri and not acron:
-        raise ValueError("get_document_versions_data requires `acron`")
+        raise ValueError("get_document_webpages_data requires `acron`")
     if doc_webpage_uri_function == get_classic_document_webpage_uri and not is_pid_v2(pid_v2):
-        raise ValueError("get_document_versions_data requires `pid v2`")
+        raise ValueError("get_document_webpages_data requires `pid v2`")
     uri_items = []
     for doc_data in doc_data_list:
         data = {
@@ -291,28 +291,28 @@ def filter_uri_list(uri_items, netlocs):
     return items
 
 
-def check_document_html(uri, assets_data, other_versions_data, netlocs=None):
+def check_document_html(uri, assets_data, other_webpages_data, netlocs=None):
     """
     Verifica se, no documento HTML, os ativos digitais e outras
-    versões do documento (HTML e PDF) estão mencionados,
+    _webpages_ do documento (HTML e PDF) estão mencionados,
     ou seja, em `img/@src` e/ou `*[@href]`
 
     Args:
         uri (str): URL do documento HTML no site público
         assets_data (list of dict): dicionário contém dados do ativo digital
-        other_versions_data (list of dict): dicionário contém metadados do
+        other_webpages_data (list of dict): dicionário contém metadados do
             documento suficientes para formar URI e também identificar
             o documento.
             Um documento pode ter várias URI devido à variação de formatos e
             idiomas
         netlocs (list): lista de URL de sites para selecionar as URIs
             encontradas dentro HTML para serem verificadas as presenças de
-            ativos digitais e versões do documento
+            ativos digitais e _webpages_ do documento
     Returns:
         report (dict):
             `available` (bool),
             `components` (list of dict): validação de cada ativos digital, ou
-                menção às demais versões do documento (HTML/PDF/idiomas)
+                menção às demais _webpages_ do documento (HTML/PDF/idiomas)
 
     """
     content = get_webpage_content(uri)
@@ -324,9 +324,9 @@ def check_document_html(uri, assets_data, other_versions_data, netlocs=None):
 
     # verifica se as uri esperadas estão present_in_htmle no html da página
     # do documento, dados os dados dos ativos digitais e das
-    # demais versões (formato e idioma) do documento
+    # demais _webpages_ (formato e idioma) do documento
     components_result = check_uri_items_expected_in_webpage(
-        webpage_inner_uri_list, assets_data, other_versions_data
+        webpage_inner_uri_list, assets_data, other_webpages_data
     )
     result = {"available": True, "components": components_result}
     for compo in components_result:
@@ -337,11 +337,11 @@ def check_document_html(uri, assets_data, other_versions_data, netlocs=None):
     return result
 
 
-def check_document_versions_availability(website_url, doc_data_list, assets_data, netlocs=None):
+def check_document_webpages_availability(website_url, doc_data_list, assets_data, netlocs=None):
     """
     Verifica a disponibilidade do documento nos respectivos formatos e idiomas.
     No caso, do HTML, inclui a verificação se os ativos digitais e outras
-    versões do documento (HTML e PDF) estão mencionadas dentro do HTML,
+    _webpages_ do documento (HTML e PDF) estão mencionadas dentro do HTML,
     ou seja, em `img/@src` e/ou `*[@href]`
 
     Args:
@@ -354,7 +354,7 @@ def check_document_versions_availability(website_url, doc_data_list, assets_data
             como URI e identificação
         netlocs (list): lista de URL de sites para selecionar as URIs
             encontradas dentro HTML para serem verificadas as presenças de
-            ativos digitais e versões do documento
+            ativos digitais e _webpages_ do documento
 
     Returns:
         report (list of dict): mesma lista `doc_data_list`, sendo que cada
@@ -362,7 +362,7 @@ def check_document_versions_availability(website_url, doc_data_list, assets_data
             `uri` (formada com os dados),
             `available` (bool),
             `components` (list of dict): validação de cada ativos digital, ou
-                menção às demais versões do documento (HTML/PDF/idiomas)
+                menção às demais _webpages_ do documento (HTML/PDF/idiomas)
 
     """
     report = []
@@ -372,12 +372,12 @@ def check_document_versions_availability(website_url, doc_data_list, assets_data
         Logger.info("Verificando página do documento: %s", doc_uri)
         if doc_data.get("format") == "html":
             # lista de uri para outro idioma e/ou formato
-            other_versions_data = list(doc_data_list)
-            other_versions_data.remove(doc_data)
+            other_webpages_data = list(doc_data_list)
+            other_webpages_data.remove(doc_data)
             components_result = check_document_html(
                                         doc_uri,
                                         assets_data,
-                                        other_versions_data,
+                                        other_webpages_data,
                                         netlocs)
             result.update(
                 {
@@ -525,14 +525,14 @@ def requests_get(uri, function=None):
         return response
 
 
-def format_document_versions_availability_to_register(
-        document_versions_availability, extra_data={}):
+def format_document_webpage_availability_to_register(
+        document_webpage_availability, extra_data={}):
     """
-    Formata os dados da avaliação da disponibilidade de uma versão do documento
-    para linhas em uma tabela
+    Formata os dados da avaliação da disponibilidade de uma _webpage_
+    do documento para linhas em uma tabela
 
     Args:
-        document_versions_availability (dict): dados do documento para
+        document_webpage_availability (dict): dados do documento para
             identificação e para formar URI
             {
                 "lang": sps_package.original_language,
@@ -553,26 +553,26 @@ def format_document_versions_availability_to_register(
     doc_data = extra_data.copy()
     doc_data["annotation"] = ""
     for name in ("doc_id", "pid_v2", "doc_id_for_human"):
-        doc_data[name] = document_versions_availability[name]
+        doc_data[name] = document_webpage_availability[name]
     doc_data_result = doc_data.copy()
-    doc_data_result["type"] = document_versions_availability["format"]
-    doc_data_result["id"] = document_versions_availability["lang"]
-    doc_data_result["uri"] = document_versions_availability["uri"]
+    doc_data_result["type"] = document_webpage_availability["format"]
+    doc_data_result["id"] = document_webpage_availability["lang"]
+    doc_data_result["uri"] = document_webpage_availability["uri"]
     doc_data_result["status"] = ("available"
-                                 if document_versions_availability["available"]
+                                 if document_webpage_availability["available"]
                                  else "not available")
 
-    # linha sobre cada versão do documento
+    # linha sobre cada _webpage_ do documento
     rows.append(doc_data_result)
 
-    for component in document_versions_availability.get("components") or []:
+    for component in document_webpage_availability.get("components") or []:
         row = doc_data.copy()
         row.update(component)
         if component["present_in_html"] is False:
             row["uri"] = str(row["uri"])
             row["annotation"] = "Existing in HTML:\n{}".format(
                     "\n".join(
-                        document_versions_availability["existing_uri_in_html"])
+                        document_webpage_availability["existing_uri_in_html"])
                     )
         row["status"] = ("present in HTML"
                          if component["present_in_html"]
@@ -621,21 +621,21 @@ def format_document_items_availability_to_register(document_data,
 def check_document_availability(doc_id, website_url, netlocs):
     """
     Verifica a disponibilidade do documento `doc_id`, verificando a
-    disponibilidade de todas as versões (HTML/PDF/idiomas) e de todos os ativos
-    digitais. Também verifica se os ativos digitais e as demais versões estão
+    disponibilidade de todas as _webpages_ (HTML/PDF/idiomas) e de todos os ativos
+    digitais. Também verifica se os ativos digitais e as demais _webpages_ estão
     mencionadas (`@href`/`@src`) no conteúdo do HTML
     """
     LAST_VERSION = -1
     document_manifest = get_document_manifest(doc_id)
-    current_version = document_manifest["versions"][LAST_VERSION]
+    current_version = document_manifest["webpages"][LAST_VERSION]
     doc_data = get_document_data_to_generate_uri(current_version)
 
-    document_versions_data = get_document_versions_data(doc_id, doc_data)
+    document_webpages_data = get_document_webpages_data(doc_id, doc_data)
     assets_data = get_document_assets_data(current_version)
     renditions_data = get_document_renditions_data(current_version)
-    versions_availability = check_document_versions_availability(
+    webpages_availability = check_document_webpages_availability(
                 website_url,
-                document_versions_data,
+                document_webpages_data,
                 assets_data,
                 netlocs
             )
@@ -643,7 +643,7 @@ def check_document_availability(doc_id, website_url, netlocs):
                 renditions_data
             )
     assets_availability = check_document_assets_availability(assets_data)
-    return versions_availability, renditions_availability, assets_availability
+    return webpages_availability, renditions_availability, assets_availability
 
 
 def retry_after():
@@ -651,24 +651,24 @@ def retry_after():
 
 
 def format_document_availability_data_to_register(
-            versions_availability,
+            webpages_availability,
             assets_availability,
             renditions_availability,
             extra_data,
         ):
-    for version in versions_availability:
-        for row in format_document_versions_availability_to_register(
+    for version in webpages_availability:
+        for row in format_document_webpage_availability_to_register(
                 version, extra_data):
             add_execution_in_database("availability", row)
 
     for asset_availability in assets_availability:
         for row in format_document_items_availability_to_register(
-                versions_availability[0],
+                webpages_availability[0],
                 asset_availability, extra_data):
             add_execution_in_database("availability", row)
 
     for rendition_availability in renditions_availability:
         for row in format_document_items_availability_to_register(
-                versions_availability[0],
+                webpages_availability[0],
                 rendition_availability, extra_data):
             add_execution_in_database("availability", row)
