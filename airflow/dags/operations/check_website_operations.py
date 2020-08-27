@@ -3,6 +3,7 @@ import requests
 import time
 from urllib3.exceptions import MaxRetryError, NewConnectionError
 from urllib.parse import urlparse
+from datetime import datetime
 
 from bs4 import BeautifulSoup
 
@@ -16,6 +17,13 @@ from operations.docs_utils import (
 )
 
 Logger = logging.getLogger(__name__)
+
+
+class InvalidResponse:
+    def __init__(self):
+        self.status_code = None
+        self.start_time = None
+        self.end_time = None
 
 
 def do_request(uri, function=None, secs_sequence=None):
@@ -34,6 +42,7 @@ def do_request(uri, function=None, secs_sequence=None):
     secs_sequence = secs_sequence or retry_after()
     total_secs = 0
     times = 0
+    start_time = datetime.utcnow()
     for t in secs_sequence:
         times += 1
         Logger.info("Attempt %i: wait %.2fs before access '%s'", times, t, uri)
@@ -43,21 +52,24 @@ def do_request(uri, function=None, secs_sequence=None):
 
         response = requests_get(uri, function)
         try:
-            status_code = response.status_code
+            if response.status_code in (500, 502, 503, 504):
+                continue
         except AttributeError:
-            status_code = None
-            break
-        else:
-            if status_code not in (500, 502, 503, 504):
-                break
+            response = InvalidResponse()
+        # break para `InvalidResponse` e
+        # para `response.status_code` not in (500, 502, 503, 504)
+        break
+
+    response.end_time = datetime.utcnow()
+    response.start_time = start_time
 
     Logger.info(
         "The URL '%s' returned the status code '%s' after %is",
         uri,
-        status_code,
+        response.status_code,
         total_secs
     )
-    return response or None
+    return response
 
 
 def is_valid_response(response):
@@ -65,6 +77,16 @@ def is_valid_response(response):
         return response.status_code in (200, 301, 302)
     except AttributeError:
         return False
+
+
+def eval_response(response):
+
+    return {
+        "available": response.status_code in (200, 301, 302),
+        "status code": response.status_code,
+        "start time": response.start_time,
+        "end time": response.end_time,
+    }
 
 
 def get_kernel_document_id_from_classic_document_uri(classic_website_document_uri):
@@ -315,9 +337,12 @@ def check_document_html(uri, assets_data, other_webpages_data, netlocs=None):
                 menção às demais _webpages_ do documento (HTML/PDF/idiomas)
 
     """
-    content = get_webpage_content(uri)
-    if content is None:
-        return {"available": False}
+    response = do_request(uri, requests.get)
+    result = eval_response(response)
+    if result["available"] is False:
+        return result
+
+    content = response.text
 
     # lista de uri encontrada dentro da página
     webpage_inner_uri_list = filter_uri_list(find_uri_items(content), netlocs)
@@ -328,7 +353,7 @@ def check_document_html(uri, assets_data, other_webpages_data, netlocs=None):
     components_result = check_uri_items_expected_in_webpage(
         webpage_inner_uri_list, assets_data, other_webpages_data
     )
-    result = {"available": True, "components": components_result}
+    result.update({"components": components_result})
     for compo in components_result:
         if compo.get("present_in_html") is False:
             result.update(
@@ -392,8 +417,10 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
             result.update(
                 {
                     "uri": doc_uri,
-                    "available": is_valid_response(do_request(doc_uri)),
                 }
+            )
+            result.update(
+                eval_response(do_request(doc_uri))
             )
             report.append(result)
     return report
@@ -418,7 +445,7 @@ def check_document_assets_availability(assets_data):
             uri = item.get("uri")
             Logger.info("Verificando %s", uri)
             result = item.copy()
-            result.update({"available": is_valid_response(do_request(uri))})
+            result.update(eval_response(do_request(uri)))
             report.append(result)
     return report
 
@@ -441,7 +468,7 @@ def check_document_renditions_availability(renditions):
         uri = item.get("uri")
         Logger.info("Verificando %s", uri)
         result = item.copy()
-        result.update({"available": is_valid_response(do_request(uri))})
+        result.update(eval_response(do_request(uri)))
         report.append(result)
     return report
 

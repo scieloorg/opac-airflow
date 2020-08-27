@@ -1,5 +1,6 @@
 from unittest import TestCase
 from unittest.mock import patch, call, MagicMock
+import requests
 
 from airflow import DAG
 
@@ -25,18 +26,29 @@ from operations.check_website_operations import (
 
 class TestDoRequest(TestCase):
 
+    @patch("operations.check_website_operations.datetime")
+    @patch("operations.check_website_operations.requests_get")
+    def test_do_request_returns_response_timestamp(self, mock_get, mock_dt):
+        mock_response = requests.Response()
+        mock_response.status_code = 200
+        mock_dt.utcnow.side_effect = ["start", "end"]
+        mock_get.return_value = mock_response
+        result = do_request("https://uri.org/8793/")
+        self.assertEqual("start", result.start_time)
+        self.assertEqual("end", result.end_time)
+
     @patch("operations.check_website_operations.requests_get")
     def test_do_request_returns_response(self, mock_get):
         mock_response = MockResponse(200)
         mock_get.return_value = mock_response
         result = do_request("https://uri.org/8793/")
         self.assertEqual(200, result.status_code)
-        
+
     @patch("operations.check_website_operations.requests_get")
     def test_do_request_returns_none(self, mock_get):
         mock_get.return_value = False
         result = do_request("inhttps://uri.org/8793/")
-        self.assertEqual(None, result)
+        self.assertEqual(None, result.status_code)
 
     @patch("operations.check_website_operations.requests_get")
     def test_do_request_returns_500_after_9_tries(self, mock_get):
@@ -101,6 +113,8 @@ class MockResponse:
     def __init__(self, code, text=None):
         self.status_code = code
         self.text = text or ""
+        self.start_time = "start timestamp"
+        self.end_time = "end timestamp"
 
 
 class MockLogger:
@@ -707,10 +721,8 @@ class TestCheckWebpageInnerUriList(TestCase):
 
 class TestCheckDocumentUriItemsAvailability(TestCase):
 
-    @patch("operations.check_website_operations.get_webpage_content")
     @patch("operations.check_website_operations.do_request")
-    def test_check_document_webpages_availability_returns_success(self, mock_do_request,
-                                                    mock_get_webpage_content):
+    def test_check_document_webpages_availability_returns_success(self, mock_do_request):
         website_url = "https://www.scielo.br"
         doc_data_list = [
             {
@@ -758,7 +770,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     "asset_uri_2.tiff", "asset_uri_2.jpg", "asset_uri_2.png"]
             }
         ]
-        mock_get_webpage_content.side_effect = [
+        content = [
             """
             <a href="asset_uri_2.jpg"/>
             <a href="asset_uri_1.jpg"/>
@@ -774,7 +786,11 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
             <a href="/j/xjk/a/ldld?format=html&lang=en"/>
             """,
         ]
-        mock_do_request.side_effect = [MockResponse(200), MockResponse(200)]
+        mock_do_request.side_effect = [
+            MockResponse(200, content[0]),
+            MockResponse(200),
+            MockResponse(200, content[1]),
+            MockResponse(200)]
         expected = [
             {
                 "lang": "en",
@@ -784,6 +800,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id": "ldld",
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
                 "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
                 "components": [
                     {
                         "type": "asset",
@@ -825,6 +844,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id": "ldld",
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en",
                 "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
             },
             {
                 "lang": "es",
@@ -834,6 +856,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id": "ldld",
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es",
                 "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
                 "components": [
                     {
                         "type": "asset",
@@ -875,15 +900,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id": "ldld",
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=es",
                 "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
             },
         ]
         result = check_document_webpages_availability(website_url, doc_data_list, assets_data)
         self.assertListEqual(expected, result)
 
-    @patch("operations.check_website_operations.get_webpage_content")
     @patch("operations.check_website_operations.do_request")
-    def test_check_document_webpages_availability_returns_pdf_is_not_available_although_it_is_present_in_html(self, mock_do_request,
-                                                    mock_get_webpage_content):
+    def test_check_document_webpages_availability_returns_pdf_is_not_available_although_it_is_present_in_html(self, mock_do_request):
         website_url = "https://www.scielo.br"
         doc_data_list = [
             {
@@ -905,10 +931,12 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         ]
         assets_data = [
         ]
-        mock_get_webpage_content.return_value = """
+        content = """
         <a href="/j/xjk/a/ldld?format=pdf&lang=en"/>
         """
-        mock_do_request.return_value = None
+        mock_do_request.side_effect = [
+            MockResponse(200, content),
+            MockResponse(None)]
         expected = [
             {
                 "lang": "en",
@@ -918,6 +946,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id": "ldld",
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
                 "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
                 "components": [
                     {
                         "type": "pdf",
@@ -935,15 +966,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id": "ldld",
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en",
                 "available": False,
+                "status code": None,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
             },
         ]
         result = check_document_webpages_availability(website_url, doc_data_list, assets_data)
         self.assertListEqual(expected, result)
 
-    @patch("operations.check_website_operations.get_webpage_content")
     @patch("operations.check_website_operations.do_request")
-    def test_check_document_webpages_availability_returns_pdf_is_available_although_it_is_not_present_in_html(self, mock_do_request,
-                                                    mock_get_webpage_content):
+    def test_check_document_webpages_availability_returns_pdf_is_available_although_it_is_not_present_in_html(self, mock_do_request):
         website_url = "https://www.scielo.br"
         doc_data_list = [
             {
@@ -965,9 +997,10 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         ]
         assets_data = [
         ]
-        mock_get_webpage_content.return_value = """
-         """
-        mock_do_request.return_value = MockResponse(200)
+        mock_do_request.side_effect = [
+            MockResponse(200, ""),
+            MockResponse(200)
+        ]
         expected = [
             {
                 "lang": "en",
@@ -977,6 +1010,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id": "ldld",
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
                 "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
                 "components": [
                     {
                         "type": "pdf",
@@ -1002,15 +1038,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id": "ldld",
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en",
                 "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
             },
         ]
         result = check_document_webpages_availability(website_url, doc_data_list, assets_data)
         self.assertListEqual(expected, result)
 
-    @patch("operations.check_website_operations.get_webpage_content")
     @patch("operations.check_website_operations.do_request")
-    def test_check_document_webpages_availability_returns_html_es_is_not_available_although_it_is_present_in_html_en(self, mock_do_request,
-                                                    mock_get_webpage_content):
+    def test_check_document_webpages_availability_returns_html_es_is_not_available_although_it_is_present_in_html_en(self, mock_do_request):
         website_url = "https://www.scielo.br"
         doc_data_list = [
             {
@@ -1032,14 +1069,15 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         ]
         assets_data = [
         ]
-        mock_get_webpage_content.side_effect = [
-            """
-            Versão ingles no formato html
-            <a href="/j/xjk/a/ldld?format=html&lang=es"/>
-            """,
-            None,
+        mock_do_request.side_effect = [
+            MockResponse(200,
+                """
+                Versão ingles no formato html
+                <a href="/j/xjk/a/ldld?format=html&lang=es"/>
+                """
+            ),
+            MockResponse(None)
         ]
-        mock_do_request.return_value = None
         expected = [
             {
                 "lang": "en",
@@ -1049,6 +1087,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id": "ldld",
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
                 "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
                 "components": [
                     {
                         "type": "html",
@@ -1066,15 +1107,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id": "ldld",
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es",
                 "available": False,
+                "status code": None,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
             },
         ]
         result = check_document_webpages_availability(website_url, doc_data_list, assets_data)
         self.assertListEqual(expected, result)
 
-    @patch("operations.check_website_operations.get_webpage_content")
     @patch("operations.check_website_operations.do_request")
-    def test_check_document_webpages_availability_returns_html_es_is_available_although_it_is_not_present_in_html_en(self, mock_do_request,
-                                                    mock_get_webpage_content):
+    def test_check_document_webpages_availability_returns_html_es_is_available_although_it_is_not_present_in_html_en(self, mock_do_request):
         website_url = "https://www.scielo.br"
         doc_data_list = [
             {
@@ -1096,15 +1138,17 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         ]
         assets_data = [
         ]
-        mock_get_webpage_content.side_effect = [
-            "documento sem links, conteúdo do html em Ingles",
-            """
-            conteúdo do documento em espanhol com link para a versão ingles
-                <a href="/j/xjk/a/ldld?format=html"/>
-            """,
+        mock_do_request.side_effect = [
+            MockResponse(
+                200, "documento sem links, conteúdo do html em Ingles"),
+            MockResponse(
+                200,
+                """
+                conteúdo do documento em espanhol com link para a versão ingles
+                    <a href="/j/xjk/a/ldld?format=html"/>
+                """
+            ),
         ]
-
-        mock_do_request.return_value = MockResponse(200)
         expected = [
             {
                 "lang": "en",
@@ -1114,6 +1158,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id": "ldld",
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
                 "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
                 "components": [
                     {
                         "type": "html",
@@ -1141,6 +1188,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id": "ldld",
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es",
                 "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
                 "components": [
                     {
                         "type": "html",
@@ -1157,32 +1207,47 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
 
 class TestCheckDocumentHtml(TestCase):
 
-    @patch("operations.check_website_operations.get_webpage_content")
-    def test_check_document_html_returns_not_available(self, mock_content):
-        mock_content.return_value = None
+    @patch("operations.check_website_operations.datetime")
+    @patch("operations.check_website_operations.requests.get")
+    def test_check_document_html_returns_not_available(self, mock_get, mock_dt):
+        mock_get.return_value = None
+        mock_dt.utcnow.side_effect = ["start timestamp", "end timestamp"]
         uri = "https://..."
         assets_data = []
         other_webpages_data = []
-        expected = {"available": False}
+        expected = {
+            "available": False, "status code": None,
+            "start time": "start timestamp",
+            "end time": "end timestamp",
+        }
         result = check_document_html(uri, assets_data, other_webpages_data)
         self.assertEqual(expected, result)
 
-    @patch("operations.check_website_operations.get_webpage_content")
-    def test_check_document_html_returns_available_and_empty_components(self, mock_content):
-        mock_content.return_value = ""
+    @patch("operations.check_website_operations.datetime")
+    @patch("operations.check_website_operations.requests.get")
+    def test_check_document_html_returns_available_and_empty_components(self, mock_get, mock_dt):
+        mock_response = MockResponse(200, "")
+        mock_get.return_value = mock_response
+        mock_dt.utcnow.side_effect = ["start timestamp", "end timestamp"]
         uri = "https://..."
         assets_data = []
         other_webpages_data = []
         expected = {
             "available": True,
+            "status code": 200,
+            "start time": "start timestamp",
+            "end time": "end timestamp",
             "components": [],
         }
         result = check_document_html(uri, assets_data, other_webpages_data)
         self.assertEqual(expected, result)
 
-    @patch("operations.check_website_operations.get_webpage_content")
-    def test_check_document_html_returns_available_and_components_are_absent(self, mock_content):
-        mock_content.return_value = ""
+    @patch("operations.check_website_operations.datetime")
+    @patch("operations.check_website_operations.requests.get")
+    def test_check_document_html_returns_available_and_components_are_absent(self, mock_get, mock_dt):
+        mock_response = MockResponse(200, "")
+        mock_get.return_value = mock_response
+        mock_dt.utcnow.side_effect = ["start timestamp", "end timestamp"]
         uri = "https://..."
 
         assets_data = [
@@ -1204,6 +1269,9 @@ class TestCheckDocumentHtml(TestCase):
         ]
         expected = {
             "available": True,
+            "status code": 200,
+            "start time": "start timestamp",
+            "end time": "end timestamp",
             "components": [
                 {
                     "type": "asset",
@@ -1234,12 +1302,17 @@ class TestCheckDocumentHtml(TestCase):
         result = check_document_html(uri, assets_data, other_webpages_data)
         self.assertEqual(expected, result)
 
-    @patch("operations.check_website_operations.get_webpage_content")
-    def test_check_document_html_returns_available_and_components_are_present(self, mock_content):
-        mock_content.return_value = """
+    @patch("operations.check_website_operations.datetime")
+    @patch("operations.check_website_operations.requests.get")
+    def test_check_document_html_returns_available_and_components_are_present(self, mock_get, mock_dt):
+        mock_response = MockResponse(200, "")
+        mock_response.text = """
         <img src="asset_uri_1.jpg"/>
         <a href="/j/xjk/a/ldld?lang=en"/>
         """
+        mock_get.return_value = mock_response
+        mock_dt.utcnow.side_effect = ["start timestamp", "end timestamp"]
+
         uri = "https://..."
 
         assets_data = [
@@ -1261,6 +1334,9 @@ class TestCheckDocumentHtml(TestCase):
         ]
         expected = {
             "available": True,
+            "status code": 200,
+            "start time": "start timestamp",
+            "end time": "end timestamp",
             "components": [
                 {
                     "type": "asset",
@@ -1283,7 +1359,10 @@ class TestCheckDocumentHtml(TestCase):
 class TestCheckDocumentAssetsAvailability(TestCase):
     @patch("operations.check_website_operations.do_request")
     def test_check_document_assets_availability_returns_one_of_three_is_false(self, mock_do_request):
-        mock_do_request.side_effect = [MockResponse(200), None, MockResponse(200)]
+        mock_do_request.side_effect = [
+            MockResponse(200),
+            MockResponse(None),
+            MockResponse(200)]
         assets_data = [
             {
                 "prefix": "a01",
@@ -1305,13 +1384,25 @@ class TestCheckDocumentAssetsAvailability(TestCase):
         expected = [
             {"asset_id": "a01.png",
              "uri": "uri de a01.png no object store",
-             "available": True},
+             "available": True,
+             "status code": 200,
+             "start time": "start timestamp",
+             "end time": "end timestamp",
+            },
             {"asset_id": "a01.jpg",
              "uri": "uri de a01.jpg no object store",
-             "available": False},
+             "available": False,
+             "status code": None,
+             "start time": "start timestamp",
+             "end time": "end timestamp",
+            },
             {"asset_id": "a02.png",
              "uri": "uri de a02.png no object store",
-             "available": True},
+             "available": True,
+             "status code": 200,
+             "start time": "start timestamp",
+             "end time": "end timestamp",
+            },
         ]
         result = check_document_assets_availability(assets_data)
         self.assertListEqual(expected, result)
@@ -1326,7 +1417,7 @@ class TestCheckDocumentAssetsAvailability(TestCase):
 class TestCheckDocumentRenditionsAvailability(TestCase):
     @patch("operations.check_website_operations.do_request")
     def test_check_document_assets_availability_returns_one_of_three_is_false(self, mock_do_request):
-        mock_do_request.side_effect = [MockResponse(200), None]
+        mock_do_request.side_effect = [MockResponse(200), MockResponse(None)]
         renditions = [
             {
                 "lang": "es",
@@ -1342,11 +1433,17 @@ class TestCheckDocumentRenditionsAvailability(TestCase):
                 "lang": "es",
                 "uri": "uri de original.pdf no object store",
                 "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
             },
             {
                 "lang": "en",
                 "uri": "uri de original-en.pdf  no object store",
                 "available": False,
+                "status code": None,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
             }
         ]
         result = check_document_renditions_availability(renditions)
