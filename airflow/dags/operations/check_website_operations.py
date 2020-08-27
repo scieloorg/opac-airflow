@@ -31,7 +31,7 @@ def do_request(uri, function=None, secs_sequence=None):
         HTTPResponse or False
     """
     function = function or requests.head
-    secs_sequence = secs_sequence or (0, 5, 10, 20, 40, 80, 160, 320, 640, )
+    secs_sequence = secs_sequence or retry_after()
     total_secs = 0
     times = 0
     for t in secs_sequence:
@@ -74,8 +74,8 @@ def get_kernel_document_id_from_classic_document_uri(classic_website_document_ur
     >>> parsed
     ParseResult(scheme='https', netloc='new.scielo.br', path='/j/qn/a/RsJ6CyVbQP3q9cMWqBGyHjp/', params='', query='', fragment='')
     """
-    resp = access_uri(classic_website_document_uri, requests.head)
-    if resp:
+    resp = do_request(classic_website_document_uri, requests.head)
+    if is_valid_response(resp):
         redirected_location = resp.headers.get('Location')
         if redirected_location:
             parsed = urlparse(redirected_location)
@@ -236,8 +236,8 @@ def get_document_versions_data(doc_id, doc_data_list, doc_webpage_uri_function=N
 
 
 def get_webpage_content(uri):
-    response = access_uri(uri, requests.get)
-    if response:
+    response = do_request(uri, requests.get)
+    if is_valid_response(response):
         return response.text
 
 
@@ -392,7 +392,7 @@ def check_document_versions_availability(website_url, doc_data_list, assets_data
             result.update(
                 {
                     "uri": doc_uri,
-                    "available": bool(access_uri(doc_uri)),
+                    "available": is_valid_response(do_request(doc_uri)),
                 }
             )
             report.append(result)
@@ -418,7 +418,7 @@ def check_document_assets_availability(assets_data):
             uri = item.get("uri")
             Logger.info("Verificando %s", uri)
             result = item.copy()
-            result.update({"available": bool(access_uri(uri))})
+            result.update({"available": is_valid_response(do_request(uri))})
             report.append(result)
     return report
 
@@ -441,7 +441,7 @@ def check_document_renditions_availability(renditions):
         uri = item.get("uri")
         Logger.info("Verificando %s", uri)
         result = item.copy()
-        result.update({"available": bool(access_uri(uri))})
+        result.update({"available": is_valid_response(do_request(uri))})
         report.append(result)
     return report
 
@@ -503,7 +503,7 @@ def check_uri_list(uri_list_items):
     """Acessa uma lista de URI e retorna as que falharam"""
     failures = []
     for uri in uri_list_items:
-        if not access_uri(uri):
+        if not is_valid_response(do_request(uri)):
             failures.append(uri)
     return failures
 
@@ -523,66 +523,6 @@ def requests_get(uri, function=None):
         return False
     else:
         return response
-
-
-def access_uri(uri, function=None):
-    """Acessa uma URI e reporta o seu status de resposta"""
-    function = function or requests.head
-    response = requests_get(uri, function)
-    if not response:
-        return False
-
-    if response.status_code in (200, 301, 302):
-        return response
-
-    if response.status_code in (429, 500, 502, 503, 504):
-        return wait_and_retry_to_access_uri(uri, function)
-
-    Logger.error(
-        "The URL '%s' returned the status code '%s'.",
-        uri,
-        response.status_code,
-    )
-    return False
-
-
-def retry_after():
-    return (5, 10, 20, 40, 80, 160, 320, 640, )
-
-
-def wait_and_retry_to_access_uri(uri, function=None):
-    """
-    Aguarda `t` segundos e tenta novamente até que status_code nao seja
-    um destes (429, 500, 502, 503, 504)
-    """
-    function = function or requests.head
-    available = False
-    total_secs = 0
-    for t in retry_after():
-        Logger.info("Retry to access '%s' after %is", uri, t)
-        total_secs += t
-        time.sleep(t)
-
-        response = requests_get(uri, function)
-
-        if not response:
-            available = False
-            break
-
-        if response.status_code in (429, 500, 502, 503, 504):
-            continue
-
-        if response.status_code in (200, 301, 302):
-            available = response
-        break
-
-    Logger.info(
-        "The URL '%s' returned the status code '%s' after %is",
-        uri,
-        response.status_code,
-        total_secs
-    )
-    return available
 
 
 def format_document_versions_availability_to_register(
@@ -704,6 +644,10 @@ def check_document_availability(doc_id, website_url, netlocs):
             )
     assets_availability = check_document_assets_availability(assets_data)
     return versions_availability, renditions_availability, assets_availability
+
+
+def retry_after():
+    return (0, 5, 10, 20, 40, 80, 160, 320, 640, )
 
 
 def format_document_availability_data_to_register(

@@ -149,8 +149,8 @@ class TestCheckUriList(TestCase):
             result)
 
     @patch('operations.check_website_operations.requests.head')
-    def test_check_uri_list_for_status_code_429_returns_failure_list(self, mock_req_head):
-        mock_req_head.side_effect = [MockResponse(429), MockResponse(404)]
+    def test_check_uri_list_for_status_code_500_returns_failure_list(self, mock_req_head):
+        mock_req_head.side_effect = [MockResponse(500), MockResponse(404)]
         uri_list = ["BAD_URI"]
         result = check_uri_list(uri_list)
         self.assertEqual(
@@ -161,10 +161,10 @@ class TestCheckUriList(TestCase):
     @patch('operations.check_website_operations.requests.head')
     def test_check_uri_list_for_status_code_200_after_retries_returns_failure_list(self, mock_req_head, mock_retry_after):
         mock_retry_after.return_value = [
-            0.1, 0.2, 0.4, 0.8, 1,
+            0, 0.1, 0.2, 0.4, 0.8, 1,
         ]
         mock_req_head.side_effect = [
-            MockResponse(429),
+            MockResponse(500),
             MockResponse(502),
             MockResponse(503),
             MockResponse(504),
@@ -179,10 +179,10 @@ class TestCheckUriList(TestCase):
     @patch('operations.check_website_operations.requests.head')
     def test_check_uri_list_for_status_code_404_after_retries_returns_failure_list(self, mock_req_head, mock_retry_after):
         mock_retry_after.return_value = [
-            0.1, 0.2, 0.4, 0.8, 1,
+            0, 0.1, 0.2, 0.4, 0.8, 1,
         ]
         mock_req_head.side_effect = [
-            MockResponse(429),
+            MockResponse(500),
             MockResponse(502),
             MockResponse(404),
         ]
@@ -235,12 +235,13 @@ class TestCheckWebsiteUriList(TestCase):
         uri_list_file_path = "/tmp/uri_list_2010-10-09.lst"
         website_url_list = ["http://www.scielo.br", "https://newscielo.br"]
         check_website_uri_list(uri_list_file_path, website_url_list)
-        self.assertEqual(
-            mock_info.call_args_list,
-            [
-                call('Quantidade de URI: %i', 8),
-                call("Encontrados: %i/%i", 8, 8),
-            ]
+        self.assertIn(
+            call('Quantidade de URI: %i', 8),
+            mock_info.call_args_list
+        )
+        self.assertIn(
+            call("Encontrados: %i/%i", 8, 8),
+            mock_info.call_args_list
         )
 
     @patch("operations.check_website_operations.Logger.info")
@@ -272,19 +273,17 @@ class TestCheckWebsiteUriList(TestCase):
         bad_uri_1 = "http://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765"
         bad_uri_2 = "https://newscielo.br/scielo.php?script=sci_serial&pid=0001-3765"
 
-        self.assertEqual(
-            mock_info.call_args_list,
-            [
-                call('Quantidade de URI: %i', 8),
-                call("Retry to access '%s' after %is", bad_uri_2, 5),
-                call("The URL '%s' returned the status code '%s' after %is",
-                     bad_uri_2, 404, 5),
-                call("Não encontrados (%i/%i):\n%s", 2, 8,
-                     "\n".join([
+        self.assertIn(
+            call("Não encontrados (%i/%i):\n%s", 2, 8,
+                 "\n".join([
                         bad_uri_1,
                         bad_uri_2,
                     ])),
-            ]
+            mock_info.call_args_list
+        )
+        self.assertIn(
+            call('Quantidade de URI: %i', 8),
+            mock_info.call_args_list
         )
 
 
@@ -709,8 +708,8 @@ class TestCheckWebpageInnerUriList(TestCase):
 class TestCheckDocumentUriItemsAvailability(TestCase):
 
     @patch("operations.check_website_operations.get_webpage_content")
-    @patch("operations.check_website_operations.access_uri")
-    def test_check_document_versions_availability_returns_success(self, mock_access_uri,
+    @patch("operations.check_website_operations.do_request")
+    def test_check_document_versions_availability_returns_success(self, mock_do_request,
                                                     mock_get_webpage_content):
         website_url = "https://www.scielo.br"
         doc_data_list = [
@@ -775,7 +774,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
             <a href="/j/xjk/a/ldld?format=html&lang=en"/>
             """,
         ]
-        mock_access_uri.side_effect = [True, True]
+        mock_do_request.side_effect = [MockResponse(200), MockResponse(200)]
         expected = [
             {
                 "lang": "en",
@@ -882,8 +881,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         self.assertListEqual(expected, result)
 
     @patch("operations.check_website_operations.get_webpage_content")
-    @patch("operations.check_website_operations.access_uri")
-    def test_check_document_versions_availability_returns_pdf_is_not_available_although_it_is_present_in_html(self, mock_access_uri,
+    @patch("operations.check_website_operations.do_request")
+    def test_check_document_versions_availability_returns_pdf_is_not_available_although_it_is_present_in_html(self, mock_do_request,
                                                     mock_get_webpage_content):
         website_url = "https://www.scielo.br"
         doc_data_list = [
@@ -909,7 +908,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         mock_get_webpage_content.return_value = """
         <a href="/j/xjk/a/ldld?format=pdf&lang=en"/>
         """
-        mock_access_uri.return_value = False
+        mock_do_request.return_value = None
         expected = [
             {
                 "lang": "en",
@@ -942,8 +941,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         self.assertListEqual(expected, result)
 
     @patch("operations.check_website_operations.get_webpage_content")
-    @patch("operations.check_website_operations.access_uri")
-    def test_check_document_versions_availability_returns_pdf_is_available_although_it_is_not_present_in_html(self, mock_access_uri,
+    @patch("operations.check_website_operations.do_request")
+    def test_check_document_versions_availability_returns_pdf_is_available_although_it_is_not_present_in_html(self, mock_do_request,
                                                     mock_get_webpage_content):
         website_url = "https://www.scielo.br"
         doc_data_list = [
@@ -968,7 +967,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         ]
         mock_get_webpage_content.return_value = """
          """
-        mock_access_uri.return_value = True
+        mock_do_request.return_value = MockResponse(200)
         expected = [
             {
                 "lang": "en",
@@ -1009,8 +1008,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         self.assertListEqual(expected, result)
 
     @patch("operations.check_website_operations.get_webpage_content")
-    @patch("operations.check_website_operations.access_uri")
-    def test_check_document_versions_availability_returns_html_es_is_not_available_although_it_is_present_in_html_en(self, mock_access_uri,
+    @patch("operations.check_website_operations.do_request")
+    def test_check_document_versions_availability_returns_html_es_is_not_available_although_it_is_present_in_html_en(self, mock_do_request,
                                                     mock_get_webpage_content):
         website_url = "https://www.scielo.br"
         doc_data_list = [
@@ -1040,7 +1039,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
             """,
             None,
         ]
-        mock_access_uri.return_value = False
+        mock_do_request.return_value = None
         expected = [
             {
                 "lang": "en",
@@ -1073,8 +1072,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         self.assertListEqual(expected, result)
 
     @patch("operations.check_website_operations.get_webpage_content")
-    @patch("operations.check_website_operations.access_uri")
-    def test_check_document_versions_availability_returns_html_es_is_available_although_it_is_not_present_in_html_en(self, mock_access_uri,
+    @patch("operations.check_website_operations.do_request")
+    def test_check_document_versions_availability_returns_html_es_is_available_although_it_is_not_present_in_html_en(self, mock_do_request,
                                                     mock_get_webpage_content):
         website_url = "https://www.scielo.br"
         doc_data_list = [
@@ -1105,7 +1104,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
             """,
         ]
 
-        mock_access_uri.return_value = True
+        mock_do_request.return_value = MockResponse(200)
         expected = [
             {
                 "lang": "en",
@@ -1282,9 +1281,9 @@ class TestCheckDocumentHtml(TestCase):
 
 
 class TestCheckDocumentAssetsAvailability(TestCase):
-    @patch("operations.check_website_operations.access_uri")
-    def test_check_document_assets_availability_returns_one_of_three_is_false(self, mock_access_uri):
-        mock_access_uri.side_effect = [not None, False, not None]
+    @patch("operations.check_website_operations.do_request")
+    def test_check_document_assets_availability_returns_one_of_three_is_false(self, mock_do_request):
+        mock_do_request.side_effect = [MockResponse(200), None, MockResponse(200)]
         assets_data = [
             {
                 "prefix": "a01",
@@ -1325,9 +1324,9 @@ class TestCheckDocumentAssetsAvailability(TestCase):
 
 
 class TestCheckDocumentRenditionsAvailability(TestCase):
-    @patch("operations.check_website_operations.access_uri")
-    def test_check_document_assets_availability_returns_one_of_three_is_false(self, mock_access_uri):
-        mock_access_uri.side_effect = [not None, False]
+    @patch("operations.check_website_operations.do_request")
+    def test_check_document_assets_availability_returns_one_of_three_is_false(self, mock_do_request):
+        mock_do_request.side_effect = [MockResponse(200), None]
         renditions = [
             {
                 "lang": "es",
@@ -1509,22 +1508,22 @@ class TestFormatDocumentItemsAvailabilityToRegister(TestCase):
 
 class Testget_kernel_document_id_from_classic_document_uri(TestCase):
 
-    @patch("operations.check_website_operations.access_uri")
-    def test_get_kernel_document_id_from_classic_document_uri_returns_doc_id(self, mock_access_uri):
+    @patch("operations.check_website_operations.do_request")
+    def test_get_kernel_document_id_from_classic_document_uri_returns_doc_id(self, mock_do_request):
         classic_uri = "https://new.scielo.br/scielo.php?pid=S1234-12342020123412345&script=sci_arttext"
-        response = MagicMock()
+        response = MockResponse(200)
         response.headers = {
             "Location":
             "https://new.scielo.br/j/axy/a/QP3q9cMWqBGyHjpRsJ6CyVb"}
-        mock_access_uri.return_value = response
+        mock_do_request.return_value = response
         expected = "QP3q9cMWqBGyHjpRsJ6CyVb"
         result = get_kernel_document_id_from_classic_document_uri(classic_uri)
         self.assertEqual(expected, result)
 
-    @patch("operations.check_website_operations.access_uri")
-    def test_get_kernel_document_id_from_classic_document_uri_returns_none(self, mock_access_uri):
+    @patch("operations.check_website_operations.do_request")
+    def test_get_kernel_document_id_from_classic_document_uri_returns_none(self, mock_do_request):
         classic_uri = "https://new.scielo.br/scielo.php?pid=S1234-12342020123412345&script=sci_arttext"
-        mock_access_uri.return_value = None
+        mock_do_request.return_value = None
         expected = None
         result = get_kernel_document_id_from_classic_document_uri(classic_uri)
         self.assertEqual(expected, result)
