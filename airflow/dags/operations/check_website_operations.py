@@ -18,6 +18,48 @@ from operations.docs_utils import (
 Logger = logging.getLogger(__name__)
 
 
+def do_request(uri, function=None, secs_sequence=None):
+    """
+    Executa requisições (`requests.head` ou `requests.get`) com tentativas
+    em tempos espaçados enquanto status_code retornado é um destes valores
+    (500, 502, 503, 504)
+
+    Args:
+        uri (str): URI
+        function (callable): `requests.head` ou `requests.get`
+    Returns:
+        HTTPResponse or False
+    """
+    function = function or requests.head
+    secs_sequence = secs_sequence or (0, 5, 10, 20, 40, 80, 160, 320, 640, )
+    total_secs = 0
+    times = 0
+    for t in secs_sequence:
+        times += 1
+        Logger.info("Attempt %i: wait %.2fs before access '%s'", times, t, uri)
+
+        total_secs += t
+        time.sleep(t)
+
+        response = requests_get(uri, function)
+        try:
+            status_code = response.status_code
+        except AttributeError:
+            status_code = None
+            break
+        else:
+            if status_code not in (500, 502, 503, 504):
+                break
+
+    Logger.info(
+        "The URL '%s' returned the status code '%s' after %is",
+        uri,
+        status_code,
+        total_secs
+    )
+    return response or None
+
+
 def get_kernel_document_id_from_classic_document_uri(classic_website_document_uri):
     """
     >>> resp = requests.head("https://new.scielo.br/scielo.php?script=sci_arttext&pid=S0100-40422020000700987")

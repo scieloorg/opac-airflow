@@ -18,7 +18,40 @@ from operations.check_website_operations import (
     format_document_versions_availability_to_register,
     format_document_items_availability_to_register,
     get_kernel_document_id_from_classic_document_uri,
+    do_request,
 )
+
+
+class TestDoRequest(TestCase):
+
+    @patch("operations.check_website_operations.requests_get")
+    def test_do_request_returns_response(self, mock_get):
+        mock_response = MockResponse(200)
+        mock_get.return_value = mock_response
+        result = do_request("https://uri.org/8793/")
+        self.assertEqual(200, result.status_code)
+
+    @patch("operations.check_website_operations.requests_get")
+    def test_do_request_returns_none(self, mock_get):
+        mock_get.return_value = False
+        result = do_request("inhttps://uri.org/8793/")
+        self.assertEqual(None, result)
+
+    @patch("operations.check_website_operations.requests_get")
+    def test_do_request_returns_500_after_9_tries(self, mock_get):
+        mock_get.side_effect = 15 * [MockResponse(500)]
+        result = do_request(
+            "https://uri.org/8793/",
+            secs_sequence=(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8))
+        self.assertEqual(500, result.status_code)
+
+    @patch("operations.check_website_operations.requests_get")
+    def test_do_request_returns_301_after_3_tries(self, mock_get):
+        mock_get.side_effect = 2 * [MockResponse(500)] + [MockResponse(301)]
+        result = do_request(
+            "https://uri.org/8793/",
+            secs_sequence=(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8))
+        self.assertEqual(301, result.status_code)
 
 
 class TestConcatWebsiteUrlAndUriListItems(TestCase):
@@ -49,8 +82,9 @@ class TestConcatWebsiteUrlAndUriListItems(TestCase):
 
 class MockResponse:
 
-    def __init__(self, code):
+    def __init__(self, code, text=None):
         self.status_code = code
+        self.text = text or ""
 
 
 class MockLogger:
