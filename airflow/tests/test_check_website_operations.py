@@ -19,6 +19,7 @@ from operations.check_website_operations import (
     format_document_items_availability_to_register,
     get_kernel_document_id_from_classic_document_uri,
     do_request,
+    is_valid_response,
 )
 
 
@@ -52,6 +53,21 @@ class TestDoRequest(TestCase):
             "https://uri.org/8793/",
             secs_sequence=(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8))
         self.assertEqual(301, result.status_code)
+
+
+class TestIsValidResponse(TestCase):
+
+    def test_is_valid_response_returns_true(self):
+        result = is_valid_response(MockResponse(200))
+        self.assertEqual(True, result)
+
+    def test_is_valid_response_returns_false(self):
+        result = is_valid_response(MockResponse(500))
+        self.assertEqual(False, result)
+
+    def test_is_valid_response_returns_false_for_response_equal_to_none(self):
+        result = is_valid_response(None)
+        self.assertEqual(False, result)
 
 
 class TestConcatWebsiteUrlAndUriListItems(TestCase):

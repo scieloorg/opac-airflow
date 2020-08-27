@@ -60,6 +60,13 @@ def do_request(uri, function=None, secs_sequence=None):
     return response or None
 
 
+def is_valid_response(response):
+    try:
+        return response.status_code in (200, 301, 302)
+    except AttributeError:
+        return False
+
+
 def get_kernel_document_id_from_classic_document_uri(classic_website_document_uri):
     """
     >>> resp = requests.head("https://new.scielo.br/scielo.php?script=sci_arttext&pid=S0100-40422020000700987")
