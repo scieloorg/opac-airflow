@@ -138,16 +138,14 @@ def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
         uri_result = {}
         uri_result["type"] = "asset"
         uri_result["id"] = asset_data["prefix"]
-        uri_result["present_in_html"] = False
+        uri_result["present_in_html"] = []
+        uri_result["absent_in_html"] = []
         for uri in asset_data["uri_alternatives"]:
             if uri in uri_items_expected_in_webpage:
-                # se uma das alternativas foi encontrada no html, found é True
-                # e é desnecessário continuar procurando
-                uri_result["uri"] = uri
-                uri_result["present_in_html"] = True
-                break
-        if uri_result["present_in_html"] is False:
-            uri_result["uri"] = asset_data["uri_alternatives"]
+                uri_result["present_in_html"].append(uri)
+            else:
+                uri_result["absent_in_html"].append(uri)
+        uri_result[""]
         results.append(uri_result)
 
     for other_version_uri_data in other_webpages_data:
@@ -155,17 +153,15 @@ def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
         uri_result = {}
         uri_result["type"] = other_version_uri_data["format"]
         uri_result["id"] = other_version_uri_data["lang"]
-        uri_result["present_in_html"] = False
-        uri_list = get_document_webpage_uri_altenatives(other_version_uri_data)
-        for uri in uri_list:
+        uri_result["present_in_html"] = []
+
+        alternatives = get_document_webpage_uri_altenatives(other_version_uri_data)
+        for uri in alternatives:
             if uri in uri_items_expected_in_webpage:
-                # se uma das alternativas foi encontrada no html, found é True
-                # e é desnecessário continuar procurando
-                uri_result["uri"] = uri
-                uri_result["present_in_html"] = True
+                uri_result["present_in_html"] = [uri]
                 break
-        if uri_result["present_in_html"] is False:
-            uri_result["uri"] = uri_list
+        if not uri_result["present_in_html"]:
+            uri_result["absent_in_html"] = alternatives
         results.append(uri_result)
     return results
 
@@ -355,7 +351,7 @@ def check_document_html(uri, assets_data, other_webpages_data, netlocs=None):
     )
     result.update({"components": components_result})
     for compo in components_result:
-        if compo.get("present_in_html") is False:
+        if not compo.get("present_in_html"):
             result.update(
                 {"existing_uri_in_html": sorted(webpage_inner_uri_list)})
             break
@@ -394,6 +390,11 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
     for doc_data in doc_data_list:
         doc_uri = website_url + doc_data.get("uri")
         result = doc_data.copy()
+        result.update(
+            {
+                "uri": doc_uri,
+            }
+        )
         Logger.info("Verificando página do documento: %s", doc_uri)
         if doc_data.get("format") == "html":
             # lista de uri para outro idioma e/ou formato
@@ -404,21 +405,11 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
                                         assets_data,
                                         other_webpages_data,
                                         netlocs)
-            result.update(
-                {
-                    "uri": doc_uri,
-                }
-            )
             result.update(components_result)
             if components_result is not None:
                 result.update()
             report.append(result)
         else:
-            result.update(
-                {
-                    "uri": doc_uri,
-                }
-            )
             result.update(
                 eval_response(do_request(doc_uri))
             )
@@ -593,10 +584,12 @@ def format_document_webpage_availability_to_register(
     rows.append(doc_data_result)
 
     for component in document_webpage_availability.get("components") or []:
-        row = doc_data.copy()
-        row.update(component)
-        if component["present_in_html"] is False:
-            row["uri"] = str(row["uri"])
+        component_data = doc_data.copy()
+        component_data["type"] = component["type"]
+        component_data["id"] = component["id"]
+
+        if not component["present_in_html"]:
+            row["uri"] = str(row["absent_in_html"])
             row["annotation"] = "Existing in HTML:\n{}".format(
                     "\n".join(
                         document_webpage_availability["existing_uri_in_html"])

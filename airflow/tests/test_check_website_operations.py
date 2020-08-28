@@ -530,32 +530,43 @@ class TestCheckWebpageInnerUriList(TestCase):
             {
                 "type": "asset",
                 "id": "asset_uri_1",
-                "present_in_html": True,
-                "uri": "asset_uri_1.jpg",
+                "present_in_html": [
+                    "asset_uri_1.jpg",
+                ],
+                "absent_in_html": [
+                    "asset_uri_1.tiff", "asset_uri_1.png",
+                ],
             },
             {
                 "type": "asset",
                 "id": "asset_uri_2",
-                "present_in_html": True,
-                "uri": "asset_uri_2.jpg",
+                "present_in_html": [
+                    "asset_uri_2.jpg",
+                ],
+                "absent_in_html": [
+                    "asset_uri_2.tiff", "asset_uri_2.png",
+                ],
             },
             {
                 "type": "html",
                 "id": "en",
-                "present_in_html": True,
-                "uri": "/j/xyz/a/lokiujyht?format=html&lang=en",
+                "present_in_html": [
+                    "/j/xyz/a/lokiujyht?format=html&lang=en",
+                ],
             },
             {
                 "type": "pdf",
                 "id": "es",
-                "present_in_html": True,
-                "uri": "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+                "present_in_html": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+                ],
             },
             {
                 "type": "pdf",
                 "id": "en",
-                "present_in_html": True,
-                "uri": "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+                "present_in_html": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+                ],
             },
         ]
         result = check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
@@ -584,14 +595,18 @@ class TestCheckWebpageInnerUriList(TestCase):
             {
                 "type": "asset",
                 "id": "asset_uri_1",
-                "present_in_html": True,
-                "uri": "asset_uri_1.jpg",
+                "present_in_html": [
+                    "asset_uri_1.jpg",
+                ],
+                "absent_in_html": [
+                    "asset_uri_1.tiff", "asset_uri_1.png",
+                ],
             },
             {
                 "type": "asset",
                 "id": "asset_uri_2",
-                "present_in_html": False,
-                "uri": [
+                "present_in_html": [],
+                "absent_in_html": [
                     "asset_uri_2.tiff", "asset_uri_2.jpg", "asset_uri_2.png"],
             },
         ]
@@ -630,14 +645,15 @@ class TestCheckWebpageInnerUriList(TestCase):
             {
                 "type": "html",
                 "id": "en",
-                "present_in_html": True,
-                "uri": "/j/xyz/a/lokiujyht?format=html&lang=en",
+                "present_in_html": [
+                    "/j/xyz/a/lokiujyht?format=html&lang=en",
+                ],
             },
             {
                 "type": "pdf",
                 "id": "es",
-                "present_in_html": False,
-                "uri": [
+                "present_in_html": [],
+                "absent_in_html": [
                         "/j/xyz/a/lokiujyht?format=pdf&lang=es",
                         "/j/xyz/a/lokiujyht?lang=es&format=pdf",
                         "/j/xyz/a/lokiujyht?format=pdf",
@@ -649,8 +665,9 @@ class TestCheckWebpageInnerUriList(TestCase):
             {
                 "type": "pdf",
                 "id": "en",
-                "present_in_html": True,
-                "uri": "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+                "present_in_html": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+                ],
             },
         ]
         result = check_uri_items_expected_in_webpage(
@@ -689,8 +706,8 @@ class TestCheckWebpageInnerUriList(TestCase):
             {
                 "type": "html",
                 "id": "en",
-                "present_in_html": False,
-                "uri": [
+                "present_in_html": [],
+                "absent_in_html": [
                         "/j/xyz/a/lokiujyht?format=html&lang=en",
                         "/j/xyz/a/lokiujyht?lang=en&format=html",
                         "/j/xyz/a/lokiujyht?format=html",
@@ -704,14 +721,16 @@ class TestCheckWebpageInnerUriList(TestCase):
             {
                 "type": "pdf",
                 "id": "es",
-                "present_in_html": True,
-                "uri": "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+                "present_in_html": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+                ],
             },
             {
                 "type": "pdf",
                 "id": "en",
-                "present_in_html": True,
-                "uri": "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+                "present_in_html": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+                ],
             },
         ]
         result = check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
@@ -807,32 +826,43 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     {
                         "type": "asset",
                         "id": "asset_uri_1",
-                        "present_in_html": True,
-                        "uri": "asset_uri_1.jpg",
+                        "present_in_html": [
+                            "asset_uri_1.jpg",
+                        ],
+                        "absent_in_html": [
+                            "asset_uri_1.tiff", "asset_uri_1.png",
+                        ],
                     },
                     {
                         "type": "asset",
                         "id": "asset_uri_2",
-                        "present_in_html": True,
-                        "uri": "asset_uri_2.jpg",
+                        "present_in_html": [
+                            "asset_uri_2.jpg",
+                        ],
+                        "absent_in_html": [
+                            "asset_uri_2.tiff", "asset_uri_2.png",
+                        ],
                     },
                     {
                         "type": "pdf",
                         "id": "en",
-                        "present_in_html": True,
-                        "uri": "/j/xjk/a/ldld?format=pdf&lang=en",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=pdf&lang=en",
+                        ],
                     },
                     {
                         "type": "html",
                         "id": "es",
-                        "present_in_html": True,
-                        "uri": "/j/xjk/a/ldld?format=html&lang=es",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=html&lang=es",
+                        ],
                     },
                     {
                         "type": "pdf",
                         "id": "es",
-                        "present_in_html": True,
-                        "uri": "/j/xjk/a/ldld?format=pdf&lang=es",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=pdf&lang=es",
+                        ],
                     },
                 ]
             },
@@ -863,32 +893,43 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     {
                         "type": "asset",
                         "id": "asset_uri_1",
-                        "present_in_html": True,
-                        "uri": "asset_uri_1.jpg",
+                        "present_in_html": [
+                            "asset_uri_1.jpg",
+                        ],
+                        "absent_in_html": [
+                            "asset_uri_1.tiff", "asset_uri_1.png",
+                        ],
                     },
                     {
                         "type": "asset",
                         "id": "asset_uri_2",
-                        "present_in_html": True,
-                        "uri": "asset_uri_2.jpg",
+                        "present_in_html": [
+                            "asset_uri_2.jpg",
+                        ],
+                        "absent_in_html": [
+                            "asset_uri_2.tiff", "asset_uri_2.png",
+                        ],
                     },
                     {
                         "type": "html",
                         "id": "en",
-                        "present_in_html": True,
-                        "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=html&lang=en",
+                        ],
                     },
                     {
                         "type": "pdf",
                         "id": "en",
-                        "present_in_html": True,
-                        "uri": "/j/xjk/a/ldld?format=pdf&lang=en",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=pdf&lang=en",
+                        ],
                     },
                     {
                         "type": "pdf",
                         "id": "es",
-                        "present_in_html": True,
-                        "uri": "/j/xjk/a/ldld?format=pdf&lang=es",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=pdf&lang=es",
+                        ],
                     },
                 ]
             },
@@ -953,8 +994,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     {
                         "type": "pdf",
                         "id": "en",
-                        "present_in_html": True,
-                        "uri": "/j/xjk/a/ldld?format=pdf&lang=en",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=pdf&lang=en",
+                        ],
                     },
                 ]
             },
@@ -1017,8 +1059,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     {
                         "type": "pdf",
                         "id": "en",
-                        "present_in_html": False,
-                        "uri": [
+                        "present_in_html": [],
+                        "absent_in_html": [
                             "/j/xjk/a/ldld?format=pdf&lang=en",
                             "/j/xjk/a/ldld?lang=en&format=pdf",
                             "/j/xjk/a/ldld?format=pdf",
@@ -1094,8 +1136,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     {
                         "type": "html",
                         "id": "es",
-                        "present_in_html": True,
-                        "uri": "/j/xjk/a/ldld?format=html&lang=es",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=html&lang=es",
+                        ],
                     },
                 ]
             },
@@ -1165,8 +1208,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     {
                         "type": "html",
                         "id": "es",
-                        "present_in_html": False,
-                        "uri": [
+                        "present_in_html": [],
+                        "absent_in_html": [
                             "/j/xjk/a/ldld?format=html&lang=es",
                             "/j/xjk/a/ldld?lang=es&format=html",
                             "/j/xjk/a/ldld?format=html",
@@ -1195,8 +1238,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     {
                         "type": "html",
                         "id": "en",
-                        "present_in_html": True,
-                        "uri": "/j/xjk/a/ldld?format=html",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=html",
+                        ],
                     },
                 ]
             },
@@ -1276,16 +1320,16 @@ class TestCheckDocumentHtml(TestCase):
                 {
                     "type": "asset",
                     "id": "asset_uri_1",
-                    "present_in_html": False,
-                    "uri": [
+                    "present_in_html": [],
+                    "absent_in_html": [
                         "asset_uri_1.tiff", "asset_uri_1.jpg",
                         "asset_uri_1.png"],
                 },
                 {
                     "type": "html",
                     "id": "en",
-                    "present_in_html": False,
-                    "uri": [
+                    "present_in_html": [],
+                    "absent_in_html": [
                         "/j/xjk/a/ldld?format=html&lang=en",
                         "/j/xjk/a/ldld?lang=en&format=html",
                         "/j/xjk/a/ldld?format=html",
@@ -1341,14 +1385,17 @@ class TestCheckDocumentHtml(TestCase):
                 {
                     "type": "asset",
                     "id": "asset_uri_1",
-                    "present_in_html": True,
-                    "uri": "asset_uri_1.jpg"
+                    "present_in_html": ["asset_uri_1.jpg"],
+                    "absent_in_html": [
+                        "asset_uri_1.tiff", "asset_uri_1.png"
+                    ],
                 },
                 {
                     "type": "html",
                     "id": "en",
-                    "present_in_html": True,
-                    "uri": "/j/xjk/a/ldld?lang=en",
+                    "present_in_html": [
+                        "/j/xjk/a/ldld?lang=en",
+                    ],
                 },
             ]
         }
@@ -1471,21 +1518,23 @@ class TestFormatDocumentVersionsAvailabilityToRegister(TestCase):
                 {
                     "type": "asset",
                     "id": "1234-1234-acron-45-9-12345-f01",
-                    "present_in_html": True,
-                    "uri": "https://1234-1234-acron-45-9-12345-f01.jpg",
+                    "present_in_html": [
+                        "https://1234-1234-acron-45-9-12345-f01.jpg",
+                    ],
                 },
                 {
                     "type": "asset",
                     "id": "1234-1234-acron-45-9-12345-f02",
-                    "present_in_html": False,
-                    "uri": [
+                    "present_in_html": [],
+                    "absent_in_html": [
                         "https://1234-1234-acron-45-9-12345-f02.jpg"],
                 },
                 {
                     "type": "pdf",
                     "id": "en",
-                    "present_in_html": True,
-                    "uri": "/j/acron/a/DOC/?format=pdf&lang=en",
+                    "present_in_html": [
+                        "/j/acron/a/DOC/?format=pdf&lang=en",
+                    ],
                 },
             ],
             "existing_uri_in_html": [
