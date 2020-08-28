@@ -111,28 +111,33 @@ def get_kernel_document_id_from_classic_document_uri(classic_website_document_ur
                         return doc_id
 
 
-def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
+def check_uri_items_expected_in_webpage(existing_uri_items_in_html,
                                  assets_data, other_webpages_data):
     """
     Verifica os recursos de um documento, comparando os recursos registrados
-    no Kernel com os recursos indicados na página do documento no site público
+    no Kernel com os recursos existentes na página do documento no site público
 
     Args:
-        uri_items_expected_in_webpage (list): Lista de recursos que
+        existing_uri_items_in_html (list): Lista de recursos que
             foram encontrados dentro da página do documento
         assets_data (list of dict, retorno de `get_document_assets_data`):
-            Dados de ativos digitais para formar uri.
+            Dados de ativos digitais com uri(s) que se espera encontrar no HTML
         other_webpages_data (list of dict,
             mesmo formato `retornado de get_document_webpages_data`):
             Dados de outras _webpages_ do documento,
-            ou seja, outro idioma e outro formato, para formar sua uri
+            ou seja, outro idioma e outro formato,
+            com uri(s) que se espera encontrar no HTML
 
     Returns:
-        list of dict: resultado da verficação de cada recurso avaliado,
-            mais dados do recurso, cujas chaves são:
-            type, id, present_in_html, uri
+        tuple:
+            list of dict: resultado da verficação de cada recurso avaliado,
+                mais dados do recurso, cujas chaves são:
+                type, id, present_in_html, absent_in_html
+            int: quantidade de items exigidos mas ausentes,
+                não equivale necessariamente ao total de ausentes
     """
     results = []
+    missing = 0
     for asset_data in assets_data:
         # {"prefix": prefix, "uri_alternatives": [],}
         uri_result = {}
@@ -141,10 +146,12 @@ def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
         uri_result["present_in_html"] = []
         uri_result["absent_in_html"] = []
         for uri in asset_data["uri_alternatives"]:
-            if uri in uri_items_expected_in_webpage:
+            if uri in existing_uri_items_in_html:
                 uri_result["present_in_html"].append(uri)
             else:
                 uri_result["absent_in_html"].append(uri)
+        if not uri_result["present_in_html"]:
+            missing += 1
         results.append(uri_result)
 
     for other_version_uri_data in other_webpages_data:
@@ -153,16 +160,16 @@ def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
         uri_result["type"] = other_version_uri_data["format"]
         uri_result["id"] = other_version_uri_data["lang"]
         uri_result["present_in_html"] = []
-
         alternatives = other_version_uri_data["uri_alternatives"]
         for uri in alternatives:
-            if uri in uri_items_expected_in_webpage:
+            if uri in existing_uri_items_in_html:
                 uri_result["present_in_html"] = [uri]
                 break
         if not uri_result["present_in_html"]:
             uri_result["absent_in_html"] = alternatives
+            missing += 1
         results.append(uri_result)
-    return results
+    return results, missing
 
 
 def get_document_webpage_uri_altenatives(data):
@@ -341,21 +348,23 @@ def check_document_html(uri, assets_data, other_webpages_data, netlocs=None):
 
     content = response.text
 
-    # lista de uri encontrada dentro da página
-    webpage_inner_uri_list = filter_uri_list(find_uri_items(content), netlocs)
+    # lista de uri encontradas dentro da página
+    existing_uri_items_in_html = filter_uri_list(find_uri_items(content), netlocs)
 
-    # verifica se as uri esperadas estão present_in_htmle no html da página
+    # verifica se as uri esperadas estão present_in_html e no html da página
     # do documento, dados os dados dos ativos digitais e das
     # demais _webpages_ (formato e idioma) do documento
-    components_result = check_uri_items_expected_in_webpage(
-        webpage_inner_uri_list, assets_data, other_webpages_data
+    components_result, missing = check_uri_items_expected_in_webpage(
+        existing_uri_items_in_html, assets_data, other_webpages_data
     )
-    result.update({"components": components_result})
-    for compo in components_result:
-        if not compo.get("present_in_html"):
-            result.update(
-                {"existing_uri_in_html": sorted(webpage_inner_uri_list)})
-            break
+    result.update({
+        "components": components_result,
+        "missing components quantity": missing,
+    })
+
+    if missing:
+        result.update(
+            {"existing_uri_items_in_html": sorted(existing_uri_items_in_html)})
     return result
 
 
@@ -595,7 +604,7 @@ def format_document_webpage_availability_to_register(
             row["uri"] = str(row["absent_in_html"])
             row["annotation"] = "Existing in HTML:\n{}".format(
                     "\n".join(
-                        document_webpage_availability["existing_uri_in_html"])
+                        document_webpage_availability["existing_uri_items_in_html"])
                     )
         row["status"] = ("present in HTML"
                          if component["present_in_html"]

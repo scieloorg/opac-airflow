@@ -559,7 +559,7 @@ class TestGetDocumentWebPagesData(TestCase):
 class TestCheckWebpageInnerUriList(TestCase):
 
     def test_check_uri_items_expected_in_webpage_returns_success(self):
-        uri_items_expected_in_webpage = [
+        uri_items_in_html = [
             "asset_uri_1.jpg",
             "asset_uri_2.jpg",
             "/j/xyz/a/lokiujyht?format=html&lang=en",
@@ -667,12 +667,13 @@ class TestCheckWebpageInnerUriList(TestCase):
                 ],
             },
         ]
-        result = check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
+        result, missing = check_uri_items_expected_in_webpage(uri_items_in_html,
                     assets_data, other_webpages_uri_data)
         self.assertEqual(expected, result)
+        self.assertEqual(0, missing)
 
     def test_check_uri_items_expected_in_webpage_returns_not_found_asset_uri(self):
-        uri_items_expected_in_webpage = [
+        uri_items_in_html = [
             "asset_uri_1.jpg",
         ]
         assets_data = [
@@ -708,12 +709,13 @@ class TestCheckWebpageInnerUriList(TestCase):
                     "asset_uri_2.tiff", "asset_uri_2.jpg", "asset_uri_2.png"],
             },
         ]
-        result = check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
+        result, missing = check_uri_items_expected_in_webpage(uri_items_in_html,
                     assets_data, other_webpages_uri_data)
         self.assertEqual(expected, result)
+        self.assertEqual(1, missing)
 
     def test_check_uri_items_expected_in_webpage_returns_not_found_pdf(self):
-        uri_items_expected_in_webpage = [
+        uri_items_in_html = [
             "/j/xyz/a/lokiujyht?format=html&lang=en",
             "/j/xyz/a/lokiujyht?format=pdf&lang=en",
         ]
@@ -794,13 +796,14 @@ class TestCheckWebpageInnerUriList(TestCase):
                 ],
             },
         ]
-        result = check_uri_items_expected_in_webpage(
-                    uri_items_expected_in_webpage,
+        result, missing = check_uri_items_expected_in_webpage(
+                    uri_items_in_html,
                     assets_data, other_webpages_uri_data)
         self.assertEqual(expected, result)
+        self.assertEqual(1, missing)
 
     def test_check_uri_items_expected_in_webpage_returns_not_found_html(self):
-        uri_items_expected_in_webpage = [
+        uri_items_in_html = [
             "/j/xyz/a/lokiujyht?format=pdf&lang=es",
             "/j/xyz/a/lokiujyht?format=pdf&lang=en",
         ]
@@ -883,9 +886,10 @@ class TestCheckWebpageInnerUriList(TestCase):
                 ],
             },
         ]
-        result = check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
+        result, missing = check_uri_items_expected_in_webpage(uri_items_in_html,
                     assets_data, other_webpages_uri_data)
         self.assertEqual(expected, result)
+        self.assertEqual(1, missing)
 
 
 class TestCheckDocumentUriItemsAvailability(TestCase):
@@ -1054,7 +1058,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                             "/j/xjk/a/ldld?format=pdf&lang=es",
                         ],
                     },
-                ]
+                ],
+                "missing components quantity": 0,
             },
             {
                 "lang": "en",
@@ -1121,7 +1126,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                             "/j/xjk/a/ldld?format=pdf&lang=es",
                         ],
                     },
-                ]
+                ],
+                "missing components quantity": 0,
             },
             {
                 "lang": "es",
@@ -1208,7 +1214,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                             "/j/xjk/a/ldld?format=pdf&lang=en",
                         ],
                     },
-                ]
+                ],
+                "missing components quantity": 0,
             },
             {
                 "lang": "en",
@@ -1302,7 +1309,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                         ],
                     },
                 ],
-                "existing_uri_in_html": [],
+                "missing components quantity": 1,
+                "existing_uri_items_in_html": [],
             },
             {
                 "lang": "en",
@@ -1392,7 +1400,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                             "/j/xjk/a/ldld?format=html&lang=es",
                         ],
                     },
-                ]
+                ],
+                "missing components quantity": 0,
             },
             {
                 "lang": "es",
@@ -1493,7 +1502,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                         ],
                     },
                 ],
-                "existing_uri_in_html": []
+                "missing components quantity": 1,
+                "existing_uri_items_in_html": []
             },
             {
                 "lang": "es",
@@ -1514,7 +1524,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                             "/j/xjk/a/ldld?format=html",
                         ],
                     },
-                ]
+                ],
+                "missing components quantity": 0,
             },
         ]
         result = check_document_webpages_availability(website_url, doc_data_list, assets_data)
@@ -1554,6 +1565,7 @@ class TestCheckDocumentHtml(TestCase):
             "start time": "start timestamp",
             "end time": "end timestamp",
             "components": [],
+            "missing components quantity": 0,
         }
         result = check_document_html(uri, assets_data, other_webpages_data)
         self.assertEqual(expected, result)
@@ -1623,7 +1635,8 @@ class TestCheckDocumentHtml(TestCase):
                     ],
                 },
             ],
-            "existing_uri_in_html": []
+            "missing components quantity": 2,
+            "existing_uri_items_in_html": []
         }
         result = check_document_html(uri, assets_data, other_webpages_data)
         self.assertEqual(expected, result)
@@ -1689,7 +1702,8 @@ class TestCheckDocumentHtml(TestCase):
                         "/j/xjk/a/ldld?lang=en",
                     ],
                 },
-            ]
+            ],
+            "missing components quantity": 0,
         }
         result = check_document_html(uri, assets_data, other_webpages_data)
         self.assertEqual(expected, result)
@@ -1830,7 +1844,8 @@ class TestFormatDocumentVersionsAvailabilityToRegister(TestCase):
                     ],
                 },
             ],
-            "existing_uri_in_html": [
+            "missing components quantity": 1,
+            "existing_uri_items_in_html": [
                 '/j/acron/a/DOC/?format=pdf&lang=en',
                 'https://1234-1234-acron-45-9-12345-f01.jpg']
         }
