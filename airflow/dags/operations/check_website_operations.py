@@ -145,7 +145,6 @@ def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
                 uri_result["present_in_html"].append(uri)
             else:
                 uri_result["absent_in_html"].append(uri)
-        uri_result[""]
         results.append(uri_result)
 
     for other_version_uri_data in other_webpages_data:
@@ -155,7 +154,7 @@ def check_uri_items_expected_in_webpage(uri_items_expected_in_webpage,
         uri_result["id"] = other_version_uri_data["lang"]
         uri_result["present_in_html"] = []
 
-        alternatives = get_document_webpage_uri_altenatives(other_version_uri_data)
+        alternatives = other_version_uri_data["uri_alternatives"]
         for uri in alternatives:
             if uri in uri_items_expected_in_webpage:
                 uri_result["present_in_html"] = [uri]
@@ -194,7 +193,7 @@ def get_classic_document_webpage_uri(data):
         script = "sci_pdf"
     else:
         script = "sci_arttext"
-    uri = "/scielo.php?script={}&pid={}".format(script, data['doc_id'])
+    uri = "/scielo.php?script={}&pid={}".format(script, data['pid_v2'])
     if data.get("lang"):
         uri += "&tlng={}".format(data.get("lang"))
     return uri
@@ -249,6 +248,8 @@ def get_document_webpages_data(doc_id, doc_data_list, doc_webpage_uri_function=N
         }
         doc_data.update(data)
         doc_data["uri"] = doc_webpage_uri_function(doc_data)
+        doc_data["uri_alternatives"] = get_document_webpage_uri_altenatives(
+            doc_data)
         uri_items.append(doc_data)
     return uri_items
 
@@ -390,6 +391,8 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
     for doc_data in doc_data_list:
         doc_uri = website_url + doc_data.get("uri")
         result = doc_data.copy()
+        if "uri_alternatives" in result.keys():
+            del result["uri_alternatives"]
         result.update(
             {
                 "uri": doc_uri,
@@ -587,7 +590,7 @@ def format_document_webpage_availability_to_register(
         component_data = doc_data.copy()
         component_data["type"] = component["type"]
         component_data["id"] = component["id"]
-
+        row = component_data.copy()
         if not component["present_in_html"]:
             row["uri"] = str(row["absent_in_html"])
             row["annotation"] = "Existing in HTML:\n{}".format(
@@ -597,7 +600,8 @@ def format_document_webpage_availability_to_register(
         row["status"] = ("present in HTML"
                          if component["present_in_html"]
                          else "absent in HTML")
-        del row["present_in_html"]
+        if row.get("present_in_html"):
+            del row["present_in_html"]
         rows.append(row)
     return rows
 

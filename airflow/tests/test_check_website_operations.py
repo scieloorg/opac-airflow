@@ -1,4 +1,4 @@
-from unittest import TestCase
+from unittest import TestCase, skip
 from unittest.mock import patch, call, MagicMock
 import requests
 
@@ -365,7 +365,7 @@ class TestGetDocumentUri(TestCase):
         self.assertEqual(expected, result)
 
 
-class TestGetDocumentVersionsData(TestCase):
+class TestGetDocumentWebPagesData(TestCase):
 
     def test_get_document_webpages_data_returns_uri_data_list_using_new_pattern(self):
         doc_id = "ldld"
@@ -387,6 +387,16 @@ class TestGetDocumentVersionsData(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    '/j/xjk/a/ldld?format=html&lang=en',
+                    '/j/xjk/a/ldld?lang=en&format=html',
+                    '/j/xjk/a/ldld?format=html',
+                    '/j/xjk/a/ldld?lang=en',
+                    '/j/xjk/a/ldld/?format=html&lang=en',
+                    '/j/xjk/a/ldld/?lang=en&format=html',
+                    '/j/xjk/a/ldld/?format=html',
+                    '/j/xjk/a/ldld/?lang=en',
+                ],
             },
             {
                 "lang": "en",
@@ -395,6 +405,14 @@ class TestGetDocumentVersionsData(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=pdf&lang=en",
+                "uri_alternatives": [
+                    '/j/xjk/a/ldld?format=pdf&lang=en',
+                    '/j/xjk/a/ldld?lang=en&format=pdf',
+                    '/j/xjk/a/ldld?format=pdf',
+                    '/j/xjk/a/ldld/?format=pdf&lang=en',
+                    '/j/xjk/a/ldld/?lang=en&format=pdf',
+                    '/j/xjk/a/ldld/?format=pdf',
+                ],
             },
             {
                 "lang": "es",
@@ -403,6 +421,16 @@ class TestGetDocumentVersionsData(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=html&lang=es",
+                "uri_alternatives": [
+                    '/j/xjk/a/ldld?format=html&lang=es',
+                    '/j/xjk/a/ldld?lang=es&format=html',
+                    '/j/xjk/a/ldld?format=html',
+                    '/j/xjk/a/ldld?lang=es',
+                    '/j/xjk/a/ldld/?format=html&lang=es',
+                    '/j/xjk/a/ldld/?lang=es&format=html',
+                    '/j/xjk/a/ldld/?format=html',
+                    '/j/xjk/a/ldld/?lang=es',
+                ],
             },
             {
                 "lang": "es",
@@ -411,6 +439,14 @@ class TestGetDocumentVersionsData(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=pdf&lang=es",
+                "uri_alternatives": [
+                    '/j/xjk/a/ldld?format=pdf&lang=es',
+                    '/j/xjk/a/ldld?lang=es&format=pdf',
+                    '/j/xjk/a/ldld?format=pdf',
+                    '/j/xjk/a/ldld/?format=pdf&lang=es',
+                    '/j/xjk/a/ldld/?lang=es&format=pdf',
+                    '/j/xjk/a/ldld/?format=pdf',
+                ],
             },
         ]
         result = get_document_webpages_data(doc_id, doc_data_list, get_document_webpage_uri)
@@ -427,7 +463,7 @@ class TestGetDocumentVersionsData(TestCase):
             get_document_webpages_data(doc_id, [], get_document_webpage_uri)
 
     def test_get_document_webpages_data_returns_uri_data_list_using_classic_pattern(self):
-        doc_id = "S1234-56782000123412313"
+        doc_id = "ldld"
         doc_data_list = [
             {"lang": "en", "format": "html",
              "pid_v2": "S1234-56782000123412313",
@@ -449,8 +485,18 @@ class TestGetDocumentVersionsData(TestCase):
                 "pid_v2": "S1234-56782000123412313",
                 "acron": "xjk",
                 "doc_id_for_human": "artigo-1234",
-                "doc_id": "S1234-56782000123412313",
+                "doc_id": "ldld",
                 "uri": "/scielo.php?script=sci_arttext&pid=S1234-56782000123412313&tlng=en",
+                "uri_alternatives": [
+                    '/j/xjk/a/ldld?format=html&lang=en',
+                    '/j/xjk/a/ldld?lang=en&format=html',
+                    '/j/xjk/a/ldld?format=html',
+                    '/j/xjk/a/ldld?lang=en',
+                    '/j/xjk/a/ldld/?format=html&lang=en',
+                    '/j/xjk/a/ldld/?lang=en&format=html',
+                    '/j/xjk/a/ldld/?format=html',
+                    '/j/xjk/a/ldld/?lang=en',
+                ],
             },
             {
                 "lang": "en",
@@ -458,8 +504,16 @@ class TestGetDocumentVersionsData(TestCase):
                 "pid_v2": "S1234-56782000123412313",
                 "acron": "xjk",
                 "doc_id_for_human": "artigo-1234",
-                "doc_id": "S1234-56782000123412313",
+                "doc_id": "ldld",
                 "uri": "/scielo.php?script=sci_pdf&pid=S1234-56782000123412313&tlng=en",
+                "uri_alternatives": [
+                    '/j/xjk/a/ldld?format=pdf&lang=en',
+                    '/j/xjk/a/ldld?lang=en&format=pdf',
+                    '/j/xjk/a/ldld?format=pdf',
+                    '/j/xjk/a/ldld/?format=pdf&lang=en',
+                    '/j/xjk/a/ldld/?lang=en&format=pdf',
+                    '/j/xjk/a/ldld/?format=pdf',
+                ],
             },
             {
                 "lang": "es",
@@ -467,8 +521,18 @@ class TestGetDocumentVersionsData(TestCase):
                 "pid_v2": "S1234-56782000123412313",
                 "acron": "xjk",
                 "doc_id_for_human": "artigo-1234",
-                "doc_id": "S1234-56782000123412313",
+                "doc_id": "ldld",
                 "uri": "/scielo.php?script=sci_arttext&pid=S1234-56782000123412313&tlng=es",
+                "uri_alternatives": [
+                    '/j/xjk/a/ldld?format=html&lang=es',
+                    '/j/xjk/a/ldld?lang=es&format=html',
+                    '/j/xjk/a/ldld?format=html',
+                    '/j/xjk/a/ldld?lang=es',
+                    '/j/xjk/a/ldld/?format=html&lang=es',
+                    '/j/xjk/a/ldld/?lang=es&format=html',
+                    '/j/xjk/a/ldld/?format=html',
+                    '/j/xjk/a/ldld/?lang=es',
+                ],
             },
             {
                 "lang": "es",
@@ -476,8 +540,16 @@ class TestGetDocumentVersionsData(TestCase):
                 "pid_v2": "S1234-56782000123412313",
                 "acron": "xjk",
                 "doc_id_for_human": "artigo-1234",
-                "doc_id": "S1234-56782000123412313",
+                "doc_id": "ldld",
                 "uri": "/scielo.php?script=sci_pdf&pid=S1234-56782000123412313&tlng=es",
+                "uri_alternatives": [
+                    '/j/xjk/a/ldld?format=pdf&lang=es',
+                    '/j/xjk/a/ldld?lang=es&format=pdf',
+                    '/j/xjk/a/ldld?format=pdf',
+                    '/j/xjk/a/ldld/?format=pdf&lang=es',
+                    '/j/xjk/a/ldld/?lang=es&format=pdf',
+                    '/j/xjk/a/ldld/?format=pdf',
+                ],
             },
         ]
         result = get_document_webpages_data(doc_id, doc_data_list)
@@ -512,18 +584,44 @@ class TestCheckWebpageInnerUriList(TestCase):
                 "format": "html",
                 "acron": "xyz",
                 "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=html&lang=en",
+                    "/j/xyz/a/lokiujyht?lang=en&format=html",
+                    "/j/xyz/a/lokiujyht?format=html",
+                    "/j/xyz/a/lokiujyht?lang=en",
+                    "/j/xyz/a/lokiujyht/?format=html&lang=en",
+                    "/j/xyz/a/lokiujyht/?lang=en&format=html",
+                    "/j/xyz/a/lokiujyht/?format=html",
+                    "/j/xyz/a/lokiujyht/?lang=en",
+                ],
             },
             {
                 "lang": "es",
                 "format": "pdf",
                 "acron": "xyz",
                 "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+                    "/j/xyz/a/lokiujyht?lang=es&format=pdf",
+                    "/j/xyz/a/lokiujyht?format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf&lang=es",
+                    "/j/xyz/a/lokiujyht/?lang=es&format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf",
+                ],
             },
             {
                 "lang": "en",
                 "format": "pdf",
                 "acron": "xyz",
                 "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+                    "/j/xyz/a/lokiujyht?lang=en&format=pdf",
+                    "/j/xyz/a/lokiujyht?format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf&lang=en",
+                    "/j/xyz/a/lokiujyht/?lang=en&format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf",
+                ],
             },
         ]
         expected = [
@@ -627,18 +725,44 @@ class TestCheckWebpageInnerUriList(TestCase):
                 "format": "html",
                 "acron": "xyz",
                 "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=html&lang=en",
+                    "/j/xyz/a/lokiujyht?lang=en&format=html",
+                    "/j/xyz/a/lokiujyht?format=html",
+                    "/j/xyz/a/lokiujyht?lang=en",
+                    "/j/xyz/a/lokiujyht/?format=html&lang=en",
+                    "/j/xyz/a/lokiujyht/?lang=en&format=html",
+                    "/j/xyz/a/lokiujyht/?format=html",
+                    "/j/xyz/a/lokiujyht/?lang=en",
+                ],
             },
             {
                 "lang": "es",
                 "format": "pdf",
                 "acron": "xyz",
                 "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+                    "/j/xyz/a/lokiujyht?lang=es&format=pdf",
+                    "/j/xyz/a/lokiujyht?format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf&lang=es",
+                    "/j/xyz/a/lokiujyht/?lang=es&format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf",
+                ],
             },
             {
                 "lang": "en",
                 "format": "pdf",
                 "acron": "xyz",
                 "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+                    "/j/xyz/a/lokiujyht?lang=en&format=pdf",
+                    "/j/xyz/a/lokiujyht?format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf&lang=en",
+                    "/j/xyz/a/lokiujyht/?lang=en&format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf",
+                ],
             },
         ]
         expected = [
@@ -688,18 +812,44 @@ class TestCheckWebpageInnerUriList(TestCase):
                 "format": "html",
                 "acron": "xyz",
                 "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=html&lang=en",
+                    "/j/xyz/a/lokiujyht?lang=en&format=html",
+                    "/j/xyz/a/lokiujyht?format=html",
+                    "/j/xyz/a/lokiujyht?lang=en",
+                    "/j/xyz/a/lokiujyht/?format=html&lang=en",
+                    "/j/xyz/a/lokiujyht/?lang=en&format=html",
+                    "/j/xyz/a/lokiujyht/?format=html",
+                    "/j/xyz/a/lokiujyht/?lang=en",
+                ],
             },
             {
                 "lang": "es",
                 "format": "pdf",
                 "acron": "xyz",
                 "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+                    "/j/xyz/a/lokiujyht?lang=es&format=pdf",
+                    "/j/xyz/a/lokiujyht?format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf&lang=es",
+                    "/j/xyz/a/lokiujyht/?lang=es&format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf",
+                ],
             },
             {
                 "lang": "en",
                 "format": "pdf",
                 "acron": "xyz",
                 "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+                    "/j/xyz/a/lokiujyht?lang=en&format=pdf",
+                    "/j/xyz/a/lokiujyht?format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf&lang=en",
+                    "/j/xyz/a/lokiujyht/?lang=en&format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf",
+                ],
             },
         ]
         expected = [
@@ -751,6 +901,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
             },
             {
                 "lang": "en",
@@ -759,6 +919,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=pdf&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=pdf&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=pdf",
+                    "/j/xjk/a/ldld?format=pdf",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=pdf&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=pdf",
+                    "/j/xjk/a/ldld/?format=pdf",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
             },
             {
                 "lang": "es",
@@ -767,6 +937,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=html&lang=es",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=es",
+                    "/j/xjk/a/ldld?lang=es&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=es",
+                    "/j/xjk/a/ldld/?format=html&lang=es",
+                    "/j/xjk/a/ldld/?lang=es&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=es",
+                ],
             },
             {
                 "lang": "es",
@@ -775,6 +955,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=pdf&lang=es",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=pdf&lang=es",
+                    "/j/xjk/a/ldld?lang=es&format=pdf",
+                    "/j/xjk/a/ldld?format=pdf",
+                    "/j/xjk/a/ldld?lang=es",
+                    "/j/xjk/a/ldld/?format=pdf&lang=es",
+                    "/j/xjk/a/ldld/?lang=es&format=pdf",
+                    "/j/xjk/a/ldld/?format=pdf",
+                    "/j/xjk/a/ldld/?lang=es",
+                ],
             },
         ]
         assets_data = [
@@ -960,6 +1150,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
             },
             {
                 "lang": "en",
@@ -968,6 +1168,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=pdf&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=pdf&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=pdf",
+                    "/j/xjk/a/ldld?format=pdf",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=pdf&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=pdf",
+                    "/j/xjk/a/ldld/?format=pdf",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
             },
         ]
         assets_data = [
@@ -1027,6 +1237,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
             },
             {
                 "lang": "en",
@@ -1035,6 +1255,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=pdf&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=pdf&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=pdf",
+                    "/j/xjk/a/ldld?format=pdf",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=pdf&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=pdf",
+                    "/j/xjk/a/ldld/?format=pdf",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
             },
         ]
         assets_data = [
@@ -1064,9 +1294,11 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                             "/j/xjk/a/ldld?format=pdf&lang=en",
                             "/j/xjk/a/ldld?lang=en&format=pdf",
                             "/j/xjk/a/ldld?format=pdf",
+                            "/j/xjk/a/ldld?lang=en",
                             "/j/xjk/a/ldld/?format=pdf&lang=en",
                             "/j/xjk/a/ldld/?lang=en&format=pdf",
                             "/j/xjk/a/ldld/?format=pdf",
+                            "/j/xjk/a/ldld/?lang=en",
                         ],
                     },
                 ],
@@ -1099,6 +1331,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
             },
             {
                 "lang": "es",
@@ -1107,6 +1349,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=html&lang=es",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=es",
+                    "/j/xjk/a/ldld?lang=es&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=es",
+                    "/j/xjk/a/ldld/?format=html&lang=es",
+                    "/j/xjk/a/ldld/?lang=es&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=es",
+                ],
             },
         ]
         assets_data = [
@@ -1169,6 +1421,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
             },
             {
                 "lang": "es",
@@ -1177,6 +1439,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=html&lang=es",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=es",
+                    "/j/xjk/a/ldld?lang=es&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=es",
+                    "/j/xjk/a/ldld/?format=html&lang=es",
+                    "/j/xjk/a/ldld/?lang=es&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=es",
+                ],
             },
         ]
         assets_data = [
@@ -1309,6 +1581,16 @@ class TestCheckDocumentHtml(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
             },
         ]
         expected = {
@@ -1374,6 +1656,16 @@ class TestCheckDocumentHtml(TestCase):
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
                 "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
             },
         ]
         expected = {
@@ -1505,6 +1797,7 @@ class TestCheckDocumentRenditionsAvailability(TestCase):
 
 class TestFormatDocumentVersionsAvailabilityToRegister(TestCase):
 
+    @skip("enquanto nao tem ha definicao da tabela para o grafana")
     def test_format_document_webpage_availability_to_register(self):
         data = {
             "doc_id": "DMKLOLSJ",
@@ -1602,6 +1895,7 @@ class TestFormatDocumentVersionsAvailabilityToRegister(TestCase):
 
 class TestFormatDocumentItemsAvailabilityToRegister(TestCase):
 
+    @skip("enquanto nao tem ha definicao da tabela para o grafana")
     def test_format_document_items_availability_to_register(self):
         document_data = {
             "doc_id": "DMKLOLSJ",
