@@ -397,6 +397,8 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
 
     """
     report = []
+    missing_components = 0
+    unavailable = 0
     for doc_data in doc_data_list:
         doc_uri = website_url + doc_data.get("uri")
         result = doc_data.copy()
@@ -417,16 +419,22 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
                                         assets_data,
                                         other_webpages_data,
                                         netlocs)
+            missing_components += components_result.get(
+                "missing components quantity", 0)
             result.update(components_result)
-            if components_result is not None:
-                result.update()
             report.append(result)
         else:
             result.update(
                 eval_response(do_request(doc_uri))
             )
             report.append(result)
-    return report
+        if result["available"] is False:
+            unavailable += 1
+    summarized = {
+        "unavailable": unavailable,
+        "missing components": missing_components
+    }
+    return report, summarized
 
 
 def check_document_assets_availability(assets_data):

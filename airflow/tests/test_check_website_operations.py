@@ -1142,7 +1142,11 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "end time": "end timestamp",
             },
         ]
-        result = check_document_webpages_availability(website_url, doc_data_list, assets_data)
+        result, summary = check_document_webpages_availability(website_url, doc_data_list, assets_data)
+        self.assertDictEqual(
+            {"unavailable": 0, "missing components": 0},
+            summary
+        )
         self.assertListEqual(expected, result)
 
     @patch("operations.check_website_operations.do_request")
@@ -1230,7 +1234,11 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "end time": "end timestamp",
             },
         ]
-        result = check_document_webpages_availability(website_url, doc_data_list, assets_data)
+        result, summary = check_document_webpages_availability(website_url, doc_data_list, assets_data)
+        self.assertDictEqual(
+            {"unavailable": 1, "missing components": 0},
+            summary
+        )
         self.assertListEqual(expected, result)
 
     @patch("operations.check_website_operations.do_request")
@@ -1325,7 +1333,11 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "end time": "end timestamp",
             },
         ]
-        result = check_document_webpages_availability(website_url, doc_data_list, assets_data)
+        result, summary = check_document_webpages_availability(website_url, doc_data_list, assets_data)
+        self.assertDictEqual(
+            {"unavailable": 0, "missing components": 1},
+            summary
+        )
         self.assertListEqual(expected, result)
 
     @patch("operations.check_website_operations.do_request")
@@ -1416,7 +1428,11 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "end time": "end timestamp",
             },
         ]
-        result = check_document_webpages_availability(website_url, doc_data_list, assets_data)
+        result, summary = check_document_webpages_availability(website_url, doc_data_list, assets_data)
+        self.assertDictEqual(
+            {"unavailable": 1, "missing components": 0},
+            summary
+        )
         self.assertListEqual(expected, result)
 
     @patch("operations.check_website_operations.do_request")
@@ -1528,7 +1544,11 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "missing components quantity": 0,
             },
         ]
-        result = check_document_webpages_availability(website_url, doc_data_list, assets_data)
+        result, summary = check_document_webpages_availability(website_url, doc_data_list, assets_data)
+        self.assertDictEqual(
+            {"unavailable": 0, "missing components": 1},
+            summary
+        )
         self.assertListEqual(expected, result)
 
 
