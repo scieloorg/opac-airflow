@@ -1060,6 +1060,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     },
                 ],
                 "missing components quantity": 0,
+                "total expected components": 5,
             },
             {
                 "lang": "en",
@@ -1128,6 +1129,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     },
                 ],
                 "missing components quantity": 0,
+                "total expected components": 5,
             },
             {
                 "lang": "es",
@@ -1143,8 +1145,11 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
             },
         ]
         result, summary = check_document_webpages_availability(website_url, doc_data_list, assets_data)
-        self.assertDictEqual(
-            {"unavailable": 0, "missing components": 0},
+        self.assertDictEqual({
+                "unavailable doc webpages": 0,
+                "missing components": 0,
+                "total expected components": 10,
+            },
             summary
         )
         self.assertListEqual(expected, result)
@@ -1220,6 +1225,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     },
                 ],
                 "missing components quantity": 0,
+                "total expected components": 1,
             },
             {
                 "lang": "en",
@@ -1236,7 +1242,11 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         ]
         result, summary = check_document_webpages_availability(website_url, doc_data_list, assets_data)
         self.assertDictEqual(
-            {"unavailable": 1, "missing components": 0},
+            {
+                "unavailable doc webpages": 1,
+                "missing components": 0,
+                "total expected components": 1,
+            },
             summary
         )
         self.assertListEqual(expected, result)
@@ -1318,6 +1328,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     },
                 ],
                 "missing components quantity": 1,
+                "total expected components": 1,
                 "existing_uri_items_in_html": [],
             },
             {
@@ -1333,9 +1344,13 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "end time": "end timestamp",
             },
         ]
-        result, summary = check_document_webpages_availability(website_url, doc_data_list, assets_data)
-        self.assertDictEqual(
-            {"unavailable": 0, "missing components": 1},
+        result, summary = check_document_webpages_availability(
+            website_url, doc_data_list, assets_data)
+        self.assertDictEqual({
+                "unavailable doc webpages": 0,
+                "missing components": 1,
+                "total expected components": 1,
+            },
             summary
         )
         self.assertListEqual(expected, result)
@@ -1414,6 +1429,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     },
                 ],
                 "missing components quantity": 0,
+                "total expected components": 1,
             },
             {
                 "lang": "es",
@@ -1426,11 +1442,17 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "status code": None,
                 "start time": "start timestamp",
                 "end time": "end timestamp",
+                "missing components quantity": 1,
+                "total expected components": 1,
             },
         ]
         result, summary = check_document_webpages_availability(website_url, doc_data_list, assets_data)
         self.assertDictEqual(
-            {"unavailable": 1, "missing components": 0},
+            {
+                "unavailable doc webpages": 1,
+                "missing components": 1,
+                "total expected components": 2,
+            },
             summary
         )
         self.assertListEqual(expected, result)
@@ -1519,6 +1541,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     },
                 ],
                 "missing components quantity": 1,
+                "total expected components": 1,
                 "existing_uri_items_in_html": []
             },
             {
@@ -1542,11 +1565,17 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     },
                 ],
                 "missing components quantity": 0,
+                "total expected components": 1,
             },
         ]
-        result, summary = check_document_webpages_availability(website_url, doc_data_list, assets_data)
+        result, summary = check_document_webpages_availability(
+            website_url, doc_data_list, assets_data)
         self.assertDictEqual(
-            {"unavailable": 0, "missing components": 1},
+            {
+                "unavailable doc webpages": 0,
+                "missing components": 1,
+                "total expected components": 2,
+            },
             summary
         )
         self.assertListEqual(expected, result)
@@ -1566,6 +1595,8 @@ class TestCheckDocumentHtml(TestCase):
             "available": False, "status code": None,
             "start time": "start timestamp",
             "end time": "end timestamp",
+            "missing components quantity": 0,
+            "total expected components": 0,
         }
         result = check_document_html(uri, assets_data, other_webpages_data)
         self.assertEqual(expected, result)
@@ -1586,6 +1617,7 @@ class TestCheckDocumentHtml(TestCase):
             "end time": "end timestamp",
             "components": [],
             "missing components quantity": 0,
+            "total expected components": 0,
         }
         result = check_document_html(uri, assets_data, other_webpages_data)
         self.assertEqual(expected, result)
@@ -1656,6 +1688,7 @@ class TestCheckDocumentHtml(TestCase):
                 },
             ],
             "missing components quantity": 2,
+            "total expected components": 2,
             "existing_uri_items_in_html": []
         }
         result = check_document_html(uri, assets_data, other_webpages_data)
@@ -1724,6 +1757,7 @@ class TestCheckDocumentHtml(TestCase):
                 },
             ],
             "missing components quantity": 0,
+            "total expected components": 2,
         }
         result = check_document_html(uri, assets_data, other_webpages_data)
         self.assertEqual(expected, result)
@@ -1777,19 +1811,21 @@ class TestCheckDocumentAssetsAvailability(TestCase):
              "end time": "end timestamp",
             },
         ]
-        result = check_document_assets_availability(assets_data)
+        result, q_unavailable = check_document_assets_availability(assets_data)
+        self.assertEqual(1, q_unavailable)
         self.assertListEqual(expected, result)
 
     def test_check_document_assets_availability_returns_empty_list(self):
         assets_data = []
         expected = []
-        result = check_document_assets_availability(assets_data)
+        result, q_unavailable = check_document_assets_availability(assets_data)
+        self.assertEqual(0, q_unavailable)
         self.assertEqual(expected, result)
 
 
 class TestCheckDocumentRenditionsAvailability(TestCase):
     @patch("operations.check_website_operations.do_request")
-    def test_check_document_assets_availability_returns_one_of_three_is_false(self, mock_do_request):
+    def test_check_document_renditions_availability_returns_one_of_three_is_false(self, mock_do_request):
         mock_do_request.side_effect = [MockResponse(200), MockResponse(None)]
         renditions = [
             {
@@ -1819,13 +1855,17 @@ class TestCheckDocumentRenditionsAvailability(TestCase):
                 "end time": "end timestamp",
             }
         ]
-        result = check_document_renditions_availability(renditions)
+        result, q_unavailable = check_document_renditions_availability(
+            renditions)
+        self.assertEqual(1, q_unavailable)
         self.assertListEqual(expected, result)
 
     def test_check_document_renditions_availability_returns_empty_list(self):
         rendition = []
         expected = []
-        result = check_document_renditions_availability(rendition)
+        result, q_unavailable = check_document_renditions_availability(
+            rendition)
+        self.assertEqual(0, q_unavailable)
         self.assertEqual(expected, result)
 
 
@@ -1865,6 +1905,7 @@ class TestFormatDocumentVersionsAvailabilityToRegister(TestCase):
                 },
             ],
             "missing components quantity": 1,
+            "total expected components": 3,
             "existing_uri_items_in_html": [
                 '/j/acron/a/DOC/?format=pdf&lang=en',
                 'https://1234-1234-acron-45-9-12345-f01.jpg']
