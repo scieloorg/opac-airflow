@@ -1,3 +1,7 @@
+class GetSPSPackageFromDocManifestException(Exception):
+    ...
+
+
 class GetDocManifestFromKernelException(Exception):
     ...
 

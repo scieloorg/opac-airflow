@@ -2,6 +2,7 @@ import os
 import logging
 import hashlib
 import http.client
+import json
 
 import requests
 import botocore
@@ -18,6 +19,7 @@ from operations.exceptions import (
     LinkDocumentToDocumentsBundleException,
     Pidv3Exception,
     GetDocManifestFromKernelException,
+    GetSPSPackageFromDocManifestException,
 )
 
 
@@ -30,7 +32,7 @@ def is_pid_v2(value):
 
 def get_document_manifest(doc_id):
     try:
-        return hooks.kernel_connect(
+        document_manifest = hooks.kernel_connect(
             "/documents/" + doc_id + "/manifest", "GET"
         )
     except requests.exceptions.HTTPError as exc:
@@ -39,13 +41,38 @@ def get_document_manifest(doc_id):
                 doc_id, str(exc)
             )
         ) from None
+    else:
+        return json.loads(document_manifest)
 
 
 def get_document_sps_package(current_version):
     """
-    Retorna SPS_Package()
+    Dada a versão atual do documento registrado no Kernel, retorna um objeto de
+    SPS_Package
+
+    Args:
+        current_version (str): a versão atual do documento registrado no Kernel
+
+    Returns:
+        SPS_Package
+
+    Raises:
+        GetSPSPackageFromDocManifestException
     """
-    return SPS_Package(etree.XML(current_version["data"]))
+    response = requests.get(current_version["data"])
+    try:
+        xml_str = response.text.encode("utf-8")
+        xml_tree = etree.fromstring(xml_str)
+        return SPS_Package(xml_tree, '')
+    except (
+            AttributeError,
+            lxml.etree.Error,
+            ) as e:
+        raise GetSPSPackageFromDocManifestException(
+                "Unable to get SPS Package of %s: %s",
+                current_version["data"],
+                e
+            )
 
 
 def get_document_data_to_generate_uri(current_version, sps_package=None):
