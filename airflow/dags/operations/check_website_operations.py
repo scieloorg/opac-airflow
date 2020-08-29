@@ -235,19 +235,29 @@ def get_document_webpages_data(doc_id, doc_data_list, doc_webpage_uri_function=N
 
     Returns:
         dict: mesmo conteúdo da lista `doc_data_list`, sendo que cada elemento
-            terá as chaves novas, "uri" e "doc_id"
+            terá as chaves novas, "uri" e "doc_id".
+            `uri` é do site novo ou antigo, preferencialmente novo, mas o valor
+            gerado dependerá dos dados presentes em `doc_data_list`
     """
-    acron = None
-    pid_v2 = None
-    if len(doc_data_list):
-        doc_data = doc_data_list[0]
-        acron = doc_data.get("acron")
-        pid_v2 = doc_data.get("pid_v2")
-    doc_webpage_uri_function = doc_webpage_uri_function or get_classic_document_webpage_uri
+    doc_data = doc_data_list[0]
+    acron = doc_data.get("acron")
+    pid_v2 = doc_data.get("pid_v2")
+
+    if doc_webpage_uri_function is None:
+        if acron:
+            doc_webpage_uri_function = get_document_webpage_uri
+        elif pid_v2:
+            doc_webpage_uri_function = get_classic_document_webpage_uri
+
+    if doc_webpage_uri_function is None:
+        raise ValueError(
+            "get_document_webpages_data requires `acron` or `pid_v2`")
+
     if doc_webpage_uri_function == get_document_webpage_uri and not acron:
         raise ValueError("get_document_webpages_data requires `acron`")
     if doc_webpage_uri_function == get_classic_document_webpage_uri and not is_pid_v2(pid_v2):
         raise ValueError("get_document_webpages_data requires `pid v2`")
+
     uri_items = []
     for doc_data in doc_data_list:
         data = {
@@ -312,6 +322,8 @@ def filter_uri_list(uri_items, netlocs):
     items = []
     for uri in uri_items:
         parsed = urlparse(uri)
+        print(parsed.netloc)
+        print(netlocs)
         if parsed.netloc in netlocs:
             items.append(uri)
     return items
