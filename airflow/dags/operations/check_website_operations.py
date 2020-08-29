@@ -387,7 +387,7 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
             idiomas
         assets_data (list of dict): dicionário contém dados do ativo digital
             como URI e identificação
-        netlocs (list): lista de URL de sites para selecionar as URIs
+        netlocs (list): lista de URL da object store para selecionar as URIs
             encontradas dentro HTML para serem verificadas as presenças de
             ativos digitais e _webpages_ do documento
 
@@ -681,7 +681,7 @@ def check_document_availability(doc_id, website_url, netlocs):
     """
     LAST_VERSION = -1
     document_manifest = get_document_manifest(doc_id)
-    current_version = document_manifest["webpages"][LAST_VERSION]
+    current_version = document_manifest["versions"][LAST_VERSION]
     doc_data = get_document_data_to_generate_uri(current_version)
 
     document_webpages_data = get_document_webpages_data(doc_id, doc_data)
@@ -693,12 +693,12 @@ def check_document_availability(doc_id, website_url, netlocs):
                 assets_data,
                 netlocs
             )
-    renditions_availability, q_unavailable_enditions = check_document_renditions_availability(
+    renditions_availability, q_unavailable_renditions = check_document_renditions_availability(
                 renditions_data
             )
     assets_availability, q_unavailable_assets = check_document_assets_availability(assets_data)
     summarized.update({
-        "unavailable renditions": q_unavailable_enditions,
+        "unavailable renditions": q_unavailable_renditions,
         "unavailable assets": q_unavailable_assets,
         "total doc webpages": len(doc_data),
         "total doc renditions": len(renditions_data),
