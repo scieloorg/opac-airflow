@@ -322,10 +322,12 @@ def filter_uri_list(uri_items, netlocs):
     items = []
     for uri in uri_items:
         parsed = urlparse(uri)
-        print(parsed.netloc)
-        print(netlocs)
         if parsed.netloc in netlocs:
-            items.append(uri)
+            if parsed.netloc == "":
+                if parsed.path.startswith("/") and len(parsed.path) > 1:
+                    items.append(uri)
+            else:
+                items.append(uri)
     return items
 
 
@@ -355,10 +357,10 @@ def check_document_html(uri, assets_data, other_webpages_data, netlocs=None):
     """
     response = do_request(uri, requests.get)
     result = eval_response(response)
-    total_expected_components = len(assets_data) + len(other_webpages_data)
+    expected_components_qty = len(assets_data) + len(other_webpages_data)
     if result["available"] is False:
-        result["total expected components"] = total_expected_components
-        result["missing components quantity"] = total_expected_components
+        result["expected components quantity"] = expected_components_qty
+        result["missing components quantity"] = expected_components_qty
         return result
 
     content = response.text
@@ -374,7 +376,7 @@ def check_document_html(uri, assets_data, other_webpages_data, netlocs=None):
     )
     result.update({
         "components": components_result,
-        "total expected components": total_expected_components,
+        "expected components quantity": expected_components_qty,
         "missing components quantity": missing,
     })
 
@@ -439,7 +441,7 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
             missing_components += components_result[
                 "missing components quantity"]
             result.update(components_result)
-            total_components += result["total expected components"]
+            total_components += result["expected components quantity"]
             report.append(result)
         else:
             result.update(
@@ -449,9 +451,9 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
         if result["available"] is False:
             unavailable += 1
     summarized = {
-        "unavailable doc webpages": unavailable,
-        "missing components": missing_components,
+        "total missing components": missing_components,
         "total expected components": total_components,
+        "total unavailable doc webpages": unavailable,
     }
     return report, summarized
 
@@ -699,7 +701,13 @@ def check_document_availability(doc_id, website_url, netlocs):
     document_webpages_data = get_document_webpages_data(doc_id, doc_data)
     assets_data = get_document_assets_data(current_version)
     renditions_data = get_document_renditions_data(current_version)
-    webpages_availability, summarized = check_document_webpages_availability(
+
+    summarized = {
+        "total doc webpages": len(doc_data),
+        "total doc renditions": len(renditions_data),
+        "total doc assets": len(assets_data),
+    }
+    webpages_availability, numbers = check_document_webpages_availability(
                 website_url,
                 document_webpages_data,
                 assets_data,
@@ -709,12 +717,10 @@ def check_document_availability(doc_id, website_url, netlocs):
                 renditions_data
             )
     assets_availability, q_unavailable_assets = check_document_assets_availability(assets_data)
+    summarized.update(numbers)
     summarized.update({
-        "unavailable renditions": q_unavailable_renditions,
-        "unavailable assets": q_unavailable_assets,
-        "total doc webpages": len(doc_data),
-        "total doc renditions": len(renditions_data),
-        "total doc assets": len(assets_data),
+        "total unavailable renditions": q_unavailable_renditions,
+        "total unavailable assets": q_unavailable_assets,
     })
     return {
         "summary": summarized,

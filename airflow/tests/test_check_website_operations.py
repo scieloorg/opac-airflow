@@ -9,6 +9,7 @@ from operations.check_website_operations import (
     check_uri_list,
     check_website_uri_list,
     find_uri_items,
+    filter_uri_list,
     get_document_webpage_uri,
     get_document_webpages_data,
     check_uri_items_expected_in_webpage,
@@ -19,8 +20,10 @@ from operations.check_website_operations import (
     format_document_webpage_availability_to_register,
     format_document_items_availability_to_register,
     get_kernel_document_id_from_classic_document_uri,
+    get_classic_document_webpage_uri,
     do_request,
     is_valid_response,
+    check_document_availability,
 )
 
 
@@ -327,6 +330,40 @@ class TestFindUriItems(TestCase):
         result = find_uri_items(content)
         self.assertEqual(expected, result)
 
+    def test_find_uri_items(self):
+        expected = [
+            "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/8972aaa0916382b6f2d51a6d22732bb083851913.png"
+        ]
+        result = find_uri_items("""
+            <body>
+            <img src="https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/8972aaa0916382b6f2d51a6d22732bb083851913.png"/>
+            </body>
+        """)
+        self.assertEqual(expected, result)
+
+
+class TestFilterUriList(TestCase):
+
+    def test_filter_uri_list(self):
+        uri_items = [
+            "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/8972aaa0916382b6f2d51a6d22732bb083851913.png"
+        ]
+        expected = [
+            "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/8972aaa0916382b6f2d51a6d22732bb083851913.png"
+        ]
+        result = filter_uri_list(uri_items, netlocs=["minio.scielo.br"])
+        self.assertEqual(expected, result)
+
+    def test_filter_uri_list_returns_path_started_with_slash(self):
+        expected = [
+            "/j/acron/esa",
+        ]
+        uri_list = [
+            "/j/acron/esa",
+            "#end"
+        ]
+        result = filter_uri_list(uri_list, netlocs=[""])
+        self.assertEqual(expected, result)
 
 class TestGetDocumentUri(TestCase):
 
@@ -455,12 +492,12 @@ class TestGetDocumentWebPagesData(TestCase):
     def test_get_document_webpages_data_raises_value_error_if_acron_is_none_and_using_new_uri_pattern(self):
         doc_id = "ldld"
         with self.assertRaises(ValueError):
-            get_document_webpages_data(doc_id, [], get_document_webpage_uri)
+            get_document_webpages_data(doc_id, [{}], get_document_webpage_uri)
 
     def test_get_document_webpages_data_raises_value_error_if_acron_is_empty_str_and_using_new_uri_pattern(self):
         doc_id = "ldld"
         with self.assertRaises(ValueError):
-            get_document_webpages_data(doc_id, [], get_document_webpage_uri)
+            get_document_webpages_data(doc_id, [{}], get_document_webpage_uri)
 
     def test_get_document_webpages_data_returns_uri_data_list_using_classic_pattern(self):
         doc_id = "ldld"
@@ -552,7 +589,7 @@ class TestGetDocumentWebPagesData(TestCase):
                 ],
             },
         ]
-        result = get_document_webpages_data(doc_id, doc_data_list)
+        result = get_document_webpages_data(doc_id, doc_data_list, get_classic_document_webpage_uri)
         self.assertEqual(expected, result)
 
 
@@ -1060,7 +1097,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     },
                 ],
                 "missing components quantity": 0,
-                "total expected components": 5,
+                "expected components quantity": 5,
             },
             {
                 "lang": "en",
@@ -1129,7 +1166,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     },
                 ],
                 "missing components quantity": 0,
-                "total expected components": 5,
+                "expected components quantity": 5,
             },
             {
                 "lang": "es",
@@ -1146,8 +1183,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         ]
         result, summary = check_document_webpages_availability(website_url, doc_data_list, assets_data)
         self.assertDictEqual({
-                "unavailable doc webpages": 0,
-                "missing components": 0,
+                "total unavailable doc webpages": 0,
+                "total missing components": 0,
                 "total expected components": 10,
             },
             summary
@@ -1225,7 +1262,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     },
                 ],
                 "missing components quantity": 0,
-                "total expected components": 1,
+                "expected components quantity": 1,
             },
             {
                 "lang": "en",
@@ -1243,8 +1280,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         result, summary = check_document_webpages_availability(website_url, doc_data_list, assets_data)
         self.assertDictEqual(
             {
-                "unavailable doc webpages": 1,
-                "missing components": 0,
+                "total unavailable doc webpages": 1,
+                "total missing components": 0,
                 "total expected components": 1,
             },
             summary
@@ -1328,7 +1365,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     },
                 ],
                 "missing components quantity": 1,
-                "total expected components": 1,
+                "expected components quantity": 1,
                 "existing_uri_items_in_html": [],
             },
             {
@@ -1347,8 +1384,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         result, summary = check_document_webpages_availability(
             website_url, doc_data_list, assets_data)
         self.assertDictEqual({
-                "unavailable doc webpages": 0,
-                "missing components": 1,
+                "total unavailable doc webpages": 0,
+                "total missing components": 1,
                 "total expected components": 1,
             },
             summary
@@ -1429,7 +1466,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     },
                 ],
                 "missing components quantity": 0,
-                "total expected components": 1,
+                "expected components quantity": 1,
             },
             {
                 "lang": "es",
@@ -1443,14 +1480,14 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "start time": "start timestamp",
                 "end time": "end timestamp",
                 "missing components quantity": 1,
-                "total expected components": 1,
+                "expected components quantity": 1,
             },
         ]
         result, summary = check_document_webpages_availability(website_url, doc_data_list, assets_data)
         self.assertDictEqual(
             {
-                "unavailable doc webpages": 1,
-                "missing components": 1,
+                "total unavailable doc webpages": 1,
+                "total missing components": 1,
                 "total expected components": 2,
             },
             summary
@@ -1541,7 +1578,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     },
                 ],
                 "missing components quantity": 1,
-                "total expected components": 1,
+                "expected components quantity": 1,
                 "existing_uri_items_in_html": []
             },
             {
@@ -1565,15 +1602,15 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                     },
                 ],
                 "missing components quantity": 0,
-                "total expected components": 1,
+                "expected components quantity": 1,
             },
         ]
         result, summary = check_document_webpages_availability(
             website_url, doc_data_list, assets_data)
         self.assertDictEqual(
             {
-                "unavailable doc webpages": 0,
-                "missing components": 1,
+                "total unavailable doc webpages": 0,
+                "total missing components": 1,
                 "total expected components": 2,
             },
             summary
@@ -1596,7 +1633,7 @@ class TestCheckDocumentHtml(TestCase):
             "start time": "start timestamp",
             "end time": "end timestamp",
             "missing components quantity": 0,
-            "total expected components": 0,
+            "expected components quantity": 0,
         }
         result = check_document_html(uri, assets_data, other_webpages_data)
         self.assertEqual(expected, result)
@@ -1617,7 +1654,7 @@ class TestCheckDocumentHtml(TestCase):
             "end time": "end timestamp",
             "components": [],
             "missing components quantity": 0,
-            "total expected components": 0,
+            "expected components quantity": 0,
         }
         result = check_document_html(uri, assets_data, other_webpages_data)
         self.assertEqual(expected, result)
@@ -1688,7 +1725,7 @@ class TestCheckDocumentHtml(TestCase):
                 },
             ],
             "missing components quantity": 2,
-            "total expected components": 2,
+            "expected components quantity": 2,
             "existing_uri_items_in_html": []
         }
         result = check_document_html(uri, assets_data, other_webpages_data)
@@ -1757,7 +1794,7 @@ class TestCheckDocumentHtml(TestCase):
                 },
             ],
             "missing components quantity": 0,
-            "total expected components": 2,
+            "expected components quantity": 2,
         }
         result = check_document_html(uri, assets_data, other_webpages_data)
         self.assertEqual(expected, result)
@@ -1905,7 +1942,7 @@ class TestFormatDocumentVersionsAvailabilityToRegister(TestCase):
                 },
             ],
             "missing components quantity": 1,
-            "total expected components": 3,
+            "expected components quantity": 3,
             "existing_uri_items_in_html": [
                 '/j/acron/a/DOC/?format=pdf&lang=en',
                 'https://1234-1234-acron-45-9-12345-f01.jpg']
@@ -2022,7 +2059,7 @@ class TestFormatDocumentItemsAvailabilityToRegister(TestCase):
         self.assertEqual(expected, result)
 
 
-class Testget_kernel_document_id_from_classic_document_uri(TestCase):
+class TestGetKernelDocumentIdFromClassicDocumentUri(TestCase):
 
     @patch("operations.check_website_operations.do_request")
     def test_get_kernel_document_id_from_classic_document_uri_returns_doc_id(self, mock_do_request):
@@ -2043,3 +2080,327 @@ class Testget_kernel_document_id_from_classic_document_uri(TestCase):
         expected = None
         result = get_kernel_document_id_from_classic_document_uri(classic_uri)
         self.assertEqual(expected, result)
+
+
+class TestCheckDocumentAvailability(TestCase):
+
+    def get_document_manifest_pt(self):
+        return """{
+          "id": "BrT6FWNFFR3KBKHZVPN8Y9N",
+          "versions": [
+            {
+              "data": "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/580326b45763246eb9eaaac55e660a7aaa3ff686.xml",
+              "assets": {
+                "1809-4457-esa-s1413-41522020182506-gf1.png": [
+                  [
+                    "2020-08-10T11:38:46.759190Z",
+                    "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/8972aaa0916382b6f2d51a6d22732bb083851913.png"
+                  ]
+                ],
+                "1809-4457-esa-s1413-41522020182506-gf1.thumbnail.jpg": [
+                  [
+                    "2020-08-10T11:38:46.759305Z",
+                    "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/3c30f9fec6947d47f404043fe08aaca8bc51b1fb.jpg"
+                  ]
+                ],
+                "1809-4457-esa-s1413-41522020182506-gf2.png": [
+                  [
+                    "2020-08-10T11:38:46.759419Z",
+                    "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/36080074121a60c8e28fa1b28876e1adad4fe5d7.png"
+                  ]
+                ],
+                "1809-4457-esa-s1413-41522020182506-gf2.thumbnail.jpg": [
+                  [
+                    "2020-08-10T11:38:46.759568Z",
+                    "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/b5b4bb9bc267794ececde428a33f5af705b0b1a6.jpg"
+                  ]
+                ],
+                "1809-4457-esa-s1413-41522020182506-gf3.png": [
+                  [
+                    "2020-08-10T11:38:46.759706Z",
+                    "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/73a98051b6cf623aeb1146017ceb0b947df75ec8.png"
+                  ]
+                ],
+                "1809-4457-esa-s1413-41522020182506-gf3.thumbnail.jpg": [
+                  [
+                    "2020-08-10T11:38:46.759859Z",
+                    "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/df14e57dc001993fd7f3fbcefa642e40e6964224.jpg"
+                  ]
+                ]
+              },
+              "timestamp": "2020-08-10T11:38:46.758253Z",
+              "renditions": [
+                {
+                  "filename": "1809-4457-esa-s1413-41522020182506.pdf",
+                  "data": [
+                    {
+                      "timestamp": "2020-08-10T11:38:47.049682Z",
+                      "url": "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/409acdeb8f632022d41b3d94a3f00a837867937c.pdf",
+                      "size_bytes": 289032
+                    }
+                  ],
+                  "mimetype": "application/pdf",
+                  "lang": "pt"
+                }
+              ]
+            }
+          ],
+          "_id": "BrT6FWNFFR3KBKHZVPN8Y9N"
+        }
+        """
+
+    def read_file(self, file_path):
+        with open(file_path, "r") as fp:
+            c = fp.read()
+        return c
+
+    @patch("operations.check_website_operations.datetime")
+    @patch("operations.check_website_operations.requests.head")
+    @patch("operations.check_website_operations.requests.get")
+    @patch("operations.docs_utils.hooks.kernel_connect")
+    def test_check_document_availability_returns_doc_is_totally_complete(
+            self, mock_doc_manifest, mock_get, mock_head, mock_dt):
+        doc_id = "BrT6FWNFFR3KBKHZVPN8Y9N"
+        website_url = "https://www.scielo.br"
+        netlocs = ["minio.scielo.br", ""]
+        mock_doc_manifest.return_value = self.get_document_manifest_pt()
+        mock_get.side_effect = [
+            MockResponse(
+                200,
+                self.read_file(
+                    "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.xml")),
+            MockResponse(
+                200,
+                self.read_file(
+                    "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N_pt.html")),
+        ]
+        mock_head.side_effect = [MockResponse(200)] * 8
+        mock_dt.utcnow.side_effect = [
+            "start timestamp", "end timestamp"
+        ] * 20
+
+        webpages_availability = [{
+            "lang": "pt",
+            "format": "html",
+            "pid_v2": "S1413-41522020005004201",
+            "acron": "esa",
+            "doc_id_for_human": "1809-4457-esa-ahead-S1413-41522020182506",
+            "doc_id": "BrT6FWNFFR3KBKHZVPN8Y9N",
+            "uri": "https://www.scielo.br/j/esa/a/BrT6FWNFFR3KBKHZVPN8Y9N?format=html&lang=pt",
+            "available": True,
+            "status code": 200,
+            "start time": "start timestamp",
+            "end time": "end timestamp",
+            "components": [
+                {
+                    "type": "asset",
+                    "id": "1809-4457-esa-s1413-41522020182506-gf1",
+                    "present_in_html": [
+                        "https://minio.scielo.br/documentstore/1809-4457/"
+                        "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                        "8972aaa0916382b6f2d51a6d22732bb083851913.png",
+                    ],
+                    "absent_in_html": [
+                        "https://minio.scielo.br/documentstore/1809-4457/"
+                        "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                        "3c30f9fec6947d47f404043fe08aaca8bc51b1fb.jpg",
+                    ],
+                },
+                {
+                    "type": "asset",
+                    "id": "1809-4457-esa-s1413-41522020182506-gf2",
+                    "present_in_html": [
+                    ],
+                    "absent_in_html": [
+                        "https://minio.scielo.br/documentstore/1809-4457/"
+                        "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                        "36080074121a60c8e28fa1b28876e1adad4fe5d7.png",
+                        "https://minio.scielo.br/documentstore/1809-4457/"
+                        "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                        "b5b4bb9bc267794ececde428a33f5af705b0b1a6.jpg",
+                    ],
+                },
+                {
+                    "type": "asset",
+                    "id": "1809-4457-esa-s1413-41522020182506-gf3",
+                    "present_in_html": [
+                    ],
+                    "absent_in_html": [
+                        "https://minio.scielo.br/documentstore/1809-4457/"
+                        "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                        "73a98051b6cf623aeb1146017ceb0b947df75ec8.png",
+                        "https://minio.scielo.br/documentstore/1809-4457/"
+                        "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                        "df14e57dc001993fd7f3fbcefa642e40e6964224.jpg",
+                    ],
+                },
+                {
+                    "type": "pdf",
+                    "id": "pt",
+                    "present_in_html": [
+                        "/j/esa/a/BrT6FWNFFR3KBKHZVPN8Y9N/?format=pdf&lang=pt",
+                    ],
+                },
+            ],
+            "missing components quantity": 2,
+            "expected components quantity": 4,
+            "existing_uri_items_in_html": [
+                '/about/',
+                '/j/esa/',
+                '/j/esa/a/BrT6FWNFFR3KBKHZVPN8Y9N/?format=pdf&lang=pt',
+                '/j/esa/a/BrT6FWNFFR3KBKHZVPN8Y9N/?lang=pt',
+                '/j/esa/a/S1413-41522020005004201/?format=pdf&lang=pt',
+                '/j/esa/a/TWyHMQBS4H6tyrXPZhcWxps/',
+                '/j/esa/a/nhg9DgZSsvnhXjq7qCN7cvc/',
+                '/j/esa/i/9999.nahead/',
+                '/journal/esa/about/#about',
+                '/journal/esa/about/#contact',
+                '/journal/esa/about/#editors',
+                '/journal/esa/about/#instructions',
+                '/journal/esa/feed/',
+                '/journals/alpha?status=current',
+                '/journals/thematic?status=current',
+                '/media/images/esa_glogo.gif',
+                '/set_locale/es/',
+                '/set_locale/pt_BR/',
+                '/static/img/oa_logo_32.png',
+                '/static/js/scielo-article-min.js',
+                '/static/js/scielo-bundle-min.js',
+                '/static/js/scienceopen.js',
+                'https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/8972aaa0916382b6f2d51a6d22732bb083851913.png'
+            ],
+        }]
+        # https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/409acdeb8f632022d41b3d94a3f00a837867937c.pdf
+        renditions_availability = [
+            {
+                "lang": "pt",
+                "uri": (
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "409acdeb8f632022d41b3d94a3f00a837867937c.pdf"
+                ),
+                "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
+            }
+        ]
+        assets_availability = [
+            {
+                "asset_id": "1809-4457-esa-s1413-41522020182506-gf1.png",
+                "uri": (
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "8972aaa0916382b6f2d51a6d22732bb083851913.png"
+                ),
+                "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
+            },
+            {
+                "asset_id": "1809-4457-esa-s1413-41522020182506-gf1.thumbnail.jpg",
+                "uri": (
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "3c30f9fec6947d47f404043fe08aaca8bc51b1fb.jpg"
+                ),
+                "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
+            },
+            {
+                "asset_id": "1809-4457-esa-s1413-41522020182506-gf2.png",
+                "uri": (
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "36080074121a60c8e28fa1b28876e1adad4fe5d7.png"
+                ),
+                "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
+            },
+            {
+                "asset_id": "1809-4457-esa-s1413-41522020182506-gf2.thumbnail.jpg",
+                "uri": (
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "b5b4bb9bc267794ececde428a33f5af705b0b1a6.jpg"
+                ),
+                "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
+            },
+            {
+                "asset_id": "1809-4457-esa-s1413-41522020182506-gf3.png",
+                "uri": (
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "73a98051b6cf623aeb1146017ceb0b947df75ec8.png"
+                ),
+                "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
+            },
+            {
+                "asset_id": "1809-4457-esa-s1413-41522020182506-gf3.thumbnail.jpg",
+                "uri": (
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "df14e57dc001993fd7f3fbcefa642e40e6964224.jpg"
+                ),
+                "available": True,
+                "status code": 200,
+                "start time": "start timestamp",
+                "end time": "end timestamp",
+            },
+        ]
+        expected = {
+            "summary": {
+                "total doc webpages": 2,
+                "total doc renditions": 1,
+                "total doc assets": 3,
+                "total missing components": 2,
+                "total expected components": 4,
+                "total unavailable doc webpages": 0,
+                "total unavailable renditions": 0,
+                "total unavailable assets": 0,
+            },
+            "detail": {
+                "doc webpages availability": webpages_availability,
+                "doc renditions availability": renditions_availability,
+                "doc assets availability": assets_availability,
+            },
+        }
+        result = check_document_availability(doc_id, website_url, netlocs)
+        self.assertDictEqual(expected["summary"], result["summary"])
+
+        self.assertListEqual(
+            expected["detail"]["doc renditions availability"],
+            result["detail"]["doc renditions availability"]
+        )
+        self.assertListEqual(
+            expected["detail"]["doc assets availability"],
+            result["detail"]["doc assets availability"]
+        )
+
+        _expected = expected["detail"]["doc webpages availability"][0]
+        _result = result["detail"]["doc webpages availability"][0]
+
+        for name in ("missing components quantity", "expected components quantity", "existing_uri_items_in_html"):
+            with self.subTest(name):
+                self.assertEqual(
+                    _expected.get(name),
+                    _result.get(name)
+                )
+        for i in range(4):
+            with self.subTest(i):
+                self.assertDictEqual(
+                    _expected["components"][i],
+                    _result["components"][i]
+                )
+

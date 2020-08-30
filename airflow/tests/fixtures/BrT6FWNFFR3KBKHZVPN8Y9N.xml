@@ -1,0 +1,2734 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.1 20151215//EN" "http://jats.nlm.nih.gov/publishing/1.1/JATS-journalpublishing1.dtd">
+<article xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:xlink="http://www.w3.org/1999/xlink" article-type="research-article" dtd-version="1.1" specific-use="sps-1.9" xml:lang="pt">
+  <front>
+    <journal-meta>
+      <journal-id journal-id-type="publisher-id">esa</journal-id>
+      <journal-title-group>
+        <journal-title>Engenharia Sanitaria e Ambiental</journal-title>
+        <abbrev-journal-title abbrev-type="publisher">Eng. Sanit. Ambient.</abbrev-journal-title>
+      </journal-title-group>
+      <issn pub-type="ppub">1413-4152</issn>
+      <issn pub-type="epub">1809-4457</issn>
+      <publisher>
+        <publisher-name>Associação Brasileira de Engenharia Sanitária e Ambiental - ABES</publisher-name>
+      </publisher>
+    </journal-meta>
+    <article-meta>
+      <article-id specific-use="scielo-v3" pub-id-type="publisher-id">BrT6FWNFFR3KBKHZVPN8Y9N</article-id>
+      <article-id specific-use="scielo-v2" pub-id-type="publisher-id">S1413-41522020005004201</article-id>
+      <article-id pub-id-type="doi">10.1590/S1413-41522020182506</article-id>
+      <article-id pub-id-type="other">04201</article-id>
+      <article-categories>
+        <subj-group subj-group-type="heading">
+          <subject>Artigo Técnico</subject>
+        </subj-group>
+      </article-categories>
+      <title-group>
+        <article-title>Biossólido no estabelecimento de espécies herbáceas e nos atributos químicos e microbiológicos em solo impactado pela mineração de carvão</article-title>
+        <trans-title-group xml:lang="en">
+          <trans-title>Biosolids in the establishment of herbaceous species and in chemical and microbiological attributes in soil impacted by coal mining</trans-title>
+        </trans-title-group>
+      </title-group>
+      <contrib-group>
+        <contrib contrib-type="author">
+          <contrib-id contrib-id-type="orcid">0000-0003-1059-7579</contrib-id>
+          <name>
+            <surname>Kitamura</surname>
+            <given-names>Natália Caron</given-names>
+          </name>
+          <xref ref-type="aff" rid="aff1">
+            <sup>1</sup>
+          </xref>
+          <xref ref-type="corresp" rid="c1">*</xref>
+        </contrib>
+        <contrib contrib-type="author">
+          <contrib-id contrib-id-type="orcid">0000-0002-0347-0003</contrib-id>
+          <name>
+            <surname>Lourenzi</surname>
+            <given-names>Cledimar Rogério</given-names>
+          </name>
+          <xref ref-type="aff" rid="aff1">
+            <sup>1</sup>
+          </xref>
+        </contrib>
+        <contrib contrib-type="author">
+          <contrib-id contrib-id-type="orcid">0000-0002-8034-8597</contrib-id>
+          <name>
+            <surname>Bueno</surname>
+            <given-names>Alcenir Claudio</given-names>
+          </name>
+          <xref ref-type="aff" rid="aff1">
+            <sup>1</sup>
+          </xref>
+        </contrib>
+        <contrib contrib-type="author">
+          <contrib-id contrib-id-type="orcid">0000-0001-7410-2817</contrib-id>
+          <name>
+            <surname>Pinto</surname>
+            <given-names>Antonio Lourenço</given-names>
+          </name>
+          <xref ref-type="aff" rid="aff1">
+            <sup>1</sup>
+          </xref>
+        </contrib>
+        <contrib contrib-type="author">
+          <contrib-id contrib-id-type="orcid">0000-0002-5443-6614</contrib-id>
+          <name>
+            <surname>Soares</surname>
+            <given-names>Cláudio Roberto Fonseca Sousa</given-names>
+          </name>
+          <xref ref-type="aff" rid="aff1">
+            <sup>1</sup>
+          </xref>
+        </contrib>
+        <contrib contrib-type="author">
+          <contrib-id contrib-id-type="orcid">0000-0001-8347-003X</contrib-id>
+          <name>
+            <surname>Giachini</surname>
+            <given-names>Admir José</given-names>
+          </name>
+          <xref ref-type="aff" rid="aff1">
+            <sup>1</sup>
+          </xref>
+        </contrib>
+        <aff id="aff1">
+          <label>1</label>
+          <institution content-type="original">Universidade Federal de Santa Catarina - Florianópolis (SC), Brasil.</institution>
+          <institution content-type="orgname">Universidade Federal de Santa Catarina</institution>
+          <addr-line>
+            <city>Florianópolis</city>
+            <state>SC</state>
+          </addr-line>
+          <country country="BR">Brazil</country>
+        </aff>
+      </contrib-group>
+      <author-notes>
+        <corresp id="c1">
+          <label>*</label>
+          <bold>Autora correspondente:</bold>
+          <email>natalia.caron03@gmail.com</email>
+        </corresp>
+      </author-notes>
+      <pub-date date-type="pub" publication-format="electronic">
+        <day>03</day>
+        <month>08</month>
+        <year>2020</year>
+      </pub-date>
+      <history>
+        <date date-type="received">
+          <day>10</day>
+          <month>07</month>
+          <year>2017</year>
+        </date>
+        <date date-type="accepted">
+          <day>11</day>
+          <month>06</month>
+          <year>2019</year>
+        </date>
+      </history>
+      <permissions>
+        <license license-type="open-access" xlink:href="https://creativecommons.org/licenses/by/4.0/" xml:lang="pt">
+          <license-p>Este é um artigo publicado em acesso aberto sob uma licença Creative Commons</license-p>
+        </license>
+      </permissions>
+      <abstract>
+        <title>RESUMO</title>
+        <p>O presente estudo tem como objetivo avaliar o efeito da aplicação de diferentes concentrações de biossólido de lodo de esgoto, submetido a tratamento térmico, no estabelecimento de espécies herbáceas (aveia preta, ervilhaca e azevém) e nos atributos químicos e microbiológicos de um solo degradado pela mineração de carvão. O experimento foi instalado em área degradada pela mineração de carvão, localizada no munícipio de Treviso (SC), sendo os tratamentos compostos pelas concentrações de 0, 6,25, 100, 250 e 500 Mg ha<sup>-1</sup> de biossólido, em parcelas de 2×2 m. Foram cultivadas espécies de aveia preta, ervilhaca e azevém de maneira consorciada, avaliando-se os parâmetros das plantas e os atributos químicos do solo nas profundidades 0-5, 5-10 e 10-20 cm. O biossólido proporcionou a elevação do pH do solo e o aumento dos teores disponíveis de P, K e carbono orgânico total e não influenciou na colonização micorrízica, na respiração basal do solo e na nodulação radicular. O uso do resíduo biossólido como substrato em áreas degradadas é uma alternativa para sua disposição final pela economia ao utilizá-lo como fertilizante, além dos benefícios ambientais, associados ao seu uso.</p>
+      </abstract>
+      <trans-abstract xml:lang="en">
+        <title>ABSTRACT</title>
+        <p>This study aims to evaluate the effects of different concentrations of sewage sludge biosolid concentrations, submitted to thermal treatment, in the establishment of herbaceous species (black oats, vetches, and ryegrass) and in the chemical and microbiological attributes of a soil degraded by coal mining. The experiment was installed in an area degraded by coal mining, in Treviso/SC, with treatments composed of concentrations of 0; 6.25; 100; 250; and 500 Mg ha<sup>-1</sup> of biosolids, in 2×2 m plots. Species of black oat, vetch, and ryegrass were grown in a consortium manner, evaluating the plant parameters and chemical attributes of the soil at depths 0-5, 5-10, and 10-20 cm. The biosolids provided improvements in soil fertility, such as pH elevation, increased levels available of P, K, and total organic carbon, in addition to not influencing mycorrhizal colonization, basal soil respiration, and root nodulation. The use of biosolid waste as a substrate in degraded areas is an alternative to its final disposal due to the economy when using it as a fertilizer, in addition to the environmental benefits associated with its use.</p>
+      </trans-abstract>
+      <kwd-group xml:lang="pt">
+        <title>Palavras-chave:</title>
+        <kwd>áreas degradadas</kwd>
+        <kwd>lodo de esgoto</kwd>
+        <kwd>microrganismos do solo</kwd>
+      </kwd-group>
+      <kwd-group xml:lang="en">
+        <title>Keywords:</title>
+        <kwd>degraded areas</kwd>
+        <kwd>sewage sludge</kwd>
+        <kwd>soil microorganisms</kwd>
+      </kwd-group>
+      <counts>
+        <fig-count count="3"/>
+        <table-count count="4"/>
+        <equation-count count="2"/>
+        <ref-count count="66"/>
+      </counts>
+    </article-meta>
+  </front>
+  <body>
+    <sec sec-type="intro">
+      <title>INTRODUÇÃO</title>
+      <p>A mineração de carvão na região sul de Santa Catarina teve início no século XX, com o descobrimento de dezenas de minas em uma área conhecida atualmente como bacia carbonífera (<xref ref-type="bibr" rid="B62">SOARES; SANTOS; POSSA, 2008</xref>). A mineração de carvão a céu aberto, prática comum na região Carbonífera de Santa Catarina (<xref ref-type="bibr" rid="B10">BELOLLI; QUADROS; GUIDI, 2002</xref>), com a consequente remoção dos horizontes superficiais do solo e da matéria orgânica contida nessa camada, causou sérios problemas em sua estrutura, na disponibilidade de água e nutrientes, além de afetar a atividade biológica do solo (<xref ref-type="bibr" rid="B3">ALEXANDRE, 1999</xref>). Apesar da sua importância como recurso energético, a mineração do carvão é uma atividade potencialmente poluidora, que representa elevado risco ambiental, interferindo na paisagem, na contaminação dos solos e dos recursos hídricos (<xref ref-type="bibr" rid="B1">ALBUQUERQUE <italic>et al</italic>., 2011</xref>; <xref ref-type="bibr" rid="B17">CASTILHOS; FERNANDES, 2011</xref>).</p>
+      <p>As limitações no estabelecimento de plantas em solos degradados pela mineração de carvão ocorrem principalmente pela compactação, pH ácido e baixo teor de nutrientes, especialmente N e P (<xref ref-type="bibr" rid="B50">POLZ, 2008</xref>). Nesse sentido, o fornecimento de uma fonte de matéria orgânica é fundamental para garantir o estabelecimento da vegetação nessas áreas.</p>
+      <p>O biossólido, rico em matéria orgânica e com pH na faixa de 6,5, após sua incorporação aos solos degradados, atua como condicionador, melhorando as propriedades físicas dos solos, aumentando a porosidade e a infiltração de água e facilitando o desenvolvimento radicular (<xref ref-type="bibr" rid="B31">GODOY, 2013</xref>; <xref ref-type="bibr" rid="B52">RIELING <italic>et al</italic>., 2014</xref>). Além disso, melhora as propriedades químicas e biológicas, complexando elementos-traço, armazenando e fornecendo nutrientes às plantas (<xref ref-type="bibr" rid="B46">MELO; MARQUES; MELO, 2001</xref>; <xref ref-type="bibr" rid="B7">ANDREOLI, 2001</xref>; <xref ref-type="bibr" rid="B44">MELFI; MONTES, 2002</xref>).</p>
+      <p>A utilização de doses adequadas de biossólido pode estimular os microrganismos do solo e favorecer a ciclagem de nutrientes (<xref ref-type="bibr" rid="B58">SANTOS; SANTOS; ARAÚJO, 2009</xref>). O comportamento dos microrganismos pode ser um indicador biológico da qualidade do solo e das práticas de manejo empregadas (<xref ref-type="bibr" rid="B19">CHAER; TÓTOLA, 2007</xref>). A respiração basal do solo (RB) é um exemplo de indicador biológico bastante sensível em resposta às alterações no meio (<xref ref-type="bibr" rid="B11">BENIZRI; AMIAUD, 2005</xref>; <xref ref-type="bibr" rid="B8">BAARU <italic>et al</italic>., 2007</xref>). Por isso, ao mesmo tempo que a RB reflete a atividade respiratória de um ambiente com alta produtividade, reflete o estresse provocado no meio por um passivo ambiental (<xref ref-type="bibr" rid="B22">DA SILVA; AZEVEDO; DE-POLLI, 2007</xref>).</p>
+      <p>A legislação brasileira, conforme a Resolução do Conselho Nacional do Meio Ambiente (CONAMA) nº 001/86 (<xref ref-type="bibr" rid="B13">BRASIL, 1986</xref>), preconiza a obrigatoriedade da recuperação de áreas degradadas pela extração de recursos naturais. Em áreas impactadas pela mineração de carvão, a recuperação passa primariamente pelo restabelecimento das funções ecológicas do solo, ou seja, pela mitigação dos problemas químicos e físicos dos solos construídos após a mineração de carvão (<xref ref-type="bibr" rid="B16">CAMPOS <italic>et al</italic>., 2010</xref>).</p>
+      <p>Nesse sentido, a aplicação do biossólido em solos é considerada uma prática que promove a recuperação dos nutrientes e da matéria orgânica, fundamentais ao melhoramento das características dos solos, favorecendo o estabelecimento da vegetação (<xref ref-type="bibr" rid="B39">LARA; ANDREOLI; PEGORINI, 2001</xref>). No Brasil, ainda que a utilização do biossólido de lodo de esgoto esteja em fase de experimentação, alguns estados como Espírito Santo, São Paulo e Distrito Federal já empregam o biossólido em atividades agrícolas sob orientação e monitoramento de institutos de pesquisa (<xref ref-type="bibr" rid="B60">SILVA; RESCK; SHARMA, 2002</xref>; <xref ref-type="bibr" rid="B41">LEMAINSKI; DA SILVA, 2006</xref>). Outro componente de grande importância nos processos de recuperação ambiental de solos impactados é a cobertura vegetal, presente de forma natural ou introduzida no ambiente (<xref ref-type="bibr" rid="B20">CORRÊA; BENTO, 2010</xref>).</p>
+      <p>A utilização de plantas de cobertura capazes de produzir grande quantidade de fitomassa promove a manutenção da cobertura do solo e a proteção contra a radiação solar, reduzindo a perda de água por evaporação (<xref ref-type="bibr" rid="B66">WILDNER; DADALTO, 1992</xref>). Apesar das condições extremas desses ambientes, muitas espécies herbáceas são utilizadas e recomendadas para recuperação de solos de áreas degradadas pela mineração de carvão (<xref ref-type="bibr" rid="B34">INDA <italic>et al</italic>., 2010</xref>; <xref ref-type="bibr" rid="B63">STUMPF <italic>et al</italic>., 2016</xref>), tendo em vista o seu desenvolvimento espontâneo e sua tolerância a ambientes ácidos e de baixa fertilidade (<xref ref-type="bibr" rid="B5">ANDRADE; STONE; SILVEIRA, 2009</xref>).</p>
+      <p>Como o sinergismo existente entre rizóbio e fungos micorrízicos arbusculares (FMA) interfere diretamente na fixação do N e na absorção do P, nutrientes essenciais ao desenvolvimento das plantas (<xref ref-type="bibr" rid="B27">FRANCO <italic>et al</italic>., 1995</xref>), utilizar espécies vegetais nodulíferas e que se associam com FMA torna-se uma ferramenta promissora para a recuperação de solos degradados.</p>
+      <p>Nesse contexto, o presente trabalho buscou avaliar o biossólido de lodo de esgoto, submetido a tratamento térmico, como uma alternativa de uso em programas de recuperação ambiental de áreas degradadas pela mineração de carvão, avaliando-se os atributos químicos do solo e o estabelecimento de espécies herbáceas.</p>
+    </sec>
+    <sec sec-type="methods">
+      <title>METODOLOGIA</title>
+      <p>O experimento foi conduzido em uma área da Carbonífera Metropolitana S/A, localizada no município de Treviso (SC), latitude 28º28'36" Sul, longitude 49º27'28" Oeste. O clima da região é do tipo subtropical constantemente úmido (Cfa), conforme classificação de Köppen, com chuvas bem distribuídas ao longo do ano. A temperatura média anual varia entre 17,0 e 19,3ºC. O solo que predomina na região é do tipo cambissolo (<xref ref-type="bibr" rid="B57">SANTOS <italic>et al</italic>., 2013</xref>), no entanto o solo da área pós-mineração encontra-se bastante descaracterizado pelo intenso revolvimento das camadas e pela deposição de estéreis de mineração na superfície, sendo assim de difícil identificação.</p>
+      <p>O experimento foi implantado no dia 13 de julho de 2016 em, aproximadamente, 500 m<sup>2</sup> de área minerada, a qual recebeu uma camada de 30 cm de solo argiloso. Em seguida, amostras de solo foram coletadas nas camadas de 0-5, 5-10 e 10-20 cm de profundidade, em cinco pontos aleatórios dentro da área de implantação do experimento, para caracterização inicial. O solo foi seco ao ar, e determinaram-se os valores de pH em água (1:1), os teores trocáveis de Al (extraídos por KCl 1 mol L<sup>-1</sup>), os teores disponíveis de P e K (extraídos por Mehlich-1), conforme <xref ref-type="bibr" rid="B64">Tedesco <italic>et al</italic>. (1995</xref>), além do teor de carbono orgânico total (COT), conforme <xref ref-type="bibr" rid="B23">Embrapa (1997</xref>). As características do solo antes da implantação do experimento são apresentadas na <xref ref-type="table" rid="t1">Tabela 1</xref>.</p>
+      <p>
+        <table-wrap id="t1">
+          <label>Tabela 1.</label>
+          <caption>
+            <title>Parâmetros químicos do solo degradado pela mineração de carvão, antes da instalação do experimento de campo, em área pertencente à Carbonífera Metropolitana, Treviso (SC).</title>
+          </caption>
+          <table>
+            <colgroup>
+              <col/>
+              <col/>
+              <col/>
+              <col/>
+              <col/>
+              <col/>
+              <col/>
+            </colgroup>
+            <thead>
+              <tr>
+                <th align="left" rowspan="2">Profundidade (cm)</th>
+                <th align="center" rowspan="2">pH</th>
+                <th align="center">H+Al*</th>
+                <th align="center">Al**</th>
+                <th align="center">P***</th>
+                <th align="center">K****</th>
+                <th align="center">COT</th>
+              </tr>
+              <tr>
+                <th align="center" colspan="2">cmol<sub>c</sub> dm<sup>-3</sup></th>
+                <th align="center" colspan="2">mg kg<sup>-1</sup></th>
+                <th align="center">g kg<sup>-1</sup></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td align="left">0-5</td>
+                <td align="center">3,89</td>
+                <td align="center">2,75</td>
+                <td align="center">9,53</td>
+                <td align="center">16,29</td>
+                <td align="center">13,20</td>
+                <td align="center">15,76</td>
+              </tr>
+              <tr>
+                <td align="left">5-10</td>
+                <td align="center">3,93</td>
+                <td align="center">3,39</td>
+                <td align="center">10,02</td>
+                <td align="center">16,55</td>
+                <td align="center">13,40</td>
+                <td align="center">15,89</td>
+              </tr>
+              <tr>
+                <td align="left">10-20</td>
+                <td align="center">3,84</td>
+                <td align="center">3,45</td>
+                <td align="center">9,40</td>
+                <td align="center">16,71</td>
+                <td align="center">12,00</td>
+                <td align="center">15,02</td>
+              </tr>
+            </tbody>
+          </table>
+          <table-wrap-foot>
+            <fn id="TFN1">
+              <p>*acidez potencial; **alumínio trocável; ***fósforo disponível (Mehlich-1); ****potássio disponível (Mehlich-1); COT carbono orgânico total.</p>
+            </fn>
+          </table-wrap-foot>
+        </table-wrap>
+      </p>
+      <p>O delineamento experimental utilizado foi de blocos inteiramente casualizados, utilizando cinco tratamentos e dez repetições, distribuídos em 50 unidades experimentais de 2 × 2 m. Entre as unidades experimentais, foram deixadas faixas com 1 m de largura, não tratadas. Os tratamentos constituíram-se de concentrações de biossólido de 0, 6,25, 100, 250 e 500 Mg ha<sup>-1</sup>, incorporados ao solo até a profundidade de 10 cm, com auxílio de enxadas. O biossólido utilizado no experimento foi coletado na estação de tratamento de efluentes industriais e sanitários da Empresa Rio Vivo Ambiental Ltda., localizada no município de Brusque (SC). As análises químicas e microbiológicas do biossólido estão descritas nas <xref ref-type="table" rid="t2">Tabelas 2</xref> e <xref ref-type="table" rid="t3">3</xref>, respectivamente. Em cada parcela foram semeadas, a lanço, um consórcio de sementes de aveia preta (<italic>Avena strigosa</italic>), ervilhaca (<italic>Vica sativa</italic>) e azevém (<italic>Lolium multiflorum</italic>) na proporção 4:2:1 (200, 100 e 62,5 kg ha<sup>-1</sup>, respectivamente).</p>
+      <p>
+        <table-wrap id="t2">
+          <label>Tabela 2 -</label>
+          <caption>
+            <title>Características químicas do biossólido coletado na estação de tratamento de esgoto da empresa Rio Vivo Ambiental, Brusque (SC)*.</title>
+          </caption>
+          <table>
+            <colgroup>
+              <col/>
+              <col span="2"/>
+              <col/>
+              <col/>
+              <col/>
+              <col/>
+              <col/>
+              <col/>
+              <col/>
+            </colgroup>
+            <thead>
+              <tr>
+                <th align="center" rowspan="2">pH</th>
+                <th align="center" colspan="2">CO</th>
+                <th align="center">As</th>
+                <th align="center">Ba</th>
+                <th align="center">Cd</th>
+                <th align="center">Pb</th>
+                <th align="center">Cu</th>
+                <th align="center">Cr</th>
+                <th align="center">Hg</th>
+              </tr>
+              <tr>
+                <th align="center" colspan="2">g kg<sup>-1</sup></th>
+                <th align="center" colspan="7">mg kg<sup>-1</sup></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td align="center">6,86</td>
+                <td align="center" colspan="2">87,0</td>
+                <td align="center">&lt; 0,5</td>
+                <td align="center">120,0</td>
+                <td align="center">&lt; 0,05</td>
+                <td align="center">10,0</td>
+                <td align="center">170,0</td>
+                <td align="center">32,0</td>
+                <td align="center">&lt; 0,5</td>
+              </tr>
+              <tr>
+                <td align="center">Mo</td>
+                <td align="center">Ni</td>
+                <td align="center">Se</td>
+                <td align="center">Zn</td>
+                <td align="center">P</td>
+                <td align="center">N</td>
+                <td align="center">K</td>
+                <td align="center">S</td>
+                <td align="center">Ca</td>
+                <td align="center">Mg</td>
+              </tr>
+              <tr>
+                <td align="center" colspan="10">mg kg<sup>-1</sup></td>
+              </tr>
+              <tr>
+                <td align="center">6,0</td>
+                <td align="center">11,0</td>
+                <td align="center">0,6</td>
+                <td align="center">570</td>
+                <td align="center">6.400</td>
+                <td align="center">14.200</td>
+                <td align="center">900</td>
+                <td align="center">1.100</td>
+                <td align="center">2.300</td>
+                <td align="center">1.100</td>
+              </tr>
+            </tbody>
+          </table>
+          <table-wrap-foot>
+            <fn id="TFN2">
+              <p>*Valores representam os teores totais de cada elemento no biossólido.</p>
+            </fn>
+          </table-wrap-foot>
+        </table-wrap>
+      </p>
+      <p>
+        <table-wrap id="t3">
+          <label>Tabela 3 -</label>
+          <caption>
+            <title>Quantificação dos patógenos existentes no biossólido da estação de tratamento de esgoto da empresa Rio Vivo Ambiental, Brusque (SC).</title>
+          </caption>
+          <table>
+            <colgroup>
+              <col/>
+              <col/>
+              <col/>
+              <col/>
+            </colgroup>
+            <thead>
+              <tr>
+                <th align="left">Análise microbiológica</th>
+                <th align="center">LQ</th>
+                <th align="center">Resultado</th>
+                <th align="center">VMP</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td align="left">Coliformes termotolerantes (NMP/g de ST)</td>
+                <td align="center">&lt; 1.600</td>
+                <td align="center">2,20 × 10<sup>7</sup></td>
+                <td align="center">10<sup>3</sup></td>
+              </tr>
+              <tr>
+                <td align="left">Ovos viáveis de helmintos (ovo/g de ST)</td>
+                <td align="center">0,25</td>
+                <td align="center">&lt; 0,25</td>
+                <td align="center">0,25</td>
+              </tr>
+              <tr>
+                <td align="left"><italic>Salmonella spp</italic>. (ovo/g de ST)</td>
+                <td align="center">1</td>
+                <td align="center">&lt; 1</td>
+                <td align="center">10</td>
+              </tr>
+              <tr>
+                <td align="left">Vírus entéricos (NMP/10 g)</td>
+                <td align="center">0,25</td>
+                <td align="center">&lt; 0,25</td>
+                <td align="center">0,25</td>
+              </tr>
+            </tbody>
+          </table>
+          <table-wrap-foot>
+            <fn id="TFN3">
+              <p>LQ: limite de quantificação; VPM: valor máximo permitido; NMP: número mais provável; ST: sólidos totais; UFP: unidade formadora de placa.</p>
+            </fn>
+          </table-wrap-foot>
+        </table-wrap>
+      </p>
+      <p>Ao fim do experimento, em 25 de outubro de 2016, coletaram-se cinco subamostras de solo, nas camadas de 0-5, 5-10 e 10-20 cm de profundidade, com um trado calador. O solo foi separado em duas partes: a primeira parte foi seca ao ar e submetida à análise de pH em água, índice SMP (<xref ref-type="bibr" rid="B59">SHOEMAKER; MCLEAN; PRATT, 1961</xref>), Al trocável, P e K disponível e COT, conforme metodologias citadas anteriormente para a caracterização inicial do solo; a segunda parte do solo foi armazenada a 4ºC, e procedeu-se à contagem de FMA, segundo metodologia descrita por <xref ref-type="bibr" rid="B29">Gerdemann e Nicolson (1963</xref>), e RB, segundo <xref ref-type="bibr" rid="B35">Isermeyer (1952</xref>).</p>
+      <p>A parte aérea das plantas foi coletada no estágio de pleno florescimento em uma área útil de 0,25 m<sup>2</sup>, tomada na parte central de cinco unidades experimentais de cada tratamento, escolhidas ao acaso. Nas amostras do material vegetal, realizou-se a separação das partes aérea e radicular das plantas. A parte área foi medida com auxílio de uma régua graduada de 30 cm e submetida à secagem em estufa de circulação de ar a 60ºC até peso constante, obtendo-se a matéria seca da parte aérea (MSPA). A porção radicular foi lavada em água corrente sobre peneira de 0,5 mm de malha, e 1 g de raízes finas foi coletada, armazenada em cápsulas com solução de formalina-álcool-ácido acético (FAA) para posterior clarificação e coloração com azul de tripano (<xref ref-type="bibr" rid="B49">PHILLIPS; HAYMAN, 1970</xref>), que é o procedimento utilizado para quantificação da taxa de colonização micorrízica, na qual as raízes são analisadas em estereoscópio por meio do método de interseção em placa quadriculada (<xref ref-type="bibr" rid="B30">GIOVANNETTI; MOSSE, 1980</xref>). O restante das raízes foi submetido à secagem em estufa sob as mesmas condições descritas para a secagem da parte aérea, a fim de se obter a matéria seca radicular (MSR).</p>
+      <p>A MSPA e a MSR de cada amostra foram quantificadas, com a balança analítica, após a secagem em estufa a 60ºC, até massa constante. O tecido vegetal seco foi triturado em moinho, em peneiras de 0,5 mm, e determinaram-se os teores de P e N total conforme metodologia descrita por <xref ref-type="bibr" rid="B64">Tedesco <italic>et al</italic>. (1995</xref>).</p>
+      <p>Submeteram-se os dados obtidos à análise de variância, e compararam-se as médias pelo teste de Scott-Knott a 5% de probabilidade utilizando o programa estatístico SISVAR (<xref ref-type="bibr" rid="B25">FERREIRA, 2011</xref>). Os resultados da colonização micorrízica e o número de esporos, antes de serem submetidos à análise de variância, foram normalizados pela transformação conforme <xref ref-type="disp-formula" rid="e1">Equação 1</xref> e <xref ref-type="disp-formula" rid="e2">Equação 2</xref>, respectivamente.</p>
+      <p>
+        <disp-formula id="e1">
+          <mml:math>
+            <mml:mi>y</mml:mi>
+            <mml:mi> </mml:mi>
+            <mml:mo>=</mml:mo>
+            <mml:mi> </mml:mi>
+            <mml:mi>a</mml:mi>
+            <mml:mi>r</mml:mi>
+            <mml:mi>c</mml:mi>
+            <mml:mi> </mml:mi>
+            <mml:mi>s</mml:mi>
+            <mml:mi>e</mml:mi>
+            <mml:mi>n</mml:mi>
+            <mml:mi> </mml:mi>
+            <mml:mo>√</mml:mo>
+            <mml:mi>%</mml:mi>
+            <mml:mi> </mml:mi>
+            <mml:mi>c</mml:mi>
+            <mml:mi>o</mml:mi>
+            <mml:mi>l</mml:mi>
+            <mml:mi>o</mml:mi>
+            <mml:mi>n</mml:mi>
+            <mml:mi>i</mml:mi>
+            <mml:mi>z</mml:mi>
+            <mml:mi>a</mml:mi>
+            <mml:mi>ç</mml:mi>
+            <mml:mi>ã</mml:mi>
+            <mml:mi>o</mml:mi>
+            <mml:mo>/</mml:mo>
+            <mml:mn>100</mml:mn>
+          </mml:math>
+          <label>(Equação 1)</label>
+        </disp-formula>
+      </p>
+      <p>Em que:</p>
+      <def-list id="d1">
+        <def-item>
+          <term>y =</term>
+          <def>
+            <p> variável aleatória.</p>
+          </def>
+        </def-item>
+      </def-list>
+      <p>
+        <disp-formula id="e2">
+          <mml:math>
+            <mml:mi>y</mml:mi>
+            <mml:mi> </mml:mi>
+            <mml:mo>=</mml:mo>
+            <mml:mi> </mml:mi>
+            <mml:msup>
+              <mml:mrow>
+                <mml:mo>(</mml:mo>
+                <mml:mi>x</mml:mi>
+                <mml:mi> </mml:mi>
+                <mml:mo>+</mml:mo>
+                <mml:mi> </mml:mi>
+                <mml:mn>0,5</mml:mn>
+                <mml:mo>)</mml:mo>
+              </mml:mrow>
+              <mml:mrow>
+                <mml:mn>1</mml:mn>
+                <mml:mo>/</mml:mo>
+                <mml:mn>2</mml:mn>
+              </mml:mrow>
+            </mml:msup>
+          </mml:math>
+          <label>(Equação 2)</label>
+        </disp-formula>
+      </p>
+      <p>Em que:</p>
+      <def-list id="d2">
+        <def-item>
+          <term>y =</term>
+          <def>
+            <p> variável aleatória;</p>
+          </def>
+        </def-item>
+        <def-item>
+          <term>x =</term>
+          <def>
+            <p> número de esporos.</p>
+          </def>
+        </def-item>
+      </def-list>
+    </sec>
+    <sec sec-type="results|discussion">
+      <title>RESULTADOS E DISCUSSÃO</title>
+      <p>A aplicação do biossólido não promoveu alteração nos valores de pH do solo em nenhuma das profundidades avaliadas em um mesmo tratamento (<xref ref-type="table" rid="t4">Tabela 4</xref>). Contudo, ao se comparar os solos que receberam 100 e 250 Mg ha<sup>-1</sup>, os maiores valores de pH foram observados na camada 0-5 cm, diminuindo os valores de pH nas demais profundidades (<xref ref-type="table" rid="t4">Tabela 4</xref>). De acordo com a Comissão de Química e Fertilidade do Solo do Rio Grande do Sul e de Santa Catarina (<xref ref-type="bibr" rid="B21">CQFS-RS/SC, 2016</xref>), os valores de pH obtidos são considerados baixos, podendo estar relacionados à presença dos estéreis de mineração e à oxidação da pirita (<xref ref-type="bibr" rid="B37">KOPPE; COSTA, 2008</xref>). O pH do solo é o atributo que interfere de forma mais intensa na disponibilidade de nutrientes no solo, sendo o pH ideal para o desenvolvimento da maioria das culturas na faixa de 5,5 a 6,5 (<xref ref-type="bibr" rid="B21">CQFS-RS/SC, 2016</xref>).</p>
+      <p>
+        <table-wrap id="t4">
+          <label>Tabela 4 -</label>
+          <caption>
+            <title>Atributos químicos de solo degradado pela mineração de carvão com adição de diferentes concentrações de biossólido, Carbonífera Metropolitana, Treviso (SC)*.</title>
+          </caption>
+          <table>
+            <colgroup>
+              <col/>
+              <col span="5"/>
+              <col/>
+            </colgroup>
+            <thead>
+              <tr>
+                <th align="left" rowspan="2">Profundidade (cm)</th>
+                <th align="center" colspan="5">Biossólido (Mg ha<sup>-1</sup>)</th>
+                <th align="center" rowspan="2">CV (%)</th>
+              </tr>
+              <tr>
+                <th align="center">0</th>
+                <th align="center">6,25</th>
+                <th align="center">100</th>
+                <th align="center">250</th>
+                <th align="center">500</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td align="left" colspan="7">pH em H<sub>2</sub>O (relação 1:1)</td>
+              </tr>
+              <tr>
+                <td align="left">0-5</td>
+                <td align="center">4,15 <sup>ns</sup>A</td>
+                <td align="center">4,06 <sup>ns</sup>A</td>
+                <td align="center">4,37 aA</td>
+                <td align="center">4,52 aA</td>
+                <td align="center">4,46 <sup>ns</sup>A</td>
+                <td align="center">7,14</td>
+              </tr>
+              <tr>
+                <td align="left">5-10</td>
+                <td align="center">3,99 A</td>
+                <td align="center">4,17 A</td>
+                <td align="center">4,00 bA</td>
+                <td align="center">4,25 bA</td>
+                <td align="center">4,16 A</td>
+                <td align="center">3,72</td>
+              </tr>
+              <tr>
+                <td align="left">10-20</td>
+                <td align="center">3,86 A</td>
+                <td align="center">4,07 A</td>
+                <td align="center">3,93 bA</td>
+                <td align="center">3,85 cA</td>
+                <td align="center">3,96 A</td>
+                <td align="center">6,15</td>
+              </tr>
+              <tr>
+                <td align="left">CV (%)</td>
+                <td align="center">5,15</td>
+                <td align="center">4,22</td>
+                <td align="center">4,62</td>
+                <td align="center">4,14</td>
+                <td align="center">9,41</td>
+                <td align="center"> </td>
+              </tr>
+              <tr>
+                <td align="left" colspan="7">H+Al**, cmol<sub>c</sub> dm<sup>-3</sup></td>
+              </tr>
+              <tr>
+                <td align="left">0-5</td>
+                <td align="center">83,43 <sup>ns</sup>A</td>
+                <td align="center">60,67 <sup>ns</sup>B</td>
+                <td align="center">32,65 bC</td>
+                <td align="center">37,22 cC</td>
+                <td align="center">6,73 cD</td>
+                <td align="center">12,18</td>
+              </tr>
+              <tr>
+                <td align="left">5-10</td>
+                <td align="center">76,67 A</td>
+                <td align="center">64,27 B</td>
+                <td align="center">82,68 aA</td>
+                <td align="center">68,35 bB</td>
+                <td align="center">66,61 bB</td>
+                <td align="center">9,98</td>
+              </tr>
+              <tr>
+                <td align="left">10-20</td>
+                <td align="center">85,95 B</td>
+                <td align="center">66,41 C</td>
+                <td align="center">86,74 aB</td>
+                <td align="center">85,46 aB</td>
+                <td align="center">98,24 aA</td>
+                <td align="center">6,20</td>
+              </tr>
+              <tr>
+                <td align="left">CV (%)</td>
+                <td align="center">6,75</td>
+                <td align="center">8,34</td>
+                <td align="center">11,69</td>
+                <td align="center">10,14</td>
+                <td align="center">7,18</td>
+                <td align="center"> </td>
+              </tr>
+              <tr>
+                <td align="left" colspan="7">Al , cmol<sub>c</sub> dm<sup>-3</sup></td>
+              </tr>
+              <tr>
+                <td align="left">0-5</td>
+                <td align="center">8,44 bA</td>
+                <td align="center">8,06 bA</td>
+                <td align="center">5,45 bB</td>
+                <td align="center">4,85 cB</td>
+                <td align="center">3,77 bB</td>
+                <td align="center">25,14</td>
+              </tr>
+              <tr>
+                <td align="left">5-10</td>
+                <td align="center">8,62 bA</td>
+                <td align="center">9,30 aA</td>
+                <td align="center">8,23 aA</td>
+                <td align="center">6,97 bB</td>
+                <td align="center">6,46 aB</td>
+                <td align="center">14,30</td>
+              </tr>
+              <tr>
+                <td align="left">10-20</td>
+                <td align="center">9,72 aA</td>
+                <td align="center">9,03 aA</td>
+                <td align="center">8,87 aA</td>
+                <td align="center">9,65 aA</td>
+                <td align="center">8,75 aA</td>
+                <td align="center">11,81</td>
+              </tr>
+              <tr>
+                <td align="left">CV (%)</td>
+                <td align="center">9,52</td>
+                <td align="center">8,38</td>
+                <td align="center">9,70</td>
+                <td align="center">14,69</td>
+                <td align="center">35,84</td>
+                <td align="center"> </td>
+              </tr>
+              <tr>
+                <td align="left" colspan="7">P, mg kg<sup>-1</sup></td>
+              </tr>
+              <tr>
+                <td align="left">0-5</td>
+                <td align="center">2,36 aB</td>
+                <td align="center">14,64 <sup>ns</sup>B</td>
+                <td align="center">7,30 aB</td>
+                <td align="center">16,84 aB</td>
+                <td align="center">31,59 aA</td>
+                <td align="center">59,99</td>
+              </tr>
+              <tr>
+                <td align="left">5-10</td>
+                <td align="center">1,16 aD</td>
+                <td align="center">14,84 A</td>
+                <td align="center">2,55 bC</td>
+                <td align="center">3,41 bC</td>
+                <td align="center">11,50 bB</td>
+                <td align="center">16,12</td>
+              </tr>
+              <tr>
+                <td align="left">10-20</td>
+                <td align="center">2,42 aB</td>
+                <td align="center">15,05 A</td>
+                <td align="center">1,33 bB</td>
+                <td align="center">2,24 bB</td>
+                <td align="center">3,28 bB</td>
+                <td align="center">24,73</td>
+              </tr>
+              <tr>
+                <td align="left">CV (%)</td>
+                <td align="center">50,33</td>
+                <td align="center">6,48</td>
+                <td align="center">64,00</td>
+                <td align="center">27,00</td>
+                <td align="center">59,84</td>
+                <td align="center"> </td>
+              </tr>
+              <tr>
+                <td align="left" colspan="7">K, mg kg<sup>-1</sup></td>
+              </tr>
+              <tr>
+                <td align="left">0-5</td>
+                <td align="center">34,75 aB</td>
+                <td align="center">19,25 aC</td>
+                <td align="center">36,75 aB</td>
+                <td align="center">34,40 aB</td>
+                <td align="center">49,25 aA</td>
+                <td align="center">28,69</td>
+              </tr>
+              <tr>
+                <td align="left">5-10</td>
+                <td align="center">21,20 bA</td>
+                <td align="center">14,20 bB</td>
+                <td align="center">13,80 bB</td>
+                <td align="center">20,00 bA</td>
+                <td align="center">25,25 bA</td>
+                <td align="center">20,75</td>
+              </tr>
+              <tr>
+                <td align="left">10-20</td>
+                <td align="center">22,25 bA</td>
+                <td align="center">14,25 bB</td>
+                <td align="center">13,25 bB</td>
+                <td align="center">14,40 bB</td>
+                <td align="center">16,25 bA</td>
+                <td align="center">31,78</td>
+              </tr>
+              <tr>
+                <td align="left">CV (%)</td>
+                <td align="center">21,54</td>
+                <td align="center">16,27</td>
+                <td align="center">39,54</td>
+                <td align="center">18,00</td>
+                <td align="center">31,28</td>
+                <td align="center"> </td>
+              </tr>
+              <tr>
+                <td align="justify" colspan="7">COT, g kg<sup>-1</sup></td>
+              </tr>
+              <tr>
+                <td align="left">0-5</td>
+                <td align="center">12,47 aA</td>
+                <td align="center">19,63 aA</td>
+                <td align="center">16,51 aA</td>
+                <td align="center">16,01 <sup>ns</sup>A</td>
+                <td align="center">19,52 <sup>ns</sup>A</td>
+                <td align="center">22,21</td>
+              </tr>
+              <tr>
+                <td align="left">5-10</td>
+                <td align="center">8,77 bB</td>
+                <td align="center">13,81 bB</td>
+                <td align="center">10,41 bB</td>
+                <td align="center">10,76 B</td>
+                <td align="center">20,46 A</td>
+                <td align="center">31,75</td>
+              </tr>
+              <tr>
+                <td align="left">10-20</td>
+                <td align="center">13,83 aB</td>
+                <td align="center">14,07 bB</td>
+                <td align="center">12,30 bB</td>
+                <td align="center">13,89 B</td>
+                <td align="center">21,60 A</td>
+                <td align="center">27,30</td>
+              </tr>
+              <tr>
+                <td align="left">CV (%)</td>
+                <td align="center">23,57</td>
+                <td align="center">22,86</td>
+                <td align="center">26,07</td>
+                <td align="center">28,88</td>
+                <td align="center">27,48</td>
+                <td align="center"> </td>
+              </tr>
+            </tbody>
+          </table>
+          <table-wrap-foot>
+            <fn id="TFN4">
+              <p>*médias seguidas de mesma letra não diferem estatisticamente entre si, maiúscula na linha e minúscula na coluna, pelo teste de Scott-Knott a 5% de probabilidade de erro; ns: não significativo; **acidez potencial; Al: alumínio trocável; P: fósforo disponível (Mehlich-1); K: potássio disponível (Mehlich-1); COT: carbono orgânico total; CV: coeficiente de variação.</p>
+            </fn>
+          </table-wrap-foot>
+        </table-wrap>
+      </p>
+      <p>O pH do solo influencia na disponibilidade do Al. Em solos com pH abaixo de 5,5, ocorre dissolução das formas precipitadas do Al, promovendo a liberação de formas iônicas (Al<sup>3+</sup>) na solução do solo. Dessa forma, o Al passa a ocupar os sítios de troca catiônica e, se absorvido pelas plantas, inibe o crescimento e desenvolvimento delas (<xref ref-type="bibr" rid="B2">ALCARDE, 1992</xref>). Pelo poder de correção da acidez do solo proporcionado pelo biossólido utilizado, verificou-se que os teores de Al do solo decresceram até a profundidade de 5 cm no tratamento com 100 Mg ha<sup>-1</sup> e até 10 cm nos tratamentos com 250 e 500 Mg ha<sup>-1</sup>, quando comparados com os tratamentos controle e 6,25 Mg ha<sup>-1</sup> (<xref ref-type="table" rid="t4">Tabela 4</xref>). A redução nos teores de Al foi de 35, 42 e 55% para os tratamentos com 100, 250 e 500 Mg ha<sup>-1</sup> de biossólido, respectivamente, em relação ao controle.</p>
+      <p>O aumento das concentrações de biossólido promoveu redução na acidez potencial do solo na camada superficial. As reduções percentuais na acidez potencial do solo foram de 27, 61, 55 e 92% para os tratamentos 6,25, 100, 250 e 500 Mg ha<sup>-1</sup>, respectivamente, em relação ao tratamento controle. A acidez potencial é a capacidade do solo em resistir à alteração do pH, sendo influenciada pela composição do solo, especialmente os teores de argila e matéria orgânica (<xref ref-type="bibr" rid="B24">ERNANI; GIANELLO, 1982</xref>).</p>
+      <p>O uso do biossólido também aumentou a disponibilidade de nutrientes no solo, como P e K, especialmente na camada 0-5 cm, em que os maiores valores foram observados no tratamento com 500 Mg ha<sup>-1</sup> de biossólido. O incremento nos teores de P foi de 13 vezes em relação ao controle (<xref ref-type="table" rid="t4">Tabela 4</xref>). Isso ocorreu pelos elevados teores desse nutriente contido no biossólido (<xref ref-type="table" rid="t2">Tabela 2</xref>), o que favorece o desenvolvimento das plantas.</p>
+      <p>O incremento nos teores de P e K proporcionado pela adição de lodo de esgoto (30%) em solo degradado também foi verificado por <xref ref-type="bibr" rid="B65">Torres Modesto <italic>et al</italic>. (2009</xref>). <xref ref-type="bibr" rid="B20">Corrêa e Bento (2010</xref>) relataram aumento nos teores de P e K em substrato contendo doses crescentes de biossólido para o cultivo de plantas em solos degradados. <xref ref-type="bibr" rid="B6">Andreoli (1999</xref>), realizando experimentos em campo com aveia e milho em diferentes dosagens de lodo (6, 12 e 18 t ha<sup>-1</sup>), notou aumento significativo nos teores de P e K proporcionais às dosagens utilizadas de lodo, corroborando os resultados do presente estudo.</p>
+      <p>Em relação ao COT, o uso do biossólido não promoveu efeito nos teores da camada 0-5 cm, enquanto nas demais camadas o tratamento 500 Mg ha<sup>-1</sup> apresentou maiores teores de COT em relação aos demais tratamentos, os quais não diferiram entre si (<xref ref-type="table" rid="t4">Tabela 4</xref>). <xref ref-type="bibr" rid="B18">Castro <italic>et al</italic>. (2002</xref>) relataram incremento significativo nos teores de COT no solo em função do uso de lodo de esgoto como adubo orgânico em áreas degradadas. Em contrapartida, os teores de COT encontrados no experimento não demonstraram variação entre os tratamentos avaliados. Para avaliar o efeito do uso contínuo do biossólido, necessita-se de um período mais longo para que sejam observados resultados mais consistentes (<xref ref-type="bibr" rid="B40">LEITE <italic>et al</italic>., 2003</xref>; <xref ref-type="bibr" rid="B9">BELO <italic>et al</italic>., 2012</xref>), pois no presente estudo foi avaliado o efeito de apenas uma aplicação de biossólido.</p>
+      <p>Para o parâmetro altura das plantas, observaram-se os maiores incrementos com aplicação de 100 Mg ha<sup>-1</sup> de biossólido, com acréscimo de 4,2 vezes em relação ao tratamento controle (<xref ref-type="fig" rid="f1">Figura 1A</xref>). Além disso, vários autores mostram que há uma relação direta entre a produção de matéria seca da parte área e a produção de matéria seca do sistema radicular (<xref ref-type="bibr" rid="B55">SABONARO, 2006</xref>). De acordo com <xref ref-type="bibr" rid="B54">Rosa, Naves e Oliveira Júnior (2005</xref>), esses parâmetros estão intimamente relacionados, já que o bom desenvolvimento da parte área de uma planta depende do bom desenvolvimento de seu sistema radicular.</p>
+      <p>
+        <fig id="f1">
+          <label>Figura 1 -</label>
+          <caption>
+            <title>(A) Altura média das plantas, (B) matéria seca da parte aérea (MSPA) e (C) matéria seca radicular (MSR) do consórcio aveia preta, ervilhaca e azevém cultivados em solo degradado pela mineração de carvão com adição de biossólido. Barras verticais representam o erro padrão da média (n = 5). Médias seguidas da mesma letra não diferem entre si pelo teste de Scott-Knott (p &lt; 0,05).</title>
+          </caption>
+          <alternatives>
+            <graphic xlink:href="1809-4457-esa-s1413-41522020182506-gf1.png"/>
+            <graphic xlink:href="1809-4457-esa-s1413-41522020182506-gf1.thumbnail.jpg" specific-use="scielo-web" content-type="scielo-267x140"/>
+          </alternatives>
+        </fig>
+      </p>
+      <p>A aplicação de biossólido incrementou a produção de MSPA do consórcio avaliado. Os tratamentos com 100 e 500 Mg ha<sup>-1</sup> apresentaram os melhores resultados, com acréscimo de 12,5 e 9,0 vezes em relação ao tratamento controle (<xref ref-type="fig" rid="f1">Figura 1B</xref>). A matéria seca radicular (MSR) exibiu diferença entre os tratamentos avaliados: os tratamentos com 6,25, 100 e 500 Mg ha<sup>-1</sup> tiveram os maiores valores de MSR, com incrementos de 3,8, 4,2 e 4,5 vezes, respectivamente, em relação ao tratamento controle (<xref ref-type="fig" rid="f1">Figura 1C</xref>). Há um crescimento mais rápido da porção aérea da planta pelo aumento da área de absorção dos nutrientes disponíveis no solo pelas raízes, produzindo maior fitomassa (<xref ref-type="bibr" rid="B26">FETENE; FELEKE, 2001</xref>).</p>
+      <p>Os aumentos da altura, da MSPA e da MSR podem estar relacionados ao fornecimento de P e N, por meio do biossólido, para as plantas (<xref ref-type="bibr" rid="B42">MARSCHNER, 2012</xref>). <xref ref-type="bibr" rid="B14">Caldeira <italic>et al</italic>. (2014</xref>) e <xref ref-type="bibr" rid="B53">Rocha <italic>et al</italic>. (2013</xref>) encontraram maiores valores em altura e produção de MSPA e MSR em mudas de <italic>Eucalyptus</italic> quando cultivadas em substrato contendo 80 e 100% de lodo de esgoto, respectivamente, e associaram esses resultados ao incremento de P proporcionado pelo lodo de esgoto. Da mesma forma, <xref ref-type="bibr" rid="B4">Almeida <italic>et al</italic>. (2005</xref>) relataram aumento da MSPA e da MSR de espécies arbóreas com doses crescentes de lodo de esgoto aplicadas no plantio. O P é um dos nutrientes mais limitantes para o crescimento e o desenvolvimento inicial das plantas (<xref ref-type="bibr" rid="B28">FURTINI NETO <italic>et al</italic>., 2001</xref>). De acordo com <xref ref-type="bibr" rid="B51">Prochnow, Alcarde e Chien (2004</xref>), a disponibilidade de íons fosfato no solo está diretamente relacionada ao pH, pois, com a elevação do pH, ocorre aumento das cargas negativas e redução das positivas no complexo de troca, diminuindo a solubilidade de compostos de Al e Fe. Essa reação proporciona aumento na concentração de P na solução do solo, tornando o ambiente mais favorável ao desenvolvimento da vegetação.</p>
+      <p>Os teores de N e P da parte aérea das plantas indicam que o consórcio de aveia preta, ervilhaca e azevém foi influenciado pelas concentrações de biossólido quando incorporadas ao solo. À medida que aumentou a proporção de biossólido no substrato, aumentaram também os teores de N e P na parte aérea das plantas (<xref ref-type="fig" rid="f2">Figuras 2A e 2B</xref>). Os tratamentos com 250 e 500 Mg ha<sup>-1</sup> de biossólido foram os com maiores incrementos nos teores de N na parte aérea das plantas, 106 e 92%, respectivamente, em relação ao tratamento controle (<xref ref-type="fig" rid="f2">Figura 2A</xref>). Para o teor de P na parte aérea, os tratamentos 100 e 250 Mg ha<sup>-1</sup> de biossólido foram os com maior incremento, representando 142 e 193%, respectivamente, em relação ao controle (<xref ref-type="fig" rid="f2">Figura 2B</xref>).</p>
+      <p>
+        <fig id="f2">
+          <label>Figura 2 -</label>
+          <caption>
+            <title>Teores de (A) N e (B) P em consórcio de aveia preta, ervilhaca e azevém cultivado em solo degradado pela mineração de carvão com adição de biossólido. Barras verticais representam o erro padrão da média (n = 5). Médias seguidas da mesma letra não diferem entre si pelo teste de Scott-Knott (p &lt; 0,05).</title>
+          </caption>
+          <alternatives>
+            <graphic xlink:href="1809-4457-esa-s1413-41522020182506-gf2.png"/>
+            <graphic xlink:href="1809-4457-esa-s1413-41522020182506-gf2.thumbnail.jpg" specific-use="scielo-web" content-type="scielo-267x140"/>
+          </alternatives>
+        </fig>
+      </p>
+      <p>A fim de avaliar os efeitos do biossólido adicionado ao solo com as interações biológicas no sistema solo-planta, analisaram-se os parâmetros colonização micorrízica (<xref ref-type="fig" rid="f3">Figura 3A</xref>), esporulação (<xref ref-type="fig" rid="f3">Figura 3B</xref>) e nodulação radicular nas espécies consorciadas submetidas a diferentes tratamentos com biossólido. A colonização micorrízica por FMA e a esporulação não sofreram efeito com a adição de biossólido, não demostrando variação entre os tratamentos. Em contrapartida, os valores da contagem de esporos do solo pré-experimento e pós-experimento indicaram que a adição de biossólido promoveu um decréscimo médio de 42% em relação ao número de esporos presentes no solo antes da aplicação dos tratamentos, sugerindo que o biossólido possui influências negativas para essa variável (<xref ref-type="fig" rid="f3">Figura 3A</xref>).</p>
+      <p>
+        <fig id="f3">
+          <label>Figura 3 -</label>
+          <caption>
+            <title>(A) Número de esporos, (B) colonização micorrízica e (C) respiração basal nas raízes de aveia preta, ervilhaca e azevém cultivados em solo degradado pela mineração de carvão com adição de biossólido. Barras verticais representam o erro padrão da média (n = 5). Linha tracejada representa (A) a média do número de esporos e (C) respiração basal antes da aplicação do biossólido (n = 5). Médias seguidas da mesma letra não diferem entre si pelo teste de Scott-Knott (p &lt; 0,05).</title>
+          </caption>
+          <alternatives>
+            <graphic xlink:href="1809-4457-esa-s1413-41522020182506-gf3.png"/>
+            <graphic xlink:href="1809-4457-esa-s1413-41522020182506-gf3.thumbnail.jpg" specific-use="scielo-web" content-type="scielo-267x140"/>
+          </alternatives>
+        </fig>
+      </p>
+      <p>A reduzida taxa de colonização micorrízica, observada neste estudo, pode ser explicada pela presença de poluentes químicos no solo que afetam negativamente alguns processos do ciclo de vida dos FMA, tais como a germinação de esporos, o crescimento de hifas e a colonização radicular (<xref ref-type="bibr" rid="B36">KLAUBERG-FILHO <italic>et al</italic>., 2005</xref>). A retirada da vegetação e a substituição da camada superficial do solo original, bem como a exposição à temperatura e aos solos ácidos, também influenciam na redução do número de propágulos de fungos e na baixa colonização das plantas (<xref ref-type="bibr" rid="B43">MEHROTRA, 1998</xref>).</p>
+      <p>Outro fator que afeta os atributos biológicos do solo é a composição do biossólido, especialmente a concentração de P. Segundo estudos realizados por <xref ref-type="bibr" rid="B45">Melloni <italic>et al</italic>. (2000</xref>) e <xref ref-type="bibr" rid="B47">Moreira e Siqueira (2006</xref>), elevados teores de P no solo promovem reduções acentuadas na colonização micorrízica radicular. Em estudos desenvolvidos por <xref ref-type="bibr" rid="B12">Bettiol <italic>et al</italic>. (1986</xref>) com aplicação de doses de biossólido e sua influência na formação de FMA em cultivo com <italic>Pinus</italic>, os autores destacaram a inibição na formação de micorrizas em todas as concentrações testadas (10, 30 e 50%).</p>
+      <p>De maneira geral, as plantas controlam a colonização micorrízica conforme a necessidade. A relação de causa e efeito no sistema solo-biossólido-planta não está clara, mas pode envolver uma menor dependência das plantas por FMA para a aquisição de recursos. Com maior disponibilidade de P e melhor pH do solo, as plantas podem não necessitar tanto dessa simbiose (<xref ref-type="bibr" rid="B61">SMITH; READ, 2008</xref>), e o biossólido pode servir de condicionador desses elementos para o sistema solo-planta. Nessas condições, a simbiose é inibida por meio de mecanismos genéticos controlados pelas plantas (<xref ref-type="bibr" rid="B38">LAMBAIS <italic>et al</italic>., 2003</xref>).</p>
+      <p>A ervilhaca é uma herbácea que se associa a bactérias fixadoras de N, formando nódulos nas raízes (<xref ref-type="bibr" rid="B15">CALEGARI <italic>et al</italic>., 1993</xref>). Apesar de essa condição ser inerente a essa espécie, nenhum nódulo foi observado nas raízes das plantas nos experimentos conduzidos em campo, indicando que as concentrações de biossólido testadas possam ter suprido as necessidades nutricionais das plantas por N e, possivelmente, ter influenciado na não formação dos nódulos radiculares.</p>
+      <p>Outro parâmetro utilizado para avaliar a qualidade do solo é a RB, utilizada como indicador de todas as atividades metabólicas realizadas pelos microrganismos do solo, principalmente bactérias e fungos, nas quais o CO<sub>2</sub> é produzido por meio da degradação da matéria orgânica. Dessa forma, a RB está diretamente relacionada com a atividade microbiana do solo e com o COT, possibilitando estabelecer uma relação direta entre a RB e o aporte de carbono que está sendo adicionado ao sistema (<xref ref-type="bibr" rid="B48">PARKIN; DORAN; FRANCOP-VIZCAÍNO, 1996</xref>; <xref ref-type="bibr" rid="B32">HENDRIX; HAN; GROFFMAN, 1988</xref>).</p>
+      <p>Para a RB, não houve diferença entre os tratamentos quanto à liberação de C-CO<sub>2</sub>, com uma média geral de 0,28 mg C-CO<sub>2</sub> g<sup>-1</sup> solo h<sup>-1</sup>. O valor médio da RB obtido antes da implantação do experimento foi de 0,30 mg C-CO<sub>2</sub> g<sup>-1</sup> solo h<sup>-1</sup>, não diferindo do valor dos tratamentos posteriores (<xref ref-type="fig" rid="f3">Figura 3C</xref>). <xref ref-type="bibr" rid="B33">Holanda Neto (2011</xref>) também não encontrou diferenças significativas na RB de solos construídos de áreas de mineração de carvão submetidos a diferentes cultivos de gramíneas. Em contrapartida, ao avaliarem as modificações na biomassa e na atividade microbiana de um solo em função do cultivo de diferentes espécies de cobertura vegetal, <xref ref-type="bibr" rid="B56">Santos <italic>et al</italic>. (2008</xref>) relataram intensa liberação de CO<sub>2</sub> em todos os tratamentos analisados.</p>
+      <p>A RB é um indicador bastante sensível em resposta às alterações no meio, tais como: disponibilidade de substrato, umidade, temperatura, tipo de manejo empregado no solo, adição de adubo, resíduos de plantas e insumos (<xref ref-type="bibr" rid="B11">BENIZRI; AMIAUD, 2005</xref>; <xref ref-type="bibr" rid="B8">BAARU <italic>et al</italic>., 2007</xref>). Por isso, ao mesmo tempo que a RB reflete a atividade respiratória de um ambiente com alta produtividade, pode refletir o estresse provocado no meio por um passivo ambiental (<xref ref-type="bibr" rid="B22">DA SILVA; AZEVEDO; DE-POLLI, 2007</xref>).</p>
+    </sec>
+    <sec sec-type="conclusions">
+      <title>CONCLUSÃO</title>
+      <p>O uso do biossólido como componente de substrato em áreas degradadas pela mineração de carvão é uma alternativa viável para a disposição final desse resíduo tendo em vista a economia de fertilizante que esse material pode proporcionar, além dos benefícios ambientais associados ao seu uso. A aplicação de biossólido melhorou os aspectos de fertilidade do solo degradado. As concentrações iguais a 100 Mg ha<sup>-1</sup> de biossólido afetaram o crescimento (altura, MSPA e MSR) das três espécies vegetais implantadas. As concentrações de biossólido testadas não afetaram os parâmetros microbiológicos do solo.</p>
+    </sec>
+  </body>
+  <back>
+    <ref-list>
+      <title>REFERÊNCIAS</title>
+      <ref id="B1">
+        <mixed-citation>ALBUQUERQUE, J.A.; ALMEIDA, J.A.; GATIBONI, L.C.; ELTZ, F.L.F. (2011) Atividades agrícolas de produção em solos frágeis no sul do Brasil. <italic>Tópicos em Ciência do Solo</italic>, Viçosa, v. 7, p. 367-403.</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>ALBUQUERQUE</surname>
+              <given-names>J.A.</given-names>
+            </name>
+            <name>
+              <surname>ALMEIDA</surname>
+              <given-names>J.A.</given-names>
+            </name>
+            <name>
+              <surname>GATIBONI</surname>
+              <given-names>L.C.</given-names>
+            </name>
+            <name>
+              <surname>ELTZ</surname>
+              <given-names>F.L.F.</given-names>
+            </name>
+          </person-group>
+          <year>2011</year>
+          <article-title>Atividades agrícolas de produção em solos frágeis no sul do Brasil</article-title>
+          <source>Tópicos em Ciência do Solo</source>
+          <publisher-loc>Viçosa</publisher-loc>
+          <volume>7</volume>
+          <fpage>367</fpage>
+          <lpage>403</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B2">
+        <mixed-citation>ALCARDE, J.C. (1992) <italic>Corretivos da acidez dos solos:</italic> características e interpretações técnicas. São Paulo: ANDA. (Boletim Técnico, 6).</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>ALCARDE</surname>
+              <given-names>J.C.</given-names>
+            </name>
+          </person-group>
+          <year>1992</year>
+          <source><italic>Corretivos da acidez dos solos:</italic> características e interpretações técnicas</source>
+          <publisher-loc>São Paulo</publisher-loc>
+          <publisher-name>ANDA</publisher-name>
+          <comment>Boletim Técnico, 6</comment>
+        </element-citation>
+      </ref>
+      <ref id="B3">
+        <mixed-citation>ALEXANDRE, N.Z. (1999) Diagnóstico ambiental da Região carbonífera de Santa Catarina: degradação dos recursos naturais. <italic>Revista Tecnologia e Ambiente</italic>, v. 5, n. 2, p. 35-50.</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>ALEXANDRE</surname>
+              <given-names>N.Z.</given-names>
+            </name>
+          </person-group>
+          <year>1999</year>
+          <article-title>Diagnóstico ambiental da Região carbonífera de Santa Catarina: degradação dos recursos naturais</article-title>
+          <source>Revista Tecnologia e Ambiente</source>
+          <volume>5</volume>
+          <issue>2</issue>
+          <fpage>35</fpage>
+          <lpage>50</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B4">
+        <mixed-citation>ALMEIDA, G.J.F; POGGIANI, F.; MOREIRA E MOREIRA, R.; STAPE, J. (2005) Efeito do biossólido aplicado no plantio no desenvolvimento aéreo e radicular de espécies arbóreas <italic>In</italic>: Anais SIICUSP, 13, Piracicaba. Esalq/USP, CD-Rom.</mixed-citation>
+        <element-citation publication-type="confproc">
+          <person-group person-group-type="author">
+            <name>
+              <surname>ALMEIDA</surname>
+              <given-names>G.J.F</given-names>
+            </name>
+            <name>
+              <surname>POGGIANI</surname>
+              <given-names>F.</given-names>
+            </name>
+            <name>
+              <surname>MOREIRA E MOREIRA</surname>
+              <given-names>R.</given-names>
+            </name>
+            <name>
+              <surname>STAPE</surname>
+              <given-names>J.</given-names>
+            </name>
+          </person-group>
+          <year>2005</year>
+          <source>Efeito do biossólido aplicado no plantio no desenvolvimento aéreo e radicular de espécies arbóreas</source>
+          <conf-name>Anais SIICUSP, 13</conf-name>
+          <conf-loc>Piracicaba</conf-loc>
+          <publisher-name>Esalq/USP</publisher-name>
+          <comment>CD-Rom</comment>
+        </element-citation>
+      </ref>
+      <ref id="B5">
+        <mixed-citation>ANDRADE, R.S.; STONE, L.F.; SILVEIRA, P.M. (2009) Culturas de cobertura e qualidade física de um Latossolo em plantio direto. <italic>Revista Brasileira de Engenharia Agrícola e Ambiental</italic>, v. 13, n. 4, p. 411-418. https://doi.org/10.1590/S1415-43662009000400007</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>ANDRADE</surname>
+              <given-names>R.S.</given-names>
+            </name>
+            <name>
+              <surname>STONE</surname>
+              <given-names>L.F.</given-names>
+            </name>
+            <name>
+              <surname>SILVEIRA</surname>
+              <given-names>P.M.</given-names>
+            </name>
+          </person-group>
+          <year>2009</year>
+          <article-title>Culturas de cobertura e qualidade física de um Latossolo em plantio direto</article-title>
+          <source>Revista Brasileira de Engenharia Agrícola e Ambiental</source>
+          <volume>13</volume>
+          <issue>4</issue>
+          <fpage>411</fpage>
+          <lpage>418</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1590/S1415-43662009000400007</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B6">
+        <mixed-citation>ANDREOLI, C.V. (1999) <italic>Uso e manejo do lodo de esgoto na agricultura</italic>. Rio de Janeiro: Abes. 97 p.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>ANDREOLI</surname>
+              <given-names>C.V.</given-names>
+            </name>
+          </person-group>
+          <year>1999</year>
+          <source>Uso e manejo do lodo de esgoto na agricultura</source>
+          <publisher-loc>Rio de Janeiro</publisher-loc>
+          <publisher-name>Abes</publisher-name>
+          <size units="pages">97 p</size>
+        </element-citation>
+      </ref>
+      <ref id="B7">
+        <mixed-citation>ANDREOLI, C.V. (2001) <italic>Resíduos sólidos do saneamento:</italic> processamento, reciclagem e disposição final, Projeto PROSAB, RiMa, ABES: Rio de Janeiro: Abes .</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>ANDREOLI</surname>
+              <given-names>C.V.</given-names>
+            </name>
+          </person-group>
+          <year>2001</year>
+          <source><italic>Resíduos sólidos do saneamento:</italic> processamento, reciclagem e disposição final, Projeto PROSAB, RiMa, ABES</source>
+          <publisher-loc>Rio de Janeiro</publisher-loc>
+          <publisher-name>Abes</publisher-name>
+        </element-citation>
+      </ref>
+      <ref id="B8">
+        <mixed-citation>BAARU, M.W.; MUNGENDI, D.N.; BATIONO, A.; VERCHOT, L.; WACEKE, W. (2007) Soil microbial biomass carbon and nitrogen as influenced by organic and inorganic inputs at Kabete, Kenya. <italic>In</italic>: BATIONO, A.; WASWA, B.; KIHARA, J.; KIMETU, J. (orgs.). <italic>Advances in integrated soil fertility management in sub-Saharan Africa:</italic> challenges and opportunities. Nairobi: Springer. p. 827-832.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>BAARU</surname>
+              <given-names>M.W.</given-names>
+            </name>
+            <name>
+              <surname>MUNGENDI</surname>
+              <given-names>D.N.</given-names>
+            </name>
+            <name>
+              <surname>BATIONO</surname>
+              <given-names>A.</given-names>
+            </name>
+            <name>
+              <surname>VERCHOT</surname>
+              <given-names>L.</given-names>
+            </name>
+            <name>
+              <surname>WACEKE</surname>
+              <given-names>W.</given-names>
+            </name>
+          </person-group>
+          <year>2007</year>
+          <chapter-title>Soil microbial biomass carbon and nitrogen as influenced by organic and inorganic inputs at Kabete, Kenya</chapter-title>
+          <person-group person-group-type="compiler">
+            <name>
+              <surname>BATIONO</surname>
+              <given-names>A.</given-names>
+            </name>
+            <name>
+              <surname>WASWA</surname>
+              <given-names>B.</given-names>
+            </name>
+            <name>
+              <surname>KIHARA</surname>
+              <given-names>J.</given-names>
+            </name>
+            <name>
+              <surname>KIMETU</surname>
+              <given-names>J.</given-names>
+            </name>
+          </person-group>
+          <source><italic>Advances in integrated soil fertility management in sub-Saharan Africa:</italic> challenges and opportunities</source>
+          <publisher-loc>Nairobi</publisher-loc>
+          <publisher-name>Springer</publisher-name>
+          <fpage>827</fpage>
+          <lpage>832</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B9">
+        <mixed-citation>BELO, E.S.; TERRA, F.D.; ROTTA, L.R.; VILELA, L.A.; PAULINO, H.B.; SOUSA, E.D.; VILELA, L.A.F.; CARNEIRO, M.A.C. (2012) Decomposição de diferentes resíduos orgânicos e efeito na atividade microbiana em um Latossolo Vermelho de Cerrado. <italic>Global Science Technology</italic>, v. 5, n. 3, p. 107-116.</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>BELO</surname>
+              <given-names>E.S.</given-names>
+            </name>
+            <name>
+              <surname>TERRA</surname>
+              <given-names>F.D.</given-names>
+            </name>
+            <name>
+              <surname>ROTTA</surname>
+              <given-names>L.R.</given-names>
+            </name>
+            <name>
+              <surname>VILELA</surname>
+              <given-names>L.A.</given-names>
+            </name>
+            <name>
+              <surname>PAULINO</surname>
+              <given-names>H.B.</given-names>
+            </name>
+            <name>
+              <surname>SOUSA</surname>
+              <given-names>E.D.</given-names>
+            </name>
+            <name>
+              <surname>VILELA</surname>
+              <given-names>L.A.F.</given-names>
+            </name>
+            <name>
+              <surname>CARNEIRO</surname>
+              <given-names>M.A.C.</given-names>
+            </name>
+          </person-group>
+          <year>2012</year>
+          <article-title>Decomposição de diferentes resíduos orgânicos e efeito na atividade microbiana em um Latossolo Vermelho de Cerrado</article-title>
+          <source>Global Science Technology</source>
+          <volume>5</volume>
+          <issue>3</issue>
+          <fpage>107</fpage>
+          <lpage>116</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B10">
+        <mixed-citation>BELOLLI, M.; QUADROS, J.; GUIDI, A. (2002) <italic>A história do carvão de Santa Catarina</italic>. Criciúma: Imprensa Oficial do Estado de Santa Catarina. 300 p. Disponível em: &lt;<comment>Disponível em: <ext-link ext-link-type="uri" xlink:href="http://www.siecesc.com.br/pdf/livro_carvao/a_historia_do_carvao_de_santa_catarina.pdf">http://www.siecesc.com.br/pdf/livro_carvao/a_historia_do_carvao_de_santa_catarina.pdf</ext-link> </comment>&gt;. Acesso em: 20 jul. 2016.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>BELOLLI</surname>
+              <given-names>M.</given-names>
+            </name>
+            <name>
+              <surname>QUADROS</surname>
+              <given-names>J.</given-names>
+            </name>
+            <name>
+              <surname>GUIDI</surname>
+              <given-names>A.</given-names>
+            </name>
+          </person-group>
+          <year>2002</year>
+          <source>A história do carvão de Santa Catarina</source>
+          <publisher-loc>Criciúma</publisher-loc>
+          <publisher-name>Imprensa Oficial do Estado de Santa Catarina</publisher-name>
+          <size units="pages">300 p</size>
+          <comment>Disponível em: <ext-link ext-link-type="uri" xlink:href="http://www.siecesc.com.br/pdf/livro_carvao/a_historia_do_carvao_de_santa_catarina.pdf">http://www.siecesc.com.br/pdf/livro_carvao/a_historia_do_carvao_de_santa_catarina.pdf</ext-link> </comment>
+          <date-in-citation content-type="access-date" iso-8601-date="2016-07-20">20 jul. 2016</date-in-citation>
+        </element-citation>
+      </ref>
+      <ref id="B11">
+        <mixed-citation>BENIZRI, E.; AMIAUD, B. (2005) Relationship between plants and soil microbial communities in fertilized grasslands. <italic>Soil Biology and Biochemistry</italic>, v. 37, n. 11, p. 2055-2064. https://doi.org/10.1016/j.soilbio.2005.03.008</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>BENIZRI</surname>
+              <given-names>E.</given-names>
+            </name>
+            <name>
+              <surname>AMIAUD</surname>
+              <given-names>B.</given-names>
+            </name>
+          </person-group>
+          <year>2005</year>
+          <article-title>Relationship between plants and soil microbial communities in fertilized grasslands</article-title>
+          <source>Soil Biology and Biochemistry</source>
+          <volume>37</volume>
+          <issue>11</issue>
+          <fpage>2055</fpage>
+          <lpage>2064</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1016/j.soilbio.2005.03.008</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B12">
+        <mixed-citation>BETTIOL, W.; AUER, C.G.; KRUNER, T.; PREZOTTO, M.E.M. (1986) Influência de lodo de esgoto e de acículas de pinus na formação da ectomicorrizas em mudas de Pinus caribaea var. hondurensis pelos fungos Pisolithus tinctorius e Thelephora terrestris. <italic>IPEF</italic>, v. 34, p. 41-46.</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>BETTIOL</surname>
+              <given-names>W.</given-names>
+            </name>
+            <name>
+              <surname>AUER</surname>
+              <given-names>C.G.</given-names>
+            </name>
+            <name>
+              <surname>KRUNER</surname>
+              <given-names>T.</given-names>
+            </name>
+            <name>
+              <surname>PREZOTTO</surname>
+              <given-names>M.E.M.</given-names>
+            </name>
+          </person-group>
+          <year>1986</year>
+          <article-title>Influência de lodo de esgoto e de acículas de pinus na formação da ectomicorrizas em mudas de Pinus caribaea var. hondurensis pelos fungos Pisolithus tinctorius e Thelephora terrestris</article-title>
+          <source>IPEF</source>
+          <volume>34</volume>
+          <fpage>41</fpage>
+          <lpage>46</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B13">
+        <mixed-citation>BRASIL. (1986) Ministério do Meio Ambiente. Resolução CONAMA nº 001, de 23 de janeiro de 1986. Confere o artigo 48 do Decreto nº 88.351, de 1º de junho de 1983, para efetivo exercício das responsabilidades que lhe são atribuídas pelo artigo 18 do mesmo decreto, e Considerando a necessidade de se estabelecerem as definições, as responsabilidades, os critérios básicos e as diretrizes gerais para uso e implementação da Avaliação de Impacto Ambiental como um dos instrumentos da Política Nacional do Meio Ambiente. Coleção de leis [do] Ministério do Meio Ambiente. Disponível em: &lt;<comment>Disponível em: <ext-link ext-link-type="uri" xlink:href="http://www.mma.gov.br/port/conama/res/res86/res0186.html">http://www.mma.gov.br/port/conama/res/res86/res0186.html</ext-link> </comment>&gt;. Acesso em: 20 jul. 2016.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <collab>BRASIL</collab>
+          </person-group>
+          <year>1986</year>
+          <source>Ministério do Meio Ambiente. Resolução CONAMA nº 001, de 23 de janeiro de 1986. Confere o artigo 48 do Decreto nº 88.351, de 1º de junho de 1983, para efetivo exercício das responsabilidades que lhe são atribuídas pelo artigo 18 do mesmo decreto, e Considerando a necessidade de se estabelecerem as definições, as responsabilidades, os critérios básicos e as diretrizes gerais para uso e implementação da Avaliação de Impacto Ambiental como um dos instrumentos da Política Nacional do Meio Ambiente. Coleção de leis [do] Ministério do Meio Ambiente</source>
+          <comment>Disponível em: <ext-link ext-link-type="uri" xlink:href="http://www.mma.gov.br/port/conama/res/res86/res0186.html">http://www.mma.gov.br/port/conama/res/res86/res0186.html</ext-link> </comment>
+          <date-in-citation content-type="access-date" iso-8601-date="2016-07-20">20 jul. 2016</date-in-citation>
+        </element-citation>
+      </ref>
+      <ref id="B14">
+        <mixed-citation>CALDEIRA, M.V.W.; GONÇALVES, E.O.; TRAZZI, P.A.; DELARMELINA, W.M.; ROCHA, R.L.F. (2014) Crescimento de mudas de Eucalyptus grandis utilizando lodo de esgoto, fibra de coco e palha de café in natura. <italic>Floresta</italic>, v. 44, n. 2, p. 195-206. http://dx.doi.org/10.5380/rf.v44i2.30170</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>CALDEIRA</surname>
+              <given-names>M.V.W.</given-names>
+            </name>
+            <name>
+              <surname>GONÇALVES</surname>
+              <given-names>E.O.</given-names>
+            </name>
+            <name>
+              <surname>TRAZZI</surname>
+              <given-names>P.A.</given-names>
+            </name>
+            <name>
+              <surname>DELARMELINA</surname>
+              <given-names>W.M.</given-names>
+            </name>
+            <name>
+              <surname>ROCHA</surname>
+              <given-names>R.L.F.</given-names>
+            </name>
+          </person-group>
+          <year>2014</year>
+          <article-title>Crescimento de mudas de Eucalyptus grandis utilizando lodo de esgoto, fibra de coco e palha de café in natura</article-title>
+          <source>Floresta</source>
+          <volume>44</volume>
+          <issue>2</issue>
+          <fpage>195</fpage>
+          <lpage>206</lpage>
+          <pub-id pub-id-type="doi">http://dx.doi.org/10.5380/rf.v44i2.30170</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B15">
+        <mixed-citation>CALEGARI, A.; MONDARDO, A.; BULISANI, E.A.; COSTA, M.B.B.; MIYASAKA, S.; AMADO, T.J.C. (1993) Aspectos gerais da adubação verde. <italic>In</italic>: COSTA, M.B.B. (Coord.). <italic>Adubação verde no sul do Brasil</italic>. 2. ed. Rio de Janeiro: Assessoria e Serviços a Projetos em Agricultura Alternativa. p. 1-56.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>CALEGARI</surname>
+              <given-names>A.</given-names>
+            </name>
+            <name>
+              <surname>MONDARDO</surname>
+              <given-names>A.</given-names>
+            </name>
+            <name>
+              <surname>BULISANI</surname>
+              <given-names>E.A.</given-names>
+            </name>
+            <name>
+              <surname>COSTA</surname>
+              <given-names>M.B.B.</given-names>
+            </name>
+            <name>
+              <surname>MIYASAKA</surname>
+              <given-names>S.</given-names>
+            </name>
+            <name>
+              <surname>AMADO</surname>
+              <given-names>T.J.C.</given-names>
+            </name>
+          </person-group>
+          <year>1993</year>
+          <chapter-title>Aspectos gerais da adubação verde</chapter-title>
+          <person-group person-group-type="author">
+            <name>
+              <surname>COSTA</surname>
+              <given-names>M.B.B.</given-names>
+            </name>
+          </person-group>
+          <source>Adubação verde no sul do Brasil</source>
+          <edition>2</edition>
+          <publisher-loc>Rio de Janeiro</publisher-loc>
+          <publisher-name>Assessoria e Serviços a Projetos em Agricultura Alternativa</publisher-name>
+          <fpage>1</fpage>
+          <lpage>56</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B16">
+        <mixed-citation>CAMPOS, M.L.; ALMEIDA, J.A.; SILVEIRA, C.B.; GATIBONI, L.C.; ALBUQUERQUE, J.A.; MAFRA, Á.L; MIQUELLUTI, D.J.; KLAUBERG FILHO, O.; SANTOS, J.C.P. (2010) Impactos no solo provocados pela mineração e depósito de rejeitos de carvão mineral. <italic>Revista de Ciências Agroveterinárias</italic>, v. 9, n. 2, p. 198-205.</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>CAMPOS</surname>
+              <given-names>M.L.</given-names>
+            </name>
+            <name>
+              <surname>ALMEIDA</surname>
+              <given-names>J.A.</given-names>
+            </name>
+            <name>
+              <surname>SILVEIRA</surname>
+              <given-names>C.B.</given-names>
+            </name>
+            <name>
+              <surname>GATIBONI</surname>
+              <given-names>L.C.</given-names>
+            </name>
+            <name>
+              <surname>ALBUQUERQUE</surname>
+              <given-names>J.A.</given-names>
+            </name>
+            <name>
+              <surname>MAFRA</surname>
+              <given-names>Á.L</given-names>
+            </name>
+            <name>
+              <surname>MIQUELLUTI</surname>
+              <given-names>D.J.</given-names>
+            </name>
+            <name>
+              <surname>KLAUBERG</surname>
+              <given-names>O.</given-names>
+              <suffix>FILHO</suffix>
+            </name>
+            <name>
+              <surname>SANTOS</surname>
+              <given-names>J.C.P.</given-names>
+            </name>
+          </person-group>
+          <year>2010</year>
+          <article-title>Impactos no solo provocados pela mineração e depósito de rejeitos de carvão mineral</article-title>
+          <source>Revista de Ciências Agroveterinárias</source>
+          <volume>9</volume>
+          <issue>2</issue>
+          <fpage>198</fpage>
+          <lpage>205</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B17">
+        <mixed-citation>CASTILHOS, Z.C.; FERNANDES, F.R.C. (2011) A bacia carbonífera sul catarinense e os impactos e passivos da atividade da indústria extrativa mineral de carvão na territorialidade. <italic>In</italic>: FERNANDES, F.R.C.; ENRÍQUEZ, M.A.R.S.; ALAMINO, R.C.J. (orgs.). <italic>Recursos minerais e sustentabilidade territorial:</italic> grandes minas. Rio de Janeiro: CETEM/MCTI. p. 361-386.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>CASTILHOS</surname>
+              <given-names>Z.C.</given-names>
+            </name>
+            <name>
+              <surname>FERNANDES</surname>
+              <given-names>F.R.C.</given-names>
+            </name>
+          </person-group>
+          <year>2011</year>
+          <chapter-title>A bacia carbonífera sul catarinense e os impactos e passivos da atividade da indústria extrativa mineral de carvão na territorialidade</chapter-title>
+          <person-group person-group-type="compiler">
+            <name>
+              <surname>FERNANDES</surname>
+              <given-names>F.R.C.</given-names>
+            </name>
+            <name>
+              <surname>ENRÍQUEZ</surname>
+              <given-names>M.A.R.S.</given-names>
+            </name>
+            <name>
+              <surname>ALAMINO</surname>
+              <given-names>R.C.J.</given-names>
+            </name>
+          </person-group>
+          <source><italic>Recursos minerais e sustentabilidade territorial:</italic> grandes minas</source>
+          <publisher-loc>Rio de Janeiro</publisher-loc>
+          <publisher-name>CETEM/MCTI</publisher-name>
+          <fpage>361</fpage>
+          <lpage>386</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B18">
+        <mixed-citation>CASTRO, L.A.R. de; ANDREOLI, C.V.; PEGORINI, E.S.; TAMANINI, C.R.; FERREIRA, A.C. (2002) Efeitos do lodo de esgoto como recuperados de áreas degradadas com finalidade agrícola. <italic>In</italic>: Anais V SIMPOSIO NACIONAL SOBRE RECUPERAÇÃO DE ÁREAS DEGRADADAS. Embrapa Agrobiologia. 536p.</mixed-citation>
+        <element-citation publication-type="confproc">
+          <person-group person-group-type="author">
+            <name>
+              <surname>CASTRO</surname>
+              <given-names>L.A.R. de</given-names>
+            </name>
+            <name>
+              <surname>ANDREOLI</surname>
+              <given-names>C.V.</given-names>
+            </name>
+            <name>
+              <surname>PEGORINI</surname>
+              <given-names>E.S.</given-names>
+            </name>
+            <name>
+              <surname>TAMANINI</surname>
+              <given-names>C.R.</given-names>
+            </name>
+            <name>
+              <surname>FERREIRA</surname>
+              <given-names>A.C.</given-names>
+            </name>
+          </person-group>
+          <year>2002</year>
+          <source>Efeitos do lodo de esgoto como recuperados de áreas degradadas com finalidade agrícola</source>
+          <conf-name>Anais V SIMPOSIO NACIONAL SOBRE RECUPERAÇÃO DE ÁREAS DEGRADADAS</conf-name>
+          <publisher-name>Embrapa Agrobiologia</publisher-name>
+          <size units="pages">536p</size>
+        </element-citation>
+      </ref>
+      <ref id="B19">
+        <mixed-citation>CHAER, G.M.; TÓTOLA, M.R. (2007) Impacto do manejo de resíduos orgânicos durante a reforma de plantios de eucalipto sobre indicadores de qualidade do solo. <italic>Revista Brasileira de Ciência do Solo</italic>, v. 31, n. 6, p. 1381-1396. https://doi.org/10.1590/S0100-06832007000600016</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>CHAER</surname>
+              <given-names>G.M.</given-names>
+            </name>
+            <name>
+              <surname>TÓTOLA</surname>
+              <given-names>M.R.</given-names>
+            </name>
+          </person-group>
+          <year>2007</year>
+          <article-title>Impacto do manejo de resíduos orgânicos durante a reforma de plantios de eucalipto sobre indicadores de qualidade do solo</article-title>
+          <source>Revista Brasileira de Ciência do Solo</source>
+          <volume>31</volume>
+          <issue>6</issue>
+          <fpage>1381</fpage>
+          <lpage>1396</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1590/S0100-06832007000600016</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B20">
+        <mixed-citation>CORRÊA, R.S.; BENTO, M.A.B. (2010) Qualidade do substrato minerado de uma área de empréstimo revegetada no Distrito Federal. <italic>Revista Brasileira de Ciência do Solo</italic>, v. 34, n. 4, p. 1435-1443. https://doi.org/10.1590/S0100-06832010000400039</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>CORRÊA</surname>
+              <given-names>R.S.</given-names>
+            </name>
+            <name>
+              <surname>BENTO</surname>
+              <given-names>M.A.B.</given-names>
+            </name>
+          </person-group>
+          <year>2010</year>
+          <article-title>Qualidade do substrato minerado de uma área de empréstimo revegetada no Distrito Federal</article-title>
+          <source>Revista Brasileira de Ciência do Solo</source>
+          <volume>34</volume>
+          <isbn>4</isbn>
+          <fpage>1435</fpage>
+          <lpage>1443</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1590/S0100-06832010000400039</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B21">
+        <mixed-citation>CQFS-RS/SC - Comissão de Química e Fertilidade do Solo (2016) <italic>Manual de calagem e adubação para os estados do Rio Grande do Sul e de Santa Catarina</italic>. 11. ed. Porto Alegre: Sociedade Brasileira de Ciência do Solo - Núcleo Regional Sul - Comissão de Química e Fertilidade do Solo. 376 p.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <collab>CQFS-RS/SC - Comissão de Química e Fertilidade do Solo</collab>
+          </person-group>
+          <year>2016</year>
+          <source>Manual de calagem e adubação para os estados do Rio Grande do Sul e de Santa Catarina</source>
+          <edition>11</edition>
+          <publisher-loc>Porto Alegre</publisher-loc>
+          <publisher-name>Sociedade Brasileira de Ciência do Solo - Núcleo Regional Sul - Comissão de Química e Fertilidade do Solo</publisher-name>
+          <size units="pages">376 p</size>
+        </element-citation>
+      </ref>
+      <ref id="B22">
+        <mixed-citation>DA SILVA, E.E.; AZEVEDO, P.H.S.; DE-POLLI, H. (2007) Determinação da respiração basal (RBS) e quociente metabólico do solo (qCO<sub>2</sub>). Comunicado Técnico (INFOTECA-E). Brasil: Embrapa Agrobiologia.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>DA SILVA</surname>
+              <given-names>E.E.</given-names>
+            </name>
+            <name>
+              <surname>AZEVEDO</surname>
+              <given-names>P.H.S.</given-names>
+            </name>
+            <name>
+              <surname>DE-POLLI</surname>
+              <given-names>H.</given-names>
+            </name>
+          </person-group>
+          <year>2007</year>
+          <source>Determinação da respiração basal (RBS) e quociente metabólico do solo (qCO<sub>2</sub>)</source>
+          <comment>Comunicado Técnico (INFOTECA-E)</comment>
+          <publisher-loc>Brasil</publisher-loc>
+          <publisher-name>Embrapa Agrobiologia</publisher-name>
+        </element-citation>
+      </ref>
+      <ref id="B23">
+        <mixed-citation>EMPRESA BRASILEIRA DE PESQUISA AGROPECUÁRIA (EMBRAPA). Centro Nacional de Pesquisa de Solos. (1997). <italic>Manual de métodos de análise de solo</italic>. 2. ed. Rio de Janeiro: Centro Nacional de Pesquisa de Solos. 212 p.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <collab>EMPRESA BRASILEIRA DE PESQUISA AGROPECUÁRIA (EMBRAPA). Centro Nacional de Pesquisa de Solos</collab>
+          </person-group>
+          <year>1997</year>
+          <source>Manual de métodos de análise de solo</source>
+          <edition>2</edition>
+          <publisher-loc>Rio de Janeiro</publisher-loc>
+          <publisher-name>Centro Nacional de Pesquisa de Solos</publisher-name>
+          <size units="pages">212 p</size>
+        </element-citation>
+      </ref>
+      <ref id="B24">
+        <mixed-citation>ERNANI, P.R.; GIANELLO, C. (1982) Efeito imediato e residual de materiais orgânicos, adubo mineral e calcário no rendimento vegetal. <italic>Revista Brasileira de Ciência do Solo</italic>, Campinas, v. 6, p. 119-124.</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>ERNANI</surname>
+              <given-names>P.R.</given-names>
+            </name>
+            <name>
+              <surname>GIANELLO</surname>
+              <given-names>C.</given-names>
+            </name>
+          </person-group>
+          <year>1982</year>
+          <article-title>Efeito imediato e residual de materiais orgânicos, adubo mineral e calcário no rendimento vegetal</article-title>
+          <source>Revista Brasileira de Ciência do Solo</source>
+          <publisher-loc>Campinas</publisher-loc>
+          <volume>6</volume>
+          <fpage>119</fpage>
+          <lpage>124</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B25">
+        <mixed-citation>FERREIRA, D.F. (2011) Sisvar: a computer statistical analysis system. <italic>Ciência e Agrotecnologia</italic>, v. 35, n. 6, p. 1039-1042. http://dx.doi.org/10.1590/S1413-70542011000600001</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>FERREIRA</surname>
+              <given-names>D.F.</given-names>
+            </name>
+          </person-group>
+          <year>2011</year>
+          <article-title>Sisvar: a computer statistical analysis system</article-title>
+          <source>Ciência e Agrotecnologia</source>
+          <volume>35</volume>
+          <issue>6</issue>
+          <fpage>1039</fpage>
+          <lpage>1042</lpage>
+          <pub-id pub-id-type="doi">http://dx.doi.org/10.1590/S1413-70542011000600001</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B26">
+        <mixed-citation>FETENE, M.; FELEKE, Y. (2001) Growth and photosynthesis of seedlings of four tree species from a dry tropical afromontane forest. <italic>Journal of Tropical Ecology</italic>, v. 17, n. 2, p. 269-283. https://doi.org/10.1017/S0266467401001183</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>FETENE</surname>
+              <given-names>M.</given-names>
+            </name>
+            <name>
+              <surname>FELEKE</surname>
+              <given-names>Y.</given-names>
+            </name>
+          </person-group>
+          <year>2001</year>
+          <article-title>Growth and photosynthesis of seedlings of four tree species from a dry tropical afromontane forest</article-title>
+          <source>Journal of Tropical Ecology</source>
+          <volume>17</volume>
+          <issue>2</issue>
+          <fpage>269</fpage>
+          <lpage>283</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1017/S0266467401001183</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B27">
+        <mixed-citation>FRANCO, A.A.; DIAS, L.E.; FARIA, S.D.; CAMPELLO, E.F.C.; SILVA, E.R. (1995) Uso de leguminosas florestais noduladas e micorrizadas como agentes de recuperação e manutenção da vida do solo: um modelo tecnológico. <italic>Oecologia Australis</italic>, v. 1, n. 1, p. 459-467. Disponível em: &lt;https://revistas.ufrj.br/index.php/oa/article/view/8043/6479&gt;. Acesso em: 20 jul. 2016.</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>FRANCO</surname>
+              <given-names>A.A.</given-names>
+            </name>
+            <name>
+              <surname>DIAS</surname>
+              <given-names>L.E.</given-names>
+            </name>
+            <name>
+              <surname>FARIA</surname>
+              <given-names>S.D.</given-names>
+            </name>
+            <name>
+              <surname>CAMPELLO</surname>
+              <given-names>E.F.C.</given-names>
+            </name>
+            <name>
+              <surname>SILVA</surname>
+              <given-names>E.R.</given-names>
+            </name>
+          </person-group>
+          <year>1995</year>
+          <article-title>Uso de leguminosas florestais noduladas e micorrizadas como agentes de recuperação e manutenção da vida do solo: um modelo tecnológico</article-title>
+          <source>Oecologia Australis</source>
+          <volume>1</volume>
+          <issue>1</issue>
+          <fpage>459</fpage>
+          <lpage>467</lpage>
+          <pub-id pub-id-type="doi">https://revistas.ufrj.br/index.php/oa/article/view/8043/6479</pub-id>
+          <date-in-citation content-type="access-date" iso-8601-date="2016-07-20">20 jul. 2016</date-in-citation>
+        </element-citation>
+      </ref>
+      <ref id="B28">
+        <mixed-citation>FURTINI NETO, A.E.; VALE, F.R.D.; RESENDE, Á.V.D.; GUILHERME, L.R.G.; GUEDES, G.A.D.A. (2001) <italic>Fertilidade do solo</italic>. Lavras: UFLA/FAEPE. 252 p.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>FURTINI</surname>
+              <given-names>A.E.</given-names>
+              <suffix>NETO</suffix>
+            </name>
+            <name>
+              <surname>VALE</surname>
+              <given-names>F.R.D.</given-names>
+            </name>
+            <name>
+              <surname>RESENDE</surname>
+              <given-names>Á.V.D.</given-names>
+            </name>
+            <name>
+              <surname>GUILHERME</surname>
+              <given-names>L.R.G.</given-names>
+            </name>
+            <name>
+              <surname>GUEDES</surname>
+              <given-names>G.A.D.A.</given-names>
+            </name>
+          </person-group>
+          <year>2001</year>
+          <source>Fertilidade do solo</source>
+          <publisher-loc>Lavras</publisher-loc>
+          <publisher-name>UFLA/FAEPE</publisher-name>
+          <size units="pages">252 p</size>
+        </element-citation>
+      </ref>
+      <ref id="B29">
+        <mixed-citation>GERDEMANN, J.W.; NICOLSON, T.H. (1963) Spores of mycorrhizal Endogone species extracted from soil by wet sieving and decanting. <italic>Transactions of the British Mycological Society</italic>, v. 46, n. 2, p. 235-244. https://doi.org/10.1016/S0007-1536(63)80079-0</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>GERDEMANN</surname>
+              <given-names>J.W.</given-names>
+            </name>
+            <name>
+              <surname>NICOLSON</surname>
+              <given-names>T.H.</given-names>
+            </name>
+          </person-group>
+          <year>1963</year>
+          <article-title>Spores of mycorrhizal Endogone species extracted from soil by wet sieving and decanting</article-title>
+          <source>Transactions of the British Mycological Society</source>
+          <volume>46</volume>
+          <issue>2</issue>
+          <fpage>235</fpage>
+          <lpage>244</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1016/S0007-1536(63)80079-0</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B30">
+        <mixed-citation>GIOVANNETTI, M.; MOSSE, B. (1980) An evaluation of techniques for measuring vesicular arbuscular mycorrhizal infection in roots. <italic>New Phytologist</italic>, v. 84, n. 3, p. 489-500. https://doi.org/10.1111/j.1469-8137.1980.tb04556.x</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>GIOVANNETTI</surname>
+              <given-names>M.</given-names>
+            </name>
+            <name>
+              <surname>MOSSE</surname>
+              <given-names>B.</given-names>
+            </name>
+          </person-group>
+          <year>1980</year>
+          <article-title>An evaluation of techniques for measuring vesicular arbuscular mycorrhizal infection in roots</article-title>
+          <source>New Phytologist</source>
+          <volume>84</volume>
+          <issue>3</issue>
+          <fpage>489</fpage>
+          <lpage>500</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1111/j.1469-8137.1980.tb04556.x</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B31">
+        <mixed-citation>GODOY, L.C. (2013) A logística na destinação do lodo de esgoto. <italic>Revista Científica On-line Tecnologia, Gestão e Humanismo</italic>, São Paulo, v. 2, n. 1.</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>GODOY</surname>
+              <given-names>L.C.</given-names>
+            </name>
+          </person-group>
+          <year>2013</year>
+          <article-title>A logística na destinação do lodo de esgoto</article-title>
+          <source>Revista Científica On-line Tecnologia, Gestão e Humanismo</source>
+          <publisher-loc>São Paulo</publisher-loc>
+          <volume>2</volume>
+          <issue>1</issue>
+        </element-citation>
+      </ref>
+      <ref id="B32">
+        <mixed-citation>HENDRIX, P.F.; HAN, C.R.; GROFFMAN, P.M. (1988) Soil respiration in conventional and no-tillage agroecosystems under different winter cover crop rotations. <italic>Soil and Tillage Research</italic>, v. 12, n. 2, p. 135-148. https://doi.org/10.1016/0167-1987(88)90037-2</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>HENDRIX</surname>
+              <given-names>P.F.</given-names>
+            </name>
+            <name>
+              <surname>HAN</surname>
+              <given-names>C.R.</given-names>
+            </name>
+            <name>
+              <surname>GROFFMAN</surname>
+              <given-names>P.M.</given-names>
+            </name>
+          </person-group>
+          <year>1988</year>
+          <article-title>Soil respiration in conventional and no-tillage agroecosystems under different winter cover crop rotations</article-title>
+          <source>Soil and Tillage Research</source>
+          <volume>12</volume>
+          <issue>2</issue>
+          <fpage>135</fpage>
+          <lpage>148</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1016/0167-1987(88)90037-2</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B33">
+        <mixed-citation>HOLANDA NETO, M.R. (2011) <italic>Atributos microbiológicos de um solo construído vegetado com gramíneas após mineração de carvão em Candiota/RS</italic>. Dissertação (Mestrado) - Universidade Federal de Pelotas, Pelotas.</mixed-citation>
+        <element-citation publication-type="thesis">
+          <person-group person-group-type="author">
+            <name>
+              <surname>HOLANDA</surname>
+              <given-names>M.R.</given-names>
+              <suffix>NETO</suffix>
+            </name>
+          </person-group>
+          <year>2011</year>
+          <source>Atributos microbiológicos de um solo construído vegetado com gramíneas após mineração de carvão em Candiota/RS</source>
+          <comment content-type="degree">Dissertação (Mestrado)</comment>
+          <publisher-name>Universidade Federal de Pelotas</publisher-name>
+          <publisher-loc>Pelotas</publisher-loc>
+        </element-citation>
+      </ref>
+      <ref id="B34">
+        <mixed-citation>INDA, A.V.; QUINÕNES, O.R.G.; GIASSON, E.; BISSANI, C.A.; DICK, D.P.; NASCIMENTO, P.C. do. (2010) Atributos químicos relacionados ao processo de sulfurização em solos construídos após mineração de carvão. <italic>Ciência Rural</italic>, v. 40, n. 5, p. 1060-1067. https://doi.org/10.1590/S0103-84782010000500010</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>INDA</surname>
+              <given-names>A.V.</given-names>
+            </name>
+            <name>
+              <surname>QUINÕNES</surname>
+              <given-names>O.R.G.</given-names>
+            </name>
+            <name>
+              <surname>GIASSON</surname>
+              <given-names>E.</given-names>
+            </name>
+            <name>
+              <surname>BISSANI</surname>
+              <given-names>C.A.</given-names>
+            </name>
+            <name>
+              <surname>DICK</surname>
+              <given-names>D.P.</given-names>
+            </name>
+            <name>
+              <surname>NASCIMENTO</surname>
+              <given-names>P.C. do</given-names>
+            </name>
+          </person-group>
+          <year>2010</year>
+          <article-title>Atributos químicos relacionados ao processo de sulfurização em solos construídos após mineração de carvão</article-title>
+          <source>Ciência Rural</source>
+          <volume>40</volume>
+          <issue>5</issue>
+          <fpage>1060</fpage>
+          <lpage>1067</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1590/S0103-84782010000500010</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B35">
+        <mixed-citation>ISERMEYER, H. (1952) Eine einfache Methode zur Bestimmung der Bodenatmung und der Karbonate im Boden. <italic>Journal of Plant Nutrition and Soil Science</italic>, v. 56, n. 1‐3, p. 26-38. https://doi.org/10.1002/jpln.19520560107</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>ISERMEYER</surname>
+              <given-names>H.</given-names>
+            </name>
+          </person-group>
+          <year>1952</year>
+          <article-title>Eine einfache Methode zur Bestimmung der Bodenatmung und der Karbonate im Boden</article-title>
+          <source>Journal of Plant Nutrition and Soil Science</source>
+          <volume>56</volume>
+          <issue>1‐3</issue>
+          <fpage>26</fpage>
+          <lpage>38</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1002/jpln.19520560107</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B36">
+        <mixed-citation>KLAUBERG-FILHO, O.; SIQUEIRA, J.O.; MOREIRA, F.D.S.; SOARES, C.R.F.S.; SILVA, S. (2005) Ecologia, função e potencial de aplicação de fungos micorrízicos arbusculares em condições de excesso de metais pesados. <italic>In</italic>: VIDAL-TORRADO, P.; ALLEONI, L.R.F.; COOPER, M. (orgs.). <italic>Tópicos em Ciência do Solo</italic>. Viçosa: Sociedade Brasileira de Ciência do Solo. p. 85-144.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>KLAUBERG-FILHO</surname>
+              <given-names>O.</given-names>
+            </name>
+            <name>
+              <surname>SIQUEIRA</surname>
+              <given-names>J.O.</given-names>
+            </name>
+            <name>
+              <surname>MOREIRA</surname>
+              <given-names>F.D.S.</given-names>
+            </name>
+            <name>
+              <surname>SOARES</surname>
+              <given-names>C.R.F.S.</given-names>
+            </name>
+            <name>
+              <surname>SILVA</surname>
+              <given-names>S.</given-names>
+            </name>
+          </person-group>
+          <year>2005</year>
+          <chapter-title>Ecologia, função e potencial de aplicação de fungos micorrízicos arbusculares em condições de excesso de metais pesados</chapter-title>
+          <person-group person-group-type="compiler">
+            <name>
+              <surname>VIDAL-TORRADO</surname>
+              <given-names>P.</given-names>
+            </name>
+            <name>
+              <surname>ALLEONI</surname>
+              <given-names>L.R.F.</given-names>
+            </name>
+            <name>
+              <surname>COOPER</surname>
+              <given-names>M.</given-names>
+            </name>
+          </person-group>
+          <source>Tópicos em Ciência do Solo</source>
+          <publisher-loc>Viçosa</publisher-loc>
+          <publisher-name>Sociedade Brasileira de Ciência do Solo</publisher-name>
+          <fpage>85</fpage>
+          <lpage>144</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B37">
+        <mixed-citation>KOPPE, J.C.; COSTA, J.F.C.L. (2008) A lavra de carvão e o meio ambiente em Santa Catarina. <italic>In</italic>: SOARES, P.S.M.; SANTOS, M.D.C.; POSSA, M.V. <italic>Carvão brasileiro:</italic> tecnologia e meio ambiente. Rio de Janeiro: CETEM/MCT. p. 25-38.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>KOPPE</surname>
+              <given-names>J.C.</given-names>
+            </name>
+            <name>
+              <surname>COSTA</surname>
+              <given-names>J.F.C.L.</given-names>
+            </name>
+          </person-group>
+          <year>2008</year>
+          <chapter-title>A lavra de carvão e o meio ambiente em Santa Catarina</chapter-title>
+          <person-group person-group-type="author">
+            <name>
+              <surname>SOARES</surname>
+              <given-names>P.S.M.</given-names>
+            </name>
+            <name>
+              <surname>SANTOS</surname>
+              <given-names>M.D.C.</given-names>
+            </name>
+            <name>
+              <surname>POSSA</surname>
+              <given-names>M.V.</given-names>
+            </name>
+          </person-group>
+          <source><italic>Carvão brasileiro:</italic> tecnologia e meio ambiente</source>
+          <publisher-loc>Rio de Janeiro</publisher-loc>
+          <publisher-name>CETEM/MCT</publisher-name>
+          <fpage>25</fpage>
+          <lpage>38</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B38">
+        <mixed-citation>LAMBAIS, M.R.; RIOSRUIZ, W.F.; ANDRADE, R.M. (2003) Antioxidant responses in bean (Phaseolus vulgaris) roots colonized by arbuscular mycorrhizal fungi. <italic>New Phytologist</italic>, v. 160, p. 421-428. https://doi.org/10.1046/j.1469-8137.2003.00881.x</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>LAMBAIS</surname>
+              <given-names>M.R.</given-names>
+            </name>
+            <name>
+              <surname>RIOSRUIZ</surname>
+              <given-names>W.F.</given-names>
+            </name>
+            <name>
+              <surname>ANDRADE</surname>
+              <given-names>R.M.</given-names>
+            </name>
+          </person-group>
+          <year>2003</year>
+          <article-title>Antioxidant responses in bean (Phaseolus vulgaris) roots colonized by arbuscular mycorrhizal fungi</article-title>
+          <source>New Phytologist</source>
+          <volume>160</volume>
+          <fpage>421</fpage>
+          <lpage>428</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1046/j.1469-8137.2003.00881.x</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B39">
+        <mixed-citation>LARA, A.I.; ANDREOLI, C.V.; PEGORINI, E.S. (2001) Avaliação dos impactos ambientais e monitoramento da disposição final do lodo. <italic>In</italic>: ANDREOLI, C.V.; SPERLING, M.V.; FERNANDES, F. <italic>Lodo de esgotos:</italic> tratamento e disposição final. Princípios do tratamento biológico de águas residuárias. Belo Horizonte: Departamento de Engenharia Sanitária e Ambiental (DESA)/UFMG e Companhia de Saneamento do Paraná (SANEPAR). v. 6. p. 462-482.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>LARA</surname>
+              <given-names>A.I.</given-names>
+            </name>
+            <name>
+              <surname>ANDREOLI</surname>
+              <given-names>C.V.</given-names>
+            </name>
+            <name>
+              <surname>PEGORINI</surname>
+              <given-names>E.S.</given-names>
+            </name>
+          </person-group>
+          <year>2001</year>
+          <chapter-title>Avaliação dos impactos ambientais e monitoramento da disposição final do lodo</chapter-title>
+          <person-group person-group-type="author">
+            <name>
+              <surname>ANDREOLI</surname>
+              <given-names>C.V.</given-names>
+            </name>
+            <name>
+              <surname>SPERLING</surname>
+              <given-names>M.V.</given-names>
+            </name>
+            <name>
+              <surname>FERNANDES</surname>
+              <given-names>F.</given-names>
+            </name>
+          </person-group>
+          <source><italic>Lodo de esgotos:</italic> tratamento e disposição final. Princípios do tratamento biológico de águas residuárias</source>
+          <publisher-loc>Belo Horizonte</publisher-loc>
+          <publisher-name>Departamento de Engenharia Sanitária e Ambiental (DESA)/UFMG e Companhia de Saneamento do Paraná (SANEPAR)</publisher-name>
+          <volume>6</volume>
+          <fpage>462</fpage>
+          <lpage>482</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B40">
+        <mixed-citation>LEITE, L.F.C.; MENDONÇA, E.S.; NEVES, J.C.L.; MACHADO, P.L.O.A.; GALVÃO, J.C.C. (2003) Estoques totais de carbono orgânico e seus compartimentos em Argissolo sob floresta e sob milho cultivado com adubação mineral e orgânica. <italic>Revista Brasileira de Ciência do Solo</italic>, v. 27, n. 5, p. 821-832. https://doi.org/10.1590/S0100-06832003000500006</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>LEITE</surname>
+              <given-names>L.F.C.</given-names>
+            </name>
+            <name>
+              <surname>MENDONÇA</surname>
+              <given-names>E.S.</given-names>
+            </name>
+            <name>
+              <surname>NEVES</surname>
+              <given-names>J.C.L.</given-names>
+            </name>
+            <name>
+              <surname>MACHADO</surname>
+              <given-names>P.L.O.A.</given-names>
+            </name>
+            <name>
+              <surname>GALVÃO</surname>
+              <given-names>J.C.C.</given-names>
+            </name>
+          </person-group>
+          <year>2003</year>
+          <article-title>Estoques totais de carbono orgânico e seus compartimentos em Argissolo sob floresta e sob milho cultivado com adubação mineral e orgânica</article-title>
+          <source>Revista Brasileira de Ciência do Solo</source>
+          <volume>27</volume>
+          <issue>5</issue>
+          <fpage>821</fpage>
+          <lpage>832</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1590/S0100-06832003000500006</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B41">
+        <mixed-citation>LEMAINSKI, J.; DA SILVA, J. (2006) Utilização do biossólido da CAESB na produção de milho no Distrito Federal. <italic>Revista Brasileira de Ciência do Solo</italic>, v. 30, n. 4, p. 741-750. https://doi.org/10.1590/S0100-06832006000400015</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>LEMAINSKI</surname>
+              <given-names>J.</given-names>
+            </name>
+            <name>
+              <surname>DA SILVA</surname>
+              <given-names>J.</given-names>
+            </name>
+          </person-group>
+          <year>2006</year>
+          <article-title>Utilização do biossólido da CAESB na produção de milho no Distrito Federal</article-title>
+          <source>Revista Brasileira de Ciência do Solo</source>
+          <volume>30</volume>
+          <issue>4</issue>
+          <fpage>741</fpage>
+          <lpage>750</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1590/S0100-06832006000400015</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B42">
+        <mixed-citation>MARSCHNER, H. <italic>Mineral nutrition of higher plants</italic>. San Diego: Academic, 2012. 902 p.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>MARSCHNER</surname>
+              <given-names>H.</given-names>
+            </name>
+          </person-group>
+          <source>Mineral nutrition of higher plants</source>
+          <publisher-loc>San Diego</publisher-loc>
+          <publisher-name>Academic</publisher-name>
+          <year>2012</year>
+          <size units="pages">902 p</size>
+        </element-citation>
+      </ref>
+      <ref id="B43">
+        <mixed-citation>MEHROTRA, V.S. (1998) Arbuscular mycorrhizal associations of plants colonizing coal mine spoil in India. <italic>Journal of Agricultural Science</italic>, Cambridge, v. 130, n. 2, p. 125-133. https://doi.org/10.1017/S0021859697005091</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>MEHROTRA</surname>
+              <given-names>V.S.</given-names>
+            </name>
+          </person-group>
+          <year>1998</year>
+          <article-title>Arbuscular mycorrhizal associations of plants colonizing coal mine spoil in India</article-title>
+          <source>Journal of Agricultural Science</source>
+          <publisher-loc>Cambridge</publisher-loc>
+          <volume>130</volume>
+          <issue>2</issue>
+          <fpage>125</fpage>
+          <lpage>133</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1017/S0021859697005091</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B44">
+        <mixed-citation>MELFI, A.J.; MONTES, C.R. (2002) Impacto dos biossólidos sobre o solo. <italic>In</italic>: TSUTIYA, M.T.; COMPARINI, J.B.; ALEM SOBRINHO, P.; HESPANHOL, I.; CARVALHO, P.C.T.; MELFI, A.J.; MELO, W.J.; MARQUES, M.O. (orgs.). <italic>Biossólidos na agricultura</italic>. 2. ed. São Paulo: ABES. p. 243-272.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>MELFI</surname>
+              <given-names>A.J.</given-names>
+            </name>
+            <name>
+              <surname>MONTES</surname>
+              <given-names>C.R.</given-names>
+            </name>
+          </person-group>
+          <year>2002</year>
+          <chapter-title>Impacto dos biossólidos sobre o solo</chapter-title>
+          <person-group person-group-type="compiler">
+            <name>
+              <surname>TSUTIYA</surname>
+              <given-names>M.T.</given-names>
+            </name>
+            <name>
+              <surname>COMPARINI</surname>
+              <given-names>J.B.</given-names>
+            </name>
+            <name>
+              <surname>ALEM</surname>
+              <given-names>P.</given-names>
+              <suffix>SOBRINHO</suffix>
+            </name>
+            <name>
+              <surname>HESPANHOL</surname>
+              <given-names>I.</given-names>
+            </name>
+            <name>
+              <surname>CARVALHO</surname>
+              <given-names>P.C.T.</given-names>
+            </name>
+            <name>
+              <surname>MELFI</surname>
+              <given-names>A.J.</given-names>
+            </name>
+            <name>
+              <surname>MELO</surname>
+              <given-names>W.J.</given-names>
+            </name>
+            <name>
+              <surname>MARQUES</surname>
+              <given-names>M.O.</given-names>
+            </name>
+          </person-group>
+          <source>Biossólidos na agricultura</source>
+          <edition>2</edition>
+          <publisher-loc>São Paulo</publisher-loc>
+          <publisher-name>ABES</publisher-name>
+          <fpage>243</fpage>
+          <lpage>272</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B45">
+        <mixed-citation>MELLONI, R.; NOGUEIRA, M.A.; FREIRE, V.F.; CARDOSO, E.J.B.N. (2000) Fósforo adicionado e fungos micorrízicos arbusculares no crescimento e nutrição mineral de limoeiro-cravo [Citrus limonia (L.) Osbeck]. <italic>Revista Brasileira de Ciência do Solo</italic>, v. 24, n. 4. https://doi.org/10.1590/S0100-06832000000400009</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>MELLONI</surname>
+              <given-names>R.</given-names>
+            </name>
+            <name>
+              <surname>NOGUEIRA</surname>
+              <given-names>M.A.</given-names>
+            </name>
+            <name>
+              <surname>FREIRE</surname>
+              <given-names>V.F.</given-names>
+            </name>
+            <name>
+              <surname>CARDOSO</surname>
+              <given-names>E.J.B.N.</given-names>
+            </name>
+          </person-group>
+          <year>2000</year>
+          <article-title>Fósforo adicionado e fungos micorrízicos arbusculares no crescimento e nutrição mineral de limoeiro-cravo [Citrus limonia (L.) Osbeck]</article-title>
+          <source>Revista Brasileira de Ciência do Solo</source>
+          <volume>24</volume>
+          <issue>4</issue>
+          <pub-id pub-id-type="doi">https://doi.org/10.1590/S0100-06832000000400009</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B46">
+        <mixed-citation>MELO, W.J.; MARQUES, M.O.; MELO, V. (2001) O uso agrícola do biossólido e as propriedades do solo. <italic>In</italic>: TSUTIYA, M.T.; COMPARINI, J.B.; ALÉM SOBRINHO, P. (orgs.). <italic>Biossólidos na agricultura</italic>. São Paulo: Sabesp. p. 289-363.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>MELO</surname>
+              <given-names>W.J.</given-names>
+            </name>
+            <name>
+              <surname>MARQUES</surname>
+              <given-names>M.O.</given-names>
+            </name>
+            <name>
+              <surname>MELO</surname>
+              <given-names>V.</given-names>
+            </name>
+          </person-group>
+          <year>2001</year>
+          <chapter-title>O uso agrícola do biossólido e as propriedades do solo</chapter-title>
+          <person-group person-group-type="compiler">
+            <name>
+              <surname>TSUTIYA</surname>
+              <given-names>M.T.</given-names>
+            </name>
+            <name>
+              <surname>COMPARINI</surname>
+              <given-names>J.B.</given-names>
+            </name>
+            <name>
+              <surname>ALÉM</surname>
+              <given-names>P.</given-names>
+              <suffix>SOBRINHO</suffix>
+            </name>
+          </person-group>
+          <source>Biossólidos na agricultura</source>
+          <publisher-loc>São Paulo</publisher-loc>
+          <publisher-name>Sabesp</publisher-name>
+          <fpage>289</fpage>
+          <lpage>363</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B47">
+        <mixed-citation>MOREIRA, F.M.S; SIQUEIRA, J.O. (2006) <italic>Microbiologia e bioquímica do solo</italic>. Lavras: UFLA, 625p.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>MOREIRA</surname>
+              <given-names>F.M.S</given-names>
+            </name>
+            <name>
+              <surname>SIQUEIRA</surname>
+              <given-names>J.O.</given-names>
+            </name>
+          </person-group>
+          <year>2006</year>
+          <source>Microbiologia e bioquímica do solo</source>
+          <publisher-loc>Lavras</publisher-loc>
+          <publisher-name>UFLA</publisher-name>
+          <size units="pages">625p</size>
+        </element-citation>
+      </ref>
+      <ref id="B48">
+        <mixed-citation>PARKIN, T.B.; DORAN, J.W.; FRANCOP-VIZCAÍNO, E. (1996) Field and laboratory tests of soil respiration. <italic>In</italic>: DORAN, J.W.; JONES, A. (orgs.). <italic>Methods for assessing soil quality</italic>. Madison: Soil Science Society of America. P .231-245.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>PARKIN</surname>
+              <given-names>T.B.</given-names>
+            </name>
+            <name>
+              <surname>DORAN</surname>
+              <given-names>J.W.</given-names>
+            </name>
+            <name>
+              <surname>FRANCOP-VIZCAÍNO</surname>
+              <given-names>E.</given-names>
+            </name>
+          </person-group>
+          <year>1996</year>
+          <chapter-title>Field and laboratory tests of soil respiration</chapter-title>
+          <person-group person-group-type="compiler">
+            <name>
+              <surname>DORAN</surname>
+              <given-names>J.W.</given-names>
+            </name>
+            <name>
+              <surname>JONES</surname>
+              <given-names>A.</given-names>
+            </name>
+          </person-group>
+          <source>Methods for assessing soil quality</source>
+          <publisher-loc>Madison</publisher-loc>
+          <publisher-name>Soil Science Society of America</publisher-name>
+          <fpage>231</fpage>
+          <lpage>245</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B49">
+        <mixed-citation>PHILLIPS, J.M; HAYMAN, D.S. (1970) Improved procedures for clearing roots and staining parasitic and vesicular-arbuscular mycorrhizal fungi for rapid assessment of infection. <italic>Transactions of the British Mycological Society</italic>, v. 55, n. 1, p. 158-161. https://doi.org/10.1016/S0007-1536(70)80110-3</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>PHILLIPS</surname>
+              <given-names>J.M</given-names>
+            </name>
+            <name>
+              <surname>HAYMAN</surname>
+              <given-names>D.S.</given-names>
+            </name>
+          </person-group>
+          <year>1970</year>
+          <article-title>Improved procedures for clearing roots and staining parasitic and vesicular-arbuscular mycorrhizal fungi for rapid assessment of infection</article-title>
+          <source>Transactions of the British Mycological Society</source>
+          <volume>55</volume>
+          <issue>1</issue>
+          <fpage>158</fpage>
+          <lpage>161</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1016/S0007-1536(70)80110-3</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B50">
+        <mixed-citation>POLZ, J.A. (2008) Recuperação de áreas impactadas pela mineração de carvão a céu aberto em Santa Catarina: Gestão de rejeitos e revegetação. <italic>In</italic>: SOARES, P.S.M.; SANTOS, M.D.C.; POSSA, M.V. <italic>Carvão brasileiro:</italic> tecnologia e meio ambiente. Rio de Janeiro: CETEM/MCT .</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>POLZ</surname>
+              <given-names>J.A.</given-names>
+            </name>
+          </person-group>
+          <year>2008</year>
+          <chapter-title>Recuperação de áreas impactadas pela mineração de carvão a céu aberto em Santa Catarina: Gestão de rejeitos e revegetação</chapter-title>
+          <person-group person-group-type="author">
+            <name>
+              <surname>SOARES</surname>
+              <given-names>P.S.M.</given-names>
+            </name>
+            <name>
+              <surname>SANTOS</surname>
+              <given-names>M.D.C.</given-names>
+            </name>
+            <name>
+              <surname>POSSA</surname>
+              <given-names>M.V.</given-names>
+            </name>
+          </person-group>
+          <source><italic>Carvão brasileiro:</italic> tecnologia e meio ambiente</source>
+          <publisher-loc>Rio de Janeiro</publisher-loc>
+          <publisher-name>CETEM/MCT</publisher-name>
+        </element-citation>
+      </ref>
+      <ref id="B51">
+        <mixed-citation>PROCHNOW, L.I.; ALCARDE, J.C.; CHIEN, S.H. (2004) Eficiência agronômica dos fosfatos totalmente acidulados. <italic>In</italic>: YAMADA, T.; ABDALLA, S.R.S. (orgs.). <italic>Fósforo na agricultura brasileira</italic>. Piracicaba: Potafos. p. 605-663.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>PROCHNOW</surname>
+              <given-names>L.I.</given-names>
+            </name>
+            <name>
+              <surname>ALCARDE</surname>
+              <given-names>J.C.</given-names>
+            </name>
+            <name>
+              <surname>CHIEN</surname>
+              <given-names>S.H.</given-names>
+            </name>
+          </person-group>
+          <year>2004</year>
+          <chapter-title>Eficiência agronômica dos fosfatos totalmente acidulados</chapter-title>
+          <person-group person-group-type="compiler">
+            <name>
+              <surname>YAMADA</surname>
+              <given-names>T.</given-names>
+            </name>
+            <name>
+              <surname>ABDALLA</surname>
+              <given-names>S.R.S.</given-names>
+            </name>
+          </person-group>
+          <source>Fósforo na agricultura brasileira</source>
+          <publisher-loc>Piracicaba</publisher-loc>
+          <publisher-name>Potafos</publisher-name>
+          <fpage>605</fpage>
+          <lpage>663</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B52">
+        <mixed-citation>RIELING, R.C.; ZAMPAR, R.; NAVARRETE, L.P.; SILVA, J.P. (2014) Efeito residual do lodo de esgoto na produção de mudas de espécies nativas para reflorestamento. <italic>SaBios: Revista de Saúde e Biologia</italic>, v. 9, n. 2, p. 31-39.</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>RIELING</surname>
+              <given-names>R.C.</given-names>
+            </name>
+            <name>
+              <surname>ZAMPAR</surname>
+              <given-names>R.</given-names>
+            </name>
+            <name>
+              <surname>NAVARRETE</surname>
+              <given-names>L.P.</given-names>
+            </name>
+            <name>
+              <surname>SILVA</surname>
+              <given-names>J.P.</given-names>
+            </name>
+          </person-group>
+          <year>2014</year>
+          <article-title>Efeito residual do lodo de esgoto na produção de mudas de espécies nativas para reflorestamento</article-title>
+          <source>SaBios: Revista de Saúde e Biologia</source>
+          <volume>9</volume>
+          <issue>2</issue>
+          <fpage>31</fpage>
+          <lpage>39</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B53">
+        <mixed-citation>ROCHA, J.H.T.; BACKES, C.; DIOGO, F.A.; PASCOTTO, C.B.; BORELLI, K. (2013) Composto de lodo de esgoto como substrato para mudas de eucalipto. <italic>Pesquisa Florestal Brasileira</italic>, Colombo, v. 33, n. 73, p. 27-35. https://doi.org/10.4336/2013.pfb.33.73.331</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>ROCHA</surname>
+              <given-names>J.H.T.</given-names>
+            </name>
+            <name>
+              <surname>BACKES</surname>
+              <given-names>C.</given-names>
+            </name>
+            <name>
+              <surname>DIOGO</surname>
+              <given-names>F.A.</given-names>
+            </name>
+            <name>
+              <surname>PASCOTTO</surname>
+              <given-names>C.B.</given-names>
+            </name>
+            <name>
+              <surname>BORELLI</surname>
+              <given-names>K.</given-names>
+            </name>
+          </person-group>
+          <year>2013</year>
+          <article-title>Composto de lodo de esgoto como substrato para mudas de eucalipto</article-title>
+          <source>Pesquisa Florestal Brasileira</source>
+          <publisher-loc>Colombo</publisher-loc>
+          <volume>33</volume>
+          <issue>73</issue>
+          <fpage>27</fpage>
+          <lpage>35</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.4336/2013.pfb.33.73.331</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B54">
+        <mixed-citation>ROSA, M.E.C.; NAVES, R.V.; OLIVEIRA JÚNIOR, J.P. (2005) Produção e crescimento de mudas de mangabeira (<italic>Hancornia speciosa</italic> Gomez) em diferentes substratos. <italic>Pesquisa Agropecuária Tropical</italic>, v. 35, n. 2, p. 65-70.</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>ROSA</surname>
+              <given-names>M.E.C.</given-names>
+            </name>
+            <name>
+              <surname>NAVES</surname>
+              <given-names>R.V.</given-names>
+            </name>
+            <name>
+              <surname>OLIVEIRA</surname>
+              <given-names>J.P.</given-names>
+              <suffix>JÚNIOR</suffix>
+            </name>
+          </person-group>
+          <year>2005</year>
+          <article-title>Produção e crescimento de mudas de mangabeira (Hancornia speciosa Gomez) em diferentes substratos</article-title>
+          <source>Pesquisa Agropecuária Tropical</source>
+          <volume>35</volume>
+          <issue>2</issue>
+          <fpage>65</fpage>
+          <lpage>70</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B55">
+        <mixed-citation>SABONARO, D.Z. (2006) Utilização de composto de lixo urbano na produção de mudas de espécies arbóreas nativas com dois níveis de irrigação. Dissertação (Mestrado.) - Universidade Estadual Paulista (UNESP), Jaboticabal (SP), 105p.</mixed-citation>
+        <element-citation publication-type="thesis">
+          <person-group person-group-type="author">
+            <name>
+              <surname>SABONARO</surname>
+              <given-names>D.Z.</given-names>
+            </name>
+          </person-group>
+          <year>2006</year>
+          <source>Utilização de composto de lixo urbano na produção de mudas de espécies arbóreas nativas com dois níveis de irrigação</source>
+          <comment content-type="degree">Dissertação (Mestrado.)</comment>
+          <publisher-name>Universidade Estadual Paulista (UNESP)</publisher-name>
+          <publisher-loc>Jaboticabal, SP</publisher-loc>
+          <publisher-loc>Jaboticabal, SP</publisher-loc>
+          <size units="pages">105p</size>
+        </element-citation>
+      </ref>
+      <ref id="B56">
+        <mixed-citation>SANTOS, D.C.; CASTILHOS, D.D.; PAULETTO, E.A.; FERNANDES, F.F.; PINTO, L.F.S.; CASTILHOS, R.M.V. (2008) Biomassa e atividade microbiana em solo construído após mineração de carvão e submetido a diferentes coberturas vegetais. <italic>Revista Brasileira de Agrociência</italic>, v. 14, n. 3-4, p.135-146. http://dx.doi.org/10.18539/cast.v14i3.1943</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>SANTOS</surname>
+              <given-names>D.C.</given-names>
+            </name>
+            <name>
+              <surname>CASTILHOS</surname>
+              <given-names>D.D.</given-names>
+            </name>
+            <name>
+              <surname>PAULETTO</surname>
+              <given-names>E.A.</given-names>
+            </name>
+            <name>
+              <surname>FERNANDES</surname>
+              <given-names>F.F.</given-names>
+            </name>
+            <name>
+              <surname>PINTO</surname>
+              <given-names>L.F.S.</given-names>
+            </name>
+            <name>
+              <surname>CASTILHOS</surname>
+              <given-names>R.M.V.</given-names>
+            </name>
+          </person-group>
+          <year>2008</year>
+          <article-title>Biomassa e atividade microbiana em solo construído após mineração de carvão e submetido a diferentes coberturas vegetais</article-title>
+          <source>Revista Brasileira de Agrociência</source>
+          <volume>14</volume>
+          <issue>3-4</issue>
+          <fpage>135</fpage>
+          <lpage>146</lpage>
+          <pub-id pub-id-type="doi">http://dx.doi.org/10.18539/cast.v14i3.1943</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B57">
+        <mixed-citation>SANTOS, H.G. dos; JACOMINE, P.K.T.; ANJOS, L.H.C. dos; OLIVEIRA, V.A. de; LUMBRERAS, J.F.; COELHO, M.R.; ALMEIDA, J.A. de; CUNHA, T.J.F.; OLIVEIRA, J.B. de. (2013) <italic>Sistema brasileiro de classificação de solos</italic>. 3. ed. rev. e ampl. Brasília: Embrapa, 353p.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>SANTOS</surname>
+              <given-names>H.G. dos</given-names>
+            </name>
+            <name>
+              <surname>JACOMINE</surname>
+              <given-names>P.K.T.</given-names>
+            </name>
+            <name>
+              <surname>ANJOS</surname>
+              <given-names>L.H.C. dos</given-names>
+            </name>
+            <name>
+              <surname>OLIVEIRA</surname>
+              <given-names>V.A. de</given-names>
+            </name>
+            <name>
+              <surname>LUMBRERAS</surname>
+              <given-names>J.F.</given-names>
+            </name>
+            <name>
+              <surname>COELHO</surname>
+              <given-names>M.R.</given-names>
+            </name>
+            <name>
+              <surname>ALMEIDA</surname>
+              <given-names>J.A. de</given-names>
+            </name>
+            <name>
+              <surname>CUNHA</surname>
+              <given-names>T.J.F.</given-names>
+            </name>
+            <name>
+              <surname>OLIVEIRA</surname>
+              <given-names>J.B. de</given-names>
+            </name>
+          </person-group>
+          <year>2013</year>
+          <source>Sistema brasileiro de classificação de solos</source>
+          <edition>3</edition>
+          <publisher-loc>Brasília</publisher-loc>
+          <publisher-name>Embrapa</publisher-name>
+          <size units="pages">353p</size>
+        </element-citation>
+      </ref>
+      <ref id="B58">
+        <mixed-citation>SANTOS, J.A.; SANTOS, V.B.; ARAÚJO, A.S.F. de. (2009) Alterações na atividade microbiana e na matéria orgânica do solo após aplicação de lodo de esgoto. <italic>Bioscience Journal</italic>, v. 25, n. 2, p. 17-23.</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>SANTOS</surname>
+              <given-names>J.A.</given-names>
+            </name>
+            <name>
+              <surname>SANTOS</surname>
+              <given-names>V.B.</given-names>
+            </name>
+            <name>
+              <surname>ARAÚJO</surname>
+              <given-names>A.S.F. de</given-names>
+            </name>
+          </person-group>
+          <year>2009</year>
+          <article-title>Alterações na atividade microbiana e na matéria orgânica do solo após aplicação de lodo de esgoto</article-title>
+          <source>Bioscience Journal</source>
+          <volume>25</volume>
+          <issue>2</issue>
+          <fpage>17</fpage>
+          <lpage>23</lpage>
+        </element-citation>
+      </ref>
+      <ref id="B59">
+        <mixed-citation>SHOEMAKER, H.E.; MCLEAN, E.O.; PRATT, P.F. (1961) Buffer methods for determining lime requirements of soils with appreciable amounts of extractable aluminum. <italic>Soil Science Society of America Journal</italic>, v. 25, n. 4, p. 274-277. https://doi.org/10.2136/sssaj1961.03615995002500040014x</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>SHOEMAKER</surname>
+              <given-names>H.E.</given-names>
+            </name>
+            <name>
+              <surname>MCLEAN</surname>
+              <given-names>E.O.</given-names>
+            </name>
+            <name>
+              <surname>PRATT</surname>
+              <given-names>P.F.</given-names>
+            </name>
+          </person-group>
+          <year>1961</year>
+          <article-title>Buffer methods for determining lime requirements of soils with appreciable amounts of extractable aluminum</article-title>
+          <source>Soil Science Society of America Journal</source>
+          <volume>25</volume>
+          <issue>4</issue>
+          <fpage>274</fpage>
+          <lpage>277</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.2136/sssaj1961.03615995002500040014x</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B60">
+        <mixed-citation>SILVA, J.E.; RESCK, D.V.S.; SHARMA, R.D. (2002) Alternativa agronômica para o biossólido produzido no Distrito Federal. I-Efeito na produção de milho e na adição de metais pesados em Latossolo no cerrado. <italic>Revista Brasileira de Ciência do Solo</italic>, v. 26, n. 2, p. 487-495. https://doi.org/10.1590/S0100-06832002000200023</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>SILVA</surname>
+              <given-names>J.E.</given-names>
+            </name>
+            <name>
+              <surname>RESCK</surname>
+              <given-names>D.V.S.</given-names>
+            </name>
+            <name>
+              <surname>SHARMA</surname>
+              <given-names>R.D.</given-names>
+            </name>
+          </person-group>
+          <year>2002</year>
+          <article-title>Alternativa agronômica para o biossólido produzido no Distrito Federal. I-Efeito na produção de milho e na adição de metais pesados em Latossolo no cerrado</article-title>
+          <source>Revista Brasileira de Ciência do Solo</source>
+          <volume>26</volume>
+          <issue>2</issue>
+          <fpage>487</fpage>
+          <lpage>495</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1590/S0100-06832002000200023</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B61">
+        <mixed-citation>SMITH, S.E.; READ, D.J. (2008) <italic>Mycorrhizal symbiosis</italic>. Londres: Academic Press. 785 p.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>SMITH</surname>
+              <given-names>S.E.</given-names>
+            </name>
+            <name>
+              <surname>READ</surname>
+              <given-names>D.J.</given-names>
+            </name>
+          </person-group>
+          <year>2008</year>
+          <source>Mycorrhizal symbiosis</source>
+          <publisher-loc>Londres</publisher-loc>
+          <publisher-name>Academic Press</publisher-name>
+          <size units="pages">785 p</size>
+        </element-citation>
+      </ref>
+      <ref id="B62">
+        <mixed-citation>SOARES, P.S.M.; SANTOS, M.D.C.; POSSA, M.V. (2008) <italic>Carvão brasileiro:</italic> tecnologia e meio ambiente. Rio de Janeiro: CETEM/MCT . 300 p.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>SOARES</surname>
+              <given-names>P.S.M.</given-names>
+            </name>
+            <name>
+              <surname>SANTOS</surname>
+              <given-names>M.D.C.</given-names>
+            </name>
+            <name>
+              <surname>POSSA</surname>
+              <given-names>M.V.</given-names>
+            </name>
+          </person-group>
+          <year>2008</year>
+          <source><italic>Carvão brasileiro:</italic> tecnologia e meio ambiente</source>
+          <publisher-loc>Rio de Janeiro</publisher-loc>
+          <publisher-name>CETEM/MCT</publisher-name>
+          <size units="pages">300 p</size>
+        </element-citation>
+      </ref>
+      <ref id="B63">
+        <mixed-citation>STUMPF, L.; PAULETTO, E.A.; PINTO, L.F.S.; GARCIA, G.F.; AMBUS, J.V.; SILVA, T.S.; PINTO, M.A.B.; TUCHTENHAGEN, I.K. (2016) Condição física e desenvolvimento radicular de gramíneas em solo construído após mineração de carvão. <italic>Pesquisa Agropecuária Brasileira</italic>, v. 51, n. 9, p. 1078-1087. https://doi.org/10.1590/s0100-204x2016000900007</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>STUMPF</surname>
+              <given-names>L.</given-names>
+            </name>
+            <name>
+              <surname>PAULETTO</surname>
+              <given-names>E.A.</given-names>
+            </name>
+            <name>
+              <surname>PINTO</surname>
+              <given-names>L.F.S.</given-names>
+            </name>
+            <name>
+              <surname>GARCIA</surname>
+              <given-names>G.F.</given-names>
+            </name>
+            <name>
+              <surname>AMBUS</surname>
+              <given-names>J.V.</given-names>
+            </name>
+            <name>
+              <surname>SILVA</surname>
+              <given-names>T.S.</given-names>
+            </name>
+            <name>
+              <surname>PINTO</surname>
+              <given-names>M.A.B.</given-names>
+            </name>
+            <name>
+              <surname>TUCHTENHAGEN</surname>
+              <given-names>I.K.</given-names>
+            </name>
+          </person-group>
+          <year>2016</year>
+          <article-title>Condição física e desenvolvimento radicular de gramíneas em solo construído após mineração de carvão</article-title>
+          <source>Pesquisa Agropecuária Brasileira</source>
+          <volume>51</volume>
+          <issue>9</issue>
+          <fpage>1078</fpage>
+          <lpage>1087</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1590/s0100-204x2016000900007</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B64">
+        <mixed-citation>TEDESCO, M.J.; GIANELLO, C.; BISSANI, C.A.; BOHNEN, H.; VOLKWEISS, S.J. (1995) <italic>Análise de solo, plantas e outros materiais</italic>. Boletim Técnico de Solos. Porto Alegre: Departamento de Solos da Universidade Federal do Rio Grande do Sul. 174 p.</mixed-citation>
+        <element-citation publication-type="book">
+          <person-group person-group-type="author">
+            <name>
+              <surname>TEDESCO</surname>
+              <given-names>M.J.</given-names>
+            </name>
+            <name>
+              <surname>GIANELLO</surname>
+              <given-names>C.</given-names>
+            </name>
+            <name>
+              <surname>BISSANI</surname>
+              <given-names>C.A.</given-names>
+            </name>
+            <name>
+              <surname>BOHNEN</surname>
+              <given-names>H.</given-names>
+            </name>
+            <name>
+              <surname>VOLKWEISS</surname>
+              <given-names>S.J.</given-names>
+            </name>
+          </person-group>
+          <year>1995</year>
+          <source>Análise de solo, plantas e outros materiais</source>
+          <comment>Boletim Técnico de Solos</comment>
+          <publisher-loc>Porto Alegre</publisher-loc>
+          <publisher-name>Departamento de Solos da Universidade Federal do Rio Grande do Sul</publisher-name>
+          <size units="pages">174 p</size>
+        </element-citation>
+      </ref>
+      <ref id="B65">
+        <mixed-citation>TORRES MODESTO, P.; SCABORA, M.H.; COLODRO, G.; MALTONI, K.L.; RODRIGUES CASSIOLATO, A.M. (2009) Alterações em algumas propriedades de um latossolo degradado com uso de lodo de esgoto e resíduos orgânicos. <italic>Revista Brasileira de Ciência do Solo</italic>, v. 33, n. 5, p. 1489-1498. https://doi.org/10.1590/S0100-06832009000500039</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>TORRES MODESTO</surname>
+              <given-names>P.</given-names>
+            </name>
+            <name>
+              <surname>SCABORA</surname>
+              <given-names>M.H.</given-names>
+            </name>
+            <name>
+              <surname>COLODRO</surname>
+              <given-names>G.</given-names>
+            </name>
+            <name>
+              <surname>MALTONI</surname>
+              <given-names>K.L.</given-names>
+            </name>
+            <name>
+              <surname>RODRIGUES CASSIOLATO</surname>
+              <given-names>A.M.</given-names>
+            </name>
+          </person-group>
+          <year>2009</year>
+          <article-title>Alterações em algumas propriedades de um latossolo degradado com uso de lodo de esgoto e resíduos orgânicos</article-title>
+          <source>Revista Brasileira de Ciência do Solo</source>
+          <volume>33</volume>
+          <issue>5</issue>
+          <fpage>1489</fpage>
+          <lpage>1498</lpage>
+          <pub-id pub-id-type="doi">https://doi.org/10.1590/S0100-06832009000500039</pub-id>
+        </element-citation>
+      </ref>
+      <ref id="B66">
+        <mixed-citation>WILDNER, L. do P.; DADALTO, G.G. (1992) Adubos verdes de inverno para o Oeste catarinense. <italic>Agropecuária Catarinense</italic>, v. 5, n. 1, p. 3-6.</mixed-citation>
+        <element-citation publication-type="journal">
+          <person-group person-group-type="author">
+            <name>
+              <surname>WILDNER</surname>
+              <given-names>L. do P.</given-names>
+            </name>
+            <name>
+              <surname>DADALTO</surname>
+              <given-names>G.G.</given-names>
+            </name>
+          </person-group>
+          <year>1992</year>
+          <article-title>Adubos verdes de inverno para o Oeste catarinense</article-title>
+          <source>Agropecuária Catarinense</source>
+          <volume>5</volume>
+          <issue>1</issue>
+          <fpage>3</fpage>
+          <lpage>6</lpage>
+        </element-citation>
+      </ref>
+    </ref-list>
+    <fn-group>
+      <fn fn-type="other" id="fn1">
+        <label>1</label>
+        <p><bold>Reg. ABES:</bold> 182506</p>
+      </fn>
+    </fn-group>
+  </back>
+</article>
