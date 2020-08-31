@@ -7,10 +7,10 @@ from unittest.mock import patch, MagicMock, ANY
 import pendulum
 from airflow import DAG
 
-from check_website import get_uri_list_file_path, check_website_uri_list
+from check_website import get_file_path_in_proc_dir, check_website_uri_list
 
 
-class TestGetUriListFilePath(TestCase):
+class TestGetFilePathInProcDir(TestCase):
     def setUp(self):
         self.gate_dir = tempfile.mkdtemp()
         self.proc_dir = tempfile.mkdtemp()
@@ -21,10 +21,10 @@ class TestGetUriListFilePath(TestCase):
 
     def test_uri_list_does_not_exist_in_origin(self):
         with self.assertRaises(FileNotFoundError) as exc_info:
-            get_uri_list_file_path(
+            get_file_path_in_proc_dir(
                 pathlib.Path("no/dir/path"),
                 pathlib.Path(self.proc_dir),
-                "2020-12-31",
+                "uri_list_2020-12-31.lst",
             )
         self.assertIn("no/dir/path/uri_list_2020-12-31.lst", str(exc_info.exception))
 
@@ -33,10 +33,10 @@ class TestGetUriListFilePath(TestCase):
         uri_list_path_origin.write_text("/scielo.php?script=sci_serial&pid=1234-5678")
         uri_list_path_proc = pathlib.Path(self.proc_dir) / "uri_list_2020-01-01.lst"
         uri_list_path_proc.write_text("/scielo.php?script=sci_serial&pid=5678-0909")
-        _uri_list_file_path = get_uri_list_file_path(
+        _uri_list_file_path = get_file_path_in_proc_dir(
             pathlib.Path(self.gate_dir),
             pathlib.Path(self.proc_dir),
-            "2020-01-01",
+            "uri_list_2020-01-01.lst",
         )
 
         self.assertEqual(
@@ -48,10 +48,10 @@ class TestGetUriListFilePath(TestCase):
     def test_uri_list_must_be_copied(self):
         uri_list_path = pathlib.Path(self.gate_dir) / "uri_list_2020-01-01.lst"
         uri_list_path.write_text("/scielo.php?script=sci_serial&pid=5678-0909")
-        _uri_list_file_path = get_uri_list_file_path(
+        _uri_list_file_path = get_file_path_in_proc_dir(
             pathlib.Path(self.gate_dir),
             pathlib.Path(self.proc_dir),
-            "2020-01-01",
+            "uri_list_2020-01-01.lst",
         )
         self.assertEqual(
             _uri_list_file_path,

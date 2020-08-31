@@ -39,27 +39,27 @@ dag = DAG(
     schedule_interval=None,
 )
 
-def get_uri_list_file_path(
-    xc_sps_packages_dir: Path, proc_sps_packages_dir: Path, execution_date: str
-) -> str:
-    """Garante que a uri_list usada será a do diretório de PROC. Quando for a primeira
-    execução da DAG, a lista será copiada para o diretório de PROC. Caso contrário, a 
-    mesma será mantida.
-    """
-    _uri_list_filename = f"uri_list_{execution_date}.lst"
-    _uri_list_file_path = proc_sps_packages_dir / _uri_list_filename
-    if not _uri_list_file_path.is_file():
-        _origin_uri_list_file_path = xc_sps_packages_dir / _uri_list_filename
-        Logger.info(
-            'Copying original uri_list "%s" to proc "%s"',
-            _origin_uri_list_file_path,
-            _uri_list_file_path,
-        )
-        shutil.copy(_origin_uri_list_file_path, _uri_list_file_path)
-    if not _uri_list_file_path.is_file():
-        raise FileNotFoundError(_uri_list_file_path)
 
-    return str(_uri_list_file_path)
+def get_file_path_in_proc_dir(
+    xc_sps_packages_dir: Path, proc_sps_packages_dir: Path, filename: str
+) -> str:
+    """Garante que arquivo estará no diretório de PROC.
+    Quando for a primeira execução da DAG, o arquivo será copiado para
+    o diretório de PROC.
+    """
+    file_path = proc_sps_packages_dir / filename
+    if not file_path.is_file():
+        _originfile_path = xc_sps_packages_dir / filename
+        Logger.info(
+            'Copying original "%s" to proc "%s"',
+            _originfile_path,
+            file_path,
+        )
+        shutil.copy(_originfile_path, file_path)
+    if not file_path.is_file():
+        raise FileNotFoundError(file_path)
+
+    return str(file_path)
 
 
 def check_website_uri_list(conf, **kwargs):
@@ -107,10 +107,99 @@ def check_website_uri_list(conf, **kwargs):
     Variable.set("GERAPADRAO_ID_FOR_URI_LIST", [], serialize_json=True)
 
 
+def get_uri_list_file_paths(conf, **kwargs):
+    """
+    Identifica os caminhos dos arquivos, gerados pelo script `GeraUriList.bat`
+    e que contém lista de URI no padrão:
+        /scielo.php?script=sci_serial&pid=0001-3765
+        /scielo.php?script=sci_issues&pid=0001-3765
+        /scielo.php?script=sci_issuetoc&pid=0001-376520200005
+        /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
+    """
+    gerapadrao_id_items = Variable.get(
+        "GERAPADRAO_ID_FOR_URI_LIST", default_var=[], deserialize_json=True)
+    Logger.info(
+        "Obtém os caminhos dos arquivos que contém URI (`uri_list_*.lst`): %s",
+        gerapadrao_id_items)
+
+    _xc_sps_packages_dir = Path(Variable.get("XC_SPS_PACKAGES_DIR"))
+    _proc_sps_packages_dir = Path(Variable.get("PROC_SPS_PACKAGES_DIR")) / kwargs["run_id"]
+    if not _proc_sps_packages_dir.is_dir():
+        _proc_sps_packages_dir.mkdir()
+
+    file_paths = [
+        str(_proc_sps_packages_dir / f)
+        for f in _proc_sps_packages_dir.glob('uri_list_*.lst')]
+
+    for gerapadrao_id in gerapadrao_id_items:
+        # obtém o caminho do arquivo que contém a lista de URI
+        _uri_list_file_path = get_file_path_in_proc_dir(
+            _xc_sps_packages_dir,
+            _proc_sps_packages_dir,
+            f"uri_list_{gerapadrao_id}.lst"
+        )
+
+        if _uri_list_file_path not in file_paths:
+            file_paths.append(_uri_list_file_path)
+
+    kwargs["ti"].xcom_push("uri_list_file_paths", file_paths)
+    Logger.info("Os arquivos `uri_list_*.lst` são %s", file_paths)
+
+
+def get_pid_list_csv_file_paths(conf, **kwargs):
+    """
+    Identifica os caminhos dos arquivos CSV
+    que contém dados de documentos, sendo a primeira coluna, contém PID v2
+    """
+    pid_v2_list_file_names = Variable.get(
+        "PID_LIST_CSV_FILE_NAMES", default_var=[], deserialize_json=True)
+    Logger.info(
+        "Obtém os caminhos dos arquivos que contém PIDs: %s",
+        pid_v2_list_file_names)
+
+    _xc_sps_packages_dir = Path(Variable.get("XC_SPS_PACKAGES_DIR"))
+    _proc_sps_packages_dir = Path(Variable.get("PROC_SPS_PACKAGES_DIR")) / kwargs["run_id"]
+    if not _proc_sps_packages_dir.is_dir():
+        _proc_sps_packages_dir.mkdir()
+
+    file_paths = [
+        str(_proc_sps_packages_dir / f)
+        for f in _proc_sps_packages_dir.glob('*.csv')]
+
+    for filename in pid_v2_list_file_names:
+        # obtém o caminho do arquivo que contém a lista de PIDs
+        _pid_list_csv_file_path = get_file_path_in_proc_dir(
+            _xc_sps_packages_dir,
+            _proc_sps_packages_dir,
+            filename,
+        )
+        if _pid_list_csv_file_path not in file_paths:
+            file_paths.append(_pid_list_csv_file_path)
+
+    kwargs["ti"].xcom_push("pid_list_csv_file_paths", file_paths)
+    Logger.info("Os arquivos são: %s", file_paths)
+
+
 check_website_uri_list_task = PythonOperator(
     task_id="check_website_uri_list_id",
     provide_context=True,
     python_callable=check_website_uri_list,
+    dag=dag,
+)
+
+
+get_uri_list_file_paths_task = PythonOperator(
+    task_id="get_uri_list_file_paths_id",
+    provide_context=True,
+    python_callable=get_uri_list_file_paths,
+    dag=dag,
+)
+
+
+get_pid_list_csv_file_paths_task = PythonOperator(
+    task_id="get_pid_list_csv_file_paths_id",
+    provide_context=True,
+    python_callable=get_pid_list_csv_file_paths,
     dag=dag,
 )
 
