@@ -499,3 +499,23 @@ def update_aop_bundle_items(issn_id, documents_list):
 
                 update_documents_in_bundle(aop_bundle_id, updated_aop_items)
     return executions
+
+
+def group_pids(document_pids_list):
+    """
+    Agrupa os pid em journal, issue e documentos
+    Args:
+        document_pids_list (list of str): lista de pids v2
+    Returns:
+        dict: cuja chave é pid de journal, valor dict
+                (chave: pid de issue, valor: lista de pid de documentos)
+    """
+    group = {}
+    for doc_pid_v2 in document_pids_list:
+        issue_pid = doc_pid_v2[1:18]
+        journal_pid = issue_pid[:9]
+        group[journal_pid] = group.get(journal_pid, {})
+        group[journal_pid][issue_pid] = group[journal_pid].get(issue_pid, [])
+        group[journal_pid][issue_pid].append(doc_pid_v2)
+    return group
+

@@ -26,6 +26,9 @@ from operations.docs_utils import (
     get_document_data_to_generate_uri,
     get_document_assets_data,
     get_document_renditions_data,
+    get_issue_pid_list,
+    get_journal_pid_list,
+    group_pids,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -1176,6 +1179,39 @@ class Testget_document_renditions_data(TestCase):
             },
         ]
         result = get_document_renditions_data(data)
+        self.assertEqual(expected, result)
+
+
+class TestDocumentPIDList(TestCase):
+
+    def test_group_pids_returns_dictionary(self):
+        pid_list = [
+            "S2234-56791997001012305",
+            "S2234-56791997001002315",
+            "S1234-56781987000112305",
+            "S1234-56781987000102315",
+            "S1234-56781987000112345",
+            "S1234-56781987000102345",
+        ]
+        expected = {
+            "2234-5679":
+                {
+                    "2234-567919970010": [
+                        "S2234-56791997001012305",
+                        "S2234-56791997001002315",
+                    ]
+                },
+            "1234-5678":
+                {
+                    "1234-567819870001": [
+                        "S1234-56781987000112305",
+                        "S1234-56781987000102315",
+                        "S1234-56781987000112345",
+                        "S1234-56781987000102345",
+                    ]
+                },
+        }
+        result = group_pids(pid_list)
         self.assertEqual(expected, result)
 
 
