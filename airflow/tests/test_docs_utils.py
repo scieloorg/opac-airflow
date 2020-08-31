@@ -26,8 +26,6 @@ from operations.docs_utils import (
     get_document_data_to_generate_uri,
     get_document_assets_data,
     get_document_renditions_data,
-    get_issue_pid_list,
-    get_journal_pid_list,
     group_pids,
 )
 from operations.exceptions import (

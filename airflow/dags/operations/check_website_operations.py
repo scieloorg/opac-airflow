@@ -15,6 +15,7 @@ from operations.docs_utils import (
     get_document_data_to_generate_uri,
     get_document_assets_data,
     get_document_renditions_data,
+    group_pids,
 )
 
 Logger = logging.getLogger(__name__)
@@ -32,6 +33,34 @@ def get_pid_list_from_csv(csv_file_path):
             row[0]
             for row in reader(f)
         ]
+
+
+def get_uri_list_from_pid_dict(grouped_pids):
+    uri_list = []
+    for journal_pid, issue_pids in grouped_pids.items():
+        data = {"pid_v2": journal_pid, "script": "sci_serial"}
+        uri_list.append(get_classic_document_webpage_uri(data))
+        data = {"pid_v2": journal_pid, "script": "sci_issues"}
+        uri_list.append(get_classic_document_webpage_uri(data))
+        for issue_pid, doc_pids in issue_pids.items():
+            data = {"pid_v2": issue_pid, "script": "sci_issuetoc"}
+            uri_list.append(get_classic_document_webpage_uri(data))
+            for doc_pid in doc_pids:
+                data = {"pid_v2": doc_pid, "script": "sci_arttext"}
+                uri_list.append(get_classic_document_webpage_uri(data))
+    return uri_list
+
+
+def get_uri_list_from_csv_file(file_path):
+    """
+    Monta os URI com dados do `file_path`
+
+    Args:
+        file_path
+    """
+    pids = get_pid_list_from_csv(file_path)
+    grouped_pids = group_pids(pids)
+    return get_uri_list_from_pid_dict(grouped_pids)
 
 
 class InvalidResponse:
@@ -214,7 +243,7 @@ def get_classic_document_webpage_uri(data):
     if data.get("format") == "pdf":
         script = "sci_pdf"
     else:
-        script = "sci_arttext"
+        script = data.get("script") or "sci_arttext"
     uri = "/scielo.php?script={}&pid={}".format(script, data['pid_v2'])
     if data.get("lang"):
         uri += "&tlng={}".format(data.get("lang"))

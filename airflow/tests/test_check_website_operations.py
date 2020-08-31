@@ -24,6 +24,7 @@ from operations.check_website_operations import (
     do_request,
     is_valid_response,
     check_document_availability,
+    get_uri_list_from_pid_dict,
 )
 
 
@@ -2404,3 +2405,41 @@ class TestCheckDocumentAvailability(TestCase):
                     _result["components"][i]
                 )
 
+
+class TestGetUriListFromGroupedPIDs(TestCase):
+
+    def test_get_uri_list_from_pid_dict_returns_classic_website_uri_list(self):
+        expected = [
+            "/scielo.php?script=sci_serial&pid=2234-5679",
+            "/scielo.php?script=sci_issues&pid=2234-5679",
+            "/scielo.php?script=sci_issuetoc&pid=2234-567919970010",
+            "/scielo.php?script=sci_arttext&pid=S2234-56791997001012305",
+            "/scielo.php?script=sci_arttext&pid=S2234-56791997001002315",
+            "/scielo.php?script=sci_serial&pid=1234-5678",
+            "/scielo.php?script=sci_issues&pid=1234-5678",
+            "/scielo.php?script=sci_issuetoc&pid=1234-567819870001",
+            "/scielo.php?script=sci_arttext&pid=S1234-56781987000112305",
+            "/scielo.php?script=sci_arttext&pid=S1234-56781987000102315",
+            "/scielo.php?script=sci_arttext&pid=S1234-56781987000112345",
+            "/scielo.php?script=sci_arttext&pid=S1234-56781987000102345",
+        ]
+        grouped_pids = {
+            "2234-5679":
+                {
+                    "2234-567919970010": [
+                        "S2234-56791997001012305",
+                        "S2234-56791997001002315",
+                    ]
+                },
+            "1234-5678":
+                {
+                    "1234-567819870001": [
+                        "S1234-56781987000112305",
+                        "S1234-56781987000102315",
+                        "S1234-56781987000112345",
+                        "S1234-56781987000102345",
+                    ]
+                },
+        }
+        result = get_uri_list_from_pid_dict(grouped_pids)
+        self.assertEqual(expected, result)
