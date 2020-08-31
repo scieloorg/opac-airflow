@@ -25,6 +25,7 @@ from operations.docs_utils import group_pids
 from operations import check_website_operations
 
 
+SCRIPTS = ("sci_arttext", "sci_issuetoc", "sci_issues", "sci_serial")
 Logger = logging.getLogger(__name__)
 
 default_args = {
@@ -221,6 +222,35 @@ def get_uri_items_from_pid_list_csv_files(**context):
     context["ti"].xcom_push("uri_items", items)
 
 
+def join_and_group_uri_items_by_script_name(conf, **kwargs):
+    """
+    Concatena cada URL do website com cada URI
+    """
+    uri_items = set(context["ti"].xcom_pull(
+        task_ids="get_uri_items_from_uri_list_files_task",
+        key="uri_items"
+    ))
+    uri_items.union(
+        set(
+            context["ti"].xcom_pull(
+                task_ids="get_uri_items_from_pid_items_task",
+                key="uri_items"
+            )
+        )
+    )
+    items = {
+        script_name: []
+        for script_name in SCRIPTS
+    }
+    for item in uri_items:
+        for script_name in SCRIPTS:
+            if script_name in item:
+                items[script_name].append(item)
+                break
+    for script_name in SCRIPTS:
+        context["ti"].xcom_push(script_name, sorted(items[script_name]))
+
+
 check_website_uri_list_task = PythonOperator(
     task_id="check_website_uri_list_id",
     provide_context=True,
@@ -257,6 +287,14 @@ get_uri_items_from_pid_list_csv_files_task = PythonOperator(
     task_id="get_uri_items_from_pid_list_csv_files_id",
     provide_context=True,
     python_callable=get_uri_items_from_pid_list_csv_files,
+    dag=dag,
+)
+
+
+join_and_group_uri_items_by_script_name_task = PythonOperator(
+    task_id="join_and_group_uri_items_by_script_name_id",
+    provide_context=True,
+    python_callable=join_and_group_uri_items_by_script_name,
     dag=dag,
 )
 
