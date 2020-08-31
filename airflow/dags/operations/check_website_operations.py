@@ -15,7 +15,6 @@ from operations.docs_utils import (
     get_document_data_to_generate_uri,
     get_document_assets_data,
     get_document_renditions_data,
-    group_pids,
 )
 
 Logger = logging.getLogger(__name__)
@@ -49,18 +48,6 @@ def get_uri_list_from_pid_dict(grouped_pids):
                 data = {"pid_v2": doc_pid, "script": "sci_arttext"}
                 uri_list.append(get_classic_document_webpage_uri(data))
     return uri_list
-
-
-def get_uri_list_from_csv_file(file_path):
-    """
-    Monta os URI com dados do `file_path`
-
-    Args:
-        file_path
-    """
-    pids = get_pid_list_from_csv(file_path)
-    grouped_pids = group_pids(pids)
-    return get_uri_list_from_pid_dict(grouped_pids)
 
 
 class InvalidResponse:

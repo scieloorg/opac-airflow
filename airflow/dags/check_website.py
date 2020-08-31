@@ -21,6 +21,7 @@ from airflow.operators.python_operator import PythonOperator, ShortCircuitOperat
 
 import requests
 
+from operations.docs_utils import group_pids
 from operations import check_website_operations
 
 
@@ -146,6 +147,28 @@ def get_uri_list_file_paths(conf, **kwargs):
     Logger.info("Os arquivos `uri_list_*.lst` são %s", file_paths)
 
 
+def get_uri_items_from_uri_list_files(**context):
+    """
+    Retorna uma lista de URI dado uma lista de arquivos `uri_list`
+    """
+    uri_list_file_paths = context["ti"].xcom_pull(
+        task_ids="get_uri_list_file_paths_task", key="uri_list_file_paths"
+    )
+
+    items = []
+    for file_path in uri_list_file_paths:
+        # obtém o conteúdo do arquivo que contém a lista de URI
+        # Exemplo do conteúdo de `_uri_list_file_path`:
+        # /scielo.php?script=sci_serial&pid=0001-3765
+        # /scielo.php?script=sci_issues&pid=0001-3765
+        # /scielo.php?script=sci_issuetoc&pid=0001-376520200005
+        # /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
+        uri_items = check_website_operations.read_file(file_path)
+        items.extend(uri_items)
+
+    context["ti"].xcom_push("uri_items", list(set(items)))
+
+
 def get_pid_list_csv_file_paths(conf, **kwargs):
     """
     Identifica os caminhos dos arquivos CSV
@@ -180,6 +203,24 @@ def get_pid_list_csv_file_paths(conf, **kwargs):
     Logger.info("Os arquivos são: %s", file_paths)
 
 
+def get_uri_items_from_pid_list_csv_files(**context):
+    """
+    Retorna uma lista de PIDs dado uma lista de arquivos `pid_list`
+    """
+    pid_list_csv_file_paths = context["ti"].xcom_pull(
+        task_ids="get_pid_list_csv_file_paths_task",
+        key="pid_list_csv_file_paths"
+    )
+
+    pids = []
+    for file_path in pid_list_csv_file_paths:
+        pids.extend(check_website_operations.get_pid_list_from_csv(file_path))
+
+    items = check_website_operations.get_uri_list_from_pid_dict(
+        group_pids(pids))
+    context["ti"].xcom_push("uri_items", items)
+
+
 check_website_uri_list_task = PythonOperator(
     task_id="check_website_uri_list_id",
     provide_context=True,
@@ -196,6 +237,14 @@ get_uri_list_file_paths_task = PythonOperator(
 )
 
 
+get_uri_items_from_uri_list_files_task = PythonOperator(
+    task_id="get_uri_items_from_uri_list_files_id",
+    provide_context=True,
+    python_callable=get_uri_items_from_uri_list_files,
+    dag=dag,
+)
+
+
 get_pid_list_csv_file_paths_task = PythonOperator(
     task_id="get_pid_list_csv_file_paths_id",
     provide_context=True,
@@ -203,5 +252,12 @@ get_pid_list_csv_file_paths_task = PythonOperator(
     dag=dag,
 )
 
+
+get_uri_items_from_pid_list_csv_files_task = PythonOperator(
+    task_id="get_uri_items_from_pid_list_csv_files_id",
+    provide_context=True,
+    python_callable=get_uri_items_from_pid_list_csv_files,
+    dag=dag,
+)
 
 check_website_uri_list_task

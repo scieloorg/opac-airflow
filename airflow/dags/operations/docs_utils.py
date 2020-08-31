@@ -511,7 +511,7 @@ def group_pids(document_pids_list):
                 (chave: pid de issue, valor: lista de pid de documentos)
     """
     group = {}
-    for doc_pid_v2 in document_pids_list:
+    for doc_pid_v2 in sorted(list(set(document_pids_list))):
         issue_pid = doc_pid_v2[1:18]
         journal_pid = issue_pid[:9]
         group[journal_pid] = group.get(journal_pid, {})
