@@ -1,6 +1,7 @@
 import logging
 import requests
 import time
+from csv import reader
 from urllib3.exceptions import MaxRetryError, NewConnectionError
 from urllib.parse import urlparse
 from datetime import datetime
@@ -17,6 +18,20 @@ from operations.docs_utils import (
 )
 
 Logger = logging.getLogger(__name__)
+
+
+def get_pid_list_from_csv(csv_file_path):
+    """
+    Le um arquivo csv, cuja primeira coluna é o pid v2
+
+    Returns:
+        list: lista de pid v2
+    """
+    with open(csv_file_path, newline='') as f:
+        return [
+            row[0]
+            for row in reader(f)
+        ]
 
 
 class InvalidResponse:
