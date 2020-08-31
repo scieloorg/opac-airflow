@@ -70,21 +70,39 @@ def check_website_uri_list(conf, **kwargs):
         "GERAPADRAO_ID_FOR_URI_LIST", default_var=[], deserialize_json=True)
 
     _website_url_list = Variable.get("WEBSITE_URL_LIST", default_var=[], deserialize_json=True)
+    if not _website_url_list:
+        raise ValueError(
+            "Unable to check the Web site resources are available "
+            "because no Website URL (`Variable[\"WEBSITE_URL_LIST\"]`) was informed")
+
     _xc_sps_packages_dir = Path(Variable.get("XC_SPS_PACKAGES_DIR"))
     _proc_sps_packages_dir = Path(Variable.get("PROC_SPS_PACKAGES_DIR")) / kwargs["run_id"]
     if not _proc_sps_packages_dir.is_dir():
         _proc_sps_packages_dir.mkdir()
 
     for gerapadrao_id in gerapadrao_id_items:
+        # obtém o caminho do arquivo que contém a lista de URI
         _uri_list_file_path = get_uri_list_file_path(
             _xc_sps_packages_dir,
             _proc_sps_packages_dir,
             gerapadrao_id,
         )
-        check_website_operations.check_website_uri_list(
-            _uri_list_file_path,
-            _website_url_list,
-        )
+        # obtém o conteúdo do arquivo que contém a lista de URI
+        # Exemplo do conteúdo de `_uri_list_file_path`:
+        # /scielo.php?script=sci_serial&pid=0001-3765
+        # /scielo.php?script=sci_issues&pid=0001-3765
+        # /scielo.php?script=sci_issuetoc&pid=0001-376520200005
+        # /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
+        uri_list_items = check_website_operations.read_file(_uri_list_file_path)
+
+        # concatena cada item de `_website_url_list` com
+        # cada item de `uri_list_items`
+        website_uri_list = check_website_operations.concat_website_url_and_uri_list_items(
+            _website_url_list, uri_list_items)
+
+        # verifica a lista de URI
+        check_website_operations.check_website_uri_list(website_uri_list)
+
     # atribui um str vazia para sinalizar que o valor foi usado
     Variable.set("GERAPADRAO_ID_FOR_URI_LIST", [], serialize_json=True)
 

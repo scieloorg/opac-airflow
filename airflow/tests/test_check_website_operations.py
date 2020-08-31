@@ -211,17 +211,9 @@ class TestCheckUriList(TestCase):
 
 class TestCheckWebsiteUriList(TestCase):
 
-    def test_check_website_uri_list_raises_value_error_because_website_urls_are_missing(self):
-        with self.assertRaises(ValueError):
-            check_website_uri_list('/path/uri_list_file_path.lst', [])
-
     @patch("operations.check_website_operations.Logger.info")
-    @patch("operations.check_website_operations.read_file")
-    def test_check_website_uri_list_informs_zero_uri(self, mock_read_file, mock_info):
-        mock_read_file.return_value = []
-        uri_list_file_path = "/tmp/uri_list_2010-10-09.lst"
-        website_url_list = ["http://www.scielo.br", "https://newscielo.br"]
-        check_website_uri_list(uri_list_file_path, website_url_list)
+    def test_check_website_uri_list_informs_zero_uri(self, mock_info):
+        check_website_uri_list([])
         self.assertEqual(
             mock_info.call_args_list,
             [
@@ -232,14 +224,17 @@ class TestCheckWebsiteUriList(TestCase):
 
     @patch("operations.check_website_operations.Logger.info")
     @patch("operations.check_website_operations.requests.head")
-    @patch("operations.check_website_operations.read_file")
-    def test_check_website_uri_list_informs_that_all_were_found(self, mock_read_file, mock_head, mock_info):
-        mock_read_file.return_value = (
-            "/scielo.php?script=sci_serial&pid=0001-3765\n"
-            "/scielo.php?script=sci_issues&pid=0001-3765\n"
-            "/scielo.php?script=sci_issuetoc&pid=0001-376520200005\n"
-            "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101\n"
-        ).split()
+    def test_check_website_uri_list_informs_that_all_were_found(self, mock_head, mock_info):
+        uri_list = (
+            "https://www.scielo.br/scielo.php?script=sci_serial&pid=0001-3765",
+            "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
+            "https://www.scielo.br/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+            "https://www.scielo.br/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+            "https://new.scielo.br/scielo.php?script=sci_serial&pid=0001-3765",
+            "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
+            "https://new.scielo.br/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+            "https://new.scielo.br/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+        )
         mock_head.side_effect = [
             MockResponse(200),
             MockResponse(200),
@@ -250,9 +245,7 @@ class TestCheckWebsiteUriList(TestCase):
             MockResponse(200),
             MockResponse(200),
         ]
-        uri_list_file_path = "/tmp/uri_list_2010-10-09.lst"
-        website_url_list = ["http://www.scielo.br", "https://newscielo.br"]
-        check_website_uri_list(uri_list_file_path, website_url_list)
+        check_website_uri_list(uri_list)
         self.assertIn(
             call('Quantidade de URI: %i', 8),
             mock_info.call_args_list
@@ -264,14 +257,17 @@ class TestCheckWebsiteUriList(TestCase):
 
     @patch("operations.check_website_operations.Logger.info")
     @patch("operations.check_website_operations.requests.head")
-    @patch("operations.check_website_operations.read_file")
-    def test_check_website_uri_list_informs_that_some_of_uri_items_were_not_found(self, mock_read_file, mock_head, mock_info):
-        mock_read_file.return_value = (
-            "/scielo.php?script=sci_serial&pid=0001-3765\n"
-            "/scielo.php?script=sci_issues&pid=0001-3765\n"
-            "/scielo.php?script=sci_issuetoc&pid=0001-376520200005\n"
-            "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101"
-        ).split()
+    def test_check_website_uri_list_informs_that_some_of_uri_items_were_not_found(self, mock_head, mock_info):
+        uri_list = (
+            "https://www.scielo.br/scielo.php?script=sci_serial&pid=0001-3765",
+            "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
+            "https://www.scielo.br/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+            "https://www.scielo.br/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+            "https://new.scielo.br/scielo.php?script=sci_serial&pid=0001-3765",
+            "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
+            "https://new.scielo.br/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+            "https://new.scielo.br/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+        )
         mock_head.side_effect = [
             MockResponse(200),
             MockResponse(404),
@@ -285,11 +281,9 @@ class TestCheckWebsiteUriList(TestCase):
             MockResponse(200),
             MockResponse(200),
         ]
-        uri_list_file_path = "/tmp/uri_list_2010-10-09.lst"
-        website_url_list = ["http://www.scielo.br", "https://newscielo.br"]
-        check_website_uri_list(uri_list_file_path, website_url_list)
-        bad_uri_1 = "http://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765"
-        bad_uri_2 = "https://newscielo.br/scielo.php?script=sci_serial&pid=0001-3765"
+        check_website_uri_list(uri_list)
+        bad_uri_1 = "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765"
+        bad_uri_2 = "https://new.scielo.br/scielo.php?script=sci_serial&pid=0001-3765"
 
         self.assertIn(
             call("Não encontrados (%i/%i):\n%s", 2, 8,

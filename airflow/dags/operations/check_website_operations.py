@@ -555,26 +555,14 @@ def check_document_renditions_availability(renditions):
     return report, unavailable
 
 
-def check_website_uri_list(uri_list_file_path, website_url_list):
+def check_website_uri_list(uri_list_items):
     """
-    Verifica o acesso de cada item da `uri_list_file_path`
-    Exemplo de seu conteúdo:
-        /scielo.php?script=sci_serial&pid=0001-3765
-        /scielo.php?script=sci_issues&pid=0001-3765
-        /scielo.php?script=sci_issuetoc&pid=0001-376520200005
-        /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
+    Verifica a disponibilidade dos URI de `uri_list_items`
+    Args:
+        uri_list_items (str list): lista de uri para verificar a
+            disponibilidade
     """
     Logger.debug("check_website_uri_list IN")
-
-    if not website_url_list:
-        raise ValueError(
-            "Unable to check the Web site resources are available "
-            "because no Website URL was informed")
-
-    uri_list_items = read_file(uri_list_file_path)
-
-    uri_list_items = concat_website_url_and_uri_list_items(
-        website_url_list, uri_list_items)
 
     total = len(uri_list_items)
     Logger.info("Quantidade de URI: %i", total)

@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock, ANY
 import pendulum
 from airflow import DAG
 
-from check_website import get_uri_list_file_path
+from check_website import get_uri_list_file_path, check_website_uri_list
 
 
 class TestGetUriListFilePath(TestCase):
