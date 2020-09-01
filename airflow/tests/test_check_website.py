@@ -647,7 +647,12 @@ class TestGetPIDv3List(TestCase):
             "run_id": "test_run_id",
         }
 
-    def test_get_pid_v3_list_assert_called_xcom_pull_with_sci_arttext_value(self):
+    @patch("check_website.check_website_operations.get_pid_v3_list")
+    def test_get_pid_v3_list_assert_called_xcom_pull_with_sci_arttext_value(self, mock_get):
+        mock_get.return_value = (
+            ["DOCID1", "DOCID2"],
+            "https://www.scielo.br"
+        )
         get_pid_v3_list(**self.kwargs)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="join_and_group_uri_items_by_script_name_id",
