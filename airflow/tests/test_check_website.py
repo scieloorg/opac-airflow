@@ -16,6 +16,10 @@ from check_website import (
     get_pid_list_csv_file_paths,
     get_uri_items_from_pid_list_csv_files,
     join_and_group_uri_items_by_script_name,
+    check_sci_serial_uri_items,
+    check_sci_issues_uri_items,
+    check_sci_issuetoc_uri_items,
+    check_sci_arttext_uri_items,
 )
 
 
@@ -470,4 +474,68 @@ class TestJoinAndGroupUriItemsByScriptName(TestCase):
             ),
             ],
             self.kwargs["ti"].xcom_push.call_args_list
+        )
+
+
+class TestCheckSciSerialUriItems(TestCase):
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    def test_check_sci_serial_uri_items_assert_called_xcom_pull_with_sci_serial_value(self):
+        check_sci_serial_uri_items(**self.kwargs)
+        self.kwargs["ti"].xcom_pull.assert_called_once_with(
+            task_ids="join_and_group_uri_items_by_script_name_id",
+            key="sci_serial"
+        )
+
+
+class TestCheckSciIssuesUriItems(TestCase):
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    def test_check_sci_issues_uri_items_assert_called_xcom_pull_with_sci_issues_value(self):
+        check_sci_issues_uri_items(**self.kwargs)
+        self.kwargs["ti"].xcom_pull.assert_called_once_with(
+            task_ids="join_and_group_uri_items_by_script_name_id",
+            key="sci_issues"
+        )
+
+
+class TestCheckSciIssuetocUriItems(TestCase):
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    def test_check_sci_issues_uri_items_assert_called_xcom_pull_with_sci_issues_value(self):
+        check_sci_issues_uri_items(**self.kwargs)
+        self.kwargs["ti"].xcom_pull.assert_called_once_with(
+            task_ids="join_and_group_uri_items_by_script_name_id",
+            key="sci_issues"
+        )
+
+
+class TestCheckSciArttextUriItems(TestCase):
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    def test_check_sci_arttext_uri_items_assert_called_xcom_pull_with_sci_arttext_value(self):
+        check_sci_arttext_uri_items(**self.kwargs)
+        self.kwargs["ti"].xcom_pull.assert_called_once_with(
+            task_ids="join_and_group_uri_items_by_script_name_id",
+            key="sci_arttext"
         )
