@@ -466,4 +466,26 @@ check_documents_deeply_task = PythonOperator(
     python_callable=check_documents_deeply,
     dag=dag,
 )
-check_website_uri_list_task
+
+# obtém a lista de arquivos uri_list
+# ler todos os arquivos url_list e retorna uma lista de URI
+get_uri_list_file_paths_task >> get_uri_items_from_uri_list_files_task
+
+# obtém a lista de arquivos que contém pid v2
+# ler todos os arquivos que contém pid v2 e retorna uma lista de URI
+get_pid_list_csv_file_paths_task >> get_uri_items_from_pid_list_csv_files_task
+
+# junta as listas de URI provenientes de ambos tipos de arquivos
+get_uri_items_from_uri_list_files_task >> join_and_group_uri_items_by_script_name_task << get_uri_items_from_pid_list_csv_files_task
+
+# valida os URI de página do periódico
+join_and_group_uri_items_by_script_name_task >> check_sci_serial_uri_items_task
+
+# valida os URI de grades de fascículos
+join_and_group_uri_items_by_script_name_task >> check_sci_issues_uri_items_task
+
+# valida os URI de sumarios
+join_and_group_uri_items_by_script_name_task >> check_sci_issuetoc_uri_items_task
+
+# valida os URI de documentos
+join_and_group_uri_items_by_script_name_task >> get_pid_v3_list_task >> check_documents_deeply_task

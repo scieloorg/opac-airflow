@@ -800,11 +800,12 @@ def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url):
         report = check_document_availability(
             doc_id, website_url, object_store_url)
         Logger.info("Register availability report of %s", doc_id)
-        register_document_availability_result(report)
+        register_document_availability_result(doc_id, report)
 
 
-def register_document_availability_result(report):
+def register_document_availability_result(doc_id, report):
     # TODO
+    Logger.info("Report result of %s", doc_id)
     return
 
 
