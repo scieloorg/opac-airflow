@@ -222,7 +222,7 @@ def get_uri_items_from_pid_list_csv_files(**context):
     context["ti"].xcom_push("uri_items", items)
 
 
-def join_and_group_uri_items_by_script_name(conf, **kwargs):
+def join_and_group_uri_items_by_script_name(**context):
     """
     Concatena cada URL do website com cada URI
     """
@@ -251,13 +251,112 @@ def join_and_group_uri_items_by_script_name(conf, **kwargs):
         context["ti"].xcom_push(script_name, sorted(items[script_name]))
 
 
+def check_sci_serial_uri_items(**context):
+    """
+    Executa ``check_website.check_sci_serial_uri_items`` para o padrão de URI
+    /scielo.php?script=sci_serial&pid=0001-3765
+    """
+    _website_url_list = Variable.get(
+        "WEBSITE_URL_LIST", default_var=[], deserialize_json=True)
+    if not _website_url_list:
+        raise ValueError(
+            "Não foi possível verificar porque"
+            "`Variable[\"WEBSITE_URL_LIST\"]` não foi configurado")
+
+    uri_list_items = context["ti"].xcom_pull(
+        task_ids="join_and_group_uri_items_by_script_name_task",
+        key="sci_serial")
+
+    # concatena cada item de `_website_url_list` com
+    # cada item de `uri_list_items`
+    website_uri_list = check_website_operations.concat_website_url_and_uri_list_items(
+        _website_url_list, uri_list_items)
+
+    # verifica a lista de URI
+    check_website_operations.check_website_uri_list(website_uri_list)
+
+
+def check_sci_issues_uri_items(**context):
+    """
+    Executa ``check_website.check_sci_issues_uri_items`` para o padrão de URI
+    /scielo.php?script=sci_issues&pid=0001-3765
+    """
+    _website_url_list = Variable.get(
+        "WEBSITE_URL_LIST", default_var=[], deserialize_json=True)
+    if not _website_url_list:
+        raise ValueError(
+            "Não foi possível verificar porque"
+            "`Variable[\"WEBSITE_URL_LIST\"]` não foi configurado")
+
+    uri_list_items = context["ti"].xcom_pull(
+        task_ids="join_and_group_uri_items_by_script_name_task",
+        key="sci_issues")
+
+    # concatena cada item de `_website_url_list` com
+    # cada item de `uri_list_items`
+    website_uri_list = check_website_operations.concat_website_url_and_uri_list_items(
+        _website_url_list, uri_list_items)
+
+    # verifica a lista de URI
+    check_website_operations.check_website_uri_list(website_uri_list)
+
+
+def check_sci_issuetoc_uri_items(**context):
+    """
+    Executa ``check_website.check_sci_issuetoc_uri_items`` para o padrão de URI
+    /scielo.php?script=sci_issuetoc&pid=0001-376520200005
+    """
+    _website_url_list = Variable.get(
+        "WEBSITE_URL_LIST", default_var=[], deserialize_json=True)
+    if not _website_url_list:
+        raise ValueError(
+            "Não foi possível verificar porque"
+            "`Variable[\"WEBSITE_URL_LIST\"]` não foi configurado")
+
+    uri_list_items = context["ti"].xcom_pull(
+        task_ids="join_and_group_uri_items_by_script_name_task",
+        key="sci_issuetoc")
+
+    # concatena cada item de `_website_url_list` com
+    # cada item de `uri_list_items`
+    website_uri_list = check_website_operations.concat_website_url_and_uri_list_items(
+        _website_url_list, uri_list_items)
+
+    # verifica a lista de URI
+    check_website_operations.check_website_uri_list(website_uri_list)
+
+
+def check_sci_arttext_uri_items(**context):
+    """
+    Executa ``check_website.check_sci_arttext_uri_items`` para o padrão de URI
+    /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
+    """
+    _website_url_list = Variable.get(
+        "WEBSITE_URL_LIST", default_var=[], deserialize_json=True)
+    if not _website_url_list:
+        raise ValueError(
+            "Não foi possível verificar porque"
+            "`Variable[\"WEBSITE_URL_LIST\"]` não foi configurado")
+
+    uri_list_items = context["ti"].xcom_pull(
+        task_ids="join_and_group_uri_items_by_script_name_task",
+        key="sci_arttext")
+
+    # concatena cada item de `_website_url_list` com
+    # cada item de `uri_list_items`
+    website_uri_list = check_website_operations.concat_website_url_and_uri_list_items(
+        _website_url_list, uri_list_items)
+
+    # verifica a lista de URI
+    check_website_operations.check_website_uri_list(website_uri_list)
+
+
 check_website_uri_list_task = PythonOperator(
     task_id="check_website_uri_list_id",
     provide_context=True,
     python_callable=check_website_uri_list,
     dag=dag,
 )
-
 
 get_uri_list_file_paths_task = PythonOperator(
     task_id="get_uri_list_file_paths_id",
@@ -266,14 +365,12 @@ get_uri_list_file_paths_task = PythonOperator(
     dag=dag,
 )
 
-
 get_uri_items_from_uri_list_files_task = PythonOperator(
     task_id="get_uri_items_from_uri_list_files_id",
     provide_context=True,
     python_callable=get_uri_items_from_uri_list_files,
     dag=dag,
 )
-
 
 get_pid_list_csv_file_paths_task = PythonOperator(
     task_id="get_pid_list_csv_file_paths_id",
@@ -282,7 +379,6 @@ get_pid_list_csv_file_paths_task = PythonOperator(
     dag=dag,
 )
 
-
 get_uri_items_from_pid_list_csv_files_task = PythonOperator(
     task_id="get_uri_items_from_pid_list_csv_files_id",
     provide_context=True,
@@ -290,11 +386,38 @@ get_uri_items_from_pid_list_csv_files_task = PythonOperator(
     dag=dag,
 )
 
-
 join_and_group_uri_items_by_script_name_task = PythonOperator(
     task_id="join_and_group_uri_items_by_script_name_id",
     provide_context=True,
     python_callable=join_and_group_uri_items_by_script_name,
+    dag=dag,
+)
+
+check_sci_serial_uri_items_task = PythonOperator(
+    task_id="check_sci_serial_uri_items_id",
+    provide_context=True,
+    python_callable=check_sci_serial_uri_items,
+    dag=dag,
+)
+
+check_sci_issues_uri_items_task = PythonOperator(
+    task_id="check_sci_issues_uri_items_id",
+    provide_context=True,
+    python_callable=check_sci_issues_uri_items,
+    dag=dag,
+)
+
+check_sci_issuetoc_uri_items_task = PythonOperator(
+    task_id="check_sci_issuetoc_uri_items_id",
+    provide_context=True,
+    python_callable=check_sci_issuetoc_uri_items,
+    dag=dag,
+)
+
+check_sci_arttext_uri_items_task = PythonOperator(
+    task_id="check_sci_arttext_uri_items_id",
+    provide_context=True,
+    python_callable=check_sci_arttext_uri_items,
     dag=dag,
 )
 
