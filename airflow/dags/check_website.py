@@ -272,16 +272,23 @@ def join_and_group_uri_items_by_script_name(**context):
         context["ti"].xcom_push(script_name, sorted(items[script_name]))
 
 
+def get_website_url_list():
+    Logger.info("Pre req to Check URI list")
+    _website_url_list = Variable.get(
+        "WEBSITE_URL_LIST", default_var=[], deserialize_json=True)
+    if not _website_url_list:
+        raise ValueError("`Variable[\"WEBSITE_URL_LIST\"]` is required")
+    return _website_url_list
+
+
 def check_sci_serial_uri_items(**context):
     """
     Executa ``check_website.check_sci_serial_uri_items`` para o padrão de URI
     /scielo.php?script=sci_serial&pid=0001-3765
     """
     Logger.info("Check `sci_serial` URI list")
-    _website_url_list = Variable.get(
-        "WEBSITE_URL_LIST", default_var=[], deserialize_json=True)
-    if not _website_url_list:
-        raise ValueError("`Variable[\"WEBSITE_URL_LIST\"]` is required")
+
+    _website_url_list = get_website_url_list()
 
     uri_list_items = context["ti"].xcom_pull(
         task_ids="join_and_group_uri_items_by_script_name_id",
@@ -303,10 +310,7 @@ def check_sci_issues_uri_items(**context):
     /scielo.php?script=sci_issues&pid=0001-3765
     """
     Logger.info("Check `sci_issues` URI list")
-    _website_url_list = Variable.get(
-        "WEBSITE_URL_LIST", default_var=[], deserialize_json=True)
-    if not _website_url_list:
-        raise ValueError("`Variable[\"WEBSITE_URL_LIST\"]` is required")
+    _website_url_list = get_website_url_list()
 
     uri_list_items = context["ti"].xcom_pull(
         task_ids="join_and_group_uri_items_by_script_name_id",
@@ -328,10 +332,7 @@ def check_sci_issuetoc_uri_items(**context):
     /scielo.php?script=sci_issuetoc&pid=0001-376520200005
     """
     Logger.info("Check `sci_issuetoc` URI list")
-    _website_url_list = Variable.get(
-        "WEBSITE_URL_LIST", default_var=[], deserialize_json=True)
-    if not _website_url_list:
-        raise ValueError("`Variable[\"WEBSITE_URL_LIST\"]` is required")
+    _website_url_list = get_website_url_list()
 
     uri_list_items = context["ti"].xcom_pull(
         task_ids="join_and_group_uri_items_by_script_name_id",
@@ -353,10 +354,7 @@ def check_sci_arttext_uri_items(**context):
     /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
     """
     Logger.info("Check `sci_arttext` URI list")
-    _website_url_list = Variable.get(
-        "WEBSITE_URL_LIST", default_var=[], deserialize_json=True)
-    if not _website_url_list:
-        raise ValueError("`Variable[\"WEBSITE_URL_LIST\"]` is required")
+    _website_url_list = get_website_url_list()
 
     object_store_url = Variable.get("OBJECT_STORE_URL", default_var="")
 

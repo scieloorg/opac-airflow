@@ -20,6 +20,7 @@ from check_website import (
     check_sci_issues_uri_items,
     check_sci_issuetoc_uri_items,
     check_sci_arttext_uri_items,
+    get_website_url_list,
 )
 
 
@@ -477,6 +478,14 @@ class TestJoinAndGroupUriItemsByScriptName(TestCase):
         )
 
 
+class TestGetWebsiteURLlist(TestCase):
+    @patch("check_website.Variable.get")
+    def test_get_website_url_list_raises_value_error_if_variable_WEBSITE_URL_LIST_is_not_set(self, mock_get):
+        mock_get.return_value = []
+        with self.assertRaises(ValueError):
+            get_website_url_list()
+
+
 class TestCheckSciSerialUriItems(TestCase):
     def setUp(self):
         self.kwargs = {
@@ -490,6 +499,24 @@ class TestCheckSciSerialUriItems(TestCase):
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="join_and_group_uri_items_by_script_name_id",
             key="sci_serial"
+        )
+
+    @patch("check_website.check_website_operations.concat_website_url_and_uri_list_items")
+    @patch("check_website.Variable.get")
+    def test_check_sci_serial_uri_items_assert_called_once_concat_website_url_and_uri_list_items(
+            self, mock_get, mock_concat_website_url_and_uri_list_items):
+        self.kwargs["ti"].xcom_pull.return_value = [
+            "/scielo.php?script=sci_serial&pid=0001-3035",
+            "/scielo.php?script=sci_serial&pid=0001-3765",
+        ]
+        mock_get.return_value = ["https://www.scielo.br"]
+        check_sci_serial_uri_items(**self.kwargs)
+        mock_concat_website_url_and_uri_list_items.assert_called_once_with(
+            ["https://www.scielo.br"],
+            [
+                "/scielo.php?script=sci_serial&pid=0001-3035",
+                "/scielo.php?script=sci_serial&pid=0001-3765",
+            ]
         )
 
 
@@ -508,6 +535,23 @@ class TestCheckSciIssuesUriItems(TestCase):
             key="sci_issues"
         )
 
+    @patch("check_website.check_website_operations.concat_website_url_and_uri_list_items")
+    @patch("check_website.Variable.get")
+    def test_check_sci_issues_uri_items_assert_called_once_concat_website_url_and_uri_list_items(
+            self, mock_get, mock_concat_website_url_and_uri_list_items):
+        self.kwargs["ti"].xcom_pull.return_value = [
+            "/scielo.php?script=sci_issues&pid=0001-3035",
+            "/scielo.php?script=sci_issues&pid=0001-3765",
+        ]
+        mock_get.return_value = ["https://www.scielo.br"]
+        check_sci_issues_uri_items(**self.kwargs)
+        mock_concat_website_url_and_uri_list_items.assert_called_once_with(
+            ["https://www.scielo.br"],
+            [
+                "/scielo.php?script=sci_issues&pid=0001-3035",
+                "/scielo.php?script=sci_issues&pid=0001-3765",
+            ]
+        )
 
 class TestCheckSciIssuetocUriItems(TestCase):
     def setUp(self):
@@ -517,13 +561,30 @@ class TestCheckSciIssuetocUriItems(TestCase):
             "run_id": "test_run_id",
         }
 
-    def test_check_sci_issues_uri_items_assert_called_xcom_pull_with_sci_issues_value(self):
-        check_sci_issues_uri_items(**self.kwargs)
+    def test_check_sci_issuetoc_uri_items_assert_called_xcom_pull_with_sci_issuetoc_value(self):
+        check_sci_issuetoc_uri_items(**self.kwargs)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="join_and_group_uri_items_by_script_name_id",
-            key="sci_issues"
+            key="sci_issuetoc"
         )
 
+    @patch("check_website.check_website_operations.concat_website_url_and_uri_list_items")
+    @patch("check_website.Variable.get")
+    def test_check_sci_issuetoc_uri_items_assert_called_once_concat_website_url_and_uri_list_items(
+            self, mock_get, mock_concat_website_url_and_uri_list_items):
+        self.kwargs["ti"].xcom_pull.return_value = [
+            "/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
+            "/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+        ]
+        mock_get.return_value = ["https://www.scielo.br"]
+        check_sci_issuetoc_uri_items(**self.kwargs)
+        mock_concat_website_url_and_uri_list_items.assert_called_once_with(
+            ["https://www.scielo.br"],
+            [
+                "/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
+                "/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+            ]
+        )
 
 class TestCheckSciArttextUriItems(TestCase):
     def setUp(self):
