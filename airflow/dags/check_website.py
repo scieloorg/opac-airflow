@@ -129,10 +129,11 @@ def get_uri_list_file_paths(conf, **kwargs):
     if not _proc_sps_packages_dir.is_dir():
         _proc_sps_packages_dir.mkdir()
 
-    file_paths = [
+    old_file_paths = [
         str(_proc_sps_packages_dir / f)
         for f in _proc_sps_packages_dir.glob('uri_list_*.lst')]
 
+    file_paths = []
     for gerapadrao_id in gerapadrao_id_items:
         # obtém o caminho do arquivo que contém a lista de URI
         _uri_list_file_path = get_file_path_in_proc_dir(
@@ -144,7 +145,9 @@ def get_uri_list_file_paths(conf, **kwargs):
         if _uri_list_file_path not in file_paths:
             file_paths.append(_uri_list_file_path)
 
-    kwargs["ti"].xcom_push("uri_list_file_paths", file_paths)
+    kwargs["ti"].xcom_push("old_uri_list_file_paths", old_file_paths)
+    kwargs["ti"].xcom_push("new_uri_list_file_paths", file_paths)
+    kwargs["ti"].xcom_push("uri_list_file_paths", old_file_paths + file_paths)
     Logger.info("Found: %s", file_paths)
 
 
