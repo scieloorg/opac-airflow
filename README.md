@@ -85,7 +85,8 @@ $ airflow webserver
 * `PROC_SPS_PACKAGES_DIR`: Diretório de destino dos pacotes SPS a serem sincronizados
 * `NEW_SPS_ZIP_DIR`: Diretório de destino dos pacotes SPS otimizados
 * `WEBSITE_URL_LIST`: Lista de URL de SciELO Website para validar a disponibilidade de recursos. Exemplo: ["http://www.scielo.br", "https://new.scielo.br"]
-
+* `PID_LIST_CSV_FILE_NAMES` (opcional): Lista de nomes de arquivos CSV que deverão estar presentes em `XC_SPS_PACKAGES_DIR` para que sejam copiados para `PROC_SPS_PACKAGES_DIR`/`DAG_RUN_ID`, e usados na DAG de verificação da disponibilidade dos documentos, ativos digitais e manifestações
+* `OBJECT_STORE_URL` (opcional, mas desejável): URL do Object Store para filtrar os URI existentes nos HTML para que sejam usados na verificação de presença/ausência de menção dos ativos digitais e manifestações do documento no código HTML
 
 ## Variáveis de ambiente:
 
