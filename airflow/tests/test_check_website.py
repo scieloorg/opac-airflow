@@ -14,6 +14,7 @@ from check_website import (
     get_uri_list_file_paths,
     get_uri_items_from_uri_list_files,
     get_pid_list_csv_file_paths,
+    get_uri_items_from_pid_list_csv_files,
 )
 
 
@@ -299,4 +300,69 @@ class TestGetPidListCSVFilePaths(TestCase):
                 call('file_paths', expected),
             ],
             self.kwargs["ti"].xcom_push.call_args_list
+        )
+
+class TestGetUriItemsFromPidFiles(TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+        self.proc_dir = tempfile.mkdtemp()
+
+        content = [
+            (
+                "S0001-37652020000501101\n"
+                ),
+            (
+                "S0001-30352020000501101\n"
+            ),
+            (
+                "S0203-19982020000501101\n"
+                "S1213-19982121111511111\n"
+            ),
+        ]
+
+        for i, f in enumerate(
+                    ["pid_2020-01-01.csv",
+                     "pid_2020-01-02.csv",
+                     "pid_2020-01-03.csv"]
+                ):
+            file_path = pathlib.Path(self.proc_dir) / f
+            with open(file_path, "w") as fp:
+                fp.write(content[i])
+
+    def tearDown(self):
+        shutil.rmtree(self.proc_dir)
+
+    def test_get_uri_items_from_pid_list_csv_files_gets_uri_items(self):
+        self.kwargs["ti"].xcom_pull.return_value = [
+            pathlib.Path(self.proc_dir) / "pid_2020-01-01.csv",
+            pathlib.Path(self.proc_dir) / "pid_2020-01-02.csv",
+            pathlib.Path(self.proc_dir) / "pid_2020-01-03.csv",
+
+        ]
+        get_uri_items_from_pid_list_csv_files(**self.kwargs)
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            "uri_items",
+            [
+                "/scielo.php?script=sci_serial&pid=0001-3035",
+                "/scielo.php?script=sci_issues&pid=0001-3035",
+                "/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
+                "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
+                "/scielo.php?script=sci_serial&pid=0001-3765",
+                "/scielo.php?script=sci_issues&pid=0001-3765",
+                "/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+                "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+                "/scielo.php?script=sci_serial&pid=0203-1998",
+                "/scielo.php?script=sci_issues&pid=0203-1998",
+                "/scielo.php?script=sci_issuetoc&pid=0203-199820200005",
+                "/scielo.php?script=sci_arttext&pid=S0203-19982020000501101",
+                "/scielo.php?script=sci_serial&pid=1213-1998",
+                "/scielo.php?script=sci_issues&pid=1213-1998",
+                "/scielo.php?script=sci_issuetoc&pid=1213-199821211115",
+                "/scielo.php?script=sci_arttext&pid=S1213-19982121111511111",
+            ],
         )
