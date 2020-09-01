@@ -156,7 +156,7 @@ def get_uri_items_from_uri_list_files(**context):
         task_ids="get_uri_list_file_paths_id", key="uri_list_file_paths"
     )
 
-    items = []
+    items = set()
     for file_path in uri_list_file_paths:
         # obtém o conteúdo do arquivo que contém a lista de URI
         # Exemplo do conteúdo de `_uri_list_file_path`:
@@ -164,10 +164,9 @@ def get_uri_items_from_uri_list_files(**context):
         # /scielo.php?script=sci_issues&pid=0001-3765
         # /scielo.php?script=sci_issuetoc&pid=0001-376520200005
         # /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
-        uri_items = check_website_operations.read_file(file_path)
-        items.extend(uri_items)
+        items.union(set(check_website_operations.read_file(file_path)))
 
-    context["ti"].xcom_push("uri_items", list(set(items)))
+    context["ti"].xcom_push("uri_items", list(items))
 
 
 def get_pid_list_csv_file_paths(conf, **kwargs):
@@ -213,9 +212,10 @@ def get_uri_items_from_pid_list_csv_files(**context):
         key="pid_list_csv_file_paths"
     )
 
-    pids = []
+    pids = set()
     for file_path in pid_list_csv_file_paths:
-        pids.extend(check_website_operations.get_pid_list_from_csv(file_path))
+        pids.union(
+            set(check_website_operations.get_pid_list_from_csv(file_path)))
 
     items = check_website_operations.get_uri_list_from_pid_dict(
         group_pids(pids))
