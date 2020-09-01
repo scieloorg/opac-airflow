@@ -348,28 +348,46 @@ def check_sci_issuetoc_uri_items(**context):
     Logger.info("Checked %i `sci_issuetoc` URI items", len(website_uri_list))
 
 
-def check_sci_arttext_uri_items(**context):
+def check_documents_deeply(**context):
     """
-    Executa ``check_website.check_sci_arttext_uri_items`` para o padrão de URI
-    /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
+    Executa ``check_website.check_documents_deeply`` para a lista de PID v3
     """
     Logger.info("Check `sci_arttext` URI list")
-    _website_url_list = get_website_url_list()
+
+    website_url = context["ti"].xcom_pull(
+        task_ids="get_pid_v3_list_id",
+        key="website_url")
 
     object_store_url = Variable.get("OBJECT_STORE_URL", default_var="")
+
+    pid_v3_list = context["ti"].xcom_pull(
+        task_ids="get_pid_v3_list_id",
+        key="pid_v3_list")
+
+    check_website_operations.check_website_uri_list_deeply(
+        pid_v3_list, website_url, object_store_url)
+    Logger.info("Checked %i documents", len(pid_v3_list))
+
+
+def get_pid_v3_list(**context):
+    """
+    Executa ``check_website.get_pid_v3_list``
+    para o obter os pid v3 a partir do padrão de URI
+    /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
+    """
+    Logger.info("Get PID v3 from old pattern document URI")
+    _website_url_list = get_website_url_list()
 
     uri_items = context["ti"].xcom_pull(
         task_ids="join_and_group_uri_items_by_script_name_id",
         key="sci_arttext")
+    pid_v3_list, website_url = check_website_operations.get_pid_v3_list(
+        uri_items, _website_url_list)
 
-    website_url = Variable.get("WEBSITE_URL", default_var="")
-    if not website_url:
-        website_url = check_website_operations.identify_the_new_website_url(
-            _website_url_list, uri_items)
+    uri_items = context["ti"].xcom_push("pid_v3_list", pid_v3_list)
+    uri_items = context["ti"].xcom_push("website_url", website_url)
 
-    check_website_operations.check_website_uri_list_deeply(
-        uri_items, website_url, object_store_url)
-    Logger.info("Checked %i `sci_arttext` URI items", len(uri_items))
+    Logger.info("PID v3: %i items", len(pid_v3_list))
 
 
 check_website_uri_list_task = PythonOperator(
@@ -435,11 +453,17 @@ check_sci_issuetoc_uri_items_task = PythonOperator(
     dag=dag,
 )
 
-check_sci_arttext_uri_items_task = PythonOperator(
-    task_id="check_sci_arttext_uri_items_id",
+get_pid_v3_list_task = PythonOperator(
+    task_id="get_pid_v3_list_id",
     provide_context=True,
-    python_callable=check_sci_arttext_uri_items,
+    python_callable=get_pid_v3_list,
     dag=dag,
 )
 
+check_documents_deeply_task = PythonOperator(
+    task_id="check_documents_deeply_id",
+    provide_context=True,
+    python_callable=check_documents_deeply,
+    dag=dag,
+)
 check_website_uri_list_task

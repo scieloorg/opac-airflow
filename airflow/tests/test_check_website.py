@@ -19,7 +19,7 @@ from check_website import (
     check_sci_serial_uri_items,
     check_sci_issues_uri_items,
     check_sci_issuetoc_uri_items,
-    check_sci_arttext_uri_items,
+    get_pid_v3_list,
     get_website_url_list,
 )
 
@@ -638,7 +638,8 @@ class TestCheckSciIssuetocUriItems(TestCase):
             ]
         )
 
-class TestCheckSciArttextUriItems(TestCase):
+
+class TestGetPIDv3List(TestCase):
     def setUp(self):
         self.kwargs = {
             "ti": MagicMock(),
@@ -646,9 +647,24 @@ class TestCheckSciArttextUriItems(TestCase):
             "run_id": "test_run_id",
         }
 
-    def test_check_sci_arttext_uri_items_assert_called_xcom_pull_with_sci_arttext_value(self):
-        check_sci_arttext_uri_items(**self.kwargs)
+    def test_get_pid_v3_list_assert_called_xcom_pull_with_sci_arttext_value(self):
+        get_pid_v3_list(**self.kwargs)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="join_and_group_uri_items_by_script_name_id",
             key="sci_arttext"
+        )
+
+    @patch("check_website.check_website_operations.get_pid_v3_list")
+    def test_get_pid_v3_list_assert_called_xcom_push_with_pid_v3_list(self, mock_get):
+        mock_get.return_value = (
+            ["DOCID1", "DOCID2"],
+            "https://www.scielo.br"
+        )
+        get_pid_v3_list(**self.kwargs)
+        self.assertListEqual(
+            [
+                call("pid_v3_list", ["DOCID1", "DOCID2"]),
+                call("website_url", "https://www.scielo.br"),
+            ],
+            self.kwargs["ti"].xcom_push.call_args_list
         )

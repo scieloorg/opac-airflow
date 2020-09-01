@@ -753,40 +753,42 @@ def check_document_availability(doc_id, website_url, object_store_url):
     }
 
 
-def identify_the_new_website_url(website_url_list, uri_items):
+def get_pid_v3_list(uri_items, website_url_list):
     """
-    Identifica entre as URI geradas pelas alternativas `website_url_list`,
-    qual é aquela que redireciona para o URI do documento no site novo
+    Retorna o PID v3 de cada um dos itens de `uri_items`,
+    acessando o link do padrão:
+    `/scielo.php?script=sci_arttext&pid=S0001-37652020000501101&tlng=lang`
+    e parseando o URI do redirecionamento, padrão:
+    `/j/:acron/a/:id_doc`
 
     Args:
-        website_url_list (str list): lista de URL de site
         uri_items (str list): lista de URI no padrão
             /scielo.php?script=sci_arttext&pid=S0001-37652020000501101&tlng=lang
-            /scielo.php?script=sci_pdf&pid=S0001-37652020000501101&tlng=lang
+        website_url_list (str list): lista de URL de site
     Returns:
-        str: URL do site novo
+        str list: lista de PID v3
     """
-    redirects = None
+    website_url = None
+    pid_v3_list = []
     for uri in uri_items:
-        for url in website_url_list:
-            doc_uri = "{}{}".format(redirects, uri)
+        for url in website_url or website_url_list:
+            doc_uri = "{}{}".format(url, uri)
             doc_id = get_kernel_document_id_from_classic_document_uri(doc_uri)
             if doc_id:
-                redirects = url
-                break
-        if redirects:
-            break
-    return redirects
+                pid_v3_list.append(doc_id)
+                website_url = website_url or [url]
+            else:
+                Logger.error("Unable to find PID v3 from %s", doc_uri)
+    return pid_v3_list, website_url
 
 
-def check_website_uri_list_deeply(uri_items, website_url, object_store_url):
-    for uri in uri_items:
-        doc_uri = "{}{}".format(website_url, uri)
-        Logger.info("Check URI %s deeply", doc_uri)
-        doc_id = get_kernel_document_id_from_classic_document_uri(doc_uri)
+def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url):
+    Logger.info("Check availability of %i documents", len(doc_id_list))
+    for doc_id in doc_id_list:
+        Logger.info("Check document availability of %s", doc_id)
         report = check_document_availability(
             doc_id, website_url, object_store_url)
-        Logger.info("Register availability report of %s", doc_uri)
+        Logger.info("Register availability report of %s", doc_id)
         register_document_availability_result(report)
 
 
