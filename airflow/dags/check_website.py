@@ -350,18 +350,20 @@ def check_sci_arttext_uri_items(**context):
     if not _website_url_list:
         raise ValueError("`Variable[\"WEBSITE_URL_LIST\"]` is required")
 
-    uri_list_items = context["ti"].xcom_pull(
+    object_store_url = Variable.get("OBJECT_STORE_URL", default_var="")
+
+    uri_items = context["ti"].xcom_pull(
         task_ids="join_and_group_uri_items_by_script_name_id",
         key="sci_arttext")
 
-    # concatena cada item de `_website_url_list` com
-    # cada item de `uri_list_items`
-    website_uri_list = check_website_operations.concat_website_url_and_uri_list_items(
-        _website_url_list, uri_list_items)
+    website_url = Variable.get("WEBSITE_URL", default_var="")
+    if not website_url:
+        website_url = check_website_operations.identify_the_new_website_url(
+            _website_url_list, uri_items)
 
-    # verifica a lista de URI
-    check_website_operations.check_website_uri_list(website_uri_list)
-    Logger.info("Checked %i `sci_arttext` URI items", len(website_uri_list))
+    check_website_operations.check_website_uri_list_deeply(
+        uri_items, website_url, object_store_url)
+    Logger.info("Checked %i `sci_arttext` URI items", len(uri_items))
 
 
 check_website_uri_list_task = PythonOperator(

@@ -339,14 +339,14 @@ class TestFindUriItems(TestCase):
 
 class TestFilterUriList(TestCase):
 
-    def test_filter_uri_list(self):
+    def test_filter_uri_list_returns_(self):
         uri_items = [
             "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/8972aaa0916382b6f2d51a6d22732bb083851913.png"
         ]
         expected = [
             "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/8972aaa0916382b6f2d51a6d22732bb083851913.png"
         ]
-        result = filter_uri_list(uri_items, netlocs=["minio.scielo.br"])
+        result = filter_uri_list(uri_items, expected_netlocs=["minio.scielo.br"])
         self.assertEqual(expected, result)
 
     def test_filter_uri_list_returns_path_started_with_slash(self):
@@ -357,7 +357,7 @@ class TestFilterUriList(TestCase):
             "/j/acron/esa",
             "#end"
         ]
-        result = filter_uri_list(uri_list, netlocs=[""])
+        result = filter_uri_list(uri_list, expected_netlocs=[""])
         self.assertEqual(expected, result)
 
 class TestGetDocumentUri(TestCase):
@@ -1176,7 +1176,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "end time": "end timestamp",
             },
         ]
-        result, summary = check_document_webpages_availability(website_url, doc_data_list, assets_data)
+        object_store_url = None
+        result, summary = check_document_webpages_availability(
+            website_url, doc_data_list, assets_data, object_store_url)
         self.assertDictEqual({
                 "total unavailable doc webpages": 0,
                 "total missing components": 0,
@@ -1272,7 +1274,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "end time": "end timestamp",
             },
         ]
-        result, summary = check_document_webpages_availability(website_url, doc_data_list, assets_data)
+        object_store_url = None
+        result, summary = check_document_webpages_availability(
+            website_url, doc_data_list, assets_data, object_store_url)
         self.assertDictEqual(
             {
                 "total unavailable doc webpages": 1,
@@ -1376,8 +1380,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "end time": "end timestamp",
             },
         ]
+        object_store_url = None
         result, summary = check_document_webpages_availability(
-            website_url, doc_data_list, assets_data)
+            website_url, doc_data_list, assets_data, object_store_url)
         self.assertDictEqual({
                 "total unavailable doc webpages": 0,
                 "total missing components": 1,
@@ -1478,7 +1483,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "expected components quantity": 1,
             },
         ]
-        result, summary = check_document_webpages_availability(website_url, doc_data_list, assets_data)
+        object_store_url = None
+        result, summary = check_document_webpages_availability(
+            website_url, doc_data_list, assets_data, object_store_url)
         self.assertDictEqual(
             {
                 "total unavailable doc webpages": 1,
@@ -1600,8 +1607,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "expected components quantity": 1,
             },
         ]
+        object_store_url = None
         result, summary = check_document_webpages_availability(
-            website_url, doc_data_list, assets_data)
+            website_url, doc_data_list, assets_data, object_store_url)
         self.assertDictEqual(
             {
                 "total unavailable doc webpages": 0,
@@ -1630,7 +1638,9 @@ class TestCheckDocumentHtml(TestCase):
             "missing components quantity": 0,
             "expected components quantity": 0,
         }
-        result = check_document_html(uri, assets_data, other_webpages_data)
+        object_store_url = None
+        result = check_document_html(
+            uri, assets_data, other_webpages_data, object_store_url)
         self.assertEqual(expected, result)
 
     @patch("operations.check_website_operations.datetime")
@@ -1651,7 +1661,9 @@ class TestCheckDocumentHtml(TestCase):
             "missing components quantity": 0,
             "expected components quantity": 0,
         }
-        result = check_document_html(uri, assets_data, other_webpages_data)
+        object_store_url = None
+        result = check_document_html(
+            uri, assets_data, other_webpages_data, object_store_url)
         self.assertEqual(expected, result)
 
     @patch("operations.check_website_operations.datetime")
@@ -1723,7 +1735,9 @@ class TestCheckDocumentHtml(TestCase):
             "expected components quantity": 2,
             "existing_uri_items_in_html": []
         }
-        result = check_document_html(uri, assets_data, other_webpages_data)
+        object_store_url = None
+        result = check_document_html(
+            uri, assets_data, other_webpages_data, object_store_url)
         self.assertEqual(expected, result)
 
     @patch("operations.check_website_operations.datetime")
@@ -1791,7 +1805,9 @@ class TestCheckDocumentHtml(TestCase):
             "missing components quantity": 0,
             "expected components quantity": 2,
         }
-        result = check_document_html(uri, assets_data, other_webpages_data)
+        object_store_url = None
+        result = check_document_html(
+            uri, assets_data, other_webpages_data, object_store_url)
         self.assertEqual(expected, result)
 
 
@@ -2157,7 +2173,7 @@ class TestCheckDocumentAvailability(TestCase):
             self, mock_doc_manifest, mock_get, mock_head, mock_dt):
         doc_id = "BrT6FWNFFR3KBKHZVPN8Y9N"
         website_url = "https://www.scielo.br"
-        netlocs = ["minio.scielo.br", ""]
+        object_store_url = "https://minio.scielo.br"
         mock_doc_manifest.return_value = self.get_document_manifest_pt()
         mock_get.side_effect = [
             MockResponse(
@@ -2371,7 +2387,7 @@ class TestCheckDocumentAvailability(TestCase):
                 "doc assets availability": assets_availability,
             },
         }
-        result = check_document_availability(doc_id, website_url, netlocs)
+        result = check_document_availability(doc_id, website_url, object_store_url)
         self.assertDictEqual(expected["summary"], result["summary"])
 
         self.assertListEqual(

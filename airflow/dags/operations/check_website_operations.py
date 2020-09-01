@@ -135,11 +135,9 @@ def get_kernel_document_id_from_classic_document_uri(classic_website_document_ur
             if parsed.path:
                 #  path='/j/qn/a/RsJ6CyVbQP3q9cMWqBGyHjp/'
                 splitted = [item for item in parsed.path.split("/") if item]
-                if splitted:
-                    doc_id = splitted[-1]
-                    if len(doc_id) == 23:
-                        # RsJ6CyVbQP3q9cMWqBGyHjp
-                        return doc_id
+                if len(splitted) == 4 and len(splitted[-1]) == 23:
+                    # RsJ6CyVbQP3q9cMWqBGyHjp
+                    return splitted[-1]
 
 
 def check_uri_items_expected_in_webpage(existing_uri_items_in_html,
@@ -326,21 +324,21 @@ def find_uri_items(content):
     return sorted(list(set(uri_items)))
 
 
-def filter_uri_list(uri_items, netlocs):
+def filter_uri_list(uri_items, expected_netlocs):
     """
-    Retorna uri list filtrada por netlocs, ou seja, apenas as URI cujo domínio
-    está informado na lista `netlocs`
-    No entanto, se netlocs ausente ou é uma lista vazia, retorna `uri_items`
+    Retorna uri list filtrada por `expected_netlocs`, ou seja, apenas as URI cujo domínio
+    está informado na lista `expected_netlocs`
+    No entanto, se expected_netlocs ausente ou é uma lista vazia, retorna `uri_items`
     sem filtrar
 
     Args:
         uri_items (list): lista de URI
-        netlocs (list): lista de domínios
+        expected_netlocs (list): lista de domínios
 
     Returns:
-        list: a mesma lista de entrada, se netlocs é vazio ou None, ou
+        list: a mesma lista de entrada, se expected_netlocs é vazio ou None, ou
             lista filtrada, apenas URI cujo domínio está presente na lista
-            `netlocs`
+            `expected_netlocs`
 
     >>> u = urlparse('https://www.cwi.nl:80/%7Eguido/Python.html')
     >>> u
@@ -348,12 +346,12 @@ def filter_uri_list(uri_items, netlocs):
             scheme='https', netloc='www.cwi.nl:80',
             path='/%7Eguido/Python.html', params='', query='', fragment='')
     """
-    if not netlocs:
+    if not expected_netlocs:
         return uri_items
     items = []
     for uri in uri_items:
         parsed = urlparse(uri)
-        if parsed.netloc in netlocs:
+        if parsed.netloc in expected_netlocs:
             if parsed.netloc == "":
                 if parsed.path.startswith("/") and len(parsed.path) > 1:
                     items.append(uri)
@@ -362,7 +360,7 @@ def filter_uri_list(uri_items, netlocs):
     return items
 
 
-def check_document_html(uri, assets_data, other_webpages_data, netlocs=None):
+def check_document_html(uri, assets_data, other_webpages_data, object_store_url):
     """
     Verifica se, no documento HTML, os ativos digitais e outras
     _webpages_ do documento (HTML e PDF) estão mencionados,
@@ -376,9 +374,8 @@ def check_document_html(uri, assets_data, other_webpages_data, netlocs=None):
             o documento.
             Um documento pode ter várias URI devido à variação de formatos e
             idiomas
-        netlocs (list): lista de URL de sites para selecionar as URIs
-            encontradas dentro HTML para serem verificadas as presenças de
-            ativos digitais e _webpages_ do documento
+        object_store_url (str): URL do _Object Store_, usada para obter as
+            URI encontradas no HTML que sejam apenas do _domínio_ do SPF
     Returns:
         report (dict):
             `available` (bool),
@@ -397,7 +394,12 @@ def check_document_html(uri, assets_data, other_webpages_data, netlocs=None):
     content = response.text
 
     # lista de uri encontradas dentro da página
-    existing_uri_items_in_html = filter_uri_list(find_uri_items(content), netlocs)
+    filtered_by = []
+    if object_store_url:
+        parsed = urlparse(object_store_url)
+        filtered_by = [parsed.netloc, ""]
+    existing_uri_items_in_html = filter_uri_list(
+        find_uri_items(content), filtered_by)
 
     # verifica se as uri esperadas estão present_in_html e no html da página
     # do documento, dados os dados dos ativos digitais e das
@@ -417,7 +419,7 @@ def check_document_html(uri, assets_data, other_webpages_data, netlocs=None):
     return result
 
 
-def check_document_webpages_availability(website_url, doc_data_list, assets_data, netlocs=None):
+def check_document_webpages_availability(website_url, doc_data_list, assets_data, object_store_url):
     """
     Verifica a disponibilidade do documento nos respectivos formatos e idiomas.
     No caso, do HTML, inclui a verificação se os ativos digitais e outras
@@ -432,9 +434,8 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
             idiomas
         assets_data (list of dict): dicionário contém dados do ativo digital
             como URI e identificação
-        netlocs (list): lista de URL da object store para selecionar as URIs
-            encontradas dentro HTML para serem verificadas as presenças de
-            ativos digitais e _webpages_ do documento
+        object_store_url (str): URL do _Object Store_, usada para obter as
+            URI encontradas no HTML que sejam apenas do _domínio_ do SPF
 
     Returns:
         report (list of dict): mesma lista `doc_data_list`, sendo que cada
@@ -468,7 +469,7 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
                                         doc_uri,
                                         assets_data,
                                         other_webpages_data,
-                                        netlocs)
+                                        object_store_url)
             missing_components += components_result[
                 "missing components quantity"]
             result.update(components_result)
@@ -705,7 +706,7 @@ def format_document_items_availability_to_register(document_data,
     return rows
 
 
-def check_document_availability(doc_id, website_url, netlocs):
+def check_document_availability(doc_id, website_url, object_store_url):
     """
     Verifica a disponibilidade do documento `doc_id`, verificando a
     disponibilidade de todas as _webpages_ (HTML/PDF/idiomas) e de todos os ativos
@@ -730,7 +731,7 @@ def check_document_availability(doc_id, website_url, netlocs):
                 website_url,
                 document_webpages_data,
                 assets_data,
-                netlocs
+                object_store_url
             )
     renditions_availability, q_unavailable_renditions = check_document_renditions_availability(
                 renditions_data
@@ -750,6 +751,48 @@ def check_document_availability(doc_id, website_url, netlocs):
                 "doc assets availability": assets_availability,
             },
     }
+
+
+def identify_the_new_website_url(website_url_list, uri_items):
+    """
+    Identifica entre as URI geradas pelas alternativas `website_url_list`,
+    qual é aquela que redireciona para o URI do documento no site novo
+
+    Args:
+        website_url_list (str list): lista de URL de site
+        uri_items (str list): lista de URI no padrão
+            /scielo.php?script=sci_arttext&pid=S0001-37652020000501101&tlng=lang
+            /scielo.php?script=sci_pdf&pid=S0001-37652020000501101&tlng=lang
+    Returns:
+        str: URL do site novo
+    """
+    redirects = None
+    for uri in uri_items:
+        for url in website_url_list:
+            doc_uri = "{}{}".format(redirects, uri)
+            doc_id = get_kernel_document_id_from_classic_document_uri(doc_uri)
+            if doc_id:
+                redirects = url
+                break
+        if redirects:
+            break
+    return redirects
+
+
+def check_website_uri_list_deeply(uri_items, website_url, object_store_url):
+    for uri in uri_items:
+        doc_uri = "{}{}".format(website_url, uri)
+        Logger.info("Check URI %s deeply", doc_uri)
+        doc_id = get_kernel_document_id_from_classic_document_uri(doc_uri)
+        report = check_document_availability(
+            doc_id, website_url, object_store_url)
+        Logger.info("Register availability report of %s", doc_uri)
+        register_document_availability_result(report)
+
+
+def register_document_availability_result(report):
+    # TODO
+    return
 
 
 def retry_after():
