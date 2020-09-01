@@ -153,7 +153,7 @@ def get_uri_items_from_uri_list_files(**context):
     Retorna uma lista de URI dado uma lista de arquivos `uri_list`
     """
     uri_list_file_paths = context["ti"].xcom_pull(
-        task_ids="get_uri_list_file_paths_task", key="uri_list_file_paths"
+        task_ids="get_uri_list_file_paths_id", key="uri_list_file_paths"
     )
 
     items = []
@@ -209,7 +209,7 @@ def get_uri_items_from_pid_list_csv_files(**context):
     Retorna uma lista de PIDs dado uma lista de arquivos `pid_list`
     """
     pid_list_csv_file_paths = context["ti"].xcom_pull(
-        task_ids="get_pid_list_csv_file_paths_task",
+        task_ids="get_pid_list_csv_file_paths_id",
         key="pid_list_csv_file_paths"
     )
 
@@ -227,13 +227,13 @@ def join_and_group_uri_items_by_script_name(**context):
     Concatena cada URL do website com cada URI
     """
     uri_items = set(context["ti"].xcom_pull(
-        task_ids="get_uri_items_from_uri_list_files_task",
+        task_ids="get_uri_items_from_uri_list_files_id",
         key="uri_items"
     ))
     uri_items.union(
         set(
             context["ti"].xcom_pull(
-                task_ids="get_uri_items_from_pid_items_task",
+                task_ids="get_uri_items_from_pid_items_id",
                 key="uri_items"
             )
         )
@@ -264,7 +264,7 @@ def check_sci_serial_uri_items(**context):
             "`Variable[\"WEBSITE_URL_LIST\"]` não foi configurado")
 
     uri_list_items = context["ti"].xcom_pull(
-        task_ids="join_and_group_uri_items_by_script_name_task",
+        task_ids="join_and_group_uri_items_by_script_name_id",
         key="sci_serial")
 
     # concatena cada item de `_website_url_list` com
@@ -289,7 +289,7 @@ def check_sci_issues_uri_items(**context):
             "`Variable[\"WEBSITE_URL_LIST\"]` não foi configurado")
 
     uri_list_items = context["ti"].xcom_pull(
-        task_ids="join_and_group_uri_items_by_script_name_task",
+        task_ids="join_and_group_uri_items_by_script_name_id",
         key="sci_issues")
 
     # concatena cada item de `_website_url_list` com
@@ -314,7 +314,7 @@ def check_sci_issuetoc_uri_items(**context):
             "`Variable[\"WEBSITE_URL_LIST\"]` não foi configurado")
 
     uri_list_items = context["ti"].xcom_pull(
-        task_ids="join_and_group_uri_items_by_script_name_task",
+        task_ids="join_and_group_uri_items_by_script_name_id",
         key="sci_issuetoc")
 
     # concatena cada item de `_website_url_list` com
@@ -339,7 +339,7 @@ def check_sci_arttext_uri_items(**context):
             "`Variable[\"WEBSITE_URL_LIST\"]` não foi configurado")
 
     uri_list_items = context["ti"].xcom_pull(
-        task_ids="join_and_group_uri_items_by_script_name_task",
+        task_ids="join_and_group_uri_items_by_script_name_id",
         key="sci_arttext")
 
     # concatena cada item de `_website_url_list` com
