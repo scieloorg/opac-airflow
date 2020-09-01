@@ -160,7 +160,7 @@ def get_uri_items_from_uri_list_files(**context):
         task_ids="get_uri_list_file_paths_id", key="uri_list_file_paths"
     )
 
-    items = set()
+    all_items = set()
     for file_path in uri_list_file_paths:
         # obtém o conteúdo do arquivo que contém a lista de URI
         # Exemplo do conteúdo de `_uri_list_file_path`:
@@ -168,13 +168,15 @@ def get_uri_items_from_uri_list_files(**context):
         # /scielo.php?script=sci_issues&pid=0001-3765
         # /scielo.php?script=sci_issuetoc&pid=0001-376520200005
         # /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
-        _items = check_website_operations.read_file(file_path)
-        Logger.info("File %s: %i items", file_path, len(_items))
-        items.union(set(_items))
-        Logger.info("Partial total: %i items", len(items))
+        partial = check_website_operations.read_file(file_path)
 
-    context["ti"].xcom_push("uri_items", list(items))
-    Logger.info("Total: %i URIs", len(items))
+        Logger.info("File %s: %i items", file_path, len(partial))
+        all_items = all_items | set(partial)
+
+        Logger.info("Partial total: %i items", len(all_items))
+
+    context["ti"].xcom_push("uri_items", sorted(list(all_items)))
+    Logger.info("Total: %i URIs", len(all_items))
 
 
 def get_pid_list_csv_file_paths(conf, **kwargs):
@@ -225,7 +227,7 @@ def get_uri_items_from_pid_list_csv_files(**context):
     for file_path in pid_list_csv_file_paths:
         _items = check_website_operations.get_pid_list_from_csv(file_path)
         Logger.info("File %s: %i pids", file_path, len(_items))
-        pids.union(set(_items))
+        pids = pids | set(_items)
         Logger.info("Partial total: %i pids", len(pids))
 
     items = check_website_operations.get_uri_list_from_pid_dict(
@@ -239,11 +241,12 @@ def join_and_group_uri_items_by_script_name(**context):
     Concatena cada URL do website com cada URI
     """
     Logger.info("Concatenate URI items from `uri_list_*.lst` and `*.csv`")
-    uri_items = set(context["ti"].xcom_pull(
-        task_ids="get_uri_items_from_uri_list_files_id",
-        key="uri_items"
-    ))
-    uri_items.union(
+    uri_items = (
+        set(
+            context["ti"].xcom_pull(
+                task_ids="get_uri_items_from_uri_list_files_id",
+                key="uri_items"
+            )) |
         set(
             context["ti"].xcom_pull(
                 task_ids="get_uri_items_from_pid_items_id",

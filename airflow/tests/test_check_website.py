@@ -12,6 +12,7 @@ from check_website import (
     get_file_path_in_proc_dir,
     check_website_uri_list,
     get_uri_list_file_paths,
+    get_uri_items_from_uri_list_files,
 )
 
 
@@ -140,5 +141,83 @@ class TestGetUriListFilePaths(TestCase):
                 call('uri_list_file_paths', expected),
             ],
             self.kwargs["ti"].xcom_push.call_args_list
+        )
+
+
+class TestGetUriItemsFromUriListFiles(TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+        self.proc_dir = tempfile.mkdtemp()
+
+        content = [
+            (
+                "/scielo.php?script=sci_serial&pid=0001-3765\n"
+                "/scielo.php?script=sci_issues&pid=0001-3765\n"
+                "/scielo.php?script=sci_issuetoc&pid=0001-376520200005\n"
+                "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101\n"
+                ),
+            (
+                "/scielo.php?script=sci_serial&pid=0001-3035\n"
+                "/scielo.php?script=sci_issues&pid=0001-3035\n"
+                "/scielo.php?script=sci_issuetoc&pid=0001-303520200005\n"
+                "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101\n"
+            ),
+            (
+                "/scielo.php?script=sci_serial&pid=0203-1998\n"
+                "/scielo.php?script=sci_issues&pid=0203-1998\n"
+                "/scielo.php?script=sci_issuetoc&pid=0203-199820200005\n"
+                "/scielo.php?script=sci_arttext&pid=S0203-19982020000501101\n"
+                "/scielo.php?script=sci_serial&pid=1213-1998\n"
+                "/scielo.php?script=sci_issues&pid=1213-1998\n"
+                "/scielo.php?script=sci_issuetoc&pid=1213-199821211115\n"
+                "/scielo.php?script=sci_arttext&pid=S1213-19982121111511111\n"
+            ),
+        ]
+
+        for i, f in enumerate(
+                    ["uri_list_2020-01-01.lst",
+                     "uri_list_2020-01-02.lst",
+                     "uri_list_2020-01-03.lst"]
+                ):
+            file_path = pathlib.Path(self.proc_dir) / f
+            with open(file_path, "w") as fp:
+                fp.write(content[i])
+
+    def tearDown(self):
+        shutil.rmtree(self.proc_dir)
+
+    def test_get_uri_items_from_uri_list_files_gets_uri_items(self):
+        self.kwargs["ti"].xcom_pull.return_value = [
+            pathlib.Path(self.proc_dir) / "uri_list_2020-01-01.lst",
+            pathlib.Path(self.proc_dir) / "uri_list_2020-01-02.lst",
+            pathlib.Path(self.proc_dir) / "uri_list_2020-01-03.lst",
+
+        ]
+        get_uri_items_from_uri_list_files(**self.kwargs)
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            "uri_items",
+            sorted([
+                "/scielo.php?script=sci_serial&pid=0001-3765",
+                "/scielo.php?script=sci_issues&pid=0001-3765",
+                "/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+                "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+                "/scielo.php?script=sci_serial&pid=0001-3035",
+                "/scielo.php?script=sci_issues&pid=0001-3035",
+                "/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
+                "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
+                "/scielo.php?script=sci_serial&pid=0203-1998",
+                "/scielo.php?script=sci_issues&pid=0203-1998",
+                "/scielo.php?script=sci_issuetoc&pid=0203-199820200005",
+                "/scielo.php?script=sci_arttext&pid=S0203-19982020000501101",
+                "/scielo.php?script=sci_serial&pid=1213-1998",
+                "/scielo.php?script=sci_issues&pid=1213-1998",
+                "/scielo.php?script=sci_issuetoc&pid=1213-199821211115",
+                "/scielo.php?script=sci_arttext&pid=S1213-19982121111511111",
+            ]),
         )
 

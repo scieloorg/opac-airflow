@@ -568,7 +568,7 @@ def check_website_uri_list(uri_list_items):
 
 
 def read_file(uri_list_file_path):
-    with open(uri_list_file_path) as fp:
+    with open(uri_list_file_path, "r") as fp:
         uri_list_items = fp.read().splitlines()
     return uri_list_items
 
