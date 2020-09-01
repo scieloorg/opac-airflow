@@ -121,7 +121,7 @@ def get_uri_list_file_paths(conf, **kwargs):
     gerapadrao_id_items = Variable.get(
         "GERAPADRAO_ID_FOR_URI_LIST", default_var=[], deserialize_json=True)
     Logger.info(
-        "Obtém os caminhos dos arquivos que contém URI (`uri_list_*.lst`): %s",
+        "Get file paths which name pattern is `uri_list_*.lst`: %s",
         gerapadrao_id_items)
 
     _xc_sps_packages_dir = Path(Variable.get("XC_SPS_PACKAGES_DIR"))
@@ -145,13 +145,14 @@ def get_uri_list_file_paths(conf, **kwargs):
             file_paths.append(_uri_list_file_path)
 
     kwargs["ti"].xcom_push("uri_list_file_paths", file_paths)
-    Logger.info("Os arquivos `uri_list_*.lst` são %s", file_paths)
+    Logger.info("Found: %s", file_paths)
 
 
 def get_uri_items_from_uri_list_files(**context):
     """
     Retorna uma lista de URI dado uma lista de arquivos `uri_list`
     """
+    Logger.info("Get URI items from `url_list_*.lst`")
     uri_list_file_paths = context["ti"].xcom_pull(
         task_ids="get_uri_list_file_paths_id", key="uri_list_file_paths"
     )
@@ -164,9 +165,13 @@ def get_uri_items_from_uri_list_files(**context):
         # /scielo.php?script=sci_issues&pid=0001-3765
         # /scielo.php?script=sci_issuetoc&pid=0001-376520200005
         # /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
-        items.union(set(check_website_operations.read_file(file_path)))
+        _items = check_website_operations.read_file(file_path)
+        Logger.info("File %s: %i items", file_path, len(_items))
+        items.union(set(_items))
+        Logger.info("Partial total: %i items", len(items))
 
     context["ti"].xcom_push("uri_items", list(items))
+    Logger.info("Total: %i URIs", len(items))
 
 
 def get_pid_list_csv_file_paths(conf, **kwargs):
@@ -177,7 +182,7 @@ def get_pid_list_csv_file_paths(conf, **kwargs):
     pid_v2_list_file_names = Variable.get(
         "PID_LIST_CSV_FILE_NAMES", default_var=[], deserialize_json=True)
     Logger.info(
-        "Obtém os caminhos dos arquivos que contém PIDs: %s",
+        "Get file paths which name pattern is `*.csv`: %s",
         pid_v2_list_file_names)
 
     _xc_sps_packages_dir = Path(Variable.get("XC_SPS_PACKAGES_DIR"))
@@ -200,13 +205,14 @@ def get_pid_list_csv_file_paths(conf, **kwargs):
             file_paths.append(_pid_list_csv_file_path)
 
     kwargs["ti"].xcom_push("pid_list_csv_file_paths", file_paths)
-    Logger.info("Os arquivos são: %s", file_paths)
+    Logger.info("Found: %s", file_paths)
 
 
 def get_uri_items_from_pid_list_csv_files(**context):
     """
     Retorna uma lista de PIDs dado uma lista de arquivos `pid_list`
     """
+    Logger.info("Get URI items from `*.csv`")
     pid_list_csv_file_paths = context["ti"].xcom_pull(
         task_ids="get_pid_list_csv_file_paths_id",
         key="pid_list_csv_file_paths"
@@ -214,18 +220,22 @@ def get_uri_items_from_pid_list_csv_files(**context):
 
     pids = set()
     for file_path in pid_list_csv_file_paths:
-        pids.union(
-            set(check_website_operations.get_pid_list_from_csv(file_path)))
+        _items = check_website_operations.get_pid_list_from_csv(file_path)
+        Logger.info("File %s: %i pids", file_path, len(_items))
+        pids.union(set(_items))
+        Logger.info("Partial total: %i pids", len(pids))
 
     items = check_website_operations.get_uri_list_from_pid_dict(
         group_pids(pids))
     context["ti"].xcom_push("uri_items", items)
+    Logger.info("Total: %i URIs", len(items))
 
 
 def join_and_group_uri_items_by_script_name(**context):
     """
     Concatena cada URL do website com cada URI
     """
+    Logger.info("Concatenate URI items from `uri_list_*.lst` and `*.csv`")
     uri_items = set(context["ti"].xcom_pull(
         task_ids="get_uri_items_from_uri_list_files_id",
         key="uri_items"
@@ -242,12 +252,15 @@ def join_and_group_uri_items_by_script_name(**context):
         script_name: []
         for script_name in SCRIPTS
     }
+    Logger.info("Total %i URIs", len(uri_items))
     for item in uri_items:
         for script_name in SCRIPTS:
             if script_name in item:
                 items[script_name].append(item)
                 break
     for script_name in SCRIPTS:
+        Logger.info(
+            "Total %i URIs for `%s`", len(items[script_name], script_name))
         context["ti"].xcom_push(script_name, sorted(items[script_name]))
 
 
@@ -256,12 +269,11 @@ def check_sci_serial_uri_items(**context):
     Executa ``check_website.check_sci_serial_uri_items`` para o padrão de URI
     /scielo.php?script=sci_serial&pid=0001-3765
     """
+    Logger.info("Check `sci_serial` URI list")
     _website_url_list = Variable.get(
         "WEBSITE_URL_LIST", default_var=[], deserialize_json=True)
     if not _website_url_list:
-        raise ValueError(
-            "Não foi possível verificar porque"
-            "`Variable[\"WEBSITE_URL_LIST\"]` não foi configurado")
+        raise ValueError("`Variable[\"WEBSITE_URL_LIST\"]` is required")
 
     uri_list_items = context["ti"].xcom_pull(
         task_ids="join_and_group_uri_items_by_script_name_id",
@@ -274,6 +286,7 @@ def check_sci_serial_uri_items(**context):
 
     # verifica a lista de URI
     check_website_operations.check_website_uri_list(website_uri_list)
+    Logger.info("Checked %i `sci_serial` URI items", len(website_uri_list))
 
 
 def check_sci_issues_uri_items(**context):
@@ -281,12 +294,11 @@ def check_sci_issues_uri_items(**context):
     Executa ``check_website.check_sci_issues_uri_items`` para o padrão de URI
     /scielo.php?script=sci_issues&pid=0001-3765
     """
+    Logger.info("Check `sci_issues` URI list")
     _website_url_list = Variable.get(
         "WEBSITE_URL_LIST", default_var=[], deserialize_json=True)
     if not _website_url_list:
-        raise ValueError(
-            "Não foi possível verificar porque"
-            "`Variable[\"WEBSITE_URL_LIST\"]` não foi configurado")
+        raise ValueError("`Variable[\"WEBSITE_URL_LIST\"]` is required")
 
     uri_list_items = context["ti"].xcom_pull(
         task_ids="join_and_group_uri_items_by_script_name_id",
@@ -299,6 +311,7 @@ def check_sci_issues_uri_items(**context):
 
     # verifica a lista de URI
     check_website_operations.check_website_uri_list(website_uri_list)
+    Logger.info("Checked %i `sci_issues` URI items", len(website_uri_list))
 
 
 def check_sci_issuetoc_uri_items(**context):
@@ -306,12 +319,11 @@ def check_sci_issuetoc_uri_items(**context):
     Executa ``check_website.check_sci_issuetoc_uri_items`` para o padrão de URI
     /scielo.php?script=sci_issuetoc&pid=0001-376520200005
     """
+    Logger.info("Check `sci_issuetoc` URI list")
     _website_url_list = Variable.get(
         "WEBSITE_URL_LIST", default_var=[], deserialize_json=True)
     if not _website_url_list:
-        raise ValueError(
-            "Não foi possível verificar porque"
-            "`Variable[\"WEBSITE_URL_LIST\"]` não foi configurado")
+        raise ValueError("`Variable[\"WEBSITE_URL_LIST\"]` is required")
 
     uri_list_items = context["ti"].xcom_pull(
         task_ids="join_and_group_uri_items_by_script_name_id",
@@ -324,6 +336,7 @@ def check_sci_issuetoc_uri_items(**context):
 
     # verifica a lista de URI
     check_website_operations.check_website_uri_list(website_uri_list)
+    Logger.info("Checked %i `sci_issuetoc` URI items", len(website_uri_list))
 
 
 def check_sci_arttext_uri_items(**context):
@@ -331,12 +344,11 @@ def check_sci_arttext_uri_items(**context):
     Executa ``check_website.check_sci_arttext_uri_items`` para o padrão de URI
     /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
     """
+    Logger.info("Check `sci_arttext` URI list")
     _website_url_list = Variable.get(
         "WEBSITE_URL_LIST", default_var=[], deserialize_json=True)
     if not _website_url_list:
-        raise ValueError(
-            "Não foi possível verificar porque"
-            "`Variable[\"WEBSITE_URL_LIST\"]` não foi configurado")
+        raise ValueError("`Variable[\"WEBSITE_URL_LIST\"]` is required")
 
     uri_list_items = context["ti"].xcom_pull(
         task_ids="join_and_group_uri_items_by_script_name_id",
@@ -349,6 +361,7 @@ def check_sci_arttext_uri_items(**context):
 
     # verifica a lista de URI
     check_website_operations.check_website_uri_list(website_uri_list)
+    Logger.info("Checked %i `sci_arttext` URI items", len(website_uri_list))
 
 
 check_website_uri_list_task = PythonOperator(
