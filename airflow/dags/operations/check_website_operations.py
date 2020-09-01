@@ -773,16 +773,27 @@ def get_pid_v3_list(uri_items, website_url_list):
     for uri in uri_items:
         for url in website_url or website_url_list:
             doc_uri = "{}{}".format(url, uri)
+            print(doc_uri)
             doc_id = get_kernel_document_id_from_classic_document_uri(doc_uri)
             if doc_id:
                 pid_v3_list.append(doc_id)
                 website_url = website_url or [url]
             else:
                 Logger.error("Unable to find PID v3 from %s", doc_uri)
-    return pid_v3_list, website_url
+    return pid_v3_list, website_url[0]
 
 
 def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url):
+    """
+    Executa a verificação da disponibilidade profundamente e
+    faz o registro do resultado
+
+    Args:
+        doc_id_list (str list): lista de PID v3
+        website_url (str): URL do site público
+        object_store_url (str): URL do _object store_
+
+    """
     Logger.info("Check availability of %i documents", len(doc_id_list))
     for doc_id in doc_id_list:
         Logger.info("Check document availability of %s", doc_id)
