@@ -179,7 +179,7 @@ def get_uri_items_from_uri_list_files(**context):
     Logger.info("Total: %i URIs", len(all_items))
 
 
-def get_pid_list_csv_file_paths(conf, **kwargs):
+def get_pid_list_csv_file_paths(**kwargs):
     """
     Identifica os caminhos dos arquivos CSV
     que contém dados de documentos, sendo a primeira coluna, contém PID v2
@@ -195,10 +195,10 @@ def get_pid_list_csv_file_paths(conf, **kwargs):
     if not _proc_sps_packages_dir.is_dir():
         _proc_sps_packages_dir.mkdir()
 
-    file_paths = [
+    old_file_paths = [
         str(_proc_sps_packages_dir / f)
         for f in _proc_sps_packages_dir.glob('*.csv')]
-
+    file_paths = []
     for filename in pid_v2_list_file_names:
         # obtém o caminho do arquivo que contém a lista de PIDs
         _pid_list_csv_file_path = get_file_path_in_proc_dir(
@@ -209,7 +209,9 @@ def get_pid_list_csv_file_paths(conf, **kwargs):
         if _pid_list_csv_file_path not in file_paths:
             file_paths.append(_pid_list_csv_file_path)
 
-    kwargs["ti"].xcom_push("pid_list_csv_file_paths", file_paths)
+    kwargs["ti"].xcom_push("old_file_paths", old_file_paths)
+    kwargs["ti"].xcom_push("new_file_paths", file_paths)
+    kwargs["ti"].xcom_push("file_paths", old_file_paths + file_paths)
     Logger.info("Found: %s", file_paths)
 
 
@@ -220,7 +222,7 @@ def get_uri_items_from_pid_list_csv_files(**context):
     Logger.info("Get URI items from `*.csv`")
     pid_list_csv_file_paths = context["ti"].xcom_pull(
         task_ids="get_pid_list_csv_file_paths_id",
-        key="pid_list_csv_file_paths"
+        key="file_paths"
     )
 
     pids = set()

@@ -13,6 +13,7 @@ from check_website import (
     check_website_uri_list,
     get_uri_list_file_paths,
     get_uri_items_from_uri_list_files,
+    get_pid_list_csv_file_paths,
 )
 
 
@@ -221,3 +222,81 @@ class TestGetUriItemsFromUriListFiles(TestCase):
             ]),
         )
 
+
+class TestGetPidListCSVFilePaths(TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+        self.gate_dir = tempfile.mkdtemp()
+        self.proc_dir = tempfile.mkdtemp()
+        self.dag_proc_dir = str(pathlib.Path(self.proc_dir) / "test_run_id")
+        os.makedirs(self.dag_proc_dir)
+        for f in ("pid_list_2020-01-01.csv", "pid_list_2020-01-02.csv", "pid_list_2020-01-03.csv"):
+            file_path = pathlib.Path(self.gate_dir) / f
+            with open(file_path, "w") as fp:
+                fp.write("")
+        for f in ("any_2020-01-01.lst", "any_2020-01-02.lst", "any_2020-01-03.lst"):
+            file_path = pathlib.Path(self.gate_dir) / f
+            with open(file_path, "w") as fp:
+                fp.write("")
+        for f in ("any_2020-01-01.lst", "any_2020-01-02.lst", "any_2020-01-03.lst"):
+            file_path = pathlib.Path(self.dag_proc_dir) / f
+            with open(file_path, "w") as fp:
+                fp.write("")
+
+    def tearDown(self):
+        shutil.rmtree(self.gate_dir)
+        shutil.rmtree(self.proc_dir)
+
+    @patch("check_website.Variable.get")
+    def test_get_pid_list_csv_file_paths_returns_the_two_files_copied_to_proc_dir_from_gate_dir(self, mock_get):
+        expected = [
+            str(pathlib.Path(self.proc_dir) / "test_run_id" / "pid_list_2020-01-01.csv"),
+            str(pathlib.Path(self.proc_dir) / "test_run_id" / "pid_list_2020-01-03.csv"),
+        ]
+        mock_get.side_effect = [
+            ['pid_list_2020-01-01.csv', 'pid_list_2020-01-03.csv'],
+            self.gate_dir,
+            self.proc_dir,
+        ]
+        get_pid_list_csv_file_paths(**self.kwargs)
+        self.assertListEqual(
+            [
+                call('old_file_paths', []),
+                call('new_file_paths', expected),
+                call('file_paths', expected),
+            ],
+            self.kwargs["ti"].xcom_push.call_args_list
+        )
+
+    @patch("check_website.Variable.get")
+    def test_get_pid_list_csv_file_paths_returns_all_files_found_in_proc_dir(self, mock_get):
+        for f in ("pid_list_2020-03-01.csv", "pid_list_2020-03-02.csv", "pid_list_2020-03-03.csv"):
+            file_path = pathlib.Path(self.dag_proc_dir) / f
+            with open(file_path, "w") as fp:
+                fp.write("")
+        expected = [
+            str(pathlib.Path(self.dag_proc_dir) / "pid_list_2020-03-01.csv"),
+            str(pathlib.Path(self.dag_proc_dir) / "pid_list_2020-03-02.csv"),
+            str(pathlib.Path(self.dag_proc_dir) / "pid_list_2020-03-03.csv"),
+            str(pathlib.Path(self.dag_proc_dir) / "pid_list_2020-01-01.csv"),
+            str(pathlib.Path(self.dag_proc_dir) / "pid_list_2020-01-03.csv"),
+        ]
+        mock_get.side_effect = [
+            ['pid_list_2020-01-01.csv', 'pid_list_2020-01-03.csv'],
+            self.gate_dir,
+            self.proc_dir,
+        ]
+        get_pid_list_csv_file_paths(**self.kwargs)
+        self.assertListEqual(
+            [
+                call('old_file_paths', expected[:3]),
+                call('new_file_paths', expected[-2:]),
+                call('file_paths', expected),
+            ],
+            self.kwargs["ti"].xcom_push.call_args_list
+        )
