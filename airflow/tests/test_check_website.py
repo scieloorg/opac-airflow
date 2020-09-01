@@ -519,6 +519,23 @@ class TestCheckSciSerialUriItems(TestCase):
             ]
         )
 
+    @patch("check_website.check_website_operations.check_website_uri_list")
+    @patch("check_website.Variable.get")
+    def test_check_sci_serial_uri_items_assert_called_once_check_website_uri_list(
+            self, mock_get, mock_check_website_uri_list):
+        self.kwargs["ti"].xcom_pull.return_value = [
+            "/scielo.php?script=sci_serial&pid=0001-3035",
+            "/scielo.php?script=sci_serial&pid=0001-3765",
+        ]
+        mock_get.return_value = ["https://www.scielo.br"]
+        check_sci_serial_uri_items(**self.kwargs)
+        mock_check_website_uri_list.assert_called_once_with(
+            [
+                "https://www.scielo.br/scielo.php?script=sci_serial&pid=0001-3035",
+                "https://www.scielo.br/scielo.php?script=sci_serial&pid=0001-3765",
+            ]
+        )
+
 
 class TestCheckSciIssuesUriItems(TestCase):
     def setUp(self):
@@ -553,6 +570,24 @@ class TestCheckSciIssuesUriItems(TestCase):
             ]
         )
 
+    @patch("check_website.check_website_operations.check_website_uri_list")
+    @patch("check_website.Variable.get")
+    def test_check_sci_issues_uri_items_assert_called_once_check_website_url_list(
+            self, mock_get, mock_check_website_url_list):
+        self.kwargs["ti"].xcom_pull.return_value = [
+            "/scielo.php?script=sci_issues&pid=0001-3035",
+            "/scielo.php?script=sci_issues&pid=0001-3765",
+        ]
+        mock_get.return_value = ["https://www.scielo.br"]
+        check_sci_issues_uri_items(**self.kwargs)
+        mock_check_website_url_list.assert_called_once_with(
+            [
+                "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
+                "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
+            ]
+        )
+
+
 class TestCheckSciIssuetocUriItems(TestCase):
     def setUp(self):
         self.kwargs = {
@@ -583,6 +618,23 @@ class TestCheckSciIssuetocUriItems(TestCase):
             [
                 "/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
                 "/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+            ]
+        )
+
+    @patch("check_website.check_website_operations.check_website_uri_list")
+    @patch("check_website.Variable.get")
+    def test_check_sci_issuetoc_uri_items_assert_called_once_check_website_uri_list(
+            self, mock_get, mock_check_website_uri_list):
+        self.kwargs["ti"].xcom_pull.return_value = [
+            "/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
+            "/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+        ]
+        mock_get.return_value = ["https://www.scielo.br"]
+        check_sci_issuetoc_uri_items(**self.kwargs)
+        mock_check_website_uri_list.assert_called_once_with(
+            [
+                "https://www.scielo.br/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
+                "https://www.scielo.br/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
             ]
         )
 
