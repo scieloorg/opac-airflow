@@ -149,6 +149,9 @@ def get_uri_list_file_paths(conf, **kwargs):
     kwargs["ti"].xcom_push("new_uri_list_file_paths", file_paths)
     kwargs["ti"].xcom_push("uri_list_file_paths", old_file_paths + file_paths)
     Logger.info("Found: %s", file_paths)
+    # atribui um str vazia para sinalizar que o valor foi usado
+    Variable.set("GERAPADRAO_ID_FOR_URI_LIST", [], serialize_json=True)
+
 
 
 def get_uri_items_from_uri_list_files(**context):
