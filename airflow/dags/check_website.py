@@ -251,7 +251,7 @@ def join_and_group_uri_items_by_script_name(**context):
             )) |
         set(
             context["ti"].xcom_pull(
-                task_ids="get_uri_items_from_pid_items_id",
+                task_ids="get_uri_items_from_pid_list_csv_files_id",
                 key="uri_items"
             )
         )
@@ -268,7 +268,7 @@ def join_and_group_uri_items_by_script_name(**context):
                 break
     for script_name in SCRIPTS:
         Logger.info(
-            "Total %i URIs for `%s`", len(items[script_name], script_name))
+            "Total %i URIs for `%s`", len(items[script_name]), script_name)
         context["ti"].xcom_push(script_name, sorted(items[script_name]))
 
 

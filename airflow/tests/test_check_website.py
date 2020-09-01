@@ -15,6 +15,7 @@ from check_website import (
     get_uri_items_from_uri_list_files,
     get_pid_list_csv_file_paths,
     get_uri_items_from_pid_list_csv_files,
+    join_and_group_uri_items_by_script_name,
 )
 
 
@@ -302,6 +303,7 @@ class TestGetPidListCSVFilePaths(TestCase):
             self.kwargs["ti"].xcom_push.call_args_list
         )
 
+
 class TestGetUriItemsFromPidFiles(TestCase):
 
     def setUp(self):
@@ -365,4 +367,107 @@ class TestGetUriItemsFromPidFiles(TestCase):
                 "/scielo.php?script=sci_issuetoc&pid=1213-199821211115",
                 "/scielo.php?script=sci_arttext&pid=S1213-19982121111511111",
             ],
+        )
+
+
+class TestJoinAndGroupUriItemsByScriptName(TestCase):
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    @patch("check_website.Logger.info")
+    def test_join_and_group_uri_items_by_script_name(self, mock_info):
+        from_uri_list = sorted([
+            "/scielo.php?script=sci_serial&pid=0001-3765",
+            "/scielo.php?script=sci_issues&pid=0001-3765",
+            "/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+            "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+            "/scielo.php?script=sci_serial&pid=0001-3035",
+            "/scielo.php?script=sci_issues&pid=0001-3035",
+            "/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
+            "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
+            "/scielo.php?script=sci_serial&pid=0203-1998",
+            "/scielo.php?script=sci_issues&pid=0203-1998",
+            "/scielo.php?script=sci_issuetoc&pid=0203-199820200005",
+            "/scielo.php?script=sci_arttext&pid=S0203-19982020000501101",
+            "/scielo.php?script=sci_serial&pid=1213-1998",
+            "/scielo.php?script=sci_issues&pid=1213-1998",
+            "/scielo.php?script=sci_issuetoc&pid=1213-199821211115",
+            "/scielo.php?script=sci_arttext&pid=S1213-19982121111511111",
+        ])
+        from_pid_list = [
+            "/scielo.php?script=sci_serial&pid=0001-3035",
+            "/scielo.php?script=sci_issues&pid=0001-3035",
+            "/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
+            "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
+            "/scielo.php?script=sci_serial&pid=0001-3765",
+            "/scielo.php?script=sci_issues&pid=0001-3765",
+            "/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+            "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+            "/scielo.php?script=sci_serial&pid=0203-1998",
+            "/scielo.php?script=sci_issues&pid=0203-1998",
+            "/scielo.php?script=sci_issuetoc&pid=0203-199820200005",
+            "/scielo.php?script=sci_arttext&pid=S0203-19982020000501101",
+            "/scielo.php?script=sci_serial&pid=1213-1998",
+            "/scielo.php?script=sci_issues&pid=1213-1998",
+            "/scielo.php?script=sci_issuetoc&pid=1213-199821211115",
+            "/scielo.php?script=sci_arttext&pid=S1213-19982121111511111",
+            "/scielo.php?script=sci_arttext&pid=S1213-19982121111511112",
+            "/scielo.php?script=sci_arttext&pid=S1213-19982121111511113",
+            "/scielo.php?script=sci_arttext&pid=S1213-19982121111511114",
+        ]
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            from_uri_list,
+            from_pid_list,
+        ]
+        join_and_group_uri_items_by_script_name(**self.kwargs)
+        self.assertIn(
+            call("Total %i URIs", 19),
+            mock_info.call_args_list
+        )
+        self.assertListEqual([
+            call(
+                'sci_arttext',
+                [
+                    "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
+                    "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+                    "/scielo.php?script=sci_arttext&pid=S0203-19982020000501101",
+                    "/scielo.php?script=sci_arttext&pid=S1213-19982121111511111",
+                    "/scielo.php?script=sci_arttext&pid=S1213-19982121111511112",
+                    "/scielo.php?script=sci_arttext&pid=S1213-19982121111511113",
+                    "/scielo.php?script=sci_arttext&pid=S1213-19982121111511114",
+                ]
+            ),
+            call(
+                'sci_issuetoc',
+                [
+                    "/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
+                    "/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+                    "/scielo.php?script=sci_issuetoc&pid=0203-199820200005",
+                    "/scielo.php?script=sci_issuetoc&pid=1213-199821211115",
+                ]
+            ),
+            call(
+                'sci_issues',
+                [
+                    "/scielo.php?script=sci_issues&pid=0001-3035",
+                    "/scielo.php?script=sci_issues&pid=0001-3765",
+                    "/scielo.php?script=sci_issues&pid=0203-1998",
+                    "/scielo.php?script=sci_issues&pid=1213-1998",
+                ]
+            ),
+            call(
+                'sci_serial',
+                [
+                    "/scielo.php?script=sci_serial&pid=0001-3035",
+                    "/scielo.php?script=sci_serial&pid=0001-3765",
+                    "/scielo.php?script=sci_serial&pid=0203-1998",
+                    "/scielo.php?script=sci_serial&pid=1213-1998",
+                ]
+            ),
+            ],
+            self.kwargs["ti"].xcom_push.call_args_list
         )
