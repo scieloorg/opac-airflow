@@ -135,7 +135,7 @@ def get_kernel_document_id_from_classic_document_uri(classic_website_document_ur
             if parsed.path:
                 #  path='/j/qn/a/RsJ6CyVbQP3q9cMWqBGyHjp/'
                 splitted = [item for item in parsed.path.split("/") if item]
-                if len(splitted) == 4 and len(splitted[-1]) == 23:
+                if splitted and len(splitted) == 4 and len(splitted[-1]) == 23:
                     # RsJ6CyVbQP3q9cMWqBGyHjp
                     return splitted[-1]
 
