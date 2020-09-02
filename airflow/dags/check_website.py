@@ -25,7 +25,7 @@ from operations.docs_utils import group_pids
 from operations import check_website_operations
 
 
-SCRIPTS = ("sci_arttext", "sci_issuetoc", "sci_issues", "sci_serial")
+SCRIPTS = ("sci_arttext", "sci_pdf", "sci_issuetoc", "sci_issues", "sci_serial")
 Logger = logging.getLogger(__name__)
 
 default_args = {
@@ -351,6 +351,50 @@ def check_sci_issuetoc_uri_items(**context):
     Logger.info("Checked %i `sci_issuetoc` URI items", len(website_uri_list))
 
 
+def check_sci_pdf_uri_items(**context):
+    """
+    Executa ``check_website.check_sci_pdf_uri_items`` para o padrão de URI
+    /scielo.php?script=sci_pdf&pid=0001-376520200005
+    """
+    Logger.info("Check `sci_pdf` URI list")
+    _website_url_list = get_website_url_list()
+
+    uri_list_items = context["ti"].xcom_pull(
+        task_ids="join_and_group_uri_items_by_script_name_id",
+        key="sci_pdf")
+
+    # concatena cada item de `_website_url_list` com
+    # cada item de `uri_list_items`
+    website_uri_list = check_website_operations.concat_website_url_and_uri_list_items(
+        _website_url_list, uri_list_items)
+
+    # verifica a lista de URI
+    check_website_operations.check_website_uri_list(website_uri_list)
+    Logger.info("Checked %i `sci_pdf` URI items", len(website_uri_list))
+
+
+def check_sci_arttext_uri_items(**context):
+    """
+    Executa ``check_website.check_sci_arttext_uri_items`` para o padrão de URI
+    /scielo.php?script=sci_arttext&pid=0001-376520200005
+    """
+    Logger.info("Check `sci_arttext` URI list")
+    _website_url_list = get_website_url_list()
+
+    uri_list_items = context["ti"].xcom_pull(
+        task_ids="join_and_group_uri_items_by_script_name_id",
+        key="sci_arttext")
+
+    # concatena cada item de `_website_url_list` com
+    # cada item de `uri_list_items`
+    website_uri_list = check_website_operations.concat_website_url_and_uri_list_items(
+        _website_url_list, uri_list_items)
+
+    # verifica a lista de URI
+    check_website_operations.check_website_uri_list(website_uri_list)
+    Logger.info("Checked %i `sci_arttext` URI items", len(website_uri_list))
+
+
 def check_documents_deeply(**context):
     """
     Executa ``check_website.check_documents_deeply`` para a lista de PID v3
@@ -456,6 +500,20 @@ check_sci_issuetoc_uri_items_task = PythonOperator(
     dag=dag,
 )
 
+check_sci_pdf_uri_items_task = PythonOperator(
+    task_id="check_sci_pdf_uri_items_id",
+    provide_context=True,
+    python_callable=check_sci_pdf_uri_items,
+    dag=dag,
+)
+
+check_sci_arttext_uri_items_task = PythonOperator(
+    task_id="check_sci_arttext_uri_items_id",
+    provide_context=True,
+    python_callable=check_sci_arttext_uri_items,
+    dag=dag,
+)
+
 get_pid_v3_list_task = PythonOperator(
     task_id="get_pid_v3_list_id",
     provide_context=True,
@@ -481,14 +539,20 @@ get_pid_list_csv_file_paths_task >> get_uri_items_from_pid_list_csv_files_task
 # junta as listas de URI provenientes de ambos tipos de arquivos
 get_uri_items_from_uri_list_files_task >> join_and_group_uri_items_by_script_name_task << get_uri_items_from_pid_list_csv_files_task
 
-# valida os URI de página do periódico
+# valida os URI de sci_serial (página do periódico)
 join_and_group_uri_items_by_script_name_task >> check_sci_serial_uri_items_task
 
-# valida os URI de grades de fascículos
+# valida os URI de sci_issues (grades de fascículos)
 join_and_group_uri_items_by_script_name_task >> check_sci_issues_uri_items_task
 
-# valida os URI de sumarios
+# valida os URI de sci_issuetoc (sumarios)
 join_and_group_uri_items_by_script_name_task >> check_sci_issuetoc_uri_items_task
 
-# valida os URI de documentos
+# valida os URI de sci_pdf (PDF dos documentos)
+join_and_group_uri_items_by_script_name_task >> check_sci_pdf_uri_items_task
+
+# valida os URI de sci_arttext (HTML dos documentos)
+join_and_group_uri_items_by_script_name_task >> check_sci_arttext_uri_items_task
+
+# valida os URI de documentos no nível mais profundo
 join_and_group_uri_items_by_script_name_task >> get_pid_v3_list_task >> check_documents_deeply_task

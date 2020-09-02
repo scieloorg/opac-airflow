@@ -1,5 +1,10 @@
 from unittest import TestCase, skip
 from unittest.mock import patch, call, MagicMock
+import tempfile
+import os
+import shutil
+from csv import writer
+
 import requests
 
 from airflow import DAG
@@ -26,6 +31,7 @@ from operations.check_website_operations import (
     check_document_availability,
     get_uri_list_from_pid_dict,
     get_pid_v3_list,
+    get_pid_list_from_csv,
 )
 
 
@@ -2427,14 +2433,20 @@ class TestGetUriListFromGroupedPIDs(TestCase):
             "/scielo.php?script=sci_issues&pid=2234-5679",
             "/scielo.php?script=sci_issuetoc&pid=2234-567919970010",
             "/scielo.php?script=sci_arttext&pid=S2234-56791997001012305",
+            "/scielo.php?script=sci_pdf&pid=S2234-56791997001012305",
             "/scielo.php?script=sci_arttext&pid=S2234-56791997001002315",
+            "/scielo.php?script=sci_pdf&pid=S2234-56791997001002315",
             "/scielo.php?script=sci_serial&pid=1234-5678",
             "/scielo.php?script=sci_issues&pid=1234-5678",
             "/scielo.php?script=sci_issuetoc&pid=1234-567819870001",
             "/scielo.php?script=sci_arttext&pid=S1234-56781987000112305",
+            "/scielo.php?script=sci_pdf&pid=S1234-56781987000112305",
             "/scielo.php?script=sci_arttext&pid=S1234-56781987000102315",
+            "/scielo.php?script=sci_pdf&pid=S1234-56781987000102315",
             "/scielo.php?script=sci_arttext&pid=S1234-56781987000112345",
+            "/scielo.php?script=sci_pdf&pid=S1234-56781987000112345",
             "/scielo.php?script=sci_arttext&pid=S1234-56781987000102345",
+            "/scielo.php?script=sci_pdf&pid=S1234-56781987000102345",
         ]
         grouped_pids = {
             "2234-5679":
@@ -2455,7 +2467,7 @@ class TestGetUriListFromGroupedPIDs(TestCase):
                 },
         }
         result = get_uri_list_from_pid_dict(grouped_pids)
-        self.assertEqual(expected, result)
+        self.assertListEqual(expected, result)
 
 
 class TestGetPIDv3List(TestCase):
@@ -2508,3 +2520,80 @@ class TestGetPIDv3List(TestCase):
         ]
         self.assertListEqual(expected, pid_list)
         self.assertEqual("https://www.scielo.br", website_url)
+
+
+class TestGetPIDListFromCSV(TestCase):
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.dir)
+
+    def test_get_pid_list_from_csv_returns_previous_pid(self):
+        data = [
+            ("S1234-56781987000112305", "S1234-56781986005012305"),
+            ("S1234-56781987000112306", ""),
+            ("S1234-56781987000112308", "S1234-56781986005012307"),
+            ("S1234-56781987000112309", "S1234-56781986005012313"),
+        ]
+        csv_file_path = os.path.join(self.dir, 'docs.csv')
+        with open(csv_file_path, 'w', newline='') as fp:
+            w = writer(fp)
+            for row in data:
+                w.writerow(row)
+        expected = [
+            "S1234-56781987000112305",
+            "S1234-56781986005012305",
+            "S1234-56781987000112306",
+            "S1234-56781987000112308",
+            "S1234-56781986005012307",
+            "S1234-56781987000112309",
+            "S1234-56781986005012313",
+        ]
+
+        result = get_pid_list_from_csv(csv_file_path)
+        self.assertListEqual(expected, result)
+
+    def test_get_pid_list_from_csv_reads_one_column_csv_file(self):
+        data = [
+            ("S1234-56781987000112305", ),
+            ("S1234-56781987000112306", ),
+            ("S1234-56781987000112308", ),
+            ("S1234-56781987000112309", ),
+        ]
+        csv_file_path = os.path.join(self.dir, 'docs.csv')
+        with open(csv_file_path, 'w', newline='') as fp:
+            w = writer(fp)
+            for row in data:
+                w.writerow(row)
+        expected = [
+            "S1234-56781987000112305",
+            "S1234-56781987000112306",
+            "S1234-56781987000112308",
+            "S1234-56781987000112309",
+        ]
+
+        result = get_pid_list_from_csv(csv_file_path)
+        self.assertListEqual(expected, result)
+
+    def test_get_pid_list_from_csv_reads_more_than_one_column_csv_file(self):
+        data = [
+            ("S1234-56781987000112305", "bla", "xyo", "98765-02"),
+            ("S1234-56781987000112306", "bla", "xyo", "98765-02"),
+            ("S1234-56781987000112308", "bla", "xyo", "98765-02"),
+            ("S1234-56781987000112309", "bla", "xyo", "98765-02"),
+        ]
+        csv_file_path = os.path.join(self.dir, 'docs.csv')
+        with open(csv_file_path, 'w', newline='') as fp:
+            w = writer(fp)
+            for row in data:
+                w.writerow(row)
+        expected = [
+            "S1234-56781987000112305",
+            "S1234-56781987000112306",
+            "S1234-56781987000112308",
+            "S1234-56781987000112309",
+        ]
+
+        result = get_pid_list_from_csv(csv_file_path)
+        self.assertListEqual(expected, result)

@@ -359,18 +359,22 @@ class TestGetUriItemsFromPidFiles(TestCase):
                 "/scielo.php?script=sci_issues&pid=0001-3035",
                 "/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
                 "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
+                "/scielo.php?script=sci_pdf&pid=S0001-30352020000501101",
                 "/scielo.php?script=sci_serial&pid=0001-3765",
                 "/scielo.php?script=sci_issues&pid=0001-3765",
                 "/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
                 "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+                "/scielo.php?script=sci_pdf&pid=S0001-37652020000501101",
                 "/scielo.php?script=sci_serial&pid=0203-1998",
                 "/scielo.php?script=sci_issues&pid=0203-1998",
                 "/scielo.php?script=sci_issuetoc&pid=0203-199820200005",
                 "/scielo.php?script=sci_arttext&pid=S0203-19982020000501101",
+                "/scielo.php?script=sci_pdf&pid=S0203-19982020000501101",
                 "/scielo.php?script=sci_serial&pid=1213-1998",
                 "/scielo.php?script=sci_issues&pid=1213-1998",
                 "/scielo.php?script=sci_issuetoc&pid=1213-199821211115",
                 "/scielo.php?script=sci_arttext&pid=S1213-19982121111511111",
+                "/scielo.php?script=sci_pdf&pid=S1213-19982121111511111",
             ],
         )
 
@@ -390,32 +394,39 @@ class TestJoinAndGroupUriItemsByScriptName(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3765",
             "/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+            "/scielo.php?script=sci_pdf&pid=S0001-37652020000501101",
             "/scielo.php?script=sci_serial&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
             "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
+            "/scielo.php?script=sci_pdf&pid=S0001-30352020000501101",
             "/scielo.php?script=sci_serial&pid=0203-1998",
             "/scielo.php?script=sci_issues&pid=0203-1998",
             "/scielo.php?script=sci_issuetoc&pid=0203-199820200005",
             "/scielo.php?script=sci_arttext&pid=S0203-19982020000501101",
+            "/scielo.php?script=sci_pdf&pid=S0203-19982020000501101",
             "/scielo.php?script=sci_serial&pid=1213-1998",
             "/scielo.php?script=sci_issues&pid=1213-1998",
             "/scielo.php?script=sci_issuetoc&pid=1213-199821211115",
             "/scielo.php?script=sci_arttext&pid=S1213-19982121111511111",
+            "/scielo.php?script=sci_pdf&pid=S1213-19982121111511111",
         ])
         from_pid_list = [
             "/scielo.php?script=sci_serial&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
             "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
+            "/scielo.php?script=sci_pdf&pid=S0001-30352020000501101",
             "/scielo.php?script=sci_serial&pid=0001-3765",
             "/scielo.php?script=sci_issues&pid=0001-3765",
             "/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+            "/scielo.php?script=sci_pdf&pid=S0001-37652020000501101",
             "/scielo.php?script=sci_serial&pid=0203-1998",
             "/scielo.php?script=sci_issues&pid=0203-1998",
             "/scielo.php?script=sci_issuetoc&pid=0203-199820200005",
             "/scielo.php?script=sci_arttext&pid=S0203-19982020000501101",
+            "/scielo.php?script=sci_pdf&pid=S0203-19982020000501101",
             "/scielo.php?script=sci_serial&pid=1213-1998",
             "/scielo.php?script=sci_issues&pid=1213-1998",
             "/scielo.php?script=sci_issuetoc&pid=1213-199821211115",
@@ -423,6 +434,10 @@ class TestJoinAndGroupUriItemsByScriptName(TestCase):
             "/scielo.php?script=sci_arttext&pid=S1213-19982121111511112",
             "/scielo.php?script=sci_arttext&pid=S1213-19982121111511113",
             "/scielo.php?script=sci_arttext&pid=S1213-19982121111511114",
+            "/scielo.php?script=sci_pdf&pid=S1213-19982121111511111",
+            "/scielo.php?script=sci_pdf&pid=S1213-19982121111511112",
+            "/scielo.php?script=sci_pdf&pid=S1213-19982121111511113",
+            "/scielo.php?script=sci_pdf&pid=S1213-19982121111511114",
         ]
         self.kwargs["ti"].xcom_pull.side_effect = [
             from_uri_list,
@@ -430,7 +445,7 @@ class TestJoinAndGroupUriItemsByScriptName(TestCase):
         ]
         join_and_group_uri_items_by_script_name(**self.kwargs)
         self.assertIn(
-            call("Total %i URIs", 19),
+            call("Total %i URIs", 26),
             mock_info.call_args_list
         )
         self.assertListEqual([
@@ -444,6 +459,18 @@ class TestJoinAndGroupUriItemsByScriptName(TestCase):
                     "/scielo.php?script=sci_arttext&pid=S1213-19982121111511112",
                     "/scielo.php?script=sci_arttext&pid=S1213-19982121111511113",
                     "/scielo.php?script=sci_arttext&pid=S1213-19982121111511114",
+                ]
+            ),
+            call(
+                'sci_pdf',
+                [
+                    "/scielo.php?script=sci_pdf&pid=S0001-30352020000501101",
+                    "/scielo.php?script=sci_pdf&pid=S0001-37652020000501101",
+                    "/scielo.php?script=sci_pdf&pid=S0203-19982020000501101",
+                    "/scielo.php?script=sci_pdf&pid=S1213-19982121111511111",
+                    "/scielo.php?script=sci_pdf&pid=S1213-19982121111511112",
+                    "/scielo.php?script=sci_pdf&pid=S1213-19982121111511113",
+                    "/scielo.php?script=sci_pdf&pid=S1213-19982121111511114",
                 ]
             ),
             call(

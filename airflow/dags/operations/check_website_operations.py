@@ -23,15 +23,17 @@ Logger = logging.getLogger(__name__)
 def get_pid_list_from_csv(csv_file_path):
     """
     Le um arquivo csv, cuja primeira coluna é o pid v2
-
+    Considerar que pode haver uma segunda coluna que contém o "previous" pid v2
     Returns:
         list: lista de pid v2
     """
+    pids = []
     with open(csv_file_path, newline='') as f:
-        return [
-            row[0]
-            for row in reader(f)
-        ]
+        for row in reader(f):
+            pids.append(row[0])
+            if len(row) > 1 and len(row[1]) == 23:
+                pids.append(row[1])
+    return pids
 
 
 def get_uri_list_from_pid_dict(grouped_pids):
@@ -46,6 +48,8 @@ def get_uri_list_from_pid_dict(grouped_pids):
             uri_list.append(get_classic_document_webpage_uri(data))
             for doc_pid in doc_pids:
                 data = {"pid_v2": doc_pid, "script": "sci_arttext"}
+                uri_list.append(get_classic_document_webpage_uri(data))
+                data = {"pid_v2": doc_pid, "script": "sci_pdf"}
                 uri_list.append(get_classic_document_webpage_uri(data))
     return uri_list
 
