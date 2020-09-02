@@ -307,7 +307,7 @@ def get_webpage_content(uri):
 
 
 def find_uri_items(content):
-    soup = BeautifulSoup(content)
+    soup = BeautifulSoup(content, features="lxml")
 
     uri_items = [
         link.get('href')
