@@ -2,11 +2,13 @@ import os
 import logging
 import hashlib
 import http.client
+import json
 
 import requests
 import botocore
 from lxml import etree
 
+from common.sps_package import SPS_Package
 import common.hooks as hooks
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -16,10 +18,152 @@ from operations.exceptions import (
     RegisterUpdateDocIntoKernelException,
     LinkDocumentToDocumentsBundleException,
     Pidv3Exception,
+    GetDocManifestFromKernelException,
+    GetSPSPackageFromDocManifestException,
 )
-from common.sps_package import SPS_Package
+
 
 Logger = logging.getLogger(__name__)
+
+
+def is_pid_v2(value):
+    return bool(value and value[0] == "S" and value[-1].isdigit() and len(value) == 23)
+
+
+def get_document_manifest(doc_id):
+    try:
+        document_manifest = hooks.kernel_connect(
+            "/documents/" + doc_id + "/manifest", "GET"
+        )
+    except requests.exceptions.HTTPError as exc:
+        raise GetDocManifestFromKernelException(
+            'Could not GET document "{}" in Kernel : {}'.format(
+                doc_id, str(exc)
+            )
+        ) from None
+    else:
+        return json.loads(document_manifest)
+
+
+def get_document_sps_package(current_version):
+    """
+    Dada a versão atual do documento registrado no Kernel, retorna um objeto de
+    SPS_Package
+
+    Args:
+        current_version (str): a versão atual do documento registrado no Kernel
+
+    Returns:
+        SPS_Package
+
+    Raises:
+        GetSPSPackageFromDocManifestException
+    """
+    response = requests.get(current_version["data"])
+    try:
+        xml_str = response.text.encode("utf-8")
+        xml_tree = etree.fromstring(xml_str)
+        return SPS_Package(xml_tree, '')
+    except (
+            AttributeError,
+            lxml.etree.Error,
+            ) as e:
+        raise GetSPSPackageFromDocManifestException(
+                "Unable to get SPS Package of %s: %s",
+                current_version["data"],
+                e
+            )
+
+
+def get_document_data_to_generate_uri(current_version, sps_package=None):
+    """
+    Retorna formato (html e pdf) e idiomas da versão corrente entre outros
+    dados do documento
+    """
+    sps_package = sps_package or get_document_sps_package(current_version)
+    data = []
+    data.append(
+        {
+            "lang": sps_package.original_language,
+            "format": "html",
+            "pid_v2": sps_package.scielo_pid_v2,
+            "acron": sps_package.acron,
+            "doc_id_for_human": sps_package.package_name,
+
+        }
+    )
+    for lang in sps_package.translation_languages or []:
+        data.append(
+            {
+                "lang": lang,
+                "format": "html",
+                "pid_v2": sps_package.scielo_pid_v2,
+                "acron": sps_package.acron,
+                "doc_id_for_human": sps_package.package_name,
+            }
+        )
+    for rendition in current_version.get("renditions") or []:
+        data.append(
+            {
+                "lang": rendition["lang"],
+                "format": "pdf",
+                "pid_v2": sps_package.scielo_pid_v2,
+                "acron": sps_package.acron,
+                "doc_id_for_human": sps_package.package_name,
+            }
+        )
+    return data
+
+
+def get_document_assets_data(current_version):
+    """
+    Retorna os dados dos ativos da versão atual de um documento registrado
+    no Kernel
+    """
+    LAST_VERSION = -1
+    # agrupa items que representam o mesmo ativo
+    assets_by_prefix = {}
+    assets = current_version.get("assets") or {}
+    for asset_id, asset in assets.items():
+        prefix, ext = os.path.splitext(asset_id)
+        prefix = prefix.replace(".thumbnail", "")
+        assets_by_prefix[prefix] = assets_by_prefix.get(prefix) or []
+        assets_by_prefix[prefix].append(
+            {
+                "asset_id": asset_id,
+                "uri": asset[LAST_VERSION][1],
+            }
+        )
+    # cria lista dos grupos de ativos digitais
+    assets = []
+    for prefix, asset_alternatives in assets_by_prefix.items():
+        assets.append(
+            {
+                "prefix": prefix,
+                "uri_alternatives": [
+                    alternative["uri"]
+                    for alternative in asset_alternatives
+                ],
+                "asset_alternatives": asset_alternatives,
+            }
+        )
+    return assets
+
+
+def get_document_renditions_data(current_version):
+    """
+    Retorna os dados das manifestações da versão atual de um documento
+    registrado no Kernel
+    """
+    renditions = []
+    for rendition in current_version.get("renditions") or []:
+        renditions.append(
+            {
+                "lang": rendition["lang"],
+                "uri": rendition["data"][-1]["url"],
+            }
+        )
+    return renditions
 
 
 def delete_doc_from_kernel(doc_to_delete):

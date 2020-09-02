@@ -23,6 +23,9 @@ from operations.docs_utils import (
     get_or_create_bundle,
     create_aop_bundle,
     update_aop_bundle_items,
+    get_document_data_to_generate_uri,
+    get_document_assets_data,
+    get_document_renditions_data,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -1062,6 +1065,118 @@ class TestUpdateAOPBundle(TestCase):
         mk_update_documents_in_bundle.assert_called_once_with(
             "0034-8910-aop", updated_docs_list
         )
+
+
+class TestGetDocumentDataToGenerateUri(TestCase):
+
+    def test_get_document_data_to_generate_uri_returns_(self):
+        current_version = {
+            "data": "bla.xml",
+            "renditions": [
+                {"lang": "en"},
+                {"lang": "es"},
+            ]
+        }
+        mock_sps_package = MagicMock()
+        mock_sps_package.original_language = "en"
+        mock_sps_package.translation_languages = ["es"]
+        mock_sps_package.scielo_pid_v2 = "xxxx"
+        mock_sps_package.acron = "abc"
+        mock_sps_package.package_name = "artigo-1234"
+
+        expected = [
+            {"lang": "en", "format": "html", "pid_v2": "xxxx", "acron": "abc",
+             "doc_id_for_human": "artigo-1234"},
+            {"lang": "es", "format": "html", "pid_v2": "xxxx", "acron": "abc",
+             "doc_id_for_human": "artigo-1234"},
+            {"lang": "en", "format": "pdf", "pid_v2": "xxxx", "acron": "abc",
+             "doc_id_for_human": "artigo-1234"},
+            {"lang": "es", "format": "pdf", "pid_v2": "xxxx", "acron": "abc",
+             "doc_id_for_human": "artigo-1234"},
+        ]
+        result = get_document_data_to_generate_uri(current_version, mock_sps_package)
+        self.assertEqual(expected, result)
+
+
+class Testget_document_assets_data(TestCase):
+
+    def test_get_document_assets_data(self):
+        data = {}
+        data["assets"] = {
+            "a01.png": [
+                ["2020-08-10T11:38:46.759859Z", "https://..a01.png"],
+            ],
+            "a01.jpg": [
+                ["2020-08-10T11:38:46.759859Z", "https://..a01.jpg"],
+            ],
+            "a02.png": [
+                ["2019-08-10T11:38:46.759859Z", "https://vrsao1/a02.png"],
+                ["2020-08-10T11:38:46.759859Z", "https://vrsao2/a02.png"],
+            ],
+            "a02.jpg": [
+                ["2020-08-10T11:38:46.759859Z", "https://vrsao2/a02.jpg"],
+            ],
+        }
+        expected = [
+            {
+                "prefix": "a01",
+                "uri_alternatives": ["https://..a01.png", "https://..a01.jpg"],
+                "asset_alternatives": [
+                    {"asset_id": "a01.png", "uri": "https://..a01.png"},
+                    {"asset_id": "a01.jpg", "uri": "https://..a01.jpg"},
+                ],
+            },
+            {
+                "prefix": "a02",
+                "uri_alternatives": [
+                    "https://vrsao2/a02.png", "https://vrsao2/a02.jpg"],
+                "asset_alternatives": [
+                    {"asset_id": "a02.png", "uri": "https://vrsao2/a02.png"},
+                    {"asset_id": "a02.jpg", "uri": "https://vrsao2/a02.jpg"},
+                ],
+            },
+        ]
+        result = get_document_assets_data(data)
+        self.assertEqual(expected, result)
+
+
+class Testget_document_renditions_data(TestCase):
+
+    def test_get_document_renditions_data(self):
+        data = {}
+        data["renditions"] = [
+            {
+                "data": [
+                    {
+                        "url": "URI 1 versão 1",
+                    },
+                    {
+                        "url": "URI 1 versão 2",
+                    },
+                ],
+                "lang": "en",
+            },
+            {
+                "data": [
+                    {
+                        "url": "URI 2 versão 1",
+                    },
+                ],
+                "lang": "pt",
+            },
+        ]
+        expected = [
+            {
+                "lang": "en",
+                "uri": "URI 1 versão 2",
+            },
+            {
+                "lang": "pt",
+                "uri": "URI 2 versão 1",
+            },
+        ]
+        result = get_document_renditions_data(data)
+        self.assertEqual(expected, result)
 
 
 if __name__ == "__main__":
