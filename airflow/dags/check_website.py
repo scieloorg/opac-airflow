@@ -284,7 +284,7 @@ def get_website_url_list():
     return _website_url_list
 
 
-def check_any_uri_items(uri_list_items):
+def check_any_uri_items(uri_list_items, label=""):
     _website_url_list = get_website_url_list()
 
     # concatena cada item de `_website_url_list` com
@@ -293,7 +293,7 @@ def check_any_uri_items(uri_list_items):
         _website_url_list, uri_list_items)
 
     # verifica a lista de URI
-    check_website_operations.check_website_uri_list(website_uri_list)
+    check_website_operations.check_website_uri_list(website_uri_list, label)
 
     return len(website_uri_list)
 
@@ -309,7 +309,7 @@ def check_sci_serial_uri_items(**context):
         task_ids="join_and_group_uri_items_by_script_name_id",
         key="sci_serial")
 
-    total = check_any_uri_items(uri_list_items)
+    total = check_any_uri_items(uri_list_items, "sci_serial")
 
     Logger.info("Checked %i `sci_serial` URI items", total)
 
@@ -325,7 +325,7 @@ def check_sci_issues_uri_items(**context):
         task_ids="join_and_group_uri_items_by_script_name_id",
         key="sci_issues")
 
-    total = check_any_uri_items(uri_list_items)
+    total = check_any_uri_items(uri_list_items, "sci_issues")
 
     Logger.info("Checked %i `sci_issues` URI items", total)
 
@@ -341,7 +341,7 @@ def check_sci_issuetoc_uri_items(**context):
         task_ids="join_and_group_uri_items_by_script_name_id",
         key="sci_issuetoc")
 
-    total = check_any_uri_items(uri_list_items)
+    total = check_any_uri_items(uri_list_items, "sci_issuetoc")
 
     Logger.info("Checked %i `sci_issuetoc` URI items", total)
 
@@ -357,7 +357,7 @@ def check_sci_pdf_uri_items(**context):
         task_ids="join_and_group_uri_items_by_script_name_id",
         key="sci_pdf")
 
-    total = check_any_uri_items(uri_list_items)
+    total = check_any_uri_items(uri_list_items, "sci_pdf")
 
     Logger.info("Checked %i `sci_pdf` URI items", total)
 
@@ -373,7 +373,7 @@ def check_sci_arttext_uri_items(**context):
         task_ids="join_and_group_uri_items_by_script_name_id",
         key="sci_arttext")
 
-    total = check_any_uri_items(uri_list_items)
+    total = check_any_uri_items(uri_list_items, "sci_arttext")
 
     Logger.info("Checked %i `sci_arttext` URI items", total)
 

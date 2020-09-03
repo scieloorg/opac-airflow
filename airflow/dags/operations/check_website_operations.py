@@ -550,7 +550,7 @@ def check_document_renditions_availability(renditions):
     return report, unavailable
 
 
-def check_website_uri_list(uri_list_items):
+def check_website_uri_list(uri_list_items, label=""):
     """
     Verifica a disponibilidade dos URI de `uri_list_items`
     Args:
@@ -560,16 +560,17 @@ def check_website_uri_list(uri_list_items):
     Logger.debug("check_website_uri_list IN")
 
     total = len(uri_list_items)
-    Logger.info("Quantidade de URI: %i", total)
-    unavailable_uri_items = check_uri_list(uri_list_items)
+    Logger.info("Total %s URIs: %i", label, total)
+    success, failures = check_uri_items(uri_list_items)
 
-    if unavailable_uri_items:
+    if failures:
         Logger.info(
-            "Não encontrados (%i/%i):\n%s",
-            len(unavailable_uri_items), total,
-            "\n".join(unavailable_uri_items))
+            "Unavailable %s URIs (%i/%i):\n%s",
+            label,
+            len(failures), total,
+            "\n".join(sorted([item["uri"] for item in failures])))
     else:
-        Logger.info("Encontrados: %i/%i", total, total)
+        Logger.info("Total available %s URIs: %i/%i", label, total, total)
 
     Logger.debug("check_website_uri_list OUT")
 

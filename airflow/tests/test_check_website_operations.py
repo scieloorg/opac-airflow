@@ -374,14 +374,14 @@ class TestCheckWebsiteUriList(TestCase):
         self.assertEqual(
             mock_info.call_args_list,
             [
-                call('Quantidade de URI: %i', 0),
-                call("Encontrados: %i/%i", 0, 0),
+                call("Total %s URIs: %i", "", 0),
+                call("Total available %s URIs: %i/%i", "", 0, 0),
             ]
         )
 
     @patch("operations.check_website_operations.Logger.info")
-    @patch("operations.check_website_operations.requests.head")
-    def test_check_website_uri_list_informs_that_all_were_found(self, mock_head, mock_info):
+    @patch("operations.check_website_operations.async_requests.parallel_requests")
+    def test_check_website_uri_list_informs_that_all_were_found(self, mock_parallel_reqs, mock_info):
         uri_list = (
             "https://www.scielo.br/scielo.php?script=sci_serial&pid=0001-3765",
             "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
@@ -392,29 +392,29 @@ class TestCheckWebsiteUriList(TestCase):
             "https://new.scielo.br/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
             "https://new.scielo.br/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
         )
-        mock_head.side_effect = [
-            MockResponse(200),
-            MockResponse(200),
-            MockResponse(200),
-            MockResponse(200),
-            MockResponse(200),
-            MockResponse(200),
-            MockResponse(200),
-            MockResponse(200),
+        mock_parallel_reqs.return_value = [
+            MockClientResponse(200, uri_list[0]),
+            MockClientResponse(200, uri_list[1]),
+            MockClientResponse(200, uri_list[2]),
+            MockClientResponse(200, uri_list[3]),
+            MockClientResponse(200, uri_list[4]),
+            MockClientResponse(200, uri_list[5]),
+            MockClientResponse(200, uri_list[6]),
+            MockClientResponse(200, uri_list[7]),
         ]
         check_website_uri_list(uri_list)
         self.assertIn(
-            call('Quantidade de URI: %i', 8),
+            call('Total %s URIs: %i', '', 8),
             mock_info.call_args_list
         )
         self.assertIn(
-            call("Encontrados: %i/%i", 8, 8),
+            call("Total available %s URIs: %i/%i", "", 8, 8),
             mock_info.call_args_list
         )
 
     @patch("operations.check_website_operations.Logger.info")
-    @patch("operations.check_website_operations.requests.head")
-    def test_check_website_uri_list_informs_that_some_of_uri_items_were_not_found(self, mock_head, mock_info):
+    @patch("operations.check_website_operations.async_requests.parallel_requests")
+    def test_check_website_uri_list_informs_that_some_of_uri_items_were_not_found(self, mock_parallel_reqs, mock_info):
         uri_list = (
             "https://www.scielo.br/scielo.php?script=sci_serial&pid=0001-3765",
             "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
@@ -425,33 +425,54 @@ class TestCheckWebsiteUriList(TestCase):
             "https://new.scielo.br/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
             "https://new.scielo.br/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
         )
-        mock_head.side_effect = [
-            MockResponse(200),
-            MockResponse(404),
-            MockResponse(200),
-            MockResponse(200),
-            MockResponse(500),
-            MockResponse(404),
-            MockResponse(200),
-            MockResponse(200),
-            MockResponse(200),
-            MockResponse(200),
-            MockResponse(200),
+        mock_parallel_reqs.return_value = [
+            MockClientResponse(
+                200,
+                "https://www.scielo.br/scielo.php?"
+                "script=sci_serial&pid=0001-3765"),
+            MockClientResponse(
+                404,
+                "https://www.scielo.br/scielo.php?"
+                "script=sci_issues&pid=0001-3765"),
+            MockClientResponse(
+                200,
+                "https://www.scielo.br/scielo.php?"
+                "script=sci_issuetoc&pid=0001-376520200005"),
+            MockClientResponse(
+                200,
+                "https://www.scielo.br/scielo.php?"
+                "script=sci_arttext&pid=S0001-37652020000501101"),
+            MockClientResponse(
+                404,
+                "https://new.scielo.br/scielo.php?"
+                "script=sci_serial&pid=0001-3765"),
+            MockClientResponse(
+                200,
+                "https://new.scielo.br/scielo.php?"
+                "script=sci_issues&pid=0001-3765"),
+            MockClientResponse(
+                200,
+                "https://new.scielo.br/scielo.php?"
+                "script=sci_issuetoc&pid=0001-376520200005"),
+            MockClientResponse(
+                200,
+                "https://new.scielo.br/scielo.php?"
+                "script=sci_arttext&pid=S0001-37652020000501101"),
         ]
         check_website_uri_list(uri_list)
         bad_uri_1 = "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765"
         bad_uri_2 = "https://new.scielo.br/scielo.php?script=sci_serial&pid=0001-3765"
 
         self.assertIn(
-            call("Não encontrados (%i/%i):\n%s", 2, 8,
+            call("Unavailable %s URIs (%i/%i):\n%s", "", 2, 8,
                  "\n".join([
-                        bad_uri_1,
                         bad_uri_2,
+                        bad_uri_1,
                     ])),
             mock_info.call_args_list
         )
         self.assertIn(
-            call('Quantidade de URI: %i', 8),
+            call('Total %s URIs: %i', '', 8),
             mock_info.call_args_list
         )
 

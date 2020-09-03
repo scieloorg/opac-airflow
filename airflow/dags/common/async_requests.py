@@ -1,7 +1,17 @@
 import asyncio
-import aiohttp
 from datetime import datetime
+import logging
+
+import aiohttp
 import requests
+
+
+Logger = logging.getLogger(__name__)
+
+
+class InvalidClientResponse:
+    def __init__(self):
+        self.status = None
 
 
 async def fetch(uri, session, head=False):
@@ -10,15 +20,24 @@ async def fetch(uri, session, head=False):
     """
     start = datetime.utcnow()
     do_request = session.head if head else session.get
-    async with do_request(uri) as response:
-        await response.text()
 
+    try:
+        async with do_request(uri) as response:
+            await response.text()
+    except (
+            aiohttp.ClientResponseError,
+            aiohttp.ClientError,
+            AttributeError) as e:
+        response = InvalidClientResponse()
+        Logger.exception(e)
+    finally:
         # acrescenta novos atributos para o objeto ClientResponse
         response.uri = uri
         response.end_time = datetime.utcnow()
         response.start_time = start
         response.status_code = response.status
 
+        Logger.info("Requested %s: %s", uri, response.status_code)
         return response
 
 
