@@ -284,18 +284,8 @@ def get_website_url_list():
     return _website_url_list
 
 
-def check_sci_serial_uri_items(**context):
-    """
-    Executa ``check_website.check_sci_serial_uri_items`` para o padrão de URI
-    /scielo.php?script=sci_serial&pid=0001-3765
-    """
-    Logger.info("Check `sci_serial` URI list")
-
+def check_any_uri_items(uri_list_items):
     _website_url_list = get_website_url_list()
-
-    uri_list_items = context["ti"].xcom_pull(
-        task_ids="join_and_group_uri_items_by_script_name_id",
-        key="sci_serial")
 
     # concatena cada item de `_website_url_list` com
     # cada item de `uri_list_items`
@@ -304,7 +294,24 @@ def check_sci_serial_uri_items(**context):
 
     # verifica a lista de URI
     check_website_operations.check_website_uri_list(website_uri_list)
-    Logger.info("Checked %i `sci_serial` URI items", len(website_uri_list))
+
+    return len(website_uri_list)
+
+
+def check_sci_serial_uri_items(**context):
+    """
+    Executa ``check_website.check_sci_serial_uri_items`` para o padrão de URI
+    /scielo.php?script=sci_serial&pid=0001-3765
+    """
+    Logger.info("Check `sci_serial` URI list")
+
+    uri_list_items = context["ti"].xcom_pull(
+        task_ids="join_and_group_uri_items_by_script_name_id",
+        key="sci_serial")
+
+    total = check_any_uri_items(uri_list_items)
+
+    Logger.info("Checked %i `sci_serial` URI items", total)
 
 
 def check_sci_issues_uri_items(**context):
@@ -313,20 +320,14 @@ def check_sci_issues_uri_items(**context):
     /scielo.php?script=sci_issues&pid=0001-3765
     """
     Logger.info("Check `sci_issues` URI list")
-    _website_url_list = get_website_url_list()
 
     uri_list_items = context["ti"].xcom_pull(
         task_ids="join_and_group_uri_items_by_script_name_id",
         key="sci_issues")
 
-    # concatena cada item de `_website_url_list` com
-    # cada item de `uri_list_items`
-    website_uri_list = check_website_operations.concat_website_url_and_uri_list_items(
-        _website_url_list, uri_list_items)
+    total = check_any_uri_items(uri_list_items)
 
-    # verifica a lista de URI
-    check_website_operations.check_website_uri_list(website_uri_list)
-    Logger.info("Checked %i `sci_issues` URI items", len(website_uri_list))
+    Logger.info("Checked %i `sci_issues` URI items", total)
 
 
 def check_sci_issuetoc_uri_items(**context):
@@ -335,20 +336,14 @@ def check_sci_issuetoc_uri_items(**context):
     /scielo.php?script=sci_issuetoc&pid=0001-376520200005
     """
     Logger.info("Check `sci_issuetoc` URI list")
-    _website_url_list = get_website_url_list()
 
     uri_list_items = context["ti"].xcom_pull(
         task_ids="join_and_group_uri_items_by_script_name_id",
         key="sci_issuetoc")
 
-    # concatena cada item de `_website_url_list` com
-    # cada item de `uri_list_items`
-    website_uri_list = check_website_operations.concat_website_url_and_uri_list_items(
-        _website_url_list, uri_list_items)
+    total = check_any_uri_items(uri_list_items)
 
-    # verifica a lista de URI
-    check_website_operations.check_website_uri_list(website_uri_list)
-    Logger.info("Checked %i `sci_issuetoc` URI items", len(website_uri_list))
+    Logger.info("Checked %i `sci_issuetoc` URI items", total)
 
 
 def check_sci_pdf_uri_items(**context):
@@ -357,20 +352,14 @@ def check_sci_pdf_uri_items(**context):
     /scielo.php?script=sci_pdf&pid=0001-376520200005
     """
     Logger.info("Check `sci_pdf` URI list")
-    _website_url_list = get_website_url_list()
 
     uri_list_items = context["ti"].xcom_pull(
         task_ids="join_and_group_uri_items_by_script_name_id",
         key="sci_pdf")
 
-    # concatena cada item de `_website_url_list` com
-    # cada item de `uri_list_items`
-    website_uri_list = check_website_operations.concat_website_url_and_uri_list_items(
-        _website_url_list, uri_list_items)
+    total = check_any_uri_items(uri_list_items)
 
-    # verifica a lista de URI
-    check_website_operations.check_website_uri_list(website_uri_list)
-    Logger.info("Checked %i `sci_pdf` URI items", len(website_uri_list))
+    Logger.info("Checked %i `sci_pdf` URI items", total)
 
 
 def check_sci_arttext_uri_items(**context):
@@ -379,20 +368,14 @@ def check_sci_arttext_uri_items(**context):
     /scielo.php?script=sci_arttext&pid=0001-376520200005
     """
     Logger.info("Check `sci_arttext` URI list")
-    _website_url_list = get_website_url_list()
 
     uri_list_items = context["ti"].xcom_pull(
         task_ids="join_and_group_uri_items_by_script_name_id",
         key="sci_arttext")
 
-    # concatena cada item de `_website_url_list` com
-    # cada item de `uri_list_items`
-    website_uri_list = check_website_operations.concat_website_url_and_uri_list_items(
-        _website_url_list, uri_list_items)
+    total = check_any_uri_items(uri_list_items)
 
-    # verifica a lista de URI
-    check_website_operations.check_website_uri_list(website_uri_list)
-    Logger.info("Checked %i `sci_arttext` URI items", len(website_uri_list))
+    Logger.info("Checked %i `sci_arttext` URI items", total)
 
 
 def check_documents_deeply(**context):
