@@ -121,6 +121,8 @@ def eval_response(response):
         "status code": response.status_code,
         "start time": response.start_time,
         "end time": response.end_time,
+        "duration": (
+            response.end_time - response.start_time).seconds,
     }
 
 

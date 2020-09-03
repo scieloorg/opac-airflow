@@ -3,6 +3,7 @@ from unittest.mock import patch, call, MagicMock
 import tempfile
 import os
 import shutil
+from datetime import datetime, timedelta
 from csv import writer
 
 import requests
@@ -34,6 +35,10 @@ from operations.check_website_operations import (
     get_pid_list_from_csv,
 )
 
+END_TIME = datetime.utcnow()
+START_TIME = END_TIME - timedelta(seconds=1)
+DURATION = (END_TIME - START_TIME).seconds
+
 
 class TestDoRequest(TestCase):
 
@@ -42,11 +47,11 @@ class TestDoRequest(TestCase):
     def test_do_request_returns_response_timestamp(self, mock_get, mock_dt):
         mock_response = requests.Response()
         mock_response.status_code = 200
-        mock_dt.utcnow.side_effect = ["start", "end"]
+        mock_dt.utcnow.side_effect = [START_TIME, END_TIME]
         mock_get.return_value = mock_response
         result = do_request("https://uri.org/8793/")
-        self.assertEqual("start", result.start_time)
-        self.assertEqual("end", result.end_time)
+        self.assertEqual(START_TIME, result.start_time)
+        self.assertEqual(END_TIME, result.end_time)
 
     @patch("operations.check_website_operations.requests_get")
     def test_do_request_returns_response(self, mock_get):
@@ -124,8 +129,8 @@ class MockResponse:
     def __init__(self, code, text=None, loc_doc_id=None):
         self.status_code = code
         self.text = text or ""
-        self.start_time = "start timestamp"
-        self.end_time = "end timestamp"
+        self.start_time = START_TIME
+        self.end_time = END_TIME
         if loc_doc_id:
             self.headers = {"Location": "/j/acron/a/{}".format(loc_doc_id)}
 
@@ -1055,8 +1060,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
                 "components": [
                     {
                         "type": "asset",
@@ -1112,8 +1118,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en",
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
             },
             {
                 "lang": "es",
@@ -1124,8 +1131,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es",
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
                 "components": [
                     {
                         "type": "asset",
@@ -1181,8 +1189,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=es",
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
             },
         ]
         object_store_url = None
@@ -1256,8 +1265,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
                 "components": [
                     {
                         "type": "pdf",
@@ -1279,8 +1289,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en",
                 "available": False,
                 "status code": None,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
             },
         ]
         object_store_url = None
@@ -1353,8 +1364,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
                 "components": [
                     {
                         "type": "pdf",
@@ -1385,8 +1397,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en",
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
             },
         ]
         object_store_url = None
@@ -1463,8 +1476,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
                 "components": [
                     {
                         "type": "html",
@@ -1486,8 +1500,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es",
                 "available": False,
                 "status code": None,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
                 "missing components quantity": 1,
                 "expected components quantity": 1,
             },
@@ -1569,8 +1584,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
                 "components": [
                     {
                         "type": "html",
@@ -1601,8 +1617,9 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es",
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
                 "components": [
                     {
                         "type": "html",
@@ -1636,14 +1653,15 @@ class TestCheckDocumentHtml(TestCase):
     @patch("operations.check_website_operations.requests.get")
     def test_check_document_html_returns_not_available(self, mock_get, mock_dt):
         mock_get.return_value = None
-        mock_dt.utcnow.side_effect = ["start timestamp", "end timestamp"]
+        mock_dt.utcnow.side_effect = [START_TIME, END_TIME]
         uri = "https://..."
         assets_data = []
         other_webpages_data = []
         expected = {
             "available": False, "status code": None,
-            "start time": "start timestamp",
-            "end time": "end timestamp",
+            "start time": START_TIME,
+            "end time": END_TIME,
+            "duration": DURATION,
             "missing components quantity": 0,
             "expected components quantity": 0,
         }
@@ -1657,15 +1675,16 @@ class TestCheckDocumentHtml(TestCase):
     def test_check_document_html_returns_available_and_empty_components(self, mock_get, mock_dt):
         mock_response = MockResponse(200, "")
         mock_get.return_value = mock_response
-        mock_dt.utcnow.side_effect = ["start timestamp", "end timestamp"]
+        mock_dt.utcnow.side_effect = [START_TIME, END_TIME]
         uri = "https://..."
         assets_data = []
         other_webpages_data = []
         expected = {
             "available": True,
             "status code": 200,
-            "start time": "start timestamp",
-            "end time": "end timestamp",
+            "start time": START_TIME,
+            "end time": END_TIME,
+            "duration": DURATION,
             "components": [],
             "missing components quantity": 0,
             "expected components quantity": 0,
@@ -1680,7 +1699,7 @@ class TestCheckDocumentHtml(TestCase):
     def test_check_document_html_returns_available_and_components_are_absent(self, mock_get, mock_dt):
         mock_response = MockResponse(200, "")
         mock_get.return_value = mock_response
-        mock_dt.utcnow.side_effect = ["start timestamp", "end timestamp"]
+        mock_dt.utcnow.side_effect = [START_TIME, END_TIME]
         uri = "https://..."
 
         assets_data = [
@@ -1713,8 +1732,9 @@ class TestCheckDocumentHtml(TestCase):
         expected = {
             "available": True,
             "status code": 200,
-            "start time": "start timestamp",
-            "end time": "end timestamp",
+            "start time": START_TIME,
+            "end time": END_TIME,
+            "duration": DURATION,
             "components": [
                 {
                     "type": "asset",
@@ -1758,7 +1778,7 @@ class TestCheckDocumentHtml(TestCase):
         <a href="/j/xjk/a/ldld?lang=en"/>
         """
         mock_get.return_value = mock_response
-        mock_dt.utcnow.side_effect = ["start timestamp", "end timestamp"]
+        mock_dt.utcnow.side_effect = [START_TIME, END_TIME]
 
         uri = "https://..."
 
@@ -1792,8 +1812,9 @@ class TestCheckDocumentHtml(TestCase):
         expected = {
             "available": True,
             "status code": 200,
-            "start time": "start timestamp",
-            "end time": "end timestamp",
+            "start time": START_TIME,
+            "end time": END_TIME,
+            "duration": DURATION,
             "components": [
                 {
                     "type": "asset",
@@ -1850,22 +1871,25 @@ class TestCheckDocumentAssetsAvailability(TestCase):
              "uri": "uri de a01.png no object store",
              "available": True,
              "status code": 200,
-             "start time": "start timestamp",
-             "end time": "end timestamp",
+             "start time": START_TIME,
+             "end time": END_TIME,
+             "duration": DURATION,
             },
             {"asset_id": "a01.jpg",
              "uri": "uri de a01.jpg no object store",
              "available": False,
              "status code": None,
-             "start time": "start timestamp",
-             "end time": "end timestamp",
+             "start time": START_TIME,
+             "end time": END_TIME,
+             "duration": DURATION,
             },
             {"asset_id": "a02.png",
              "uri": "uri de a02.png no object store",
              "available": True,
              "status code": 200,
-             "start time": "start timestamp",
-             "end time": "end timestamp",
+             "start time": START_TIME,
+             "end time": END_TIME,
+             "duration": DURATION,
             },
         ]
         result, q_unavailable = check_document_assets_availability(assets_data)
@@ -1900,16 +1924,18 @@ class TestCheckDocumentRenditionsAvailability(TestCase):
                 "uri": "uri de original.pdf no object store",
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
             },
             {
                 "lang": "en",
                 "uri": "uri de original-en.pdf  no object store",
                 "available": False,
                 "status code": None,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
             }
         ]
         result, q_unavailable = check_document_renditions_availability(
@@ -2196,7 +2222,7 @@ class TestCheckDocumentAvailability(TestCase):
         ]
         mock_head.side_effect = [MockResponse(200)] * 8
         mock_dt.utcnow.side_effect = [
-            "start timestamp", "end timestamp"
+            START_TIME, END_TIME
         ] * 20
 
         webpages_availability = [{
@@ -2209,8 +2235,9 @@ class TestCheckDocumentAvailability(TestCase):
             "uri": "https://www.scielo.br/j/esa/a/BrT6FWNFFR3KBKHZVPN8Y9N?format=html&lang=pt",
             "available": True,
             "status code": 200,
-            "start time": "start timestamp",
-            "end time": "end timestamp",
+            "start time": START_TIME,
+            "end time": END_TIME,
+            "duration": DURATION,
             "components": [
                 {
                     "type": "asset",
@@ -2301,8 +2328,9 @@ class TestCheckDocumentAvailability(TestCase):
                 ),
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
             }
         ]
         assets_availability = [
@@ -2315,8 +2343,9 @@ class TestCheckDocumentAvailability(TestCase):
                 ),
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
             },
             {
                 "asset_id": "1809-4457-esa-s1413-41522020182506-gf1.thumbnail.jpg",
@@ -2327,8 +2356,9 @@ class TestCheckDocumentAvailability(TestCase):
                 ),
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
             },
             {
                 "asset_id": "1809-4457-esa-s1413-41522020182506-gf2.png",
@@ -2339,8 +2369,9 @@ class TestCheckDocumentAvailability(TestCase):
                 ),
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
             },
             {
                 "asset_id": "1809-4457-esa-s1413-41522020182506-gf2.thumbnail.jpg",
@@ -2351,8 +2382,9 @@ class TestCheckDocumentAvailability(TestCase):
                 ),
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
             },
             {
                 "asset_id": "1809-4457-esa-s1413-41522020182506-gf3.png",
@@ -2363,8 +2395,9 @@ class TestCheckDocumentAvailability(TestCase):
                 ),
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
             },
             {
                 "asset_id": "1809-4457-esa-s1413-41522020182506-gf3.thumbnail.jpg",
@@ -2375,8 +2408,9 @@ class TestCheckDocumentAvailability(TestCase):
                 ),
                 "available": True,
                 "status code": 200,
-                "start time": "start timestamp",
-                "end time": "end timestamp",
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
             },
         ]
         expected = {
