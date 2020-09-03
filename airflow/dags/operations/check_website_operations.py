@@ -599,6 +599,20 @@ def check_uri_list(uri_list_items):
     return failures
 
 
+def check_uri_items(uri_list_items):
+    """Acessa uma lista de URI e retorna o resultado da verificação"""
+    success = []
+    failures = []
+    for uri in uri_list_items:
+        result = eval_response(do_request(uri))
+        result.update({"uri": uri})
+        if result["available"]:
+            success.append(result)
+        else:
+            failures.append(result)
+    return success, failures
+
+
 def requests_get(uri, function=None):
     try:
         function = function or requests.head
