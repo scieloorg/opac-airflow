@@ -12,9 +12,13 @@ async def fetch(uri, session, head=False):
     do_request = session.head if head else session.get
     async with do_request(uri) as response:
         await response.text()
+
+        # acrescenta novos atributos para o objeto ClientResponse
+        response.uri = uri
         response.end_time = datetime.utcnow()
         response.start_time = start
         response.status_code = response.status
+
         return response
 
 

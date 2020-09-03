@@ -137,6 +137,15 @@ class MockResponse:
             self.headers = {"Location": "/j/acron/a/{}".format(loc_doc_id)}
 
 
+class MockClientResponse:
+
+    def __init__(self, code, uri):
+        self.end_time = END_TIME
+        self.start_time = START_TIME
+        self.status_code = code
+        self.uri = uri
+
+
 class MockLogger:
 
     def __init__(self):
@@ -228,9 +237,12 @@ class TestCheckUriList(TestCase):
 class TestCheckUriItems(TestCase):
 
     @patch('operations.check_website_operations.datetime')
-    @patch('operations.check_website_operations.requests.head')
-    def test_check_uri_items_for_status_code_200_returns_success(self, mock_req_head, mock_dt):
-        mock_req_head.side_effect = [MockResponse(200), MockResponse(200), ]
+    @patch('operations.check_website_operations.async_requests.parallel_requests')
+    def test_check_uri_items_for_status_code_200_returns_success(self, mock_parallel, mock_dt):
+        mock_parallel.return_value = [
+            MockClientResponse(200, "goodURI1"),
+            MockClientResponse(200, "goodURI2"),
+        ]
         mock_dt.utcnow.side_effect = [
             START_TIME, END_TIME
         ] * 2
@@ -258,9 +270,11 @@ class TestCheckUriItems(TestCase):
         self.assertEqual([], result[1])
 
     @patch('operations.check_website_operations.datetime')
-    @patch('operations.check_website_operations.requests.head')
-    def test_check_uri_items_for_status_code_301_returns_success(self, mock_req_head, mock_dt):
-        mock_req_head.side_effect = [MockResponse(301)]
+    @patch('operations.check_website_operations.async_requests.parallel_requests')
+    def test_check_uri_items_for_status_code_301_returns_success(self, mock_parallel_reqs, mock_dt):
+        mock_parallel_reqs.return_value = [
+            MockClientResponse(301, "URI"),
+        ]
         mock_dt.utcnow.side_effect = [
             START_TIME, END_TIME
         ]
@@ -280,9 +294,11 @@ class TestCheckUriItems(TestCase):
         self.assertEqual([], result[1])
 
     @patch('operations.check_website_operations.datetime')
-    @patch('operations.check_website_operations.requests.head')
-    def test_check_uri_items_for_status_code_302_returns_success(self, mock_req_head, mock_dt):
-        mock_req_head.side_effect = [MockResponse(302)]
+    @patch('operations.check_website_operations.async_requests.parallel_requests')
+    def test_check_uri_items_for_status_code_302_returns_success(self, mock_parallel_reqs, mock_dt):
+        mock_parallel_reqs.return_value = [
+            MockClientResponse(302, "URI"),
+        ]
         mock_dt.utcnow.side_effect = [
             START_TIME, END_TIME
         ]
@@ -302,9 +318,11 @@ class TestCheckUriItems(TestCase):
         self.assertEqual([], result[1])
 
     @patch('operations.check_website_operations.datetime')
-    @patch('operations.check_website_operations.requests.head')
-    def test_check_uri_items_for_status_code_404_returns_failure_list(self, mock_req_head, mock_dt):
-        mock_req_head.side_effect = [MockResponse(404)]
+    @patch('operations.check_website_operations.async_requests.parallel_requests')
+    def test_check_uri_items_for_status_code_404_returns_failure_list(self, mock_parallel_reqs, mock_dt):
+        mock_parallel_reqs.return_value = [
+            MockClientResponse(404, "BAD_URI"),
+        ]
         mock_dt.utcnow.side_effect = [
             START_TIME, END_TIME
         ]
@@ -324,78 +342,13 @@ class TestCheckUriItems(TestCase):
         self.assertEqual(expected, result[1])
 
     @patch('operations.check_website_operations.datetime')
-    @patch('operations.check_website_operations.requests.head')
-    def test_check_uri_items_for_status_code_500_returns_failure_list(self, mock_req_head, mock_dt):
-        mock_req_head.side_effect = [MockResponse(500), MockResponse(404)]
+    @patch('operations.check_website_operations.async_requests.parallel_requests')
+    def test_check_uri_items_for_status_code_500_returns_failure_list(self, mock_parallel_reqs, mock_dt):
+        mock_parallel_reqs.return_value = [
+            MockClientResponse(404, "BAD_URI"),
+        ]
         mock_dt.utcnow.side_effect = [
             START_TIME, END_TIME
-        ]
-        uri_list = ["BAD_URI"]
-        expected = [
-            {
-                "available": False,
-                "status code": 404,
-                "start time": START_TIME,
-                "end time": END_TIME,
-                "duration": DURATION,
-                "uri": "BAD_URI",
-            },
-        ]
-        result = check_uri_items(uri_list)
-        self.assertEqual([], result[0])
-        self.assertEqual(expected, result[1])
-
-    @patch('operations.check_website_operations.retry_after')
-    @patch('operations.check_website_operations.datetime')
-    @patch('operations.check_website_operations.requests.head')
-    def test_check_uri_items_for_status_code_200_after_retries_returns_failure_list(
-            self, mock_req_head, mock_dt, mock_retry_after):
-        mock_retry_after.return_value = [
-            0, 0.1, 0.2, 0.4, 0.8, 1,
-        ]
-        mock_dt.utcnow.side_effect = [
-            START_TIME,
-            END_TIME
-        ]
-        mock_req_head.side_effect = [
-            MockResponse(500),
-            MockResponse(502),
-            MockResponse(503),
-            MockResponse(504),
-            MockResponse(500),
-            MockResponse(200),
-        ]
-        uri_list = ["GOOD_URI"]
-        expected = [
-            {
-                "available": True,
-                "status code": 200,
-                "start time": START_TIME,
-                "end time": END_TIME,
-                "duration": DURATION,
-                "uri": "GOOD_URI",
-            },
-        ]
-        result = check_uri_items(uri_list)
-        self.assertEqual(expected, result[0])
-        self.assertEqual([], result[1])
-
-    @patch('operations.check_website_operations.retry_after')
-    @patch('operations.check_website_operations.datetime')
-    @patch('operations.check_website_operations.requests.head')
-    def test_check_uri_items_for_status_code_404_after_retries_returns_failure_list(
-            self, mock_req_head, mock_dt, mock_retry_after):
-        mock_retry_after.return_value = [
-            0, 0.1, 0.2, 0.4, 0.8, 1,
-        ]
-        mock_dt.utcnow.side_effect = [
-            START_TIME,
-            END_TIME
-        ]
-        mock_req_head.side_effect = [
-            MockResponse(500),
-            MockResponse(502),
-            MockResponse(404),
         ]
         uri_list = ["BAD_URI"]
         expected = [

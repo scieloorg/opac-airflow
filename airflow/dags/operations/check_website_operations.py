@@ -8,6 +8,7 @@ from datetime import datetime
 
 from bs4 import BeautifulSoup
 
+from common import async_requests
 from common.hooks import add_execution_in_database
 from operations.docs_utils import (
     is_pid_v2,
@@ -603,9 +604,10 @@ def check_uri_items(uri_list_items):
     """Acessa uma lista de URI e retorna o resultado da verificação"""
     success = []
     failures = []
-    for uri in uri_list_items:
-        result = eval_response(do_request(uri))
-        result.update({"uri": uri})
+    responses = async_requests.parallel_requests(uri_list_items, head=True)
+    for resp in responses:
+        result = eval_response(resp)
+        result.update({"uri": resp.uri})
         if result["available"]:
             success.append(result)
         else:
