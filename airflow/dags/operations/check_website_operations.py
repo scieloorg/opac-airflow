@@ -592,15 +592,6 @@ def concat_website_url_and_uri_list_items(website_url_list, uri_list_items):
     return items
 
 
-def check_uri_list(uri_list_items):
-    """Acessa uma lista de URI e retorna as que falharam"""
-    failures = []
-    for uri in uri_list_items:
-        if not is_valid_response(do_request(uri)):
-            failures.append(uri)
-    return failures
-
-
 def check_uri_items(uri_list_items):
     """Acessa uma lista de URI e retorna o resultado da verificação"""
     success = []

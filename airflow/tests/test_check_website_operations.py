@@ -12,7 +12,6 @@ from airflow import DAG
 
 from operations.check_website_operations import (
     concat_website_url_and_uri_list_items,
-    check_uri_list,
     check_uri_items,
     check_website_uri_list,
     find_uri_items,
@@ -157,81 +156,6 @@ class MockLogger:
 
     def debug(self, msg):
         self._debug.append(msg)
-
-
-class TestCheckUriList(TestCase):
-
-    @patch('operations.check_website_operations.requests.head')
-    def test_check_uri_list_for_status_code_200_returns_empty_list(self, mock_req_head):
-        mock_req_head.side_effect = [MockResponse(200), MockResponse(200), ]
-        uri_list = ["goodURI1", "goodURI2", ]
-        result = check_uri_list(uri_list)
-        self.assertEqual([], result)
-
-    @patch('operations.check_website_operations.requests.head')
-    def test_check_uri_list_for_status_code_301_returns_empty_list(self, mock_req_head):
-        mock_req_head.side_effect = [MockResponse(301)]
-        uri_list = ["URI"]
-        result = check_uri_list(uri_list)
-        self.assertEqual([], result)
-
-    @patch('operations.check_website_operations.requests.head')
-    def test_check_uri_list_for_status_code_302_returns_empty_list(self, mock_req_head):
-        mock_req_head.side_effect = [MockResponse(302)]
-        uri_list = ["URI"]
-        result = check_uri_list(uri_list)
-        self.assertEqual([], result)
-
-    @patch('operations.check_website_operations.requests.head')
-    def test_check_uri_list_for_status_code_404_returns_failure_list(self, mock_req_head):
-        mock_req_head.side_effect = [MockResponse(404)]
-        uri_list = ["BAD_URI"]
-        result = check_uri_list(uri_list)
-        self.assertEqual(
-            uri_list,
-            result)
-
-    @patch('operations.check_website_operations.requests.head')
-    def test_check_uri_list_for_status_code_500_returns_failure_list(self, mock_req_head):
-        mock_req_head.side_effect = [MockResponse(500), MockResponse(404)]
-        uri_list = ["BAD_URI"]
-        result = check_uri_list(uri_list)
-        self.assertEqual(
-            uri_list,
-            result)
-
-    @patch('operations.check_website_operations.retry_after')
-    @patch('operations.check_website_operations.requests.head')
-    def test_check_uri_list_for_status_code_200_after_retries_returns_failure_list(self, mock_req_head, mock_retry_after):
-        mock_retry_after.return_value = [
-            0, 0.1, 0.2, 0.4, 0.8, 1,
-        ]
-        mock_req_head.side_effect = [
-            MockResponse(500),
-            MockResponse(502),
-            MockResponse(503),
-            MockResponse(504),
-            MockResponse(500),
-            MockResponse(200),
-        ]
-        uri_list = ["GOOD_URI"]
-        result = check_uri_list(uri_list)
-        self.assertEqual([], result)
-
-    @patch('operations.check_website_operations.retry_after')
-    @patch('operations.check_website_operations.requests.head')
-    def test_check_uri_list_for_status_code_404_after_retries_returns_failure_list(self, mock_req_head, mock_retry_after):
-        mock_retry_after.return_value = [
-            0, 0.1, 0.2, 0.4, 0.8, 1,
-        ]
-        mock_req_head.side_effect = [
-            MockResponse(500),
-            MockResponse(502),
-            MockResponse(404),
-        ]
-        uri_list = ["BAD_URI"]
-        result = check_uri_list(uri_list)
-        self.assertEqual(["BAD_URI"], result)
 
 
 class TestCheckUriItems(TestCase):

@@ -560,7 +560,8 @@ class TestCheckSciSerialUriItems(TestCase):
             [
                 "https://www.scielo.br/scielo.php?script=sci_serial&pid=0001-3035",
                 "https://www.scielo.br/scielo.php?script=sci_serial&pid=0001-3765",
-            ]
+            ],
+            "sci_serial"
         )
 
 
@@ -611,7 +612,8 @@ class TestCheckSciIssuesUriItems(TestCase):
             [
                 "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
                 "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
-            ]
+            ],
+            "sci_issues"
         )
 
 
@@ -662,7 +664,8 @@ class TestCheckSciIssuetocUriItems(TestCase):
             [
                 "https://www.scielo.br/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
                 "https://www.scielo.br/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
-            ]
+            ],
+            "sci_issuetoc"
         )
 
 
