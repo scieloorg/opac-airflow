@@ -82,43 +82,29 @@ def get_document_data_to_generate_uri(current_version, sps_package=None):
     """
     sps_package = sps_package or get_document_sps_package(current_version)
     data = []
-    # sps_package.scielo_previous_pid
     doc_data = {
         "pid_v2": sps_package.scielo_pid_v2,
         "acron": sps_package.acron,
         "doc_id_for_human": sps_package.package_name,
     }
     if sps_package.scielo_previous_pid:
-        doc_data.append({"previous_pid_v2": sps_package.scielo_previous_pid})
-    data.append(
-        {
-            "lang": sps_package.original_language,
+        doc_data.update({"previous_pid_v2": sps_package.scielo_previous_pid})
+
+    for lang in [sps_package.original_language] + (sps_package.translation_languages or []):
+        _doc_data = {
+            "lang": lang,
             "format": "html",
-            "pid_v2": sps_package.scielo_pid_v2,
-            "acron": sps_package.acron,
-            "doc_id_for_human": sps_package.package_name,
         }
-    )
-    for lang in sps_package.translation_languages or []:
-        data.append(
-            {
-                "lang": lang,
-                "format": "html",
-                "pid_v2": sps_package.scielo_pid_v2,
-                "acron": sps_package.acron,
-                "doc_id_for_human": sps_package.package_name,
-            }
-        )
+        _doc_data.update(doc_data)
+        data.append(_doc_data)
+
     for rendition in current_version.get("renditions") or []:
-        data.append(
-            {
-                "lang": rendition["lang"],
-                "format": "pdf",
-                "pid_v2": sps_package.scielo_pid_v2,
-                "acron": sps_package.acron,
-                "doc_id_for_human": sps_package.package_name,
-            }
-        )
+        _doc_data = {
+            "lang": rendition["lang"],
+            "format": "pdf",
+        }
+        _doc_data.update(doc_data)
+        data.append(_doc_data)
     return data
 
 

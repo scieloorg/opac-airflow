@@ -1070,7 +1070,7 @@ class TestUpdateAOPBundle(TestCase):
 
 class TestGetDocumentDataToGenerateUri(TestCase):
 
-    def test_get_document_data_to_generate_uri_returns_(self):
+    def test_get_document_data_to_generate_uri_returns_document_data_with_previous_pid(self):
         current_version = {
             "data": "bla.xml",
             "renditions": [
@@ -1081,22 +1081,68 @@ class TestGetDocumentDataToGenerateUri(TestCase):
         mock_sps_package = MagicMock()
         mock_sps_package.original_language = "en"
         mock_sps_package.translation_languages = ["es"]
-        mock_sps_package.scielo_pid_v2 = "xxxx"
+        mock_sps_package.scielo_pid_v2 = "S1234567890123456789012"
         mock_sps_package.acron = "abc"
         mock_sps_package.package_name = "artigo-1234"
+        mock_sps_package.scielo_previous_pid = "S1234567890123005089012"
 
         expected = [
-            {"lang": "en", "format": "html", "pid_v2": "xxxx", "acron": "abc",
-             "doc_id_for_human": "artigo-1234"},
-            {"lang": "es", "format": "html", "pid_v2": "xxxx", "acron": "abc",
-             "doc_id_for_human": "artigo-1234"},
-            {"lang": "en", "format": "pdf", "pid_v2": "xxxx", "acron": "abc",
-             "doc_id_for_human": "artigo-1234"},
-            {"lang": "es", "format": "pdf", "pid_v2": "xxxx", "acron": "abc",
-             "doc_id_for_human": "artigo-1234"},
+            {"lang": "en", "format": "html",
+             "pid_v2": "S1234567890123456789012", "acron": "abc",
+             "doc_id_for_human": "artigo-1234",
+             "previous_pid_v2": "S1234567890123005089012"},
+            {"lang": "es", "format": "html",
+             "pid_v2": "S1234567890123456789012", "acron": "abc",
+             "doc_id_for_human": "artigo-1234",
+             "previous_pid_v2": "S1234567890123005089012"},
+            {"lang": "en", "format": "pdf",
+             "pid_v2": "S1234567890123456789012", "acron": "abc",
+             "doc_id_for_human": "artigo-1234",
+             "previous_pid_v2": "S1234567890123005089012"},
+            {"lang": "es", "format": "pdf",
+             "pid_v2": "S1234567890123456789012", "acron": "abc",
+             "doc_id_for_human": "artigo-1234",
+             "previous_pid_v2": "S1234567890123005089012"},
         ]
         result = get_document_data_to_generate_uri(current_version, mock_sps_package)
-        self.assertEqual(expected, result)
+        self.assertListEqual(expected, result)
+
+    def test_get_document_data_to_generate_uri_does_not_includes_previous_pid(self):
+        current_version = {
+            "data": "bla.xml",
+            "renditions": [
+                {"lang": "en"},
+                {"lang": "es"},
+            ]
+        }
+        mock_sps_package = MagicMock()
+        mock_sps_package.original_language = "en"
+        mock_sps_package.translation_languages = ["es"]
+        mock_sps_package.scielo_pid_v2 = "S1234567890123456789012"
+        mock_sps_package.acron = "abc"
+        mock_sps_package.package_name = "artigo-1234"
+        mock_sps_package.scielo_previous_pid = None
+
+        expected = [
+            {"lang": "en", "format": "html",
+             "pid_v2": "S1234567890123456789012", "acron": "abc",
+             "doc_id_for_human": "artigo-1234",
+             },
+            {"lang": "es", "format": "html",
+             "pid_v2": "S1234567890123456789012", "acron": "abc",
+             "doc_id_for_human": "artigo-1234",
+             },
+            {"lang": "en", "format": "pdf",
+             "pid_v2": "S1234567890123456789012", "acron": "abc",
+             "doc_id_for_human": "artigo-1234",
+             },
+            {"lang": "es", "format": "pdf",
+             "pid_v2": "S1234567890123456789012", "acron": "abc",
+             "doc_id_for_human": "artigo-1234",
+             },
+        ]
+        result = get_document_data_to_generate_uri(current_version, mock_sps_package)
+        self.assertListEqual(expected, result)
 
 
 class Testget_document_assets_data(TestCase):
