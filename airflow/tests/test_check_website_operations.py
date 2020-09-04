@@ -33,6 +33,7 @@ from operations.check_website_operations import (
     get_uri_list_from_pid_dict,
     get_pid_v3_list,
     get_pid_list_from_csv,
+    group_items_by_script_name,
 )
 
 END_TIME = datetime.utcnow()
@@ -2719,3 +2720,65 @@ class TestGetPIDListFromCSV(TestCase):
 
         result = get_pid_list_from_csv(csv_file_path)
         self.assertListEqual(expected, result)
+
+
+class Testgroup_items_by_script_name(TestCase):
+
+    def test_group_items_by_script_name(self):
+        uri_items = [
+            "/scielo.php?script=sci_serial&pid=2234-5679",
+            "/scielo.php?script=sci_issues&pid=2234-5679",
+            "/scielo.php?script=sci_issuetoc&pid=2234-567919970010",
+            "/scielo.php?script=sci_arttext&pid=S2234-56791997001012305",
+            "/scielo.php?script=sci_pdf&pid=S2234-56791997001012305",
+            "/scielo.php?script=sci_arttext&pid=S2234-56791997001002315",
+            "/scielo.php?script=sci_pdf&pid=S2234-56791997001002315",
+            "/scielo.php?script=sci_serial&pid=1234-5678",
+            "/scielo.php?script=sci_issues&pid=1234-5678",
+            "/scielo.php?script=sci_issuetoc&pid=1234-567819870001",
+            "/scielo.php?script=sci_arttext&pid=S1234-56781987000112305",
+            "/scielo.php?script=sci_pdf&pid=S1234-56781987000112305",
+            "/scielo.php?script=sci_arttext&pid=S1234-56781987000102315",
+            "/scielo.php?script=sci_pdf&pid=S1234-56781987000102315",
+            "/scielo.php?script=sci_arttext&pid=S1234-56781987000112345",
+            "/scielo.php?script=sci_pdf&pid=S1234-56781987000112345",
+            "/scielo.php?script=sci_arttext&pid=S1234-56781987000102345",
+            "/scielo.php?script=sci_pdf&pid=S1234-56781987000102345",
+        ]
+        expected = {
+            "sci_serial":
+            [
+                "/scielo.php?script=sci_serial&pid=2234-5679",
+                "/scielo.php?script=sci_serial&pid=1234-5678",
+            ],
+            "sci_issues":
+            [
+                "/scielo.php?script=sci_issues&pid=2234-5679",
+                "/scielo.php?script=sci_issues&pid=1234-5678",
+            ],
+            "sci_issuetoc":
+            [
+                "/scielo.php?script=sci_issuetoc&pid=2234-567919970010",
+                "/scielo.php?script=sci_issuetoc&pid=1234-567819870001",
+            ],
+            "sci_arttext":
+            [
+                "/scielo.php?script=sci_arttext&pid=S2234-56791997001012305",
+                "/scielo.php?script=sci_arttext&pid=S2234-56791997001002315",
+                "/scielo.php?script=sci_arttext&pid=S1234-56781987000112305",
+                "/scielo.php?script=sci_arttext&pid=S1234-56781987000102315",
+                "/scielo.php?script=sci_arttext&pid=S1234-56781987000112345",
+                "/scielo.php?script=sci_arttext&pid=S1234-56781987000102345",
+            ],
+            "sci_pdf":
+            [
+                "/scielo.php?script=sci_pdf&pid=S2234-56791997001012305",
+                "/scielo.php?script=sci_pdf&pid=S2234-56791997001002315",
+                "/scielo.php?script=sci_pdf&pid=S1234-56781987000112305",
+                "/scielo.php?script=sci_pdf&pid=S1234-56781987000102315",
+                "/scielo.php?script=sci_pdf&pid=S1234-56781987000112345",
+                "/scielo.php?script=sci_pdf&pid=S1234-56781987000102345",
+            ],
+        }
+        result = group_items_by_script_name(uri_items)
+        self.assertDictEqual(expected, result)

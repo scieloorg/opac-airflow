@@ -25,7 +25,6 @@ from operations.docs_utils import group_pids
 from operations import check_website_operations
 
 
-SCRIPTS = ("sci_arttext", "sci_pdf", "sci_issuetoc", "sci_issues", "sci_serial")
 Logger = logging.getLogger(__name__)
 
 default_args = {
@@ -153,7 +152,6 @@ def get_uri_list_file_paths(conf, **kwargs):
     Variable.set("GERAPADRAO_ID_FOR_URI_LIST", [], serialize_json=True)
 
 
-
 def get_uri_items_from_uri_list_files(**context):
     """
     Retorna uma lista de URI dado uma lista de arquivos `uri_list`
@@ -259,20 +257,12 @@ def join_and_group_uri_items_by_script_name(**context):
             )
         )
     )
-    items = {
-        script_name: []
-        for script_name in SCRIPTS
-    }
     Logger.info("Total %i URIs", len(uri_items))
-    for item in uri_items:
-        for script_name in SCRIPTS:
-            if script_name in item:
-                items[script_name].append(item)
-                break
-    for script_name in SCRIPTS:
+    items = check_website_operations.group_items_by_script_name(uri_items)
+    for script_name, _items in items.items():
         Logger.info(
-            "Total %i URIs for `%s`", len(items[script_name]), script_name)
-        context["ti"].xcom_push(script_name, sorted(items[script_name]))
+            "Total %i URIs for `%s`", len(_items), script_name)
+        context["ti"].xcom_push(script_name, sorted(_items))
 
 
 def get_website_url_list():

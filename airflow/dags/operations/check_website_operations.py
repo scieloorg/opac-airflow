@@ -3,7 +3,7 @@ import requests
 import time
 from csv import reader
 from urllib3.exceptions import MaxRetryError, NewConnectionError
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 
 from bs4 import BeautifulSoup
@@ -240,6 +240,35 @@ def get_classic_document_webpage_uri(data):
     if data.get("lang"):
         uri += "&tlng={}".format(data.get("lang"))
     return uri
+
+
+def group_items_by_script_name(uri_items):
+    """
+    Recebe uri_items:
+    /scielo.php?script=sci_arttext&pid=S0001-37652020000501101&tlng=lang
+    /scielo.php?script=sci_pdf&pid=S0001-37652020000501101&tlng=lang
+    e agrupa pelo valor de `script`.
+
+    Args:
+        uri_items (str list): no padrão
+        /scielo.php?script=sci_arttext&pid=S0001-37652020000501101&tlng=lang
+        /scielo.php?script=sci_pdf&pid=S0001-37652020000501101&tlng=lang
+
+    Returns:
+        dict (key: `script`, value: list of uri_items)
+
+    """
+    items = {}
+    Logger.info("Total %i URIs", len(uri_items))
+    for uri in uri_items:
+        parsed = urlparse(uri)
+        query_items = parse_qs(parsed.query)
+        values = query_items.get('script')
+        if values:
+            script_name = values[0]
+            items[script_name] = items.get(script_name) or []
+            items[script_name].append(uri)
+    return items
 
 
 def get_document_webpage_uri(data, query_param_names=None):

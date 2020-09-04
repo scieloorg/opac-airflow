@@ -448,7 +448,7 @@ class TestJoinAndGroupUriItemsByScriptName(TestCase):
             call("Total %i URIs", 26),
             mock_info.call_args_list
         )
-        self.assertListEqual([
+        self.assertIn(
             call(
                 'sci_arttext',
                 [
@@ -461,6 +461,9 @@ class TestJoinAndGroupUriItemsByScriptName(TestCase):
                     "/scielo.php?script=sci_arttext&pid=S1213-19982121111511114",
                 ]
             ),
+            self.kwargs["ti"].xcom_push.call_args_list
+        )
+        self.assertIn(
             call(
                 'sci_pdf',
                 [
@@ -473,6 +476,9 @@ class TestJoinAndGroupUriItemsByScriptName(TestCase):
                     "/scielo.php?script=sci_pdf&pid=S1213-19982121111511114",
                 ]
             ),
+            self.kwargs["ti"].xcom_push.call_args_list
+        )
+        self.assertIn(
             call(
                 'sci_issuetoc',
                 [
@@ -482,6 +488,9 @@ class TestJoinAndGroupUriItemsByScriptName(TestCase):
                     "/scielo.php?script=sci_issuetoc&pid=1213-199821211115",
                 ]
             ),
+            self.kwargs["ti"].xcom_push.call_args_list
+        )
+        self.assertIn(
             call(
                 'sci_issues',
                 [
@@ -491,6 +500,9 @@ class TestJoinAndGroupUriItemsByScriptName(TestCase):
                     "/scielo.php?script=sci_issues&pid=1213-1998",
                 ]
             ),
+            self.kwargs["ti"].xcom_push.call_args_list
+        )
+        self.assertIn(
             call(
                 'sci_serial',
                 [
@@ -500,7 +512,6 @@ class TestJoinAndGroupUriItemsByScriptName(TestCase):
                     "/scielo.php?script=sci_serial&pid=1213-1998",
                 ]
             ),
-            ],
             self.kwargs["ti"].xcom_push.call_args_list
         )
 
