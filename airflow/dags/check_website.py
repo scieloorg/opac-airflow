@@ -238,6 +238,7 @@ def get_uri_items_from_pid_list_csv_files(**context):
 
     items = check_website_operations.get_uri_list_from_pid_dict(
         group_pids(pids))
+    context["ti"].xcom_push("pid_items", sorted(list(pids)))
     context["ti"].xcom_push("uri_items", items)
     Logger.info("Total: %i URIs", len(items))
 
@@ -250,24 +251,6 @@ def group_uri_items_from_uri_lists_by_script_name(**context):
     Logger.info("Group URI items, from `uri_list_*.lst`, by script name")
     uri_items = context["ti"].xcom_pull(
                 task_ids="get_uri_items_from_uri_list_files_id",
-                key="uri_items"
-            )
-    Logger.info("Total %i URIs", len(uri_items))
-    items = check_website_operations.group_items_by_script_name(uri_items)
-    for script_name, _items in items.items():
-        Logger.info(
-            "Total %i URIs for `%s`", len(_items), script_name)
-        context["ti"].xcom_push(script_name, sorted(_items))
-
-
-def group_uri_items_from_pid_lists_by_script_name(**context):
-    """
-    Agrupa URI items provenientes dos arquivos *.csv`
-    pelo `script_name`
-    """
-    Logger.info("Group URI items, from `*.csv`, by script name")
-    uri_items = context["ti"].xcom_pull(
-                task_ids="get_uri_items_from_pid_list_csv_files_id",
                 key="uri_items"
             )
     Logger.info("Total %i URIs", len(uri_items))
@@ -315,8 +298,8 @@ def merge_pid_items_from_different_sources(**context):
             )) |
         set(
             context["ti"].xcom_pull(
-                task_ids="group_uri_items_from_pid_lists_by_script_name_id",
-                key="sci_arttext"
+                task_ids="get_uri_items_from_pid_list_csv_files_id",
+                key="pid_items"
             )
         )
     )
@@ -607,13 +590,21 @@ check_documents_deeply_task = PythonOperator(
 # obtém a lista de arquivos uri_list
 # ler todos os arquivos url_list e retorna uma lista de URI
 get_uri_list_file_paths_task >> get_uri_items_from_uri_list_files_task
+# agrupa URI items provenientes de `uri_list_*.lst` pelo nome do script
+get_uri_items_from_uri_list_files_task >> group_uri_items_from_uri_lists_by_script_name_task
 
 # obtém a lista de arquivos que contém pid v2
 # ler todos os arquivos que contém pid v2 e retorna uma lista de URI
 get_pid_list_csv_file_paths_task >> get_uri_items_from_pid_list_csv_files_task
 
-# junta as listas de URI provenientes de ambos tipos de arquivos
-get_uri_items_from_uri_list_files_task >> join_and_group_uri_items_by_script_name_task << get_uri_items_from_pid_list_csv_files_task
+# junta os ítens de PID provenientes de ambos tipos de arquivos
+get_uri_items_from_pid_list_csv_files_task >> merge_pid_items_from_different_sources_task << group_uri_items_from_uri_lists_by_script_name_task
+
+# junta os ítens de URI provenientes de ambos tipos de arquivos
+get_uri_items_from_pid_list_csv_files_task >> merge_uri_items_from_different_sources_task << get_uri_items_from_uri_list_files_task
+
+# agrupa URI items, provenientes de ambos tipos de arquivos, pelo nome do script
+merge_uri_items_from_different_sources_task >> join_and_group_uri_items_by_script_name_task
 
 # valida os URI de sci_serial (página do periódico)
 join_and_group_uri_items_by_script_name_task >> check_sci_serial_uri_items_task
