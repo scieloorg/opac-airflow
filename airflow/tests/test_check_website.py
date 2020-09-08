@@ -15,7 +15,7 @@ from check_website import (
     get_uri_items_from_uri_list_files,
     get_pid_list_csv_file_paths,
     get_uri_items_from_pid_list_csv_files,
-    join_and_group_uri_items_by_script_name,
+    get_uri_items_grouped_by_script_name,
     check_sci_serial_uri_items,
     check_sci_issues_uri_items,
     check_sci_issuetoc_uri_items,
@@ -396,7 +396,7 @@ class TestGetUriItemsFromPidFiles(TestCase):
         )
 
 
-class TestJoinAndGroupUriItemsByScriptName(TestCase):
+class TestGetUriItemsGroupedByScriptName(TestCase):
     def setUp(self):
         self.kwargs = {
             "ti": MagicMock(),
@@ -405,7 +405,7 @@ class TestJoinAndGroupUriItemsByScriptName(TestCase):
         }
 
     @patch("check_website.Logger.info")
-    def test_join_and_group_uri_items_by_script_name(self, mock_info):
+    def test_get_uri_items_grouped_by_script_name(self, mock_info):
         uri_list = [
             "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
@@ -435,7 +435,7 @@ class TestJoinAndGroupUriItemsByScriptName(TestCase):
             "/scielo.php?script=sci_serial&pid=1213-1998",
         ]
         self.kwargs["ti"].xcom_pull.return_value = uri_list
-        join_and_group_uri_items_by_script_name(**self.kwargs)
+        get_uri_items_grouped_by_script_name(**self.kwargs)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="merge_uri_items_from_different_sources_id",
             key="uri_items"
@@ -531,7 +531,7 @@ class TestCheckSciSerialUriItems(TestCase):
     def test_check_sci_serial_uri_items_assert_called_xcom_pull_with_sci_serial_value(self):
         check_sci_serial_uri_items(**self.kwargs)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
-            task_ids="join_and_group_uri_items_by_script_name_id",
+            task_ids="get_uri_items_grouped_by_script_name_id",
             key="sci_serial"
         )
 
@@ -583,7 +583,7 @@ class TestCheckSciIssuesUriItems(TestCase):
     def test_check_sci_issues_uri_items_assert_called_xcom_pull_with_sci_issues_value(self):
         check_sci_issues_uri_items(**self.kwargs)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
-            task_ids="join_and_group_uri_items_by_script_name_id",
+            task_ids="get_uri_items_grouped_by_script_name_id",
             key="sci_issues"
         )
 
@@ -635,7 +635,7 @@ class TestCheckSciIssuetocUriItems(TestCase):
     def test_check_sci_issuetoc_uri_items_assert_called_xcom_pull_with_sci_issuetoc_value(self):
         check_sci_issuetoc_uri_items(**self.kwargs)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
-            task_ids="join_and_group_uri_items_by_script_name_id",
+            task_ids="get_uri_items_grouped_by_script_name_id",
             key="sci_issuetoc"
         )
 
@@ -692,7 +692,7 @@ class TestGetPIDv3List(TestCase):
         )
         get_pid_v3_list(**self.kwargs)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
-            task_ids="join_and_group_uri_items_by_script_name_id",
+            task_ids="get_uri_items_grouped_by_script_name_id",
             key="sci_arttext"
         )
 

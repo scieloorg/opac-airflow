@@ -307,7 +307,7 @@ def merge_pid_items_from_different_sources(**context):
     context["ti"].xcom_push("pid_items", sorted(list(pid_items)))
 
 
-def join_and_group_uri_items_by_script_name(**context):
+def get_uri_items_grouped_by_script_name(**context):
     """
     Agrupa URI items pelo nome do script
     """
@@ -354,7 +354,7 @@ def check_sci_serial_uri_items(**context):
     Logger.info("Check `sci_serial` URI list")
 
     uri_list_items = context["ti"].xcom_pull(
-        task_ids="join_and_group_uri_items_by_script_name_id",
+        task_ids="get_uri_items_grouped_by_script_name_id",
         key="sci_serial")
 
     total = check_any_uri_items(uri_list_items, "sci_serial")
@@ -370,7 +370,7 @@ def check_sci_issues_uri_items(**context):
     Logger.info("Check `sci_issues` URI list")
 
     uri_list_items = context["ti"].xcom_pull(
-        task_ids="join_and_group_uri_items_by_script_name_id",
+        task_ids="get_uri_items_grouped_by_script_name_id",
         key="sci_issues")
 
     total = check_any_uri_items(uri_list_items, "sci_issues")
@@ -386,7 +386,7 @@ def check_sci_issuetoc_uri_items(**context):
     Logger.info("Check `sci_issuetoc` URI list")
 
     uri_list_items = context["ti"].xcom_pull(
-        task_ids="join_and_group_uri_items_by_script_name_id",
+        task_ids="get_uri_items_grouped_by_script_name_id",
         key="sci_issuetoc")
 
     total = check_any_uri_items(uri_list_items, "sci_issuetoc")
@@ -402,7 +402,7 @@ def check_sci_pdf_uri_items(**context):
     Logger.info("Check `sci_pdf` URI list")
 
     uri_list_items = context["ti"].xcom_pull(
-        task_ids="join_and_group_uri_items_by_script_name_id",
+        task_ids="get_uri_items_grouped_by_script_name_id",
         key="sci_pdf")
 
     total = check_any_uri_items(uri_list_items, "sci_pdf")
@@ -418,7 +418,7 @@ def check_sci_arttext_uri_items(**context):
     Logger.info("Check `sci_arttext` URI list")
 
     uri_list_items = context["ti"].xcom_pull(
-        task_ids="join_and_group_uri_items_by_script_name_id",
+        task_ids="get_uri_items_grouped_by_script_name_id",
         key="sci_arttext")
 
     total = check_any_uri_items(uri_list_items, "sci_arttext")
@@ -457,7 +457,7 @@ def get_pid_v3_list(**context):
     _website_url_list = get_website_url_list()
 
     uri_items = context["ti"].xcom_pull(
-        task_ids="join_and_group_uri_items_by_script_name_id",
+        task_ids="get_uri_items_grouped_by_script_name_id",
         key="sci_arttext")
     pid_v3_list, website_url = check_website_operations.get_pid_v3_list(
         uri_items, _website_url_list)
@@ -524,10 +524,10 @@ merge_pid_items_from_different_sources_task = PythonOperator(
     dag=dag,
 )
 
-join_and_group_uri_items_by_script_name_task = PythonOperator(
-    task_id="join_and_group_uri_items_by_script_name_id",
+get_uri_items_grouped_by_script_name_task = PythonOperator(
+    task_id="get_uri_items_grouped_by_script_name_id",
     provide_context=True,
-    python_callable=join_and_group_uri_items_by_script_name,
+    python_callable=get_uri_items_grouped_by_script_name,
     dag=dag,
 )
 
@@ -580,74 +580,69 @@ check_documents_deeply_task = PythonOperator(
     dag=dag,
 )
 """
-
+Dependência das tarefas
+    o
     |
     |   +----------------------------+
     +-->|get_uri_list_file_paths_task|
         +----------------------------+
             |
             |   +--------------------------------------+
-            +-->|get_uri_items_from_uri_list_files_task|
-                +--------------------------------------+
-                    |
-                    |   +--------------------------------------------------+
-                    +-->|group_uri_items_from_uri_lists_by_script_name_task|
-                        +--------------------------------------------------+
-                            |
-                            |   +-------------------------------------------+
-                            +-->|merge_pid_items_from_different_sources_task|
-                                +-------------------------------------------+
-                                
-|
-|   +--------------------------------+
-+-->|get_pid_list_csv_file_paths_task|
-    +--------------------------------+
-        |
-        |   +------------------------------------------+
-        +-->|get_uri_items_from_pid_list_csv_files_task|
-            +------------------------------------------+
-
-|
-|   +---------------------------+
-+-->|check_documents_deeply_task|
-    +---------------------------+
-|
-|   +--------------------------------+
-+-->|check_sci_arttext_uri_items_task|
-    +--------------------------------+
-|
-|   +-------------------------------+
-+-->|check_sci_issues_uri_items_task|
-    +-------------------------------+
-|
-|   +---------------------------------+
-+-->|check_sci_issuetoc_uri_items_task|
-    +---------------------------------+
-|
-|   +----------------------------+
-+-->|check_sci_pdf_uri_items_task|
-    +----------------------------+
-|
-|   +-------------------------------+
-+-->|check_sci_serial_uri_items_task|
-    +-------------------------------+
-
-|
-|   +--------------------+
-+-->|get_pid_v3_list_task|
-    +--------------------+
-
-
-
-|
-|   +--------------------------------------------+
-+-->|join_and_group_uri_items_by_script_name_task|
-    +--------------------------------------------+
-
-|
-|   +-------------------------------------------+
-+-->|merge_uri_items_from_different_sources_task|
-    +-------------------------------------------+
+            +-->|get_uri_items_from_uri_list_files_task|---------------------+
+                +--------------------------------------+                     |
+                    |                                                        |
+                    |   +--------------------------------------------------+ |
+                    +-->|group_uri_items_from_uri_lists_by_script_name_task| |
+                        +--------------------------------------------------+ |
+                            |                                                |
+                            |   +-------------------------------------------+|
+                            +-->|merge_pid_items_from_different_sources_task||
+                                +-------------------------------------------+|
+o                                           ^                                |
+|                                           |                                |
+|   +--------------------------------+      |                                |
++-->|get_pid_list_csv_file_paths_task|      |                                |
+    +--------------------------------+      |                                |
+        |                                   |                                |
+        |   +------------------------------------------+                     |
+        +-->|get_uri_items_from_pid_list_csv_files_task|                     |
+            +------------------------------------------+                     |
+                |                                                            |
+                |   +-------------------------------------------+            |
+                +-->|merge_uri_items_from_different_sources_task|<-----------+
+                    +-------------------------------------------+
+                        |
+                        |   +-----------------------------------------+
+                        +-->|get_uri_items_grouped_by_script_name_task|
+                            +-----------------------------------------+
+                                |
+                                |   +--------------------------------+
+                                +-->|check_sci_arttext_uri_items_task|
+                                |   +--------------------------------+
+                                |
+                                |   +-------------------------------+
+                                +-->|check_sci_issues_uri_items_task|
+                                |   +-------------------------------+
+                                |
+                                |   +---------------------------------+
+                                +-->|check_sci_issuetoc_uri_items_task|
+                                |   +---------------------------------+
+                                |
+                                |   +----------------------------+
+                                +-->|check_sci_pdf_uri_items_task|
+                                |   +----------------------------+
+                                |
+                                |   +-------------------------------+
+                                +-->|check_sci_serial_uri_items_task|
+                                |   +-------------------------------+
+                                |
+                                |   +--------------------+
+                                +-->|get_pid_v3_list_task|
+                                    +--------------------+
+                                        |
+                                        |   +---------------------------+
+                                        +-->|check_documents_deeply_task|
+                                            +---------------------------+
 
 """
 # obtém a lista de arquivos uri_list
@@ -667,23 +662,23 @@ get_uri_items_from_pid_list_csv_files_task >> merge_pid_items_from_different_sou
 get_uri_items_from_pid_list_csv_files_task >> merge_uri_items_from_different_sources_task << get_uri_items_from_uri_list_files_task
 
 # agrupa URI items, provenientes de ambos tipos de arquivos, pelo nome do script
-merge_uri_items_from_different_sources_task >> join_and_group_uri_items_by_script_name_task
+merge_uri_items_from_different_sources_task >> get_uri_items_grouped_by_script_name_task
 
 # valida os URI de sci_serial (página do periódico)
-join_and_group_uri_items_by_script_name_task >> check_sci_serial_uri_items_task
+get_uri_items_grouped_by_script_name_task >> check_sci_serial_uri_items_task
 
 # valida os URI de sci_issues (grades de fascículos)
-join_and_group_uri_items_by_script_name_task >> check_sci_issues_uri_items_task
+get_uri_items_grouped_by_script_name_task >> check_sci_issues_uri_items_task
 
 # valida os URI de sci_issuetoc (sumarios)
-join_and_group_uri_items_by_script_name_task >> check_sci_issuetoc_uri_items_task
+get_uri_items_grouped_by_script_name_task >> check_sci_issuetoc_uri_items_task
 
 # valida os URI de sci_pdf (PDF dos documentos)
-join_and_group_uri_items_by_script_name_task >> check_sci_pdf_uri_items_task
+get_uri_items_grouped_by_script_name_task >> check_sci_pdf_uri_items_task
 
 # valida os URI de sci_arttext (HTML dos documentos)
-join_and_group_uri_items_by_script_name_task >> check_sci_arttext_uri_items_task
+get_uri_items_grouped_by_script_name_task >> check_sci_arttext_uri_items_task
 
 # valida os URI de documentos no nível mais profundo
-join_and_group_uri_items_by_script_name_task >> get_pid_v3_list_task >> check_documents_deeply_task
+get_uri_items_grouped_by_script_name_task >> get_pid_v3_list_task >> check_documents_deeply_task
 
