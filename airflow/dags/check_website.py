@@ -341,7 +341,8 @@ def check_any_uri_items(uri_list_items, label=""):
         _website_url_list, uri_list_items)
 
     # verifica a lista de URI
-    check_website_operations.check_website_uri_list(website_uri_list, label)
+    success, failures = check_website_operations.check_website_uri_list(
+        website_uri_list, label)
 
     return len(website_uri_list)
 

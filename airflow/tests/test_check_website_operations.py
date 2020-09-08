@@ -401,6 +401,228 @@ class TestCheckWebsiteUriList(TestCase):
             mock_info.call_args_list
         )
 
+    def test_check_website_uri_list_returns_0_success_and_0_failures(self):
+        result = check_website_uri_list([])
+        expected_success = []
+        expected_failures = []
+        self.assertEqual(expected_success, result[0])
+        self.assertEqual(expected_failures, result[1])
+
+    @patch("operations.check_website_operations.async_requests.parallel_requests")
+    def test_check_website_uri_list_returns_8_success_and_0_failures(self, mock_parallel_reqs):
+        uri_list = (
+            "https://www.scielo.br/scielo.php?script=sci_serial&pid=0001-3765",
+            "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
+            "https://www.scielo.br/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+            "https://www.scielo.br/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+            "https://new.scielo.br/scielo.php?script=sci_serial&pid=0001-3765",
+            "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
+            "https://new.scielo.br/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+            "https://new.scielo.br/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+        )
+        mock_parallel_reqs.return_value = [
+            MockClientResponse(200, uri_list[0]),
+            MockClientResponse(200, uri_list[1]),
+            MockClientResponse(200, uri_list[2]),
+            MockClientResponse(200, uri_list[3]),
+            MockClientResponse(200, uri_list[4]),
+            MockClientResponse(200, uri_list[5]),
+            MockClientResponse(200, uri_list[6]),
+            MockClientResponse(200, uri_list[7]),
+        ]
+        result = check_website_uri_list(uri_list)
+        expected_success = [
+            {
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[0]
+            },
+            {
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[1]
+            },
+            {
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[2]
+            },
+            {
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[3]
+            },
+            {
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[4]
+            },
+            {
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[5]
+            },
+            {
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[6]
+            },
+            {
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[7]
+            },
+        ]
+        expected_failures = []
+        self.assertEqual(expected_success, result[0])
+        self.assertEqual(expected_failures, result[1])
+
+    @patch("operations.check_website_operations.datetime")
+    @patch("operations.check_website_operations.async_requests.parallel_requests")
+    def test_check_website_uri_list_returns_6_success_and_2_failures_that_some_of_uri_items_were_not_found(self, mock_parallel_reqs, mock_dt):
+        uri_list = (
+            "https://www.scielo.br/scielo.php?script=sci_serial&pid=0001-3765",
+            "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
+            "https://www.scielo.br/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+            "https://www.scielo.br/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+            "https://new.scielo.br/scielo.php?script=sci_serial&pid=0001-3765",
+            "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
+            "https://new.scielo.br/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+            "https://new.scielo.br/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+        )
+        mock_dt.utcnow.side_effect = [
+            START_TIME, END_TIME,
+        ] * 8
+        mock_parallel_reqs.return_value = [
+            MockClientResponse(
+                200,
+                "https://www.scielo.br/scielo.php?"
+                "script=sci_serial&pid=0001-3765"),
+            MockClientResponse(
+                404,
+                "https://www.scielo.br/scielo.php?"
+                "script=sci_issues&pid=0001-3765"),
+            MockClientResponse(
+                200,
+                "https://www.scielo.br/scielo.php?"
+                "script=sci_issuetoc&pid=0001-376520200005"),
+            MockClientResponse(
+                200,
+                "https://www.scielo.br/scielo.php?"
+                "script=sci_arttext&pid=S0001-37652020000501101"),
+            MockClientResponse(
+                404,
+                "https://new.scielo.br/scielo.php?"
+                "script=sci_serial&pid=0001-3765"),
+            MockClientResponse(
+                200,
+                "https://new.scielo.br/scielo.php?"
+                "script=sci_issues&pid=0001-3765"),
+            MockClientResponse(
+                200,
+                "https://new.scielo.br/scielo.php?"
+                "script=sci_issuetoc&pid=0001-376520200005"),
+            MockClientResponse(
+                200,
+                "https://new.scielo.br/scielo.php?"
+                "script=sci_arttext&pid=S0001-37652020000501101"),
+        ]
+        result = check_website_uri_list(uri_list)
+        expected_success = [
+            {
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[0]
+            },
+            {
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[2]
+            },
+            {
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[3]
+            },
+            {
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[5]
+            },
+            {
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[6]
+            },
+            {
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[7]
+            },
+        ]
+        expected_failures = [
+            {
+                "available": False,
+                "status code": 404,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[1]
+            },
+            {
+                "available": False,
+                "status code": 404,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[4]
+            },
+        ]
+        self.assertEqual(expected_success, result[0])
+        self.assertEqual(expected_failures, result[1])
+
 
 class TestFindUriItems(TestCase):
 

@@ -585,6 +585,18 @@ def check_website_uri_list(uri_list_items, label=""):
     Args:
         uri_list_items (str list): lista de uri para verificar a
             disponibilidade
+    Returns:
+        tuple: (success (dict list), failures (dict list))
+        ```
+        {
+            "available": True,
+            "status code": 200,
+            "start time": START_TIME,
+            "end time": END_TIME,
+            "duration": DURATION,
+            "uri": uri_list[3]
+        },
+        ```
     """
     Logger.debug("check_website_uri_list IN")
 
@@ -602,6 +614,7 @@ def check_website_uri_list(uri_list_items, label=""):
         Logger.info("Total available %s URIs: %i/%i", label, total, total)
 
     Logger.debug("check_website_uri_list OUT")
+    return success, failures
 
 
 def read_file(uri_list_file_path):
@@ -629,7 +642,7 @@ def check_uri_items(uri_list_items):
     for resp in responses:
         result = eval_response(resp)
         result.update({"uri": resp.uri})
-        if result["available"]:
+        if result["available"] is True:
             success.append(result)
         else:
             failures.append(result)
