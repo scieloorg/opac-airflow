@@ -326,21 +326,11 @@ def merge_pid_items_from_different_sources(**context):
 
 def join_and_group_uri_items_by_script_name(**context):
     """
-    Concatena cada URL do website com cada URI
+    Agrupa URI items pelo nome do script
     """
-    Logger.info("Concatenate URI items from `uri_list_*.lst` and `*.csv`")
-    uri_items = (
-        set(
-            context["ti"].xcom_pull(
-                task_ids="get_uri_items_from_uri_list_files_id",
-                key="uri_items"
-            )) |
-        set(
-            context["ti"].xcom_pull(
-                task_ids="get_uri_items_from_pid_list_csv_files_id",
-                key="uri_items"
-            )
-        )
+    uri_items = context["ti"].xcom_pull(
+        task_ids="merge_uri_items_from_different_sources_id",
+        key="uri_items"
     )
     Logger.info("Total %i URIs", len(uri_items))
     items = check_website_operations.group_items_by_script_name(uri_items)
