@@ -21,6 +21,11 @@ from check_website import (
     check_sci_issuetoc_uri_items,
     get_pid_v3_list,
     get_website_url_list,
+    group_uri_items_from_uri_lists_by_script_name,
+    group_uri_items_from_pid_lists_by_script_name,
+    merge_uri_items_from_different_sources,
+    merge_pid_items_from_different_sources,
+
 )
 
 
@@ -713,4 +718,166 @@ class TestGetPIDv3List(TestCase):
                 call("website_url", "https://www.scielo.br"),
             ],
             self.kwargs["ti"].xcom_push.call_args_list
+        )
+
+
+class TestGroupUriItemsFromUriListsByScriptName(TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    def test_group_uri_items_from_uri_lists_by_script_name(self):
+        self.kwargs["ti"].xcom_pull.return_value = [
+            "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+            "/scielo.php?script=sci_arttext&pid=0001-376520200005",
+            "/scielo.php?script=sci_pdf&pid=0001-303520200005",
+            "/scielo.php?script=sci_pdf&pid=0001-376520200005",
+        ]
+        group_uri_items_from_uri_lists_by_script_name(**self.kwargs)
+        self.kwargs["ti"].xcom_pull.assert_called_once_with(
+            task_ids="get_uri_items_from_uri_list_files_id",
+            key="uri_items"
+        )
+        self.assertIn(
+            call(
+                'sci_arttext',
+                [
+                    "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+                    "/scielo.php?script=sci_arttext&pid=0001-376520200005",
+                ]
+            ),
+            self.kwargs["ti"].xcom_push.call_args_list
+        )
+        self.assertIn(
+            call(
+                'sci_pdf',
+                [
+                    "/scielo.php?script=sci_pdf&pid=0001-303520200005",
+                    "/scielo.php?script=sci_pdf&pid=0001-376520200005",
+                ]
+            ),
+            self.kwargs["ti"].xcom_push.call_args_list
+        )
+
+
+class TestGroupUriItemsFromPidListsByScriptName(TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    def test_group_uri_items_from_pid_lists_by_script_name(self):
+        self.kwargs["ti"].xcom_pull.return_value = [
+            "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+            "/scielo.php?script=sci_arttext&pid=0001-376520200005",
+            "/scielo.php?script=sci_pdf&pid=0001-303520200005",
+            "/scielo.php?script=sci_pdf&pid=0001-376520200005",
+        ]
+        group_uri_items_from_pid_lists_by_script_name(**self.kwargs)
+        self.kwargs["ti"].xcom_pull.assert_called_once_with(
+            task_ids="get_uri_items_from_pid_list_csv_files_id",
+            key="uri_items"
+        )
+        self.assertIn(
+            call(
+                'sci_arttext',
+                [
+                    "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+                    "/scielo.php?script=sci_arttext&pid=0001-376520200005",
+                ]
+            ),
+            self.kwargs["ti"].xcom_push.call_args_list
+        )
+        self.assertIn(
+            call(
+                'sci_pdf',
+                [
+                    "/scielo.php?script=sci_pdf&pid=0001-303520200005",
+                    "/scielo.php?script=sci_pdf&pid=0001-376520200005",
+                ]
+            ),
+            self.kwargs["ti"].xcom_push.call_args_list
+        )
+
+
+class TestMergePidItemsFromDifferentSources(TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    def test_merge_pid_items_from_different_sources(self):
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            [
+                "0001-376520200005",
+            ],
+            [
+                "0001-303520200005",
+                "0001-376520200005",
+            ],
+        ]
+        merge_pid_items_from_different_sources(**self.kwargs)
+
+        self.assertListEqual([
+            call(key="sci_arttext",
+                 task_ids="group_uri_items_from_uri_lists_by_script_name_id",),
+            call(key="sci_arttext",
+                 task_ids="group_uri_items_from_pid_lists_by_script_name_id",)
+            ],
+            self.kwargs["ti"].xcom_pull.call_args_list
+        )
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            "pid_items",
+            ["0001-303520200005", "0001-376520200005"]
+        )
+
+
+class TestMergeUriItemsFromDifferentSources(TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    def test_merge_uri_items_from_different_sources(self):
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            [
+                "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+                "/scielo.php?script=sci_arttext&pid=0001-376520200005",
+                "/scielo.php?script=sci_pdf&pid=0001-303520200005",
+                "/scielo.php?script=sci_pdf&pid=0001-376520200005",
+            ],
+            [
+                "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+            ],
+        ]
+        merge_uri_items_from_different_sources(**self.kwargs)
+        self.assertListEqual([
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_uri_list_files_id",),
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_pid_list_csv_files_id",)
+            ],
+            self.kwargs["ti"].xcom_pull.call_args_list
+        )
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            "uri_items",
+            [
+                "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+                "/scielo.php?script=sci_arttext&pid=0001-376520200005",
+                "/scielo.php?script=sci_pdf&pid=0001-303520200005",
+                "/scielo.php?script=sci_pdf&pid=0001-376520200005",
+            ]
         )

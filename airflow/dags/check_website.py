@@ -154,7 +154,7 @@ def get_uri_list_file_paths(conf, **kwargs):
 
 def get_uri_items_from_uri_list_files(**context):
     """
-    Retorna uma lista de URI dado uma lista de arquivos `uri_list`
+    Obtém uma lista de URI contidos nos arquivos `uri_list_*.lst`
     """
     Logger.info("Get URI items from `url_list_*.lst`")
     uri_list_file_paths = context["ti"].xcom_pull(
@@ -183,7 +183,8 @@ def get_uri_items_from_uri_list_files(**context):
 def get_pid_list_csv_file_paths(**kwargs):
     """
     Identifica os caminhos dos arquivos CSV
-    que contém dados de documentos, sendo a primeira coluna, contém PID v2
+    que contém dados de documentos, sendo a primeira coluna, contém PID v2,
+    podendo haver mais colunas, e a segunda coluna, é do previous PID v2
     """
     pid_v2_list_file_names = Variable.get(
         "PID_LIST_CSV_FILE_NAMES", default_var=[], deserialize_json=True)
@@ -218,7 +219,9 @@ def get_pid_list_csv_file_paths(**kwargs):
 
 def get_uri_items_from_pid_list_csv_files(**context):
     """
-    Retorna uma lista de PIDs dado uma lista de arquivos `pid_list`
+    Obtém uma lista de PIDs contidos nos arquivos `*.csv`
+    E a partir desta lista, obtém os respectivos URI, no mesmo formato
+    encontrado nos arquivos `uri_list_*.lst`
     """
     Logger.info("Get URI items from `*.csv`")
     pid_list_csv_file_paths = context["ti"].xcom_pull(
@@ -237,6 +240,88 @@ def get_uri_items_from_pid_list_csv_files(**context):
         group_pids(pids))
     context["ti"].xcom_push("uri_items", items)
     Logger.info("Total: %i URIs", len(items))
+
+
+def group_uri_items_from_uri_lists_by_script_name(**context):
+    """
+    Agrupa URI items provenientes dos arquivos `uri_list_*.lst`
+    pelo `script_name`
+    """
+    Logger.info("Group URI items, from `uri_list_*.lst`, by script name")
+    uri_items = context["ti"].xcom_pull(
+                task_ids="get_uri_items_from_uri_list_files_id",
+                key="uri_items"
+            )
+    Logger.info("Total %i URIs", len(uri_items))
+    items = check_website_operations.group_items_by_script_name(uri_items)
+    for script_name, _items in items.items():
+        Logger.info(
+            "Total %i URIs for `%s`", len(_items), script_name)
+        context["ti"].xcom_push(script_name, sorted(_items))
+
+
+def group_uri_items_from_pid_lists_by_script_name(**context):
+    """
+    Agrupa URI items provenientes dos arquivos *.csv`
+    pelo `script_name`
+    """
+    Logger.info("Group URI items, from `*.csv`, by script name")
+    uri_items = context["ti"].xcom_pull(
+                task_ids="get_uri_items_from_pid_list_csv_files_id",
+                key="uri_items"
+            )
+    Logger.info("Total %i URIs", len(uri_items))
+    items = check_website_operations.group_items_by_script_name(uri_items)
+    for script_name, _items in items.items():
+        Logger.info(
+            "Total %i URIs for `%s`", len(_items), script_name)
+        context["ti"].xcom_push(script_name, sorted(_items))
+
+
+def merge_uri_items_from_different_sources(**context):
+    """
+    Une todos URI items provenientes de `uri_list_*.lst` and `*.csv`,
+    removendo repetições
+    """
+    Logger.info("Merge URI items from `uri_list_*.lst` and `*.csv`")
+    uri_items = (
+        set(
+            context["ti"].xcom_pull(
+                task_ids="get_uri_items_from_uri_list_files_id",
+                key="uri_items"
+            )) |
+        set(
+            context["ti"].xcom_pull(
+                task_ids="get_uri_items_from_pid_list_csv_files_id",
+                key="uri_items"
+            )
+        )
+    )
+    Logger.info("Total %i URIs", len(uri_items))
+    context["ti"].xcom_push("uri_items", sorted(list(uri_items)))
+
+
+def merge_pid_items_from_different_sources(**context):
+    """
+    Une todos PID provenientes de `uri_list_*.lst` and `*.csv`,
+    removendo repetições
+    """
+    Logger.info("Merge PID items from `uri_list_*.lst` and `*.csv`")
+    pid_items = (
+        set(
+            context["ti"].xcom_pull(
+                task_ids="group_uri_items_from_uri_lists_by_script_name_id",
+                key="sci_arttext"
+            )) |
+        set(
+            context["ti"].xcom_pull(
+                task_ids="group_uri_items_from_pid_lists_by_script_name_id",
+                key="sci_arttext"
+            )
+        )
+    )
+    Logger.info("Total %i PIDs", len(pid_items))
+    context["ti"].xcom_push("pid_items", sorted(list(pid_items)))
 
 
 def join_and_group_uri_items_by_script_name(**context):
@@ -445,6 +530,34 @@ get_uri_items_from_pid_list_csv_files_task = PythonOperator(
     dag=dag,
 )
 
+group_uri_items_from_uri_lists_by_script_name_task = PythonOperator(
+    task_id="group_uri_items_from_uri_lists_by_script_name_id",
+    provide_context=True,
+    python_callable=group_uri_items_from_uri_lists_by_script_name,
+    dag=dag,
+)
+
+group_uri_items_from_pid_lists_by_script_name_task = PythonOperator(
+    task_id="group_uri_items_from_pid_lists_by_script_name_id",
+    provide_context=True,
+    python_callable=group_uri_items_from_pid_lists_by_script_name,
+    dag=dag,
+)
+
+merge_uri_items_from_different_sources_task = PythonOperator(
+    task_id="merge_uri_items_from_different_sources_id",
+    provide_context=True,
+    python_callable=merge_uri_items_from_different_sources,
+    dag=dag,
+)
+
+merge_pid_items_from_different_sources_task = PythonOperator(
+    task_id="merge_pid_items_from_different_sources_id",
+    provide_context=True,
+    python_callable=merge_pid_items_from_different_sources,
+    dag=dag,
+)
+
 join_and_group_uri_items_by_script_name_task = PythonOperator(
     task_id="join_and_group_uri_items_by_script_name_id",
     provide_context=True,
@@ -529,3 +642,4 @@ join_and_group_uri_items_by_script_name_task >> check_sci_arttext_uri_items_task
 
 # valida os URI de documentos no nível mais profundo
 join_and_group_uri_items_by_script_name_task >> get_pid_v3_list_task >> check_documents_deeply_task
+
