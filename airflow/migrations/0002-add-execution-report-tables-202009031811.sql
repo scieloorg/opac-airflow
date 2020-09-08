@@ -29,7 +29,8 @@ CREATE INDEX IF NOT EXISTS pid_v3 ON pid_v2 (pid_v3);
 CREATE TABLE IF NOT EXISTS sci_pages_availability (
   id SERIAL PRIMARY KEY,
   dag_run varchar(255),                             -- Identificador de execução da dag `check_website`
-  input_file_name varchar(255),                     -- Nome do arquivo de entrada: csv com PIDs v2 ou uri_list
+  input_file_name varchar(255) NULL,                -- Nome do arquivo de entrada: csv com PIDs v2 ou uri_list
+  uri varchar(255),                                 -- URI
   failed bool DEFAULT false,                        -- Falha == true
   detail json,                                      -- Detalhes da verificação da disponibilidade
   pid_v2_journal varchar(9),                        -- ISSN ID do periódico

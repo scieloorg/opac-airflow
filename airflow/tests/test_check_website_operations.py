@@ -34,6 +34,8 @@ from operations.check_website_operations import (
     get_pid_v3_list,
     get_pid_list_from_csv,
     group_items_by_script_name,
+    get_journal_issue_doc_pids,
+    format_sci_page_availability_result_to_register,
 )
 
 END_TIME = datetime.utcnow()
@@ -3004,3 +3006,63 @@ class Testgroup_items_by_script_name(TestCase):
         }
         result = group_items_by_script_name(uri_items)
         self.assertDictEqual(expected, result)
+
+
+class TestGetJournalIssueDocPids(TestCase):
+
+    def test_get_journal_issue_doc_pids_returns_all_pids(self):
+        expected = "2234-5679", "2234-567919970010", "S2234-56791997001012305"
+        data = "/scielo.php?script=sci_pdf&pid=S2234-56791997001012305"
+        result = get_journal_issue_doc_pids(data)
+        self.assertEqual(expected, result)
+
+    def test_get_journal_issue_doc_pids_returns_no_pids(self):
+        expected = None, None, None
+        data = "/scielo.php?script=sci_pdf&pid="
+        result = get_journal_issue_doc_pids(data)
+        self.assertEqual(expected, result)
+
+    def test_get_journal_issue_doc_pids_returns_journal_pid(self):
+        expected = "2234-5679", None, None
+        data = "/scielo.php?script=sci_xxx&pid=2234-5679"
+        result = get_journal_issue_doc_pids(data)
+        self.assertEqual(expected, result)
+
+    def test_get_journal_issue_doc_pids_returns_journal_and_issue_pids(self):
+        expected = "2234-5679", "2234-567919970010", None
+        data = "/scielo.php?script=sci_xxx&pid=2234-567919970010"
+        result = get_journal_issue_doc_pids(data)
+        self.assertEqual(expected, result)
+
+
+class TestFormatSciPageAvailabilityResultToRegister(TestCase):
+
+    def test_format_sci_page_availability_result_to_register_returns_data(self):
+        data = {
+            "available": True,
+            "status code": 200,
+            "start time": 1,
+            "end time": 2,
+            "duration": 1,
+            "uri":  (
+                "https://www.scielo.br/scielo.php?"
+                "script=sci_xxx&pid=2234-567919970010"
+            ),
+        }
+        dag_data = {"run_id": "RUN ID", "input_file_name": "a.csv"}
+        expected = {
+            "dag_run": "RUN ID",
+            "input_file_name": "a.csv",
+            "uri": (
+                "https://www.scielo.br/scielo.php?"
+                "script=sci_xxx&pid=2234-567919970010"
+            ),
+            "failed": False,
+            "detail": data,
+            "pid_v2_journal": "2234-5679",
+            "pid_v2_issue": "2234-567919970010",
+            "pid_v2_doc": None,
+        }
+        result = format_sci_page_availability_result_to_register(
+            data, dag_data)
+        self.assertEqual(expected, result)

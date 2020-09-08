@@ -271,6 +271,27 @@ def group_items_by_script_name(uri_items):
     return items
 
 
+def get_journal_issue_doc_pids(uri):
+    parsed = urlparse(uri)
+    query_items = parse_qs(parsed.query)
+    values = query_items.get('pid')
+    pid_d = None
+    pid_i = None
+    pid_j = None
+    if values:
+        pid = values[0]
+        if len(pid) == 9:
+            pid_j = pid
+        elif len(pid) == 17:
+            pid_i = pid
+            pid_j = pid[:9]
+        elif len(pid) == 23:
+            pid_d = pid
+            pid_i = pid[1:18]
+            pid_j = pid[1:10]
+    return pid_j, pid_i, pid_d
+
+
 def get_document_webpage_uri(data, query_param_names=None):
     """
     Recebe data
@@ -603,7 +624,7 @@ def check_website_uri_list(uri_list_items, label=""):
     total = len(uri_list_items)
     Logger.info("Total %s URIs: %i", label, total)
     success, failures = check_uri_items(uri_list_items)
-
+    
     if failures:
         Logger.info(
             "Unavailable %s URIs (%i/%i):\n%s",
@@ -615,6 +636,71 @@ def check_website_uri_list(uri_list_items, label=""):
 
     Logger.debug("check_website_uri_list OUT")
     return success, failures
+
+
+def register_sci_pages_availability_report(result_items, dag_info):
+    """
+    Registra os resultados da verificação da disponibilidade na base de dados.
+    Args:
+        result_items (list of dict): resultado de `check_uri_items`
+            {
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[3]
+            }
+        dag_info (dict): dados da DAG
+    """
+    Logger.info("Register uri items availability report")
+    for row in result_items:
+        add_execution_in_database(
+            "sci_pages_availability",
+            format_sci_page_availability_result_to_register(row, dag_info))
+    Logger.info("Finished: register uri items availability report")
+
+
+def format_sci_page_availability_result_to_register(sci_page_availability_result, dag_info):
+    """
+    Formata os dados para registrar na tabela `sci_pages_availability`
+    Colunas da tabela:
+      id SERIAL PRIMARY KEY,
+      dag_run varchar(255),                             -- Identificador de execução da dag `check_website`
+      input_file_name varchar(255) NULL,                -- Nome do arquivo de entrada: csv com PIDs v2 ou uri_list
+      failed bool DEFAULT false,                        -- Falha == true
+      detail json,                                      -- Detalhes da verificação da disponibilidade
+      pid_v2_journal varchar(9),                        -- ISSN ID do periódico
+      pid_v2_issue varchar(17) NULL,                    -- PID do fascículo
+      pid_v2_doc varchar(23) NULL,                      -- PID do documento
+      created_at timestamptz DEFAULT now()
+    Args:
+        sci_page_availability_result (dict)
+            {
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "uri": uri_list[3]
+            }
+        dag_info (dict): dados da DAG
+
+    Returns:
+        dict: dados da coluna
+    """
+    parsed_pids = get_journal_issue_doc_pids(
+        sci_page_availability_result["uri"])
+    data = {}
+    data["dag_run"] = dag_info.get("run_id")
+    data["input_file_name"] = dag_info.get("input_file_name")
+    data["uri"] = sci_page_availability_result["uri"]
+    data["failed"] = sci_page_availability_result["available"] is False
+    data["detail"] = sci_page_availability_result
+    data["pid_v2_journal"] = parsed_pids[0]
+    data["pid_v2_issue"] = parsed_pids[1]
+    data["pid_v2_doc"] = parsed_pids[2]
+    return data
 
 
 def read_file(uri_list_file_path):
@@ -638,6 +724,7 @@ def check_uri_items(uri_list_items):
     """Acessa uma lista de URI e retorna o resultado da verificação"""
     success = []
     failures = []
+
     responses = async_requests.parallel_requests(uri_list_items, head=True)
     for resp in responses:
         result = eval_response(resp)
