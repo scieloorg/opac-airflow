@@ -22,7 +22,6 @@ from check_website import (
     get_pid_v3_list,
     get_website_url_list,
     group_uri_items_from_uri_lists_by_script_name,
-    group_uri_items_from_pid_lists_by_script_name,
     merge_uri_items_from_different_sources,
     merge_pid_items_from_different_sources,
 
@@ -357,30 +356,43 @@ class TestGetUriItemsFromPidFiles(TestCase):
 
         ]
         get_uri_items_from_pid_list_csv_files(**self.kwargs)
-        self.kwargs["ti"].xcom_push.assert_called_once_with(
-            "uri_items",
-            [
-                "/scielo.php?script=sci_serial&pid=0001-3035",
-                "/scielo.php?script=sci_issues&pid=0001-3035",
-                "/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
-                "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
-                "/scielo.php?script=sci_pdf&pid=S0001-30352020000501101",
-                "/scielo.php?script=sci_serial&pid=0001-3765",
-                "/scielo.php?script=sci_issues&pid=0001-3765",
-                "/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
-                "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
-                "/scielo.php?script=sci_pdf&pid=S0001-37652020000501101",
-                "/scielo.php?script=sci_serial&pid=0203-1998",
-                "/scielo.php?script=sci_issues&pid=0203-1998",
-                "/scielo.php?script=sci_issuetoc&pid=0203-199820200005",
-                "/scielo.php?script=sci_arttext&pid=S0203-19982020000501101",
-                "/scielo.php?script=sci_pdf&pid=S0203-19982020000501101",
-                "/scielo.php?script=sci_serial&pid=1213-1998",
-                "/scielo.php?script=sci_issues&pid=1213-1998",
-                "/scielo.php?script=sci_issuetoc&pid=1213-199821211115",
-                "/scielo.php?script=sci_arttext&pid=S1213-19982121111511111",
-                "/scielo.php?script=sci_pdf&pid=S1213-19982121111511111",
-            ],
+
+        self.assertListEqual([
+            call(
+                "pid_items",
+                [
+                    "S0001-30352020000501101",
+                    "S0001-37652020000501101",
+                    "S0203-19982020000501101",
+                    "S1213-19982121111511111",
+                ]
+            ),
+            call(
+                "uri_items",
+                [
+                    "/scielo.php?script=sci_serial&pid=0001-3035",
+                    "/scielo.php?script=sci_issues&pid=0001-3035",
+                    "/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
+                    "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
+                    "/scielo.php?script=sci_pdf&pid=S0001-30352020000501101",
+                    "/scielo.php?script=sci_serial&pid=0001-3765",
+                    "/scielo.php?script=sci_issues&pid=0001-3765",
+                    "/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
+                    "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+                    "/scielo.php?script=sci_pdf&pid=S0001-37652020000501101",
+                    "/scielo.php?script=sci_serial&pid=0203-1998",
+                    "/scielo.php?script=sci_issues&pid=0203-1998",
+                    "/scielo.php?script=sci_issuetoc&pid=0203-199820200005",
+                    "/scielo.php?script=sci_arttext&pid=S0203-19982020000501101",
+                    "/scielo.php?script=sci_pdf&pid=S0203-19982020000501101",
+                    "/scielo.php?script=sci_serial&pid=1213-1998",
+                    "/scielo.php?script=sci_issues&pid=1213-1998",
+                    "/scielo.php?script=sci_issuetoc&pid=1213-199821211115",
+                    "/scielo.php?script=sci_arttext&pid=S1213-19982121111511111",
+                    "/scielo.php?script=sci_pdf&pid=S1213-19982121111511111",
+                ],
+            )],
+            self.kwargs["ti"].xcom_push.call_args_list
         )
 
 
@@ -743,49 +755,6 @@ class TestGroupUriItemsFromUriListsByScriptName(TestCase):
         )
 
 
-class TestGroupUriItemsFromPidListsByScriptName(TestCase):
-
-    def setUp(self):
-        self.kwargs = {
-            "ti": MagicMock(),
-            "conf": None,
-            "run_id": "test_run_id",
-        }
-
-    def test_group_uri_items_from_pid_lists_by_script_name(self):
-        self.kwargs["ti"].xcom_pull.return_value = [
-            "/scielo.php?script=sci_arttext&pid=0001-303520200005",
-            "/scielo.php?script=sci_arttext&pid=0001-376520200005",
-            "/scielo.php?script=sci_pdf&pid=0001-303520200005",
-            "/scielo.php?script=sci_pdf&pid=0001-376520200005",
-        ]
-        group_uri_items_from_pid_lists_by_script_name(**self.kwargs)
-        self.kwargs["ti"].xcom_pull.assert_called_once_with(
-            task_ids="get_uri_items_from_pid_list_csv_files_id",
-            key="uri_items"
-        )
-        self.assertIn(
-            call(
-                'sci_arttext',
-                [
-                    "/scielo.php?script=sci_arttext&pid=0001-303520200005",
-                    "/scielo.php?script=sci_arttext&pid=0001-376520200005",
-                ]
-            ),
-            self.kwargs["ti"].xcom_push.call_args_list
-        )
-        self.assertIn(
-            call(
-                'sci_pdf',
-                [
-                    "/scielo.php?script=sci_pdf&pid=0001-303520200005",
-                    "/scielo.php?script=sci_pdf&pid=0001-376520200005",
-                ]
-            ),
-            self.kwargs["ti"].xcom_push.call_args_list
-        )
-
-
 class TestMergePidItemsFromDifferentSources(TestCase):
 
     def setUp(self):
@@ -810,8 +779,8 @@ class TestMergePidItemsFromDifferentSources(TestCase):
         self.assertListEqual([
             call(key="sci_arttext",
                  task_ids="group_uri_items_from_uri_lists_by_script_name_id",),
-            call(key="sci_arttext",
-                 task_ids="group_uri_items_from_pid_lists_by_script_name_id",)
+            call(key="pid_items",
+                 task_ids="get_uri_items_from_pid_list_csv_files_id",)
             ],
             self.kwargs["ti"].xcom_pull.call_args_list
         )

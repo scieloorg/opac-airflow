@@ -510,13 +510,6 @@ group_uri_items_from_uri_lists_by_script_name_task = PythonOperator(
     dag=dag,
 )
 
-group_uri_items_from_pid_lists_by_script_name_task = PythonOperator(
-    task_id="group_uri_items_from_pid_lists_by_script_name_id",
-    provide_context=True,
-    python_callable=group_uri_items_from_pid_lists_by_script_name,
-    dag=dag,
-)
-
 merge_uri_items_from_different_sources_task = PythonOperator(
     task_id="merge_uri_items_from_different_sources_id",
     provide_context=True,
