@@ -579,7 +579,77 @@ check_documents_deeply_task = PythonOperator(
     python_callable=check_documents_deeply,
     dag=dag,
 )
+"""
 
+    |
+    |   +----------------------------+
+    +-->|get_uri_list_file_paths_task|
+        +----------------------------+
+            |
+            |   +--------------------------------------+
+            +-->|get_uri_items_from_uri_list_files_task|
+                +--------------------------------------+
+                    |
+                    |   +--------------------------------------------------+
+                    +-->|group_uri_items_from_uri_lists_by_script_name_task|
+                        +--------------------------------------------------+
+                            |
+                            |   +-------------------------------------------+
+                            +-->|merge_pid_items_from_different_sources_task|
+                                +-------------------------------------------+
+                                
+|
+|   +--------------------------------+
++-->|get_pid_list_csv_file_paths_task|
+    +--------------------------------+
+        |
+        |   +------------------------------------------+
+        +-->|get_uri_items_from_pid_list_csv_files_task|
+            +------------------------------------------+
+
+|
+|   +---------------------------+
++-->|check_documents_deeply_task|
+    +---------------------------+
+|
+|   +--------------------------------+
++-->|check_sci_arttext_uri_items_task|
+    +--------------------------------+
+|
+|   +-------------------------------+
++-->|check_sci_issues_uri_items_task|
+    +-------------------------------+
+|
+|   +---------------------------------+
++-->|check_sci_issuetoc_uri_items_task|
+    +---------------------------------+
+|
+|   +----------------------------+
++-->|check_sci_pdf_uri_items_task|
+    +----------------------------+
+|
+|   +-------------------------------+
++-->|check_sci_serial_uri_items_task|
+    +-------------------------------+
+
+|
+|   +--------------------+
++-->|get_pid_v3_list_task|
+    +--------------------+
+
+
+
+|
+|   +--------------------------------------------+
++-->|join_and_group_uri_items_by_script_name_task|
+    +--------------------------------------------+
+
+|
+|   +-------------------------------------------+
++-->|merge_uri_items_from_different_sources_task|
+    +-------------------------------------------+
+
+"""
 # obtém a lista de arquivos uri_list
 # ler todos os arquivos url_list e retorna uma lista de URI
 get_uri_list_file_paths_task >> get_uri_items_from_uri_list_files_task
