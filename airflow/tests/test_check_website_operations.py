@@ -18,7 +18,8 @@ from operations.check_website_operations import (
     filter_uri_list,
     get_document_webpage_uri,
     get_document_webpages_data,
-    check_uri_items_expected_in_webpage,
+    check_asset_uri_items_expected_in_webpage,
+    check_doc_webpage_uri_items_expected_in_webpage,
     check_document_webpages_availability,
     check_document_html,
     check_document_assets_availability,
@@ -913,342 +914,6 @@ class TestGetDocumentWebPagesData(TestCase):
         ]
         result = get_document_webpages_data(doc_id, doc_data_list, get_classic_document_webpage_uri)
         self.assertEqual(expected, result)
-
-
-class TestCheckWebpageInnerUriList(TestCase):
-
-    def test_check_uri_items_expected_in_webpage_returns_success(self):
-        uri_items_in_html = [
-            "asset_uri_1.jpg",
-            "asset_uri_2.jpg",
-            "/j/xyz/a/lokiujyht?format=html&lang=en",
-            "/j/xyz/a/lokiujyht?format=pdf&lang=es",
-            "/j/xyz/a/lokiujyht?format=pdf&lang=en",
-        ]
-        assets_data = [
-            {
-                "prefix": "asset_uri_1",
-                "uri_alternatives": [
-                    "asset_uri_1.tiff", "asset_uri_1.jpg", "asset_uri_1.png"]
-            },
-            {
-                "prefix": "asset_uri_2",
-                "uri_alternatives": [
-                    "asset_uri_2.tiff", "asset_uri_2.jpg", "asset_uri_2.png"]
-            }
-        ]
-        other_webpages_uri_data = [
-            {
-                "lang": "en",
-                "format": "html",
-                "acron": "xyz",
-                "doc_id": "lokiujyht",
-                "uri_alternatives": [
-                    "/j/xyz/a/lokiujyht?format=html&lang=en",
-                    "/j/xyz/a/lokiujyht?lang=en&format=html",
-                    "/j/xyz/a/lokiujyht?format=html",
-                    "/j/xyz/a/lokiujyht?lang=en",
-                    "/j/xyz/a/lokiujyht/?format=html&lang=en",
-                    "/j/xyz/a/lokiujyht/?lang=en&format=html",
-                    "/j/xyz/a/lokiujyht/?format=html",
-                    "/j/xyz/a/lokiujyht/?lang=en",
-                ],
-            },
-            {
-                "lang": "es",
-                "format": "pdf",
-                "acron": "xyz",
-                "doc_id": "lokiujyht",
-                "uri_alternatives": [
-                    "/j/xyz/a/lokiujyht?format=pdf&lang=es",
-                    "/j/xyz/a/lokiujyht?lang=es&format=pdf",
-                    "/j/xyz/a/lokiujyht?format=pdf",
-                    "/j/xyz/a/lokiujyht/?format=pdf&lang=es",
-                    "/j/xyz/a/lokiujyht/?lang=es&format=pdf",
-                    "/j/xyz/a/lokiujyht/?format=pdf",
-                ],
-            },
-            {
-                "lang": "en",
-                "format": "pdf",
-                "acron": "xyz",
-                "doc_id": "lokiujyht",
-                "uri_alternatives": [
-                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
-                    "/j/xyz/a/lokiujyht?lang=en&format=pdf",
-                    "/j/xyz/a/lokiujyht?format=pdf",
-                    "/j/xyz/a/lokiujyht/?format=pdf&lang=en",
-                    "/j/xyz/a/lokiujyht/?lang=en&format=pdf",
-                    "/j/xyz/a/lokiujyht/?format=pdf",
-                ],
-            },
-        ]
-        expected = [
-            {
-                "type": "asset",
-                "id": "asset_uri_1",
-                "present_in_html": [
-                    "asset_uri_1.jpg",
-                ],
-                "absent_in_html": [
-                    "asset_uri_1.tiff", "asset_uri_1.png",
-                ],
-            },
-            {
-                "type": "asset",
-                "id": "asset_uri_2",
-                "present_in_html": [
-                    "asset_uri_2.jpg",
-                ],
-                "absent_in_html": [
-                    "asset_uri_2.tiff", "asset_uri_2.png",
-                ],
-            },
-            {
-                "type": "html",
-                "id": "en",
-                "present_in_html": [
-                    "/j/xyz/a/lokiujyht?format=html&lang=en",
-                ],
-            },
-            {
-                "type": "pdf",
-                "id": "es",
-                "present_in_html": [
-                    "/j/xyz/a/lokiujyht?format=pdf&lang=es",
-                ],
-            },
-            {
-                "type": "pdf",
-                "id": "en",
-                "present_in_html": [
-                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
-                ],
-            },
-        ]
-        result, missing = check_uri_items_expected_in_webpage(uri_items_in_html,
-                    assets_data, other_webpages_uri_data)
-        self.assertEqual(expected, result)
-        self.assertEqual(0, missing)
-
-    def test_check_uri_items_expected_in_webpage_returns_not_found_asset_uri(self):
-        uri_items_in_html = [
-            "asset_uri_1.jpg",
-        ]
-        assets_data = [
-            {
-                "prefix": "asset_uri_1",
-                "uri_alternatives": [
-                    "asset_uri_1.tiff", "asset_uri_1.jpg", "asset_uri_1.png"]
-            },
-            {
-                "prefix": "asset_uri_2",
-                "uri_alternatives": [
-                    "asset_uri_2.tiff", "asset_uri_2.jpg", "asset_uri_2.png"]
-            }
-        ]
-        other_webpages_uri_data = [
-        ]
-        expected = [
-            {
-                "type": "asset",
-                "id": "asset_uri_1",
-                "present_in_html": [
-                    "asset_uri_1.jpg",
-                ],
-                "absent_in_html": [
-                    "asset_uri_1.tiff", "asset_uri_1.png",
-                ],
-            },
-            {
-                "type": "asset",
-                "id": "asset_uri_2",
-                "present_in_html": [],
-                "absent_in_html": [
-                    "asset_uri_2.tiff", "asset_uri_2.jpg", "asset_uri_2.png"],
-            },
-        ]
-        result, missing = check_uri_items_expected_in_webpage(uri_items_in_html,
-                    assets_data, other_webpages_uri_data)
-        self.assertEqual(expected, result)
-        self.assertEqual(1, missing)
-
-    def test_check_uri_items_expected_in_webpage_returns_not_found_pdf(self):
-        uri_items_in_html = [
-            "/j/xyz/a/lokiujyht?format=html&lang=en",
-            "/j/xyz/a/lokiujyht?format=pdf&lang=en",
-        ]
-        assets_data = [
-        ]
-        other_webpages_uri_data = [
-            {
-                "lang": "en",
-                "format": "html",
-                "acron": "xyz",
-                "doc_id": "lokiujyht",
-                "uri_alternatives": [
-                    "/j/xyz/a/lokiujyht?format=html&lang=en",
-                    "/j/xyz/a/lokiujyht?lang=en&format=html",
-                    "/j/xyz/a/lokiujyht?format=html",
-                    "/j/xyz/a/lokiujyht?lang=en",
-                    "/j/xyz/a/lokiujyht/?format=html&lang=en",
-                    "/j/xyz/a/lokiujyht/?lang=en&format=html",
-                    "/j/xyz/a/lokiujyht/?format=html",
-                    "/j/xyz/a/lokiujyht/?lang=en",
-                ],
-            },
-            {
-                "lang": "es",
-                "format": "pdf",
-                "acron": "xyz",
-                "doc_id": "lokiujyht",
-                "uri_alternatives": [
-                    "/j/xyz/a/lokiujyht?format=pdf&lang=es",
-                    "/j/xyz/a/lokiujyht?lang=es&format=pdf",
-                    "/j/xyz/a/lokiujyht?format=pdf",
-                    "/j/xyz/a/lokiujyht/?format=pdf&lang=es",
-                    "/j/xyz/a/lokiujyht/?lang=es&format=pdf",
-                    "/j/xyz/a/lokiujyht/?format=pdf",
-                ],
-            },
-            {
-                "lang": "en",
-                "format": "pdf",
-                "acron": "xyz",
-                "doc_id": "lokiujyht",
-                "uri_alternatives": [
-                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
-                    "/j/xyz/a/lokiujyht?lang=en&format=pdf",
-                    "/j/xyz/a/lokiujyht?format=pdf",
-                    "/j/xyz/a/lokiujyht/?format=pdf&lang=en",
-                    "/j/xyz/a/lokiujyht/?lang=en&format=pdf",
-                    "/j/xyz/a/lokiujyht/?format=pdf",
-                ],
-            },
-        ]
-        expected = [
-            {
-                "type": "html",
-                "id": "en",
-                "present_in_html": [
-                    "/j/xyz/a/lokiujyht?format=html&lang=en",
-                ],
-            },
-            {
-                "type": "pdf",
-                "id": "es",
-                "present_in_html": [],
-                "absent_in_html": [
-                        "/j/xyz/a/lokiujyht?format=pdf&lang=es",
-                        "/j/xyz/a/lokiujyht?lang=es&format=pdf",
-                        "/j/xyz/a/lokiujyht?format=pdf",
-                        "/j/xyz/a/lokiujyht/?format=pdf&lang=es",
-                        "/j/xyz/a/lokiujyht/?lang=es&format=pdf",
-                        "/j/xyz/a/lokiujyht/?format=pdf",
-                    ]
-            },
-            {
-                "type": "pdf",
-                "id": "en",
-                "present_in_html": [
-                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
-                ],
-            },
-        ]
-        result, missing = check_uri_items_expected_in_webpage(
-                    uri_items_in_html,
-                    assets_data, other_webpages_uri_data)
-        self.assertEqual(expected, result)
-        self.assertEqual(1, missing)
-
-    def test_check_uri_items_expected_in_webpage_returns_not_found_html(self):
-        uri_items_in_html = [
-            "/j/xyz/a/lokiujyht?format=pdf&lang=es",
-            "/j/xyz/a/lokiujyht?format=pdf&lang=en",
-        ]
-        assets_data = [
-        ]
-        other_webpages_uri_data = [
-            {
-                "lang": "en",
-                "format": "html",
-                "acron": "xyz",
-                "doc_id": "lokiujyht",
-                "uri_alternatives": [
-                    "/j/xyz/a/lokiujyht?format=html&lang=en",
-                    "/j/xyz/a/lokiujyht?lang=en&format=html",
-                    "/j/xyz/a/lokiujyht?format=html",
-                    "/j/xyz/a/lokiujyht?lang=en",
-                    "/j/xyz/a/lokiujyht/?format=html&lang=en",
-                    "/j/xyz/a/lokiujyht/?lang=en&format=html",
-                    "/j/xyz/a/lokiujyht/?format=html",
-                    "/j/xyz/a/lokiujyht/?lang=en",
-                ],
-            },
-            {
-                "lang": "es",
-                "format": "pdf",
-                "acron": "xyz",
-                "doc_id": "lokiujyht",
-                "uri_alternatives": [
-                    "/j/xyz/a/lokiujyht?format=pdf&lang=es",
-                    "/j/xyz/a/lokiujyht?lang=es&format=pdf",
-                    "/j/xyz/a/lokiujyht?format=pdf",
-                    "/j/xyz/a/lokiujyht/?format=pdf&lang=es",
-                    "/j/xyz/a/lokiujyht/?lang=es&format=pdf",
-                    "/j/xyz/a/lokiujyht/?format=pdf",
-                ],
-            },
-            {
-                "lang": "en",
-                "format": "pdf",
-                "acron": "xyz",
-                "doc_id": "lokiujyht",
-                "uri_alternatives": [
-                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
-                    "/j/xyz/a/lokiujyht?lang=en&format=pdf",
-                    "/j/xyz/a/lokiujyht?format=pdf",
-                    "/j/xyz/a/lokiujyht/?format=pdf&lang=en",
-                    "/j/xyz/a/lokiujyht/?lang=en&format=pdf",
-                    "/j/xyz/a/lokiujyht/?format=pdf",
-                ],
-            },
-        ]
-        expected = [
-            {
-                "type": "html",
-                "id": "en",
-                "present_in_html": [],
-                "absent_in_html": [
-                        "/j/xyz/a/lokiujyht?format=html&lang=en",
-                        "/j/xyz/a/lokiujyht?lang=en&format=html",
-                        "/j/xyz/a/lokiujyht?format=html",
-                        "/j/xyz/a/lokiujyht?lang=en",
-                        "/j/xyz/a/lokiujyht/?format=html&lang=en",
-                        "/j/xyz/a/lokiujyht/?lang=en&format=html",
-                        "/j/xyz/a/lokiujyht/?format=html",
-                        "/j/xyz/a/lokiujyht/?lang=en",
-                    ],
-            },
-            {
-                "type": "pdf",
-                "id": "es",
-                "present_in_html": [
-                    "/j/xyz/a/lokiujyht?format=pdf&lang=es",
-                ],
-            },
-            {
-                "type": "pdf",
-                "id": "en",
-                "present_in_html": [
-                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
-                ],
-            },
-        ]
-        result, missing = check_uri_items_expected_in_webpage(uri_items_in_html,
-                    assets_data, other_webpages_uri_data)
-        self.assertEqual(expected, result)
-        self.assertEqual(1, missing)
 
 
 class TestCheckDocumentUriItemsAvailability(TestCase):
@@ -3067,3 +2732,356 @@ class TestFormatSciPageAvailabilityResultToRegister(TestCase):
         result = format_sci_page_availability_result_to_register(
             data, dag_data)
         self.assertEqual(expected, result)
+
+
+class TestCheckDocWebpageUriItemsExpectedInWebpage(TestCase):
+
+    def test_check_doc_webpage_uri_items_expected_in_webpage_returns_success(self):
+        uri_items_in_html = [
+            "asset_uri_1.jpg",
+            "asset_uri_2.jpg",
+            "/j/xyz/a/lokiujyht?format=html&lang=en",
+            "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+            "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+        ]
+        
+        other_webpages_uri_data = [
+            {
+                "lang": "en",
+                "format": "html",
+                "acron": "xyz",
+                "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=html&lang=en",
+                    "/j/xyz/a/lokiujyht?lang=en&format=html",
+                    "/j/xyz/a/lokiujyht?format=html",
+                    "/j/xyz/a/lokiujyht?lang=en",
+                    "/j/xyz/a/lokiujyht/?format=html&lang=en",
+                    "/j/xyz/a/lokiujyht/?lang=en&format=html",
+                    "/j/xyz/a/lokiujyht/?format=html",
+                    "/j/xyz/a/lokiujyht/?lang=en",
+                ],
+            },
+            {
+                "lang": "es",
+                "format": "pdf",
+                "acron": "xyz",
+                "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+                    "/j/xyz/a/lokiujyht?lang=es&format=pdf",
+                    "/j/xyz/a/lokiujyht?format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf&lang=es",
+                    "/j/xyz/a/lokiujyht/?lang=es&format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf",
+                ],
+            },
+            {
+                "lang": "en",
+                "format": "pdf",
+                "acron": "xyz",
+                "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+                    "/j/xyz/a/lokiujyht?lang=en&format=pdf",
+                    "/j/xyz/a/lokiujyht?format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf&lang=en",
+                    "/j/xyz/a/lokiujyht/?lang=en&format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf",
+                ],
+            },
+        ]
+        expected = [
+            {
+                "type": "html",
+                "id": "en",
+                "present_in_html": [
+                    "/j/xyz/a/lokiujyht?format=html&lang=en",
+                ],
+            },
+            {
+                "type": "pdf",
+                "id": "es",
+                "present_in_html": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+                ],
+            },
+            {
+                "type": "pdf",
+                "id": "en",
+                "present_in_html": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+                ],
+            },
+        ]
+        result, missing = check_doc_webpage_uri_items_expected_in_webpage(
+            uri_items_in_html, other_webpages_uri_data)
+        self.assertEqual(expected, result)
+        self.assertEqual(0, missing)
+
+    def test_check_doc_webpage_uri_items_expected_in_webpage_returns_not_found_pdf(self):
+        uri_items_in_html = [
+            "/j/xyz/a/lokiujyht?format=html&lang=en",
+            "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+        ]
+        other_webpages_uri_data = [
+            {
+                "lang": "en",
+                "format": "html",
+                "acron": "xyz",
+                "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=html&lang=en",
+                    "/j/xyz/a/lokiujyht?lang=en&format=html",
+                    "/j/xyz/a/lokiujyht?format=html",
+                    "/j/xyz/a/lokiujyht?lang=en",
+                    "/j/xyz/a/lokiujyht/?format=html&lang=en",
+                    "/j/xyz/a/lokiujyht/?lang=en&format=html",
+                    "/j/xyz/a/lokiujyht/?format=html",
+                    "/j/xyz/a/lokiujyht/?lang=en",
+                ],
+            },
+            {
+                "lang": "es",
+                "format": "pdf",
+                "acron": "xyz",
+                "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+                    "/j/xyz/a/lokiujyht?lang=es&format=pdf",
+                    "/j/xyz/a/lokiujyht?format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf&lang=es",
+                    "/j/xyz/a/lokiujyht/?lang=es&format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf",
+                ],
+            },
+            {
+                "lang": "en",
+                "format": "pdf",
+                "acron": "xyz",
+                "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+                    "/j/xyz/a/lokiujyht?lang=en&format=pdf",
+                    "/j/xyz/a/lokiujyht?format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf&lang=en",
+                    "/j/xyz/a/lokiujyht/?lang=en&format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf",
+                ],
+            },
+        ]
+        expected = [
+            {
+                "type": "html",
+                "id": "en",
+                "present_in_html": [
+                    "/j/xyz/a/lokiujyht?format=html&lang=en",
+                ],
+            },
+            {
+                "type": "pdf",
+                "id": "es",
+                "present_in_html": [],
+                "absent_in_html": [
+                        "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+                        "/j/xyz/a/lokiujyht?lang=es&format=pdf",
+                        "/j/xyz/a/lokiujyht?format=pdf",
+                        "/j/xyz/a/lokiujyht/?format=pdf&lang=es",
+                        "/j/xyz/a/lokiujyht/?lang=es&format=pdf",
+                        "/j/xyz/a/lokiujyht/?format=pdf",
+                    ]
+            },
+            {
+                "type": "pdf",
+                "id": "en",
+                "present_in_html": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+                ],
+            },
+        ]
+        result, missing = check_doc_webpage_uri_items_expected_in_webpage(
+                    uri_items_in_html,
+                    other_webpages_uri_data)
+        self.assertEqual(expected, result)
+        self.assertEqual(1, missing)
+
+    def test_check_doc_webpage_uri_items_expected_in_webpage_returns_not_found_html(self):
+        uri_items_in_html = [
+            "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+            "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+        ]
+        other_webpages_uri_data = [
+            {
+                "lang": "en",
+                "format": "html",
+                "acron": "xyz",
+                "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=html&lang=en",
+                    "/j/xyz/a/lokiujyht?lang=en&format=html",
+                    "/j/xyz/a/lokiujyht?format=html",
+                    "/j/xyz/a/lokiujyht?lang=en",
+                    "/j/xyz/a/lokiujyht/?format=html&lang=en",
+                    "/j/xyz/a/lokiujyht/?lang=en&format=html",
+                    "/j/xyz/a/lokiujyht/?format=html",
+                    "/j/xyz/a/lokiujyht/?lang=en",
+                ],
+            },
+            {
+                "lang": "es",
+                "format": "pdf",
+                "acron": "xyz",
+                "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+                    "/j/xyz/a/lokiujyht?lang=es&format=pdf",
+                    "/j/xyz/a/lokiujyht?format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf&lang=es",
+                    "/j/xyz/a/lokiujyht/?lang=es&format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf",
+                ],
+            },
+            {
+                "lang": "en",
+                "format": "pdf",
+                "acron": "xyz",
+                "doc_id": "lokiujyht",
+                "uri_alternatives": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+                    "/j/xyz/a/lokiujyht?lang=en&format=pdf",
+                    "/j/xyz/a/lokiujyht?format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf&lang=en",
+                    "/j/xyz/a/lokiujyht/?lang=en&format=pdf",
+                    "/j/xyz/a/lokiujyht/?format=pdf",
+                ],
+            },
+        ]
+        expected = [
+            {
+                "type": "html",
+                "id": "en",
+                "present_in_html": [],
+                "absent_in_html": [
+                        "/j/xyz/a/lokiujyht?format=html&lang=en",
+                        "/j/xyz/a/lokiujyht?lang=en&format=html",
+                        "/j/xyz/a/lokiujyht?format=html",
+                        "/j/xyz/a/lokiujyht?lang=en",
+                        "/j/xyz/a/lokiujyht/?format=html&lang=en",
+                        "/j/xyz/a/lokiujyht/?lang=en&format=html",
+                        "/j/xyz/a/lokiujyht/?format=html",
+                        "/j/xyz/a/lokiujyht/?lang=en",
+                    ],
+            },
+            {
+                "type": "pdf",
+                "id": "es",
+                "present_in_html": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+                ],
+            },
+            {
+                "type": "pdf",
+                "id": "en",
+                "present_in_html": [
+                    "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+                ],
+            },
+        ]
+        result, missing = check_doc_webpage_uri_items_expected_in_webpage(
+                            uri_items_in_html,
+                            other_webpages_uri_data)
+        self.assertEqual(expected, result)
+        self.assertEqual(1, missing)
+
+
+class TestCheckAssetUriItemsExpectedInWebpage(TestCase):
+
+    def test_check_asset_uri_items_expected_in_webpage_returns_success(self):
+        uri_items_in_html = [
+            "asset_uri_1.jpg",
+            "asset_uri_2.jpg",
+            "/j/xyz/a/lokiujyht?format=html&lang=en",
+            "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+            "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+        ]
+        assets_data = [
+            {
+                "prefix": "asset_uri_1",
+                "uri_alternatives": [
+                    "asset_uri_1.tiff", "asset_uri_1.jpg", "asset_uri_1.png"]
+            },
+            {
+                "prefix": "asset_uri_2",
+                "uri_alternatives": [
+                    "asset_uri_2.tiff", "asset_uri_2.jpg", "asset_uri_2.png"]
+            }
+        ]
+        
+        expected = [
+            {
+                "type": "asset",
+                "id": "asset_uri_1",
+                "present_in_html": [
+                    "asset_uri_1.jpg",
+                ],
+                "absent_in_html": [
+                    "asset_uri_1.tiff", "asset_uri_1.png",
+                ],
+            },
+            {
+                "type": "asset",
+                "id": "asset_uri_2",
+                "present_in_html": [
+                    "asset_uri_2.jpg",
+                ],
+                "absent_in_html": [
+                    "asset_uri_2.tiff", "asset_uri_2.png",
+                ],
+            },
+        ]
+        result, missing = check_asset_uri_items_expected_in_webpage(
+                    uri_items_in_html,
+                    assets_data)
+        self.assertEqual(expected, result)
+        self.assertEqual(0, missing)
+
+    def test_check_asset_uri_items_expected_in_webpage_returns_not_found_asset_uri(self):
+        uri_items_in_html = [
+            "asset_uri_1.jpg",
+        ]
+        assets_data = [
+            {
+                "prefix": "asset_uri_1",
+                "uri_alternatives": [
+                    "asset_uri_1.tiff", "asset_uri_1.jpg", "asset_uri_1.png"]
+            },
+            {
+                "prefix": "asset_uri_2",
+                "uri_alternatives": [
+                    "asset_uri_2.tiff", "asset_uri_2.jpg", "asset_uri_2.png"]
+            }
+        ]
+        expected = [
+            {
+                "type": "asset",
+                "id": "asset_uri_1",
+                "present_in_html": [
+                    "asset_uri_1.jpg",
+                ],
+                "absent_in_html": [
+                    "asset_uri_1.tiff", "asset_uri_1.png",
+                ],
+            },
+            {
+                "type": "asset",
+                "id": "asset_uri_2",
+                "present_in_html": [],
+                "absent_in_html": [
+                    "asset_uri_2.tiff", "asset_uri_2.jpg", "asset_uri_2.png"],
+            },
+        ]
+        result, missing = check_asset_uri_items_expected_in_webpage(
+                    uri_items_in_html,
+                    assets_data)
+        self.assertEqual(expected, result)
+        self.assertEqual(1, missing)

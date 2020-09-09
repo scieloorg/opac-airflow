@@ -147,8 +147,53 @@ def get_kernel_document_id_from_classic_document_uri(classic_website_document_ur
                     return splitted[-1]
 
 
-def check_uri_items_expected_in_webpage(existing_uri_items_in_html,
-                                 assets_data, other_webpages_data):
+def check_doc_webpage_uri_items_expected_in_webpage(existing_uri_items_in_html,
+                                other_webpages_data):
+    """
+    Verifica os recursos de um documento, comparando os recursos registrados
+    no Kernel com os recursos existentes na página do documento no site público
+
+    Args:
+        existing_uri_items_in_html (list): Lista de recursos que
+            foram encontrados dentro da página do documento
+        assets_data (list of dict, retorno de `get_document_assets_data`):
+        other_webpages_data (list of dict,
+            mesmo formato `retornado de get_document_webpages_data`):
+            Dados de outras _webpages_ do documento,
+            ou seja, outro idioma e outro formato,
+            com uri(s) que se espera encontrar no HTML
+
+    Returns:
+        tuple:
+            list of dict: resultado da verficação de cada recurso avaliado,
+                mais dados do recurso, cujas chaves são:
+                type, id, present_in_html, absent_in_html
+            int: quantidade de items exigidos mas ausentes,
+                não equivale necessariamente ao total de ausentes
+    """
+    results = []
+    missing = 0
+
+    for other_version_uri_data in other_webpages_data:
+        # {"doc_id": "", "lang": "", "format": "", "uri": ""},
+        uri_result = {}
+        uri_result["type"] = other_version_uri_data["format"]
+        uri_result["id"] = other_version_uri_data["lang"]
+        uri_result["present_in_html"] = []
+        alternatives = other_version_uri_data["uri_alternatives"]
+        for uri in alternatives:
+            if uri in existing_uri_items_in_html:
+                uri_result["present_in_html"] = [uri]
+                break
+        if not uri_result["present_in_html"]:
+            uri_result["absent_in_html"] = alternatives
+            missing += 1
+        results.append(uri_result)
+    return results, missing
+
+
+def check_asset_uri_items_expected_in_webpage(existing_uri_items_in_html,
+                                 assets_data):
     """
     Verifica os recursos de um documento, comparando os recursos registrados
     no Kernel com os recursos existentes na página do documento no site público
@@ -158,12 +203,6 @@ def check_uri_items_expected_in_webpage(existing_uri_items_in_html,
             foram encontrados dentro da página do documento
         assets_data (list of dict, retorno de `get_document_assets_data`):
             Dados de ativos digitais com uri(s) que se espera encontrar no HTML
-        other_webpages_data (list of dict,
-            mesmo formato `retornado de get_document_webpages_data`):
-            Dados de outras _webpages_ do documento,
-            ou seja, outro idioma e outro formato,
-            com uri(s) que se espera encontrar no HTML
-
     Returns:
         tuple:
             list of dict: resultado da verficação de cada recurso avaliado,
@@ -187,22 +226,6 @@ def check_uri_items_expected_in_webpage(existing_uri_items_in_html,
             else:
                 uri_result["absent_in_html"].append(uri)
         if not uri_result["present_in_html"]:
-            missing += 1
-        results.append(uri_result)
-
-    for other_version_uri_data in other_webpages_data:
-        # {"doc_id": "", "lang": "", "format": "", "uri": ""},
-        uri_result = {}
-        uri_result["type"] = other_version_uri_data["format"]
-        uri_result["id"] = other_version_uri_data["lang"]
-        uri_result["present_in_html"] = []
-        alternatives = other_version_uri_data["uri_alternatives"]
-        for uri in alternatives:
-            if uri in existing_uri_items_in_html:
-                uri_result["present_in_html"] = [uri]
-                break
-        if not uri_result["present_in_html"]:
-            uri_result["absent_in_html"] = alternatives
             missing += 1
         results.append(uri_result)
     return results, missing
@@ -461,16 +484,20 @@ def check_document_html(uri, assets_data, other_webpages_data, object_store_url)
     # verifica se as uri esperadas estão present_in_html e no html da página
     # do documento, dados os dados dos ativos digitais e das
     # demais _webpages_ (formato e idioma) do documento
-    components_result, missing = check_uri_items_expected_in_webpage(
-        existing_uri_items_in_html, assets_data, other_webpages_data
+    check_doc_webpages_result, missing_doc_webpages = check_doc_webpage_uri_items_expected_in_webpage(
+        existing_uri_items_in_html, other_webpages_data
     )
+    check_assets_result, missing_assets = check_asset_uri_items_expected_in_webpage(
+        existing_uri_items_in_html, assets_data
+    )
+
     result.update({
-        "components": components_result,
+        "components": check_assets_result + check_doc_webpages_result,
         "expected components quantity": expected_components_qty,
-        "missing components quantity": missing,
+        "missing components quantity": missing_doc_webpages + missing_assets,
     })
 
-    if missing:
+    if missing_doc_webpages + missing_assets:
         result.update(
             {"existing_uri_items_in_html": sorted(existing_uri_items_in_html)})
     return result
