@@ -559,19 +559,29 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
             URI encontradas no HTML que sejam apenas do _domínio_ do SPF
 
     Returns:
-        report (list of dict): mesma lista `doc_data_list`, sendo que cada
-            elemento, recebe novas chaves e valores:
-            `uri` (formada com os dados),
-            `available` (bool),
-            `components` (list of dict): validação de cada ativos digital, ou
-                menção às demais _webpages_ do documento (HTML/PDF/idiomas)
+        tuple (list of dict, dict):
+            list of dict: mesma lista `doc_data_list`, sendo que cada
+                elemento, recebe novas chaves e valores:
+                    `uri` (formada com os dados),
+                    `available` (bool),
+                    `components` (list of dict):
+                        validação de cada ativos digital, ou menção às demais
+                        _webpages_ do documento (HTML/PDF/idiomas)
+            dict: {
+                "web html": {
+                    "total": 1, "total unavailable": 0, "total incomplete": 0},
+                "web pdf": {
+                    "total": 1, "total unavailable": 0},
+                },
 
     """
     report = []
-    total_components = 0
-    missing_components = 0
-    unavailable = 0
+    summary = {}
+
     for doc_data in doc_data_list:
+        key = "web {}".format(doc_data["format"])
+        summary[key] = summary.get(key) or {"total": 0, "total unavailable": 0}
+        summary[key]["total"] += 1
         doc_uri = website_url + doc_data.get("uri")
         result = doc_data.copy()
         if "uri_alternatives" in result.keys():
@@ -583,6 +593,8 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
         )
         Logger.info("Verificando página do documento: %s", doc_uri)
         if doc_data.get("format") == "html":
+            summary[key]["total incomplete"] = summary[key].get(
+                    "total incomplete") or 0
             # lista de uri para outro idioma e/ou formato
             other_webpages_data = list(doc_data_list)
             other_webpages_data.remove(doc_data)
@@ -591,10 +603,9 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
                                         assets_data,
                                         other_webpages_data,
                                         object_store_url)
-            missing_components += components_result[
-                "total missing components"]
             result.update(components_result)
-            total_components += result["total expected components"]
+            if bool(result["available"]) and result["total missing components"] > 0:
+                summary[key]["total incomplete"] += 1
             report.append(result)
         else:
             result.update(
@@ -602,13 +613,9 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
             )
             report.append(result)
         if result["available"] is False:
-            unavailable += 1
-    summarized = {
-        "total missing components": missing_components,
-        "total expected components": total_components,
-        "total unavailable doc webpages": unavailable,
-    }
-    return report, summarized
+            summary[key]["total unavailable"] += 1
+
+    return report, summary
 
 
 def check_document_assets_availability(assets_data):

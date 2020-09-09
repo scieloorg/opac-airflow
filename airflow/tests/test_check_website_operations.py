@@ -1193,9 +1193,10 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         result, summary = check_document_webpages_availability(
             website_url, doc_data_list, assets_data, object_store_url)
         self.assertDictEqual({
-                "total unavailable doc webpages": 0,
-                "total missing components": 0,
-                "total expected components": 10,
+            "web html":
+                {"total": 2, "total unavailable": 0, "total incomplete": 0, },
+            "web pdf":
+                {"total": 2, "total unavailable": 0},
             },
             summary
         )
@@ -1301,9 +1302,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
             website_url, doc_data_list, assets_data, object_store_url)
         self.assertDictEqual(
             {
-                "total unavailable doc webpages": 1,
-                "total missing components": 0,
-                "total expected components": 1,
+                "web html": {"total": 1, "total unavailable": 0, "total incomplete": 0},
+                "web pdf": {"total": 1, "total unavailable": 1},  
             },
             summary
         )
@@ -1415,9 +1415,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         result, summary = check_document_webpages_availability(
             website_url, doc_data_list, assets_data, object_store_url)
         self.assertDictEqual({
-                "total unavailable doc webpages": 0,
-                "total missing components": 1,
-                "total expected components": 1,
+                "web html": {"total": 1, "total unavailable": 0, "total incomplete": 1},
+                "web pdf": {"total": 1, "total unavailable": 0},  
             },
             summary
         )
@@ -1528,9 +1527,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
             website_url, doc_data_list, assets_data, object_store_url)
         self.assertDictEqual(
             {
-                "total unavailable doc webpages": 1,
-                "total missing components": 1,
-                "total expected components": 2,
+                "web html": {
+                    "total": 2, "total unavailable": 1, "total incomplete": 0},
             },
             summary
         )
@@ -1668,9 +1666,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
             website_url, doc_data_list, assets_data, object_store_url)
         self.assertDictEqual(
             {
-                "total unavailable doc webpages": 0,
-                "total missing components": 1,
-                "total expected components": 2,
+            "web html":
+                {"total": 2, "total unavailable": 0, "total incomplete": 1, },
             },
             summary
         )
