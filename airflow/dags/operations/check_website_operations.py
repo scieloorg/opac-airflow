@@ -654,7 +654,9 @@ def register_sci_pages_availability_report(result_items, dag_info):
         dag_info (dict): dados da DAG
     """
     Logger.info("Register uri items availability report")
-    for row in result_items:
+    total = len(result_items)
+    for i, row in enumerate(result_items):
+        Logger.info("Registering %i/%i", i, total)
         add_execution_in_database(
             "sci_pages_availability",
             format_sci_page_availability_result_to_register(row, dag_info))

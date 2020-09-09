@@ -544,6 +544,7 @@ class TestCheckSciSerialUriItems(TestCase):
             "/scielo.php?script=sci_serial&pid=0001-3035",
             "/scielo.php?script=sci_serial&pid=0001-3765",
         ]
+        mock_check_any_uri_items.return_value = 2
         check_sci_serial_uri_items(**self.kwargs)
         mock_check_any_uri_items.assert_called_once_with(
             [
@@ -577,6 +578,7 @@ class TestCheckSciIssuesUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
+        mock_check_any_uri_items.return_value = 2
         check_sci_issues_uri_items(**self.kwargs)
         mock_check_any_uri_items.assert_called_once_with(
             [
@@ -610,6 +612,7 @@ class TestCheckSciIssuetocUriItems(TestCase):
             "/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
             "/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
         ]
+        mock_check_any_uri_list.return_value = 2
         check_sci_issuetoc_uri_items(**self.kwargs)
         mock_check_any_uri_list.assert_called_once_with(
             [
@@ -644,6 +647,7 @@ class TestCheckSciPdfUriItems(TestCase):
             "/scielo.php?script=sci_pdf&pid=0001-303520200005",
             "/scielo.php?script=sci_pdf&pid=0001-376520200005",
         ]
+        mock_check_any_uri_list.return_value = 2
         check_sci_pdf_uri_items(**self.kwargs)
         mock_check_any_uri_list.assert_called_once_with(
             [
@@ -677,6 +681,7 @@ class TestCheckSciArttextUriItems(TestCase):
             "/scielo.php?script=sci_arttext&pid=0001-303520200005",
             "/scielo.php?script=sci_arttext&pid=0001-376520200005",
         ]
+        mock_check_any_uri_list.return_value = 2
         check_sci_arttext_uri_items(**self.kwargs)
         mock_check_any_uri_list.assert_called_once_with(
             [

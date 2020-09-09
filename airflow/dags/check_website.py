@@ -344,8 +344,28 @@ def check_any_uri_items(uri_list_items, label, dag_info):
     success, failures = check_website_operations.check_website_uri_list(
         website_uri_list, label)
 
+    Logger.info(
+        "Checked total %i: %i failures and %i success",
+        len(website_uri_list),
+        len(failures),
+        len(success),
+    )
+
+    # registra na base de dados as falhas
+    Logger.info(
+        "Register the %i records of %s which is UNAVAILABLE",
+        len(failures),
+        label,
+    )
     check_website_operations.register_sci_pages_availability_report(
         failures, dag_info)
+
+    # registra na base de dados os sucessos
+    Logger.info(
+        "Register the %i records of %s which is available",
+        len(success),
+        label,
+    )
     check_website_operations.register_sci_pages_availability_report(
         success, dag_info)
 
