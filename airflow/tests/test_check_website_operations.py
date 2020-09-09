@@ -40,10 +40,13 @@ from operations.check_website_operations import (
     calculate_missing_and_total,
 )
 
-END_TIME = datetime.utcnow()
-START_TIME = END_TIME - timedelta(seconds=1)
+T5 = datetime.utcnow()
+END_TIME = T5 - timedelta(seconds=1)
+START_TIME = T5 - timedelta(seconds=3)
+T0 = T5 - timedelta(seconds=5)
 
 DURATION = (END_TIME - START_TIME).seconds
+T0_to_T5 = (T5 - T0).seconds
 
 
 class TestDoRequest(TestCase):
@@ -2269,9 +2272,8 @@ class TestCheckDocumentAvailability(TestCase):
                     "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N_pt.html")),
         ]
         mock_head.side_effect = [MockResponse(200)] * 8
-        mock_dt.utcnow.side_effect = [
-            START_TIME, END_TIME
-        ] * 20
+
+        mock_dt.utcnow.side_effect = [T0] + ([START_TIME, END_TIME] * 9) + [T5]
 
         webpages_availability = [{
             "lang": "pt",
@@ -2473,11 +2475,13 @@ class TestCheckDocumentAvailability(TestCase):
                 "web html": {
                     "total": 1, "total unavailable": 0, "total incomplete": 1},
                 "web pdf": {
-                    "total": 1, "total unavailable": 0},  
+                    "total": 1, "total unavailable": 0},
                 "renditions": {
                     "total": 1, "total unavailable": 0},
                 "assets": {
                     "total": 6, "total unavailable": 0},
+                "processing":
+                    {"start": T0, "end": T5, "duration": T0_to_T5}
             },
             "detail": {
                 "webpages": webpages_availability,

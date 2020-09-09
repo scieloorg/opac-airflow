@@ -1067,7 +1067,7 @@ class TestCheckAnyUriItems(TestCase):
                     "status code": 404,
                     "start time": START_TIME,
                     "end time": END_TIME,
-                    "duration": 1,
+                    "duration": DURATION,
                     "uri": "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
                 },
                 "pid_v2_journal": "0001-3035",
@@ -1127,6 +1127,9 @@ class TestCheckAnyUriItems(TestCase):
             },
         ]
         check_any_uri_items(uri_items, "label", dag_info)
+        print("")
+        print(expected[0])
+        print(mock_add_execution_in_database.call_args_list[0])
         calls = [
             call("sci_pages_availability", expected[0]),
             call("sci_pages_availability", expected[1]),

@@ -929,6 +929,7 @@ def check_document_availability(doc_id, website_url, object_store_url):
     digitais. Também verifica se os ativos digitais e as demais _webpages_ estão
     mencionadas (`@href`/`@src`) no conteúdo do HTML
     """
+    t1 = datetime.utcnow()
     LAST_VERSION = -1
     document_manifest = get_document_manifest(doc_id)
     current_version = document_manifest["versions"][LAST_VERSION]
@@ -959,6 +960,11 @@ def check_document_availability(doc_id, website_url, object_store_url):
     )
     summarized["renditions"]["total unavailable"] = q_unavailable_renditions
     summarized["assets"]["total unavailable"] = q_unavailable_assets
+    t2 = datetime.utcnow()
+    summarized["processing"] = {
+        "start": t1, "end": t2, "duration": (t2 - t1).seconds
+    }
+
     return {
         "summary": summarized,
         "detail":
