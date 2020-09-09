@@ -2816,8 +2816,8 @@ class TestCheckDocWebpageUriItemsExpectedInWebpage(TestCase):
             },
         ]
         expected_formats_result = {
-            "html": [True],
-            "pdf": [True, True],
+            "html": {"total": 1, "missing": 0},
+            "pdf": {"total": 2, "missing": 0},
         }
         result, formats_result = check_doc_webpage_uri_items_expected_in_webpage(
             uri_items_in_html, other_webpages_uri_data)
@@ -2905,8 +2905,8 @@ class TestCheckDocWebpageUriItemsExpectedInWebpage(TestCase):
             },
         ]
         expected_formats_result = {
-            "html": [True],
-            "pdf": [False, True],
+            "html": {"total": 1, "missing": 0},
+            "pdf": {"total": 2, "missing": 1},
         }
         result, formats_result = check_doc_webpage_uri_items_expected_in_webpage(
             uri_items_in_html, other_webpages_uri_data)
@@ -2997,8 +2997,8 @@ class TestCheckDocWebpageUriItemsExpectedInWebpage(TestCase):
             },
         ]
         expected_formats_result = {
-            "html": [False],
-            "pdf": [True, True],
+            "html": {"total": 1, "missing": 1},
+            "pdf": {"total": 2, "missing": 0},
         }
         result, formats_result = check_doc_webpage_uri_items_expected_in_webpage(
             uri_items_in_html, other_webpages_uri_data)
