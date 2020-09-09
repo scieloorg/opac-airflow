@@ -539,18 +539,19 @@ class TestCheckSciSerialUriItems(TestCase):
 
     @patch("check_website.check_any_uri_items")
     def test_check_sci_serial_uri_items_assert_called_once_check_any_uri_list(
-            self, mock_check_website_uri_list):
+            self, mock_check_any_uri_items):
         self.kwargs["ti"].xcom_pull.return_value = [
             "/scielo.php?script=sci_serial&pid=0001-3035",
             "/scielo.php?script=sci_serial&pid=0001-3765",
         ]
         check_sci_serial_uri_items(**self.kwargs)
-        mock_check_website_uri_list.assert_called_once_with(
+        mock_check_any_uri_items.assert_called_once_with(
             [
                 "/scielo.php?script=sci_serial&pid=0001-3035",
                 "/scielo.php?script=sci_serial&pid=0001-3765",
             ],
-            "sci_serial"
+            "sci_serial",
+            self.kwargs
         )
 
 
@@ -582,7 +583,8 @@ class TestCheckSciIssuesUriItems(TestCase):
                 "/scielo.php?script=sci_issues&pid=0001-3035",
                 "/scielo.php?script=sci_issues&pid=0001-3765",
             ],
-            "sci_issues"
+            "sci_issues",
+            self.kwargs
         )
 
 
@@ -614,7 +616,8 @@ class TestCheckSciIssuetocUriItems(TestCase):
                 "/scielo.php?script=sci_issuetoc&pid=0001-303520200005",
                 "/scielo.php?script=sci_issuetoc&pid=0001-376520200005",
             ],
-            "sci_issuetoc"
+            "sci_issuetoc",
+            self.kwargs
         )
 
 
@@ -647,7 +650,8 @@ class TestCheckSciPdfUriItems(TestCase):
                 "/scielo.php?script=sci_pdf&pid=0001-303520200005",
                 "/scielo.php?script=sci_pdf&pid=0001-376520200005",
             ],
-            "sci_pdf"
+            "sci_pdf",
+            self.kwargs
         )
 
 
@@ -679,7 +683,8 @@ class TestCheckSciArttextUriItems(TestCase):
                 "/scielo.php?script=sci_arttext&pid=0001-303520200005",
                 "/scielo.php?script=sci_arttext&pid=0001-376520200005",
             ],
-            "sci_arttext"
+            "sci_arttext",
+            self.kwargs
         )
 
 
@@ -700,7 +705,7 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
         mock_get.return_value = ["https://www.scielo.br"]
-        check_any_uri_items(uri_items, "label")
+        check_any_uri_items(uri_items, "label", {"daginfo": ""})
         mock_concat_website_url_and_uri_list_items.assert_called_once_with(
             ["https://www.scielo.br"],
             [
@@ -719,7 +724,7 @@ class TestCheckAnyUriItems(TestCase):
         ]
         mock_get.return_value = ["https://www.scielo.br"]
         mock_check_website_uri_list.return_value = MagicMock(), MagicMock()
-        check_any_uri_items(uri_items, "label")
+        check_any_uri_items(uri_items, "label", self.kwargs)
         mock_check_website_uri_list.assert_called_once_with(
             [
                 "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
@@ -781,8 +786,8 @@ class TestCheckAnyUriItems(TestCase):
             success,
             failures,
         )
-        dag_info = {}
-        check_any_uri_items(uri_items, "label")
+        dag_info = {"dag": "daginfo"}
+        check_any_uri_items(uri_items, "label", dag_info, )
 
         calls = [
             call(failures, dag_info),
@@ -888,7 +893,7 @@ class TestCheckAnyUriItems(TestCase):
                 "pid_v2_doc": None,
             },
         ]
-        check_any_uri_items(uri_items, "label")
+        check_any_uri_items(uri_items, "label", dag_info)
         calls = [
             call("sci_pages_availability", expected[0]),
             call("sci_pages_availability", expected[1]),

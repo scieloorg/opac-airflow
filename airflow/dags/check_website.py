@@ -332,7 +332,7 @@ def get_website_url_list():
     return _website_url_list
 
 
-def check_any_uri_items(uri_list_items, label, dag_info={}):
+def check_any_uri_items(uri_list_items, label, dag_info):
     _website_url_list = get_website_url_list()
 
     # concatena cada item de `_website_url_list` com
@@ -363,7 +363,7 @@ def check_sci_serial_uri_items(**context):
         task_ids="get_uri_items_grouped_by_script_name_id",
         key="sci_serial")
 
-    total = check_any_uri_items(uri_list_items, "sci_serial")
+    total = check_any_uri_items(uri_list_items, "sci_serial", context)
 
     Logger.info("Checked %i `sci_serial` URI items", total)
 
@@ -379,7 +379,7 @@ def check_sci_issues_uri_items(**context):
         task_ids="get_uri_items_grouped_by_script_name_id",
         key="sci_issues")
 
-    total = check_any_uri_items(uri_list_items, "sci_issues")
+    total = check_any_uri_items(uri_list_items, "sci_issues", context)
 
     Logger.info("Checked %i `sci_issues` URI items", total)
 
@@ -395,7 +395,7 @@ def check_sci_issuetoc_uri_items(**context):
         task_ids="get_uri_items_grouped_by_script_name_id",
         key="sci_issuetoc")
 
-    total = check_any_uri_items(uri_list_items, "sci_issuetoc")
+    total = check_any_uri_items(uri_list_items, "sci_issuetoc", context)
 
     Logger.info("Checked %i `sci_issuetoc` URI items", total)
 
@@ -411,7 +411,7 @@ def check_sci_pdf_uri_items(**context):
         task_ids="get_uri_items_grouped_by_script_name_id",
         key="sci_pdf")
 
-    total = check_any_uri_items(uri_list_items, "sci_pdf")
+    total = check_any_uri_items(uri_list_items, "sci_pdf", context)
 
     Logger.info("Checked %i `sci_pdf` URI items", total)
 
@@ -427,7 +427,7 @@ def check_sci_arttext_uri_items(**context):
         task_ids="get_uri_items_grouped_by_script_name_id",
         key="sci_arttext")
 
-    total = check_any_uri_items(uri_list_items, "sci_arttext")
+    total = check_any_uri_items(uri_list_items, "sci_arttext", context)
 
     Logger.info("Checked %i `sci_arttext` URI items", total)
 
