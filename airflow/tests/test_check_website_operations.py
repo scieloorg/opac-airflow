@@ -2470,42 +2470,41 @@ class TestCheckDocumentAvailability(TestCase):
         ]
         expected = {
             "summary": {
-                "total doc webpages": 2,
-                "total doc renditions": 1,
-                "total doc assets": 3,
-                "total doc asset alternatives": 6,
-                "total missing components": 2,
-                "total expected components": 4,
-                "total unavailable doc webpages": 0,
-                "total unavailable renditions": 0,
-                "total unavailable assets": 0,
+                "web html": {
+                    "total": 1, "total unavailable": 0, "total incomplete": 1},
+                "web pdf": {
+                    "total": 1, "total unavailable": 0},  
+                "renditions": {
+                    "total": 1, "total unavailable": 0},
+                "assets": {
+                    "total": 6, "total unavailable": 0},
             },
             "detail": {
-                "doc webpages availability": webpages_availability,
-                "doc renditions availability": renditions_availability,
-                "doc assets availability": assets_availability,
+                "webpages": webpages_availability,
+                "renditions": renditions_availability,
+                "assets": assets_availability,
             },
         }
         result = check_document_availability(doc_id, website_url, object_store_url)
         self.assertDictEqual(expected["summary"], result["summary"])
 
         self.assertListEqual(
-            expected["detail"]["doc renditions availability"],
-            result["detail"]["doc renditions availability"]
+            expected["detail"]["renditions"],
+            result["detail"]["renditions"]
         )
         self.assertListEqual(
-            expected["detail"]["doc assets availability"],
-            result["detail"]["doc assets availability"]
+            expected["detail"]["assets"],
+            result["detail"]["assets"]
         )
 
-        _expected = expected["detail"]["doc webpages availability"][0]
-        _result = result["detail"]["doc webpages availability"][0]
+        _expected = expected["detail"]["webpages"][0]
+        _result = result["detail"]["webpages"][0]
 
         for name in ("total missing components", "total expected components", "existing_uri_items_in_html"):
             with self.subTest(name):
                 self.assertEqual(
-                    _expected.get(name),
-                    _result.get(name)
+                    _expected[name],
+                    _result[name]
                 )
         for i in range(4):
             with self.subTest(i):

@@ -938,15 +938,6 @@ def check_document_availability(doc_id, website_url, object_store_url):
     assets_data = get_document_assets_data(current_version)
     renditions_data = get_document_renditions_data(current_version)
 
-    summarized = {
-        "total doc webpages": len(doc_data),
-        "total doc renditions": len(renditions_data),
-        "total doc assets": len(assets_data),
-        "total doc asset alternatives": sum(
-                [len(_asset["uri_alternatives"])
-                 for _asset in assets_data]),
-
-    }
     webpages_availability, numbers = check_document_webpages_availability(
                 website_url,
                 document_webpages_data,
@@ -957,18 +948,24 @@ def check_document_availability(doc_id, website_url, object_store_url):
                 renditions_data
             )
     assets_availability, q_unavailable_assets = check_document_assets_availability(assets_data)
+    summarized = {}
     summarized.update(numbers)
     summarized.update({
-        "total unavailable renditions": q_unavailable_renditions,
-        "total unavailable assets": q_unavailable_assets,
-    })
+        "renditions": {
+            "total": len(renditions_data), "total unavailable": 0},
+        "assets": {
+            "total": len(assets_availability), "total unavailable": 0},
+        }
+    )
+    summarized["renditions"]["total unavailable"] = q_unavailable_renditions
+    summarized["assets"]["total unavailable"] = q_unavailable_assets
     return {
         "summary": summarized,
         "detail":
             {
-                "doc webpages availability": webpages_availability,
-                "doc renditions availability": renditions_availability,
-                "doc assets availability": assets_availability,
+                "webpages": webpages_availability,
+                "renditions": renditions_availability,
+                "assets": assets_availability,
             },
     }
 
