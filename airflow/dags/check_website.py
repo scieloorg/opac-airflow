@@ -332,7 +332,7 @@ def get_website_url_list():
     return _website_url_list
 
 
-def check_any_uri_items(uri_list_items, label=""):
+def check_any_uri_items(uri_list_items, label, dag_info={}):
     _website_url_list = get_website_url_list()
 
     # concatena cada item de `_website_url_list` com
@@ -344,8 +344,10 @@ def check_any_uri_items(uri_list_items, label=""):
     success, failures = check_website_operations.check_website_uri_list(
         website_uri_list, label)
 
-    check_website_operations.register_sci_pages_availability_report(failures, {})
-    check_website_operations.register_sci_pages_availability_report(success, {})
+    check_website_operations.register_sci_pages_availability_report(
+        failures, dag_info)
+    check_website_operations.register_sci_pages_availability_report(
+        success, dag_info)
 
     return len(website_uri_list)
 
