@@ -2814,10 +2814,14 @@ class TestCheckDocWebpageUriItemsExpectedInWebpage(TestCase):
                 ],
             },
         ]
-        result, missing = check_doc_webpage_uri_items_expected_in_webpage(
+        expected_formats_result = {
+            "html": [True],
+            "pdf": [True, True],
+        }
+        result, formats_result = check_doc_webpage_uri_items_expected_in_webpage(
             uri_items_in_html, other_webpages_uri_data)
         self.assertEqual(expected, result)
-        self.assertEqual(0, missing)
+        self.assertEqual(expected_formats_result, formats_result)
 
     def test_check_doc_webpage_uri_items_expected_in_webpage_returns_not_found_pdf(self):
         uri_items_in_html = [
@@ -2899,11 +2903,15 @@ class TestCheckDocWebpageUriItemsExpectedInWebpage(TestCase):
                 ],
             },
         ]
-        result, missing = check_doc_webpage_uri_items_expected_in_webpage(
-                    uri_items_in_html,
-                    other_webpages_uri_data)
+        expected_formats_result = {
+            "html": [True],
+            "pdf": [False, True],
+        }
+        result, formats_result = check_doc_webpage_uri_items_expected_in_webpage(
+            uri_items_in_html, other_webpages_uri_data)
         self.assertEqual(expected, result)
-        self.assertEqual(1, missing)
+        self.assertEqual(expected_formats_result, formats_result)
+
 
     def test_check_doc_webpage_uri_items_expected_in_webpage_returns_not_found_html(self):
         uri_items_in_html = [
@@ -2987,11 +2995,14 @@ class TestCheckDocWebpageUriItemsExpectedInWebpage(TestCase):
                 ],
             },
         ]
-        result, missing = check_doc_webpage_uri_items_expected_in_webpage(
-                            uri_items_in_html,
-                            other_webpages_uri_data)
+        expected_formats_result = {
+            "html": [False],
+            "pdf": [True, True],
+        }
+        result, formats_result = check_doc_webpage_uri_items_expected_in_webpage(
+            uri_items_in_html, other_webpages_uri_data)
         self.assertEqual(expected, result)
-        self.assertEqual(1, missing)
+        self.assertEqual(expected_formats_result, formats_result)
 
 
 class TestCheckAssetUriItemsExpectedInWebpage(TestCase):

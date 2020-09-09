@@ -172,12 +172,12 @@ def check_doc_webpage_uri_items_expected_in_webpage(existing_uri_items_in_html,
                 não equivale necessariamente ao total de ausentes
     """
     results = []
-    missing = 0
-
+    formats = {}
     for other_version_uri_data in other_webpages_data:
         # {"doc_id": "", "lang": "", "format": "", "uri": ""},
+        fmt = other_version_uri_data["format"]
         uri_result = {}
-        uri_result["type"] = other_version_uri_data["format"]
+        uri_result["type"] = fmt
         uri_result["id"] = other_version_uri_data["lang"]
         uri_result["present_in_html"] = []
         alternatives = other_version_uri_data["uri_alternatives"]
@@ -187,9 +187,13 @@ def check_doc_webpage_uri_items_expected_in_webpage(existing_uri_items_in_html,
                 break
         if not uri_result["present_in_html"]:
             uri_result["absent_in_html"] = alternatives
-            missing += 1
+
         results.append(uri_result)
-    return results, missing
+
+        formats[fmt] = formats.get(fmt) or []
+        formats[fmt].append(bool(uri_result["present_in_html"]))
+
+    return results, formats
 
 
 def check_asset_uri_items_expected_in_webpage(existing_uri_items_in_html,
@@ -484,13 +488,13 @@ def check_document_html(uri, assets_data, other_webpages_data, object_store_url)
     # verifica se as uri esperadas estão present_in_html e no html da página
     # do documento, dados os dados dos ativos digitais e das
     # demais _webpages_ (formato e idioma) do documento
-    check_doc_webpages_result, missing_doc_webpages = check_doc_webpage_uri_items_expected_in_webpage(
+    check_doc_webpages_result, fmt_result = check_doc_webpage_uri_items_expected_in_webpage(
         existing_uri_items_in_html, other_webpages_data
     )
     check_assets_result, missing_assets = check_asset_uri_items_expected_in_webpage(
         existing_uri_items_in_html, assets_data
     )
-
+    missing_doc_webpages = sum([r.count(False) for r in fmt_result.values()])
     result.update({
         "components": check_assets_result + check_doc_webpages_result,
         "expected components quantity": expected_components_qty,
