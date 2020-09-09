@@ -1087,6 +1087,14 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 ],
                 "total missing components": 0,
                 "total expected components": 5,
+                "pdf": {"total": 2, "missing": 0},
+                "html": {"total": 1, "missing": 0},
+                "assets": {
+                    "total expected": 2,
+                    "total missing": 0,
+                    "total alternatives": 6,
+                    "total alternatives present in html": 2,
+                },
             },
             {
                 "lang": "en",
@@ -1156,8 +1164,16 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                         ],
                     },
                 ],
-                "total missing components": 0,
                 "total expected components": 5,
+                "total missing components": 0,
+                "html": {"total": 1, "missing": 0},
+                "pdf": {"total": 2, "missing": 0},
+                "assets": {
+                    "total expected": 2,
+                    "total missing": 0,
+                    "total alternatives": 6,
+                    "total alternatives present in html": 2,
+                },
             },
             {
                 "lang": "es",
@@ -1258,6 +1274,13 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 ],
                 "total missing components": 0,
                 "total expected components": 1,
+                "pdf": {"total": 1, "missing": 0},
+                "assets": {
+                    "total expected": 0,
+                    "total missing": 0,
+                    "total alternatives": 0,
+                    "total alternatives present in html": 0,
+                },
             },
             {
                 "lang": "en",
@@ -1363,8 +1386,15 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                         ],
                     },
                 ],
-                "total missing components": 1,
                 "total expected components": 1,
+                "total missing components": 1,
+                "pdf": {"total": 1, "missing": 1},
+                "assets": {
+                    "total expected": 0,
+                    "total missing": 0,
+                    "total alternatives": 0,
+                    "total alternatives present in html": 0,
+                },
                 "existing_uri_items_in_html": [],
             },
             {
@@ -1469,6 +1499,13 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 ],
                 "total missing components": 0,
                 "total expected components": 1,
+                "html": {"total": 1, "missing": 0},
+                "assets": {
+                    "total expected": 0,
+                    "total missing": 0,
+                    "total alternatives": 0,
+                    "total alternatives present in html": 0,
+                },
             },
             {
                 "lang": "es",
@@ -1583,8 +1620,15 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                         ],
                     },
                 ],
-                "total missing components": 1,
                 "total expected components": 1,
+                "total missing components": 1,
+                "html": {"total": 1, "missing": 1},
+                "assets": {
+                    "total expected": 0,
+                    "total missing": 0,
+                    "total alternatives": 0,
+                    "total alternatives present in html": 0,
+                },
                 "existing_uri_items_in_html": []
             },
             {
@@ -1608,8 +1652,15 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                         ],
                     },
                 ],
-                "total missing components": 0,
                 "total expected components": 1,
+                "total missing components": 0,
+                "html": {"total": 1, "missing": 0},
+                "assets": {
+                    "total expected": 0,
+                    "total missing": 0,
+                    "total alternatives": 0,
+                    "total alternatives present in html": 0,
+                },
             },
         ]
         object_store_url = None
@@ -1641,8 +1692,8 @@ class TestCheckDocumentHtml(TestCase):
             "start time": START_TIME,
             "end time": END_TIME,
             "duration": DURATION,
-            "total missing components": 0,
             "total expected components": 0,
+            "total missing components": 0,
         }
         object_store_url = None
         result = check_document_html(
@@ -1667,6 +1718,12 @@ class TestCheckDocumentHtml(TestCase):
             "components": [],
             "total missing components": 0,
             "total expected components": 0,
+            "assets": {
+                "total expected": 0,
+                "total missing": 0,
+                "total alternatives": 0,
+                "total alternatives present in html": 0,
+            },
         }
         object_store_url = None
         result = check_document_html(
@@ -1741,6 +1798,13 @@ class TestCheckDocumentHtml(TestCase):
             ],
             "total missing components": 2,
             "total expected components": 2,
+            "html": {"total": 1, "missing": 1},
+            "assets": {
+                "total expected": 1,
+                "total missing": 1,
+                "total alternatives": 3,
+                "total alternatives present in html": 0,
+            },
             "existing_uri_items_in_html": []
         }
         object_store_url = None
@@ -1813,6 +1877,14 @@ class TestCheckDocumentHtml(TestCase):
             ],
             "total missing components": 0,
             "total expected components": 2,
+            "html": {"total": 1, "missing": 0},
+            
+            "assets": {
+                "total expected": 1,
+                "total missing": 0,
+                "total alternatives": 3,
+                "total alternatives present in html": 1,
+            },
         }
         object_store_url = None
         result = check_document_html(
@@ -2270,6 +2342,13 @@ class TestCheckDocumentAvailability(TestCase):
             ],
             "total missing components": 2,
             "total expected components": 4,
+            "pdf": {"total": 1, "missing": 0},
+            "assets": {
+                "total expected": 3,
+                "total missing": 2,
+                "total alternatives": 6,
+                "total alternatives present in html": 1,
+            },
             "existing_uri_items_in_html": [
                 '/about/',
                 '/j/esa/',

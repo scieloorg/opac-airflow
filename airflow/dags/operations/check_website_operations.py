@@ -531,6 +531,8 @@ def check_document_html(uri, assets_data, other_webpages_data, object_store_url)
         "total expected components": expected_components_qty,
         "total missing components": missing_doc_webpages + missing_assets,
     })
+    result.update(summarized_doc_webpages_result)
+    result.update({"assets": summarized_check_assets_result})
 
     if missing_doc_webpages + missing_assets:
         result.update(
