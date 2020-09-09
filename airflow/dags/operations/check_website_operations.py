@@ -229,11 +229,18 @@ def check_asset_uri_items_expected_in_webpage(existing_uri_items_in_html,
             list of dict: resultado da verficação de cada recurso avaliado,
                 mais dados do recurso, cujas chaves são:
                 type, id, present_in_html, absent_in_html
-            int: quantidade de items exigidos mas ausentes,
-                não equivale necessariamente ao total de ausentes
+            dict: cujas chaves são totais: `total expected`, `total missing`,
+                `total alternatives`, `total alternatives present in html`
     """
     results = []
-    missing = 0
+    summary = {
+        "total expected": len(assets_data),
+        "total missing": 0,
+        "total alternatives": sum(
+            [len(a["uri_alternatives"])
+             for a in assets_data]),
+        "total alternatives present in html": 0,
+    }
     for asset_data in assets_data:
         # {"prefix": prefix, "uri_alternatives": [],}
         uri_result = {}
@@ -246,10 +253,14 @@ def check_asset_uri_items_expected_in_webpage(existing_uri_items_in_html,
                 uri_result["present_in_html"].append(uri)
             else:
                 uri_result["absent_in_html"].append(uri)
-        if not uri_result["present_in_html"]:
-            missing += 1
         results.append(uri_result)
-    return results, missing
+
+        if not uri_result["present_in_html"]:
+            summary["total missing"] += 1
+        summary["total alternatives present in html"] += len(
+            uri_result["present_in_html"])
+
+    return results, summary
 
 
 def get_document_webpage_uri_altenatives(data):
@@ -508,11 +519,11 @@ def check_document_html(uri, assets_data, other_webpages_data, object_store_url)
     check_doc_webpages_result, summarized_doc_webpages_result = check_doc_webpage_uri_items_expected_in_webpage(
         existing_uri_items_in_html, other_webpages_data
     )
-    check_assets_result, missing_assets = check_asset_uri_items_expected_in_webpage(
+    check_assets_result, summarized_check_assets_result = check_asset_uri_items_expected_in_webpage(
         existing_uri_items_in_html, assets_data
     )
     missing_doc_webpages = sum([r["missing"] for r in summarized_doc_webpages_result.values()])
-
+    missing_assets = summarized_check_assets_result["total missing"]
     result.update({
         "components": check_assets_result + check_doc_webpages_result,
         "expected components quantity": expected_components_qty,

@@ -3051,11 +3051,17 @@ class TestCheckAssetUriItemsExpectedInWebpage(TestCase):
                 ],
             },
         ]
-        result, missing = check_asset_uri_items_expected_in_webpage(
+        expected_summary = {
+            "total expected": 2,
+            "total missing": 0,
+            "total alternatives": 6,
+            "total alternatives present in html": 2,
+        }
+        result, summary = check_asset_uri_items_expected_in_webpage(
                     uri_items_in_html,
                     assets_data)
         self.assertEqual(expected, result)
-        self.assertEqual(0, missing)
+        self.assertEqual(expected_summary, summary)
 
     def test_check_asset_uri_items_expected_in_webpage_returns_not_found_asset_uri(self):
         uri_items_in_html = [
@@ -3092,11 +3098,17 @@ class TestCheckAssetUriItemsExpectedInWebpage(TestCase):
                     "asset_uri_2.tiff", "asset_uri_2.jpg", "asset_uri_2.png"],
             },
         ]
-        result, missing = check_asset_uri_items_expected_in_webpage(
+        expected_summary = {
+            "total expected": 2,
+            "total missing": 1,
+            "total alternatives": 6,
+            "total alternatives present in html": 1,
+        }
+        result, summary = check_asset_uri_items_expected_in_webpage(
                     uri_items_in_html,
                     assets_data)
         self.assertEqual(expected, result)
-        self.assertEqual(1, missing)
+        self.assertEqual(expected_summary, summary)
 
 
 class TestCalculateMissingAndTotalItems(TestCase):
