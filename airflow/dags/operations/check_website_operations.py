@@ -168,8 +168,8 @@ def check_doc_webpage_uri_items_expected_in_webpage(existing_uri_items_in_html,
             list of dict: resultado da verficação de cada recurso avaliado,
                 mais dados do recurso, cujas chaves são:
                 type, id, present_in_html, absent_in_html
-            int: quantidade de items exigidos mas ausentes,
-                não equivale necessariamente ao total de ausentes
+            dict: chaves formatos html ou pdf, e valores de lista de bool para
+                presente (True) ou ausente (False) no HTML
     """
     results = []
     formats = {}
@@ -194,6 +194,22 @@ def check_doc_webpage_uri_items_expected_in_webpage(existing_uri_items_in_html,
         formats[fmt].append(bool(uri_result["present_in_html"]))
 
     return results, formats
+
+
+def calculate_missing_and_total(items):
+    """
+    Recebe um dicionário `items`, cujo valor é uma lista de elementos `bool`
+    retorna um dicionário com mesmas chaves, mas os valores são um dicionário
+    cujas chaves são `total` e `missing` e os respectivos valores são
+    total de elementos da lista e total de False
+    """
+    result = {}
+    for k, values in items.items():
+        result[k] = {
+            "total": len(values),
+            "missing": values.count(False),
+        }
+    return result
 
 
 def check_asset_uri_items_expected_in_webpage(existing_uri_items_in_html,
@@ -488,13 +504,14 @@ def check_document_html(uri, assets_data, other_webpages_data, object_store_url)
     # verifica se as uri esperadas estão present_in_html e no html da página
     # do documento, dados os dados dos ativos digitais e das
     # demais _webpages_ (formato e idioma) do documento
-    check_doc_webpages_result, fmt_result = check_doc_webpage_uri_items_expected_in_webpage(
+    check_doc_webpages_result, result_grouped_by_format = check_doc_webpage_uri_items_expected_in_webpage(
         existing_uri_items_in_html, other_webpages_data
     )
     check_assets_result, missing_assets = check_asset_uri_items_expected_in_webpage(
         existing_uri_items_in_html, assets_data
     )
-    missing_doc_webpages = sum([r.count(False) for r in fmt_result.values()])
+    missing_doc_webpages = sum([r.count(False) for r in result_grouped_by_format.values()])
+
     result.update({
         "components": check_assets_result + check_doc_webpages_result,
         "expected components quantity": expected_components_qty,

@@ -37,6 +37,7 @@ from operations.check_website_operations import (
     group_items_by_script_name,
     get_journal_issue_doc_pids,
     format_sci_page_availability_result_to_register,
+    calculate_missing_and_total,
 )
 
 END_TIME = datetime.utcnow()
@@ -3096,3 +3097,51 @@ class TestCheckAssetUriItemsExpectedInWebpage(TestCase):
                     assets_data)
         self.assertEqual(expected, result)
         self.assertEqual(1, missing)
+
+
+class TestCalculateMissingAndTotalItems(TestCase):
+    def test_calculate_missing_and_total_returns_no_missing(self):
+        expected = {
+            "html": {
+                "total": 1,
+                "missing": 0,
+            },
+            "pdf": {"total": 2, "missing": 0},
+        }
+        data = {
+            "html": [True],
+            "pdf": [True, True],
+        }
+        result = calculate_missing_and_total(data)
+        self.assertDictEqual(expected, result)
+
+    def test_calculate_missing_and_total_returns_all_missing(self):
+        expected = {
+            "html": {
+                "total": 1,
+                "missing": 1,
+            },
+            "pdf": {"total": 2, "missing": 2},
+        }
+        data = {
+            "html": [False],
+            "pdf": [False, False],
+        }
+        result = calculate_missing_and_total(data)
+        self.assertDictEqual(expected, result)
+
+    def test_calculate_missing_and_total_returns_some_missing(self):
+        expected = {
+            "html": {
+                "total": 2,
+                "missing": 1,
+            },
+            "pdf": {"total": 1, "missing": 1},
+        }
+        data = {
+            "html": [False, True],
+            "pdf": [False],
+        }
+        result = calculate_missing_and_total(data)
+        self.assertDictEqual(expected, result)
+
