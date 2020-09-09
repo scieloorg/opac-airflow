@@ -27,7 +27,6 @@ from check_website import (
     group_uri_items_from_uri_lists_by_script_name,
     merge_uri_items_from_different_sources,
     merge_pid_items_from_different_sources,
-
 )
 
 
@@ -728,6 +727,178 @@ class TestCheckAnyUriItems(TestCase):
             ],
             "label"
         )
+
+    @patch("check_website.check_website_operations.register_sci_pages_availability_report")
+    @patch("check_website.check_website_operations.check_website_uri_list")
+    @patch("check_website.Variable.get")
+    def test_check_any_uri_items_assert_calls_register_sci_pages_availability_report(
+            self, mock_get, mock_check_website_uri_list,
+            mock_register_sci_pages_availability_report,
+            ):
+        uri_items = [
+            "/scielo.php?script=sci_issues&pid=0001-3035",
+            "/scielo.php?script=sci_issues&pid=0001-3765",
+        ]
+        mock_get.return_value = ["https://new.scielo.br", "https://www.scielo.br"]
+
+        success = [
+                {
+                    "available": True,
+                    "status code": 200,
+                    "start time": 1,
+                    "end time": 2,
+                    "duration": 1,
+                    "uri": "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035"
+                },
+                {
+                    "available": True,
+                    "status code": 200,
+                    "start time": 1,
+                    "end time": 2,
+                    "duration": 1,
+                    "uri": "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765"
+                },
+            ]
+        failures = [
+            {
+                "available": False,
+                "status code": 404,
+                "start time": 1,
+                "end time": 2,
+                "duration": 1,
+                "uri": "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
+            },
+            {
+                "available": False,
+                "status code": 404,
+                "start time": 1,
+                "end time": 2,
+                "duration": 1,
+                "uri": "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3765"
+            },
+        ]
+        mock_check_website_uri_list.return_value = (
+            success,
+            failures,
+        )
+        dag_info = {}
+        check_any_uri_items(uri_items, "label")
+
+        calls = [
+            call(failures, dag_info),
+            call(success, dag_info),
+        ]
+        self.assertListEqual(
+            calls, mock_register_sci_pages_availability_report.call_args_list
+        )
+
+    @patch("check_website.check_website_operations.add_execution_in_database")
+    @patch("check_website.check_website_operations.check_website_uri_list")
+    @patch("check_website.Variable.get")
+    def test_check_any_uri_items_assert_calls_add_execution_in_database(
+            self, mock_get, mock_check_website_uri_list,
+            mock_add_execution_in_database,
+            ):
+        uri_items = [
+            "/scielo.php?script=sci_issues&pid=0001-3035",
+            "/scielo.php?script=sci_issues&pid=0001-3765",
+        ]
+        mock_get.return_value = ["https://new.scielo.br", "https://www.scielo.br"]
+
+        success = [
+                {
+                    "available": True,
+                    "status code": 200,
+                    "start time": 1,
+                    "end time": 2,
+                    "duration": 1,
+                    "uri": "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035"
+                },
+                {
+                    "available": True,
+                    "status code": 200,
+                    "start time": 1,
+                    "end time": 2,
+                    "duration": 1,
+                    "uri": "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765"
+                },
+            ]
+        failures = [
+            {
+                "available": False,
+                "status code": 404,
+                "start time": 1,
+                "end time": 2,
+                "duration": 1,
+                "uri": "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
+            },
+            {
+                "available": False,
+                "status code": 404,
+                "start time": 1,
+                "end time": 2,
+                "duration": 1,
+                "uri": "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3765"
+            },
+        ]
+        mock_check_website_uri_list.return_value = (
+            success,
+            failures,
+        )
+        dag_info = {}
+        expected = [
+            {
+                "dag_run": None,
+                "input_file_name": None,
+                "uri": "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
+                "failed": True,
+                "detail": failures[0],
+                "pid_v2_journal": "0001-3035",
+                "pid_v2_issue": None,
+                "pid_v2_doc": None,
+            },
+            {
+                "dag_run": None,
+                "input_file_name": None,
+                "uri": "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
+                "failed": True,
+                "detail": failures[1],
+                "pid_v2_journal": "0001-3765",
+                "pid_v2_issue": None,
+                "pid_v2_doc": None,
+            },
+            {
+                "dag_run": None,
+                "input_file_name": None,
+                "uri": "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
+                "failed": False,
+                "detail": success[0],
+                "pid_v2_journal": "0001-3035",
+                "pid_v2_issue": None,
+                "pid_v2_doc": None,
+            },
+            {
+                "dag_run": None,
+                "input_file_name": None,
+                "uri": "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
+                "failed": False,
+                "detail": success[1],
+                "pid_v2_journal": "0001-3765",
+                "pid_v2_issue": None,
+                "pid_v2_doc": None,
+            },
+        ]
+        check_any_uri_items(uri_items, "label")
+        calls = [
+            call("sci_pages_availability", expected[0]),
+            call("sci_pages_availability", expected[1]),
+            call("sci_pages_availability", expected[2]),
+            call("sci_pages_availability", expected[3]),
+        ]
+        self.assertListEqual(
+            calls, mock_add_execution_in_database.call_args_list
+        )
+
 
 
 class TestGetPIDv3List(TestCase):

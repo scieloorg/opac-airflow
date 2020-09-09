@@ -624,7 +624,7 @@ def check_website_uri_list(uri_list_items, label=""):
     total = len(uri_list_items)
     Logger.info("Total %s URIs: %i", label, total)
     success, failures = check_uri_items(uri_list_items)
-    
+
     if failures:
         Logger.info(
             "Unavailable %s URIs (%i/%i):\n%s",
