@@ -2731,6 +2731,7 @@ class TestCheckDocumentAvailability(TestCase):
                 "total doc webpages": 2,
                 "total doc renditions": 1,
                 "total doc assets": 3,
+                "total doc asset alternatives": 6,
                 "total missing components": 2,
                 "total expected components": 4,
                 "total unavailable doc webpages": 0,

@@ -871,6 +871,10 @@ def check_document_availability(doc_id, website_url, object_store_url):
         "total doc webpages": len(doc_data),
         "total doc renditions": len(renditions_data),
         "total doc assets": len(assets_data),
+        "total doc asset alternatives": sum(
+                [len(_asset["uri_alternatives"])
+                 for _asset in assets_data]),
+
     }
     webpages_availability, numbers = check_document_webpages_availability(
                 website_url,
