@@ -1085,8 +1085,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                         ],
                     },
                 ],
-                "missing components quantity": 0,
-                "expected components quantity": 5,
+                "total missing components": 0,
+                "total expected components": 5,
             },
             {
                 "lang": "en",
@@ -1156,8 +1156,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                         ],
                     },
                 ],
-                "missing components quantity": 0,
-                "expected components quantity": 5,
+                "total missing components": 0,
+                "total expected components": 5,
             },
             {
                 "lang": "es",
@@ -1256,8 +1256,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                         ],
                     },
                 ],
-                "missing components quantity": 0,
-                "expected components quantity": 1,
+                "total missing components": 0,
+                "total expected components": 1,
             },
             {
                 "lang": "en",
@@ -1363,8 +1363,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                         ],
                     },
                 ],
-                "missing components quantity": 1,
-                "expected components quantity": 1,
+                "total missing components": 1,
+                "total expected components": 1,
                 "existing_uri_items_in_html": [],
             },
             {
@@ -1467,8 +1467,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                         ],
                     },
                 ],
-                "missing components quantity": 0,
-                "expected components quantity": 1,
+                "total missing components": 0,
+                "total expected components": 1,
             },
             {
                 "lang": "es",
@@ -1482,8 +1482,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                 "start time": START_TIME,
                 "end time": END_TIME,
                 "duration": DURATION,
-                "missing components quantity": 1,
-                "expected components quantity": 1,
+                "total missing components": 1,
+                "total expected components": 1,
             },
         ]
         object_store_url = None
@@ -1583,8 +1583,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                         ],
                     },
                 ],
-                "missing components quantity": 1,
-                "expected components quantity": 1,
+                "total missing components": 1,
+                "total expected components": 1,
                 "existing_uri_items_in_html": []
             },
             {
@@ -1608,8 +1608,8 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
                         ],
                     },
                 ],
-                "missing components quantity": 0,
-                "expected components quantity": 1,
+                "total missing components": 0,
+                "total expected components": 1,
             },
         ]
         object_store_url = None
@@ -1641,8 +1641,8 @@ class TestCheckDocumentHtml(TestCase):
             "start time": START_TIME,
             "end time": END_TIME,
             "duration": DURATION,
-            "missing components quantity": 0,
-            "expected components quantity": 0,
+            "total missing components": 0,
+            "total expected components": 0,
         }
         object_store_url = None
         result = check_document_html(
@@ -1665,8 +1665,8 @@ class TestCheckDocumentHtml(TestCase):
             "end time": END_TIME,
             "duration": DURATION,
             "components": [],
-            "missing components quantity": 0,
-            "expected components quantity": 0,
+            "total missing components": 0,
+            "total expected components": 0,
         }
         object_store_url = None
         result = check_document_html(
@@ -1739,8 +1739,8 @@ class TestCheckDocumentHtml(TestCase):
                     ],
                 },
             ],
-            "missing components quantity": 2,
-            "expected components quantity": 2,
+            "total missing components": 2,
+            "total expected components": 2,
             "existing_uri_items_in_html": []
         }
         object_store_url = None
@@ -1811,8 +1811,8 @@ class TestCheckDocumentHtml(TestCase):
                     ],
                 },
             ],
-            "missing components quantity": 0,
-            "expected components quantity": 2,
+            "total missing components": 0,
+            "total expected components": 2,
         }
         object_store_url = None
         result = check_document_html(
@@ -1966,8 +1966,8 @@ class TestFormatDocumentVersionsAvailabilityToRegister(TestCase):
                     ],
                 },
             ],
-            "missing components quantity": 1,
-            "expected components quantity": 3,
+            "total missing components": 1,
+            "total expected components": 3,
             "existing_uri_items_in_html": [
                 '/j/acron/a/DOC/?format=pdf&lang=en',
                 'https://1234-1234-acron-45-9-12345-f01.jpg']
@@ -2268,8 +2268,8 @@ class TestCheckDocumentAvailability(TestCase):
                     ],
                 },
             ],
-            "missing components quantity": 2,
-            "expected components quantity": 4,
+            "total missing components": 2,
+            "total expected components": 4,
             "existing_uri_items_in_html": [
                 '/about/',
                 '/j/esa/',
@@ -2425,7 +2425,7 @@ class TestCheckDocumentAvailability(TestCase):
         _expected = expected["detail"]["doc webpages availability"][0]
         _result = result["detail"]["doc webpages availability"][0]
 
-        for name in ("missing components quantity", "expected components quantity", "existing_uri_items_in_html"):
+        for name in ("total missing components", "total expected components", "existing_uri_items_in_html"):
             with self.subTest(name):
                 self.assertEqual(
                     _expected.get(name),

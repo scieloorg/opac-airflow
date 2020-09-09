@@ -499,8 +499,8 @@ def check_document_html(uri, assets_data, other_webpages_data, object_store_url)
     result = eval_response(response)
     expected_components_qty = len(assets_data) + len(other_webpages_data)
     if result["available"] is False:
-        result["expected components quantity"] = expected_components_qty
-        result["missing components quantity"] = expected_components_qty
+        result["total expected components"] = expected_components_qty
+        result["total missing components"] = expected_components_qty
         return result
 
     content = response.text
@@ -522,12 +522,14 @@ def check_document_html(uri, assets_data, other_webpages_data, object_store_url)
     check_assets_result, summarized_check_assets_result = check_asset_uri_items_expected_in_webpage(
         existing_uri_items_in_html, assets_data
     )
-    missing_doc_webpages = sum([r["missing"] for r in summarized_doc_webpages_result.values()])
+    missing_doc_webpages = sum(
+        [r["missing"]
+         for r in summarized_doc_webpages_result.values()])
     missing_assets = summarized_check_assets_result["total missing"]
     result.update({
         "components": check_assets_result + check_doc_webpages_result,
-        "expected components quantity": expected_components_qty,
-        "missing components quantity": missing_doc_webpages + missing_assets,
+        "total expected components": expected_components_qty,
+        "total missing components": missing_doc_webpages + missing_assets,
     })
 
     if missing_doc_webpages + missing_assets:
@@ -588,9 +590,9 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
                                         other_webpages_data,
                                         object_store_url)
             missing_components += components_result[
-                "missing components quantity"]
+                "total missing components"]
             result.update(components_result)
-            total_components += result["expected components quantity"]
+            total_components += result["total expected components"]
             report.append(result)
         else:
             result.update(
