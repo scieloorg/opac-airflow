@@ -42,6 +42,7 @@ from operations.check_website_operations import (
     fixes_for_json,
     format_document_availability_result_to_register,
     get_status,
+    check_website_uri_list_deeply,
 )
 
 T5 = datetime.utcnow()
@@ -51,6 +52,12 @@ T0 = T5 - timedelta(seconds=5)
 
 DURATION = (END_TIME - START_TIME).seconds
 T0_to_T5 = (T5 - T0).seconds
+
+
+def read_file(file_path):
+    with open(file_path, "r") as fp:
+        c = fp.read()
+    return c
 
 
 class TestDoRequest(TestCase):
@@ -2250,11 +2257,6 @@ class TestCheckDocumentAvailability(TestCase):
         }
         """
 
-    def read_file(self, file_path):
-        with open(file_path, "r") as fp:
-            c = fp.read()
-        return c
-
     @patch("operations.check_website_operations.datetime")
     @patch("operations.check_website_operations.requests.head")
     @patch("operations.check_website_operations.requests.get")
@@ -2264,15 +2266,16 @@ class TestCheckDocumentAvailability(TestCase):
         doc_id = "BrT6FWNFFR3KBKHZVPN8Y9N"
         website_url = "https://www.scielo.br"
         object_store_url = "https://minio.scielo.br"
-        mock_doc_manifest.return_value = self.get_document_manifest_pt()
+        mock_doc_manifest.return_value = read_file(
+            "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.manifest.json")
         mock_get.side_effect = [
             MockResponse(
                 200,
-                self.read_file(
+                read_file(
                     "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.xml")),
             MockResponse(
                 200,
-                self.read_file(
+                read_file(
                     "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N_pt.html")),
         ]
         mock_head.side_effect = [MockResponse(200)] * 8
@@ -3428,3 +3431,62 @@ class TestGetStatus(TestCase):
         summary = {}
         result = get_status(summary)
         self.assertEqual("missing", result)
+
+
+class TestCheckWebsiteUriListDeeply(TestCase):
+
+    @patch("operations.check_website_operations.add_execution_in_database")
+    @patch("operations.check_website_operations.datetime")
+    @patch("operations.check_website_operations.requests.head")
+    @patch("operations.check_website_operations.requests.get")
+    @patch("operations.docs_utils.hooks.kernel_connect")
+    def test_check_website_uri_list_deeply_calls(self, mock_doc_manifest,
+            mock_get, mock_head, mock_dt, mock_add_execution_in_database):
+        doc_id = "BrT6FWNFFR3KBKHZVPN8Y9N"
+        website_url = "https://www.scielo.br"
+        object_store_url = "https://minio.scielo.br"
+        mock_doc_manifest.return_value = read_file(
+            "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.manifest.json")
+        mock_get.side_effect = [
+            MockResponse(
+                200,
+                read_file(
+                    "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.xml")),
+            MockResponse(
+                200,
+                read_file(
+                    "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N_pt.html")),
+        ]
+        mock_head.side_effect = [MockResponse(200)] * 10
+        mock_dt.utcnow.side_effect = [T0] + ([START_TIME, END_TIME] * 9) + [T5]
+
+        doc_id_list = [doc_id]
+        dag_info = {"run_id": "xxxx"}
+
+        t0 = T0.isoformat() + "Z"
+        t1 = START_TIME.isoformat() + "Z"
+        t2 = END_TIME.isoformat() + "Z"
+        t3 = T5.isoformat() + "Z"
+
+        detail = read_file(
+                    "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.inline.json")
+        expected_calls = [
+            call("doc_deep_checkup", {
+                    "dag_run": "xxxx",
+                    "input_file_name": None,
+                    "pid_v3": "BrT6FWNFFR3KBKHZVPN8Y9N",
+                    "status": "partial",
+                    "detail": detail.replace("t0", t0).replace(
+                        "t1", t1).replace("t2", t2).replace("t3", t3)
+                    }),
+        ]
+        check_website_uri_list_deeply(
+            doc_id_list, website_url, object_store_url, dag_info)
+        self.assertEqual(mock_get.call_count, 2)
+        self.assertEqual(mock_head.call_count, 8)
+        self.assertEqual(mock_dt.utcnow.call_count, 20)
+        self.assertListEqual(
+            expected_calls,
+            mock_add_execution_in_database.call_args_list
+        )
+
