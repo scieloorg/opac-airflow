@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS doc_deep_checkup (
   dag_run varchar(255),                             -- Identificador de execução da dag `check_website`
   input_file_name varchar(255) NULL,                -- Nome do arquivo de entrada: csv com PIDs v2 ou uri_list
   pid_v3 varchar(23),                               -- scielo-pid-v3 presente no xml
-  status varchar(7),                                -- "total" or "partial" or "missing"
+  status varchar(8),                                -- "complete" or "partial" or "missing"
   detail json,                                      -- Detalhes da verificação profunda
   created_at timestamptz default now()
 );

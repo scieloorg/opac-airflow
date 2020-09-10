@@ -40,6 +40,8 @@ from operations.check_website_operations import (
     format_sci_page_availability_result_to_register,
     calculate_missing_and_total,
     fixes_for_json,
+    format_document_availability_result_to_register,
+    get_status,
 )
 
 T5 = datetime.utcnow()
@@ -3250,3 +3252,176 @@ class TestFixesForJSON(TestCase):
         j = {"date": dt, "s": "bla", "number": 9, "float": 8.5}
         r = json.dumps(j, default=fixes_for_json)
         self.assertEqual(expected, r)
+
+
+class TestFormatDocumentAvailabilityResultToRegister(TestCase):
+
+    def test_format_document_availability_result_to_register_executed_with_success(self):
+        dt = datetime.utcnow()
+        dt_iso = dt.isoformat() + "Z"
+        doc_id = "1234"
+        doc_checkup_result = {
+            "date": dt, "s": "bla", "number": 9, "float": 8.5
+        }
+        dag_info = {"run_id": "988", "input_file_name": "filename.csv"}
+        expected = {
+            "dag_run": "988",
+            "input_file_name": "filename.csv",
+            "pid_v3": "1234",
+            "status": "missing",
+            "detail": (
+                '{"date": "%s", "s": "bla", "number": 9, "float": 8.5}' %
+                dt_iso),
+        }
+
+        result = format_document_availability_result_to_register(
+            doc_id, doc_checkup_result, dag_info)
+        self.assertEqual(expected, result)
+
+
+class TestGetStatus(TestCase):
+
+    def test_get_status_returns_partial_because_total_incomplete_is_not_zero(self):
+        summary = {
+          "web html": {
+             "total": 1,
+             "total unavailable": 0,
+             "total incomplete": 1
+          },
+          "web pdf": {
+             "total": 1,
+             "total unavailable": 1
+          },
+          "renditions": {
+             "total": 1,
+             "total unavailable": 0
+          },
+          "assets": {
+             "total": 6,
+             "total unavailable": 0
+          },
+          "processing": {
+             "start": "t0",
+             "end": "t3",
+             "duration": 5
+          }
+        }
+        result = get_status(summary)
+        self.assertEqual("partial", result)
+
+    def test_get_status_returns_partial_because_total_unavailable_is_not_zero(self):
+        summary = {
+          "web html": {
+             "total": 1,
+             "total unavailable": 0,
+             "total incomplete": 0
+          },
+          "web pdf": {
+             "total": 1,
+             "total unavailable": 1
+          },
+          "renditions": {
+             "total": 1,
+             "total unavailable": 0
+          },
+          "assets": {
+             "total": 6,
+             "total unavailable": 1
+          },
+          "processing": {
+             "start": "t0",
+             "end": "t3",
+             "duration": 5
+          }
+        }
+        result = get_status(summary)
+        self.assertEqual("partial", result)
+
+    def test_get_status_returns_complete_because_total_unavailable_and_total_incomplete_are_zero(self):
+        summary = {
+          "web html": {
+             "total": 1,
+             "total unavailable": 0,
+             "total incomplete": 0
+          },
+          "web pdf": {
+             "total": 1,
+             "total unavailable": 0
+          },
+          "renditions": {
+             "total": 1,
+             "total unavailable": 0
+          },
+          "assets": {
+             "total": 6,
+             "total unavailable": 0
+          },
+          "processing": {
+             "start": "t0",
+             "end": "t3",
+             "duration": 5
+          }
+        }
+        result = get_status(summary)
+        self.assertEqual("complete", result)
+
+    def test_get_status_returns_missing_because_total_is_zero(self):
+        summary = {
+          "web html": {
+             "total": 0,
+             "total unavailable": 0,
+             "total incomplete": 0
+          },
+          "web pdf": {
+             "total": 0,
+             "total unavailable": 0
+          },
+          "renditions": {
+             "total": 0,
+             "total unavailable": 0
+          },
+          "assets": {
+             "total": 0,
+             "total unavailable": 0
+          },
+          "processing": {
+             "start": "t0",
+             "end": "t3",
+             "duration": 5
+          }
+        }
+        result = get_status(summary)
+        self.assertEqual("missing", result)
+
+    def test_get_status_returns_missing_because_total_is_equal_to_total_unavailable(self):
+        summary = {
+          "web html": {
+             "total": 1,
+             "total unavailable": 1,
+             "total incomplete": 0
+          },
+          "web pdf": {
+             "total": 1,
+             "total unavailable": 1
+          },
+          "renditions": {
+             "total": 1,
+             "total unavailable": 1
+          },
+          "assets": {
+             "total": 1,
+             "total unavailable": 1
+          },
+          "processing": {
+             "start": "t0",
+             "end": "t3",
+             "duration": 5
+          }
+        }
+        result = get_status(summary)
+        self.assertEqual("missing", result)
+
+    def test_get_status_returns_missing_because_summary_is_empty(self):
+        summary = {}
+        result = get_status(summary)
+        self.assertEqual("missing", result)

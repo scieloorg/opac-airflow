@@ -984,6 +984,50 @@ def check_document_availability(doc_id, website_url, object_store_url):
     }
 
 
+def get_status(summary):
+    """
+    {
+      "web html": {
+         "total": 1,
+         "total unavailable": 0,
+         "total incomplete": 1
+      },
+      "web pdf": {
+         "total": 1,
+         "total unavailable": 0
+      },
+      "renditions": {
+         "total": 1,
+         "total unavailable": 0
+      },
+      "assets": {
+         "total": 6,
+         "total unavailable": 0
+      },
+      "processing": {
+         "start": "t0",
+         "end": "t3",
+         "duration": 5
+      }
+    }
+    """
+    _summary = {k: v
+                for k, v in summary.items()
+                if k in ("web html", "web pdf", "renditions", "assets")
+                }
+    total = sum([item.get("total", 0) for item in _summary.values()])
+    total_u = sum([item.get("total unavailable", 0)
+                   for item in _summary.values()])
+    total_i = _summary.get("web html", {}).get("total incomplete", 0)
+    if total == 0 or total == total_u:
+        return "missing"
+
+    if total_u == total_i == 0 and total > 0:
+        return "complete"
+
+    return "partial"
+
+
 def get_pid_v3_list(uri_items, website_url_list):
     """
     Retorna o PID v3 de cada um dos itens de `uri_items`,
@@ -1051,7 +1095,7 @@ def format_document_availability_result_to_register(
       dag_run varchar(255),                             -- Identificador de execução da dag `check_website`
       input_file_name varchar(255) NULL,                -- Nome do arquivo de entrada: csv com PIDs v2 ou uri_list
       pid_v3 varchar(23),                               -- scielo-pid-v3 presente no xml
-      status varchar(7),                                -- "total" or "partial" or "missing"
+      status varchar(8),                                -- "complete" or "partial" or "missing"
       detail json,                                      -- Detalhes da verificação profunda
       created_at timestamptz default now()
     Args:
@@ -1065,7 +1109,8 @@ def format_document_availability_result_to_register(
     data["dag_run"] = dag_info.get("run_id")
     data["input_file_name"] = dag_info.get("input_file_name")
     data["pid_v3"] = doc_id
-    data["status"] = doc_checkup_result["summary"].get("status")
+    data["status"] = get_status(
+        doc_checkup_result.get("summary", {})) or "unidentified"
     data["detail"] = json.dumps(doc_checkup_result, default=fixes_for_json)
     return data
 
