@@ -2808,7 +2808,10 @@ class TestFormatSciPageAvailabilityResultToRegister(TestCase):
                 "script=sci_xxx&pid=2234-567919970010"
             ),
             "failed": False,
-            "detail": data,
+            "detail": '{"available": true, "status code": 200, '
+                      '"start time": 1, "end time": 2, "duration": 1, '
+                      '"uri": "https://www.scielo.br/scielo.php?script='
+                      'sci_xxx&pid=2234-567919970010"}',
             "pid_v2_journal": "2234-5679",
             "pid_v2_issue": "2234-567919970010",
             "pid_v2_doc": None,

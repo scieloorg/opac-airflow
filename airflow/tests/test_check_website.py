@@ -33,6 +33,7 @@ from .test_check_website_operations import (
     START_TIME,
     END_TIME,
     DURATION,
+    fixes_for_json,
 )
 
 
@@ -868,7 +869,10 @@ class TestCheckAnyUriItems(TestCase):
                 "input_file_name": None,
                 "uri": "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
                 "failed": True,
-                "detail": failures[0],
+                "detail": '{"available": false, "status code": 404, '
+                          '"start time": 1, "end time": 2, "duration": 1, '
+                          '"uri": "https://new.scielo.br/scielo.php?script='
+                          'sci_issues&pid=0001-3035"}',
                 "pid_v2_journal": "0001-3035",
                 "pid_v2_issue": None,
                 "pid_v2_doc": None,
@@ -878,7 +882,10 @@ class TestCheckAnyUriItems(TestCase):
                 "input_file_name": None,
                 "uri": "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
                 "failed": True,
-                "detail": failures[1],
+                "detail": '{"available": false, "status code": 404, '
+                          '"start time": 1, "end time": 2, "duration": 1, '
+                          '"uri": "https://new.scielo.br/scielo.php?script='
+                          'sci_issues&pid=0001-3765"}',
                 "pid_v2_journal": "0001-3765",
                 "pid_v2_issue": None,
                 "pid_v2_doc": None,
@@ -888,7 +895,10 @@ class TestCheckAnyUriItems(TestCase):
                 "input_file_name": None,
                 "uri": "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
                 "failed": False,
-                "detail": success[0],
+                "detail": '{"available": true, "status code": 200, '
+                          '"start time": 1, "end time": 2, "duration": 1, '
+                          '"uri": "https://www.scielo.br/scielo.php?script='
+                          'sci_issues&pid=0001-3035"}',
                 "pid_v2_journal": "0001-3035",
                 "pid_v2_issue": None,
                 "pid_v2_doc": None,
@@ -898,7 +908,10 @@ class TestCheckAnyUriItems(TestCase):
                 "input_file_name": None,
                 "uri": "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
                 "failed": False,
-                "detail": success[1],
+                "detail": '{"available": true, "status code": 200, '
+                          '"start time": 1, "end time": 2, "duration": 1, '
+                          '"uri": "https://www.scielo.br/scielo.php?script='
+                          'sci_issues&pid=0001-3765"}',
                 "pid_v2_journal": "0001-3765",
                 "pid_v2_issue": None,
                 "pid_v2_doc": None,
@@ -975,7 +988,10 @@ class TestCheckAnyUriItems(TestCase):
                 "input_file_name": "a.csv",
                 "uri": "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
                 "failed": True,
-                "detail": failures[0],
+                "detail": '{"available": false, "status code": 404, '
+                          '"start time": 1, "end time": 2, "duration": 1, '
+                          '"uri": "https://new.scielo.br/scielo.php?script='
+                          'sci_issues&pid=0001-3035"}',
                 "pid_v2_journal": "0001-3035",
                 "pid_v2_issue": None,
                 "pid_v2_doc": None,
@@ -985,7 +1001,10 @@ class TestCheckAnyUriItems(TestCase):
                 "input_file_name": "a.csv",
                 "uri": "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
                 "failed": True,
-                "detail": failures[1],
+                "detail": '{"available": false, "status code": 404, '
+                          '"start time": 1, "end time": 2, "duration": 1, '
+                          '"uri": "https://new.scielo.br/scielo.php?script='
+                          'sci_issues&pid=0001-3765"}',
                 "pid_v2_journal": "0001-3765",
                 "pid_v2_issue": None,
                 "pid_v2_doc": None,
@@ -995,7 +1014,10 @@ class TestCheckAnyUriItems(TestCase):
                 "input_file_name": "a.csv",
                 "uri": "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
                 "failed": False,
-                "detail": success[0],
+                "detail": '{"available": true, "status code": 200, '
+                          '"start time": 1, "end time": 2, "duration": 1, '
+                          '"uri": "https://www.scielo.br/scielo.php?script='
+                          'sci_issues&pid=0001-3035"}',
                 "pid_v2_journal": "0001-3035",
                 "pid_v2_issue": None,
                 "pid_v2_doc": None,
@@ -1005,7 +1027,10 @@ class TestCheckAnyUriItems(TestCase):
                 "input_file_name": "a.csv",
                 "uri": "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
                 "failed": False,
-                "detail": success[1],
+                "detail": '{"available": true, "status code": 200, '
+                          '"start time": 1, "end time": 2, "duration": 1, '
+                          '"uri": "https://www.scielo.br/scielo.php?script='
+                          'sci_issues&pid=0001-3765"}',
                 "pid_v2_journal": "0001-3765",
                 "pid_v2_issue": None,
                 "pid_v2_doc": None,
@@ -1056,20 +1081,20 @@ class TestCheckAnyUriItems(TestCase):
         ]
 
         dag_info = {"run_id": "RUNID", "input_file_name": "a.csv", "k": "v"}
+        dt0 = START_TIME.isoformat() + "Z"
+        dt1 = END_TIME.isoformat() + "Z"
+
         expected = [
             {
                 "dag_run": "RUNID",
                 "input_file_name": "a.csv",
                 "uri": "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
                 "failed": True,
-                "detail": {
-                    "available": False,
-                    "status code": 404,
-                    "start time": START_TIME,
-                    "end time": END_TIME,
-                    "duration": DURATION,
-                    "uri": "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
-                },
+                "detail": '{"available": false, "status code": 404, '
+                          '"start time": "%s", "end time": "%s", '
+                          '"duration": 2, '
+                          '"uri": "https://new.scielo.br/scielo.php?script='
+                          'sci_issues&pid=0001-3035"}' % (dt0, dt1),
                 "pid_v2_journal": "0001-3035",
                 "pid_v2_issue": None,
                 "pid_v2_doc": None,
@@ -1079,14 +1104,11 @@ class TestCheckAnyUriItems(TestCase):
                 "input_file_name": "a.csv",
                 "uri": "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
                 "failed": True,
-                "detail": {
-                    "available": False,
-                    "status code": 404,
-                    "start time": START_TIME,
-                    "end time": END_TIME,
-                    "duration": DURATION,
-                    "uri": "https://new.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
-                },
+                "detail": '{"available": false, "status code": 404, '
+                          '"start time": "%s", "end time": "%s", '
+                          '"duration": 2, '
+                          '"uri": "https://new.scielo.br/scielo.php?script='
+                          'sci_issues&pid=0001-3765"}' % (dt0, dt1),
                 "pid_v2_journal": "0001-3765",
                 "pid_v2_issue": None,
                 "pid_v2_doc": None,
@@ -1096,14 +1118,11 @@ class TestCheckAnyUriItems(TestCase):
                 "input_file_name": "a.csv",
                 "uri": "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
                 "failed": False,
-                "detail": {
-                    "available": True,
-                    "status code": 200,
-                    "start time": START_TIME,
-                    "end time": END_TIME,
-                    "duration": DURATION,
-                    "uri": "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
-                },
+                "detail": '{"available": true, "status code": 200, '
+                          '"start time": "%s", "end time": "%s", '
+                          '"duration": 2, '
+                          '"uri": "https://www.scielo.br/scielo.php?script='
+                          'sci_issues&pid=0001-3035"}' % (dt0, dt1),
                 "pid_v2_journal": "0001-3035",
                 "pid_v2_issue": None,
                 "pid_v2_doc": None,
@@ -1113,23 +1132,17 @@ class TestCheckAnyUriItems(TestCase):
                 "input_file_name": "a.csv",
                 "uri": "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
                 "failed": False,
-                "detail": {
-                    "available": True,
-                    "status code": 200,
-                    "start time": START_TIME,
-                    "end time": END_TIME,
-                    "duration": DURATION,
-                    "uri": "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
-                },
+                "detail": '{"available": true, "status code": 200, '
+                          '"start time": "%s", "end time": "%s", '
+                          '"duration": 2, '
+                          '"uri": "https://www.scielo.br/scielo.php?script='
+                          'sci_issues&pid=0001-3765"}' % (dt0, dt1),
                 "pid_v2_journal": "0001-3765",
                 "pid_v2_issue": None,
                 "pid_v2_doc": None,
             },
         ]
         check_any_uri_items(uri_items, "label", dag_info)
-        print("")
-        print(expected[0])
-        print(mock_add_execution_in_database.call_args_list[0])
         calls = [
             call("sci_pages_availability", expected[0]),
             call("sci_pages_availability", expected[1]),
