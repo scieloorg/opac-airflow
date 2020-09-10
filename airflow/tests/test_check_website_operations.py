@@ -3,6 +3,7 @@ from unittest.mock import patch, call, MagicMock
 import tempfile
 import os
 import shutil
+import json
 from datetime import datetime, timedelta
 from csv import writer
 
@@ -38,6 +39,7 @@ from operations.check_website_operations import (
     get_journal_issue_doc_pids,
     format_sci_page_availability_result_to_register,
     calculate_missing_and_total,
+    fixes_for_json,
 )
 
 T5 = datetime.utcnow()
@@ -3236,3 +3238,15 @@ class TestCalculateMissingAndTotalItems(TestCase):
         result = calculate_missing_and_total(data)
         self.assertDictEqual(expected, result)
 
+
+class TestFixesForJSON(TestCase):
+
+    def test_fixes_for_json_converts_datetime_to_isoformat(self):
+        dt = datetime.utcnow()
+        dt_iso = dt.isoformat() + "Z"
+        expected = (
+            '{"date": "%s", "s": "bla", "number": 9, "float": 8.5}' % dt_iso
+        )
+        j = {"date": dt, "s": "bla", "number": 9, "float": 8.5}
+        r = json.dumps(j, default=fixes_for_json)
+        self.assertEqual(expected, r)

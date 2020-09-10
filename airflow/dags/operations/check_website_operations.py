@@ -1,10 +1,11 @@
 import logging
 import requests
 import time
+import json
 from csv import reader
 from urllib3.exceptions import MaxRetryError, NewConnectionError
 from urllib.parse import urlparse, parse_qs
-from datetime import datetime
+from datetime import datetime, date
 
 from bs4 import BeautifulSoup
 
@@ -19,6 +20,12 @@ from operations.docs_utils import (
 )
 
 Logger = logging.getLogger(__name__)
+
+
+def fixes_for_json(o):
+    if isinstance(o, (date, datetime)):
+        return o.isoformat() + "Z"
+    return o
 
 
 def get_pid_list_from_csv(csv_file_path):
@@ -769,7 +776,8 @@ def format_sci_page_availability_result_to_register(sci_page_availability_result
     data["input_file_name"] = dag_info.get("input_file_name")
     data["uri"] = sci_page_availability_result["uri"]
     data["failed"] = sci_page_availability_result["available"] is False
-    data["detail"] = sci_page_availability_result
+    data["detail"] = json.dumps(
+        sci_page_availability_result, default=fixes_for_json)
     data["pid_v2_journal"] = parsed_pids[0]
     data["pid_v2_issue"] = parsed_pids[1]
     data["pid_v2_doc"] = parsed_pids[2]
@@ -996,7 +1004,6 @@ def get_pid_v3_list(uri_items, website_url_list):
     for uri in uri_items:
         for url in website_url or website_url_list:
             doc_uri = "{}{}".format(url, uri)
-            print(doc_uri)
             doc_id = get_kernel_document_id_from_classic_document_uri(doc_uri)
             if doc_id:
                 pid_v3_list.append(doc_id)
@@ -1006,7 +1013,7 @@ def get_pid_v3_list(uri_items, website_url_list):
     return pid_v3_list, website_url[0]
 
 
-def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url):
+def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url, dag_info):
     """
     Executa a verificação da disponibilidade profundamente e
     faz o registro do resultado
@@ -1015,21 +1022,52 @@ def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url):
         doc_id_list (str list): lista de PID v3
         website_url (str): URL do site público
         object_store_url (str): URL do _object store_
+        dag_info (dict): dados da DAG
 
     """
-    Logger.info("Check availability of %i documents", len(doc_id_list))
-    for doc_id in doc_id_list:
-        Logger.info("Check document availability of %s", doc_id)
+    total = len(doc_id_list)
+    Logger.info("Check availability of %i documents", total)
+
+    for i, doc_id in enumerate(doc_id_list):
+        Logger.info(
+            "Check document availability of %s (%i/%i)", doc_id, i, total)
         report = check_document_availability(
             doc_id, website_url, object_store_url)
-        Logger.info("Register availability report of %s", doc_id)
-        register_document_availability_result(doc_id, report)
+
+        Logger.info("Format table row data")
+        row = format_document_availability_result_to_register(
+            doc_id, report, dag_info)
+
+        Logger.info("Register document availability checking result")
+        add_execution_in_database("doc_deep_checkup", row)
 
 
-def register_document_availability_result(doc_id, report):
-    # TODO
-    Logger.info("Report result of %s", doc_id)
-    return
+def format_document_availability_result_to_register(
+        doc_id, doc_checkup_result, dag_info):
+    """
+    Formata os dados para registrar na tabela `doc_deep_checkup`
+    Colunas da tabela:
+      id SERIAL PRIMARY KEY,
+      dag_run varchar(255),                             -- Identificador de execução da dag `check_website`
+      input_file_name varchar(255) NULL,                -- Nome do arquivo de entrada: csv com PIDs v2 ou uri_list
+      pid_v3 varchar(23),                               -- scielo-pid-v3 presente no xml
+      status varchar(7),                                -- "total" or "partial" or "missing"
+      detail json,                                      -- Detalhes da verificação profunda
+      created_at timestamptz default now()
+    Args:
+        doc_checkup_result (dict): resultado da verificação
+        dag_info (dict): dados da DAG
+
+    Returns:
+        dict: dados da coluna
+    """
+    data = {}
+    data["dag_run"] = dag_info.get("run_id")
+    data["input_file_name"] = dag_info.get("input_file_name")
+    data["pid_v3"] = doc_id
+    data["status"] = doc_checkup_result["summary"].get("status")
+    data["detail"] = json.dumps(doc_checkup_result, default=fixes_for_json)
+    return data
 
 
 def retry_after():

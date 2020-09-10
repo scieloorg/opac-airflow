@@ -60,9 +60,9 @@ CREATE INDEX IF NOT EXISTS sci_pages_availability_failed ON sci_pages_availabili
 CREATE TABLE IF NOT EXISTS doc_deep_checkup (
   id SERIAL PRIMARY KEY,
   dag_run varchar(255),                             -- Identificador de execução da dag `check_website`
-  input_file_name varchar(255),                     -- Nome do arquivo de entrada: csv com PIDs v2 ou uri_list
-  pid_v3 varchar(23) NULL,                          -- scielo-pid-v3 presente no xml
-  failed bool DEFAULT false,                        -- Falha == true
+  input_file_name varchar(255) NULL,                -- Nome do arquivo de entrada: csv com PIDs v2 ou uri_list
+  pid_v3 varchar(23),                               -- scielo-pid-v3 presente no xml
+  status varchar(7),                                -- "total" or "partial" or "missing"
   detail json,                                      -- Detalhes da verificação profunda
   created_at timestamptz default now()
 );
@@ -75,17 +75,31 @@ CREATE INDEX IF NOT EXISTS doc_deep_checkup_dag_run ON doc_deep_checkup (dag_run
 
 {
    "summary": {
-      "total doc webpages": 2,
-      "total doc renditions": 1,
-      "total doc assets": 3,
-      "total missing components": 2,
-      "total expected components": 4,
-      "total unavailable doc webpages": 0,
-      "total unavailable renditions": 0,
-      "total unavailable assets": 0
+      "web html": {
+         "total": 1,
+         "total unavailable": 0,
+         "total incomplete": 1
+      },
+      "web pdf": {
+         "total": 1,
+         "total unavailable": 0
+      },
+      "renditions": {
+         "total": 1,
+         "total unavailable": 0
+      },
+      "assets": {
+         "total": 6,
+         "total unavailable": 0
+      },
+      "processing": {
+         "start": "t0",
+         "end": "t3",
+         "duration": 5
+      }
    },
    "detail": {
-      "doc webpages availability": [
+      "webpages": [
          {
             "lang": "pt",
             "format": "html",
@@ -96,8 +110,9 @@ CREATE INDEX IF NOT EXISTS doc_deep_checkup_dag_run ON doc_deep_checkup (dag_run
             "uri": "https://www.scielo.br/j/esa/a/BrT6FWNFFR3KBKHZVPN8Y9N?format=html&lang=pt",
             "available": true,
             "status code": 200,
-            "start time": "start timestamp",
-            "end time": "end timestamp",
+            "start time": "t1",
+            "end time": "t2",
+            "duration": 2,
             "components": [
                {
                   "type": "asset",
@@ -135,8 +150,18 @@ CREATE INDEX IF NOT EXISTS doc_deep_checkup_dag_run ON doc_deep_checkup (dag_run
                   ]
                }
             ],
-            "expected components quantity": 4,
-            "missing components quantity": 2,
+            "total expected components": 4,
+            "total missing components": 2,
+            "pdf": {
+               "total": 1,
+               "missing": 0
+            },
+            "assets": {
+               "total expected": 3,
+               "total missing": 2,
+               "total alternatives": 6,
+               "total alternatives present in html": 1
+            },
             "existing_uri_items_in_html": [
                "/about/",
                "/j/esa/",
@@ -173,68 +198,76 @@ CREATE INDEX IF NOT EXISTS doc_deep_checkup_dag_run ON doc_deep_checkup (dag_run
             "uri": "https://www.scielo.br/j/esa/a/BrT6FWNFFR3KBKHZVPN8Y9N?format=pdf&lang=pt",
             "available": true,
             "status code": 200,
-            "start time": "start timestamp",
-            "end time": "end timestamp"
+            "start time": "t1",
+            "end time": "t2",
+            "duration": 2
          }
       ],
-      "doc renditions availability": [
+      "renditions": [
          {
             "lang": "pt",
             "uri": "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/409acdeb8f632022d41b3d94a3f00a837867937c.pdf",
             "available": true,
             "status code": 200,
-            "start time": "start timestamp",
-            "end time": "end timestamp"
+            "start time": "t1",
+            "end time": "t2",
+            "duration": 2
          }
       ],
-      "doc assets availability": [
+      "assets": [
          {
             "asset_id": "1809-4457-esa-s1413-41522020182506-gf1.png",
             "uri": "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/8972aaa0916382b6f2d51a6d22732bb083851913.png",
             "available": true,
             "status code": 200,
-            "start time": "start timestamp",
-            "end time": "end timestamp"
+            "start time": "t1",
+            "end time": "t2",
+            "duration": 2
          },
          {
             "asset_id": "1809-4457-esa-s1413-41522020182506-gf1.thumbnail.jpg",
             "uri": "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/3c30f9fec6947d47f404043fe08aaca8bc51b1fb.jpg",
             "available": true,
             "status code": 200,
-            "start time": "start timestamp",
-            "end time": "end timestamp"
+            "start time": "t1",
+            "end time": "t2",
+            "duration": 2
          },
          {
             "asset_id": "1809-4457-esa-s1413-41522020182506-gf2.png",
             "uri": "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/36080074121a60c8e28fa1b28876e1adad4fe5d7.png",
             "available": true,
             "status code": 200,
-            "start time": "start timestamp",
-            "end time": "end timestamp"
+            "start time": "t1",
+            "end time": "t2",
+            "duration": 2
          },
          {
             "asset_id": "1809-4457-esa-s1413-41522020182506-gf2.thumbnail.jpg",
             "uri": "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/b5b4bb9bc267794ececde428a33f5af705b0b1a6.jpg",
             "available": true,
             "status code": 200,
-            "start time": "start timestamp",
-            "end time": "end timestamp"
+            "start time": "t1",
+            "end time": "t2",
+            "duration": 2
          },
          {
             "asset_id": "1809-4457-esa-s1413-41522020182506-gf3.png",
             "uri": "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/73a98051b6cf623aeb1146017ceb0b947df75ec8.png",
             "available": true,
             "status code": 200,
-            "start time": "start timestamp",
-            "end time": "end timestamp"
+            "start time": "t1",
+            "end time": "t2",
+            "duration": 2
          },
          {
             "asset_id": "1809-4457-esa-s1413-41522020182506-gf3.thumbnail.jpg",
             "uri": "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/df14e57dc001993fd7f3fbcefa642e40e6964224.jpg",
             "available": true,
             "status code": 200,
-            "start time": "start timestamp",
-            "end time": "end timestamp"
+            "start time": "t1",
+            "end time": "t2",
+            "duration": 2
          }
       ]
    }
