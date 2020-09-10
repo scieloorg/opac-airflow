@@ -488,8 +488,8 @@ def get_pid_v3_list(**context):
     pid_v3_list, website_url = check_website_operations.get_pid_v3_list(
         uri_items, _website_url_list)
 
-    uri_items = context["ti"].xcom_push("pid_v3_list", pid_v3_list)
-    uri_items = context["ti"].xcom_push("website_url", website_url)
+    context["ti"].xcom_push("pid_v3_list", pid_v3_list)
+    context["ti"].xcom_push("website_url", website_url)
 
     Logger.info("PID v3: %i items", len(pid_v3_list))
 
