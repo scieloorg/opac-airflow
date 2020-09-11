@@ -63,10 +63,11 @@ def get_uri_list_from_pid_dict(grouped_pids):
 
 
 class InvalidResponse:
-    def __init__(self):
+    def __init__(self, uri=None):
         self.status_code = None
         self.start_time = None
         self.end_time = None
+        self.uri = uri
 
 
 def do_request(uri, function=None, secs_sequence=None):
@@ -123,14 +124,17 @@ def is_valid_response(response):
 
 
 def eval_response(response):
+    try:
+        duration = (response.end_time - response.start_time).seconds
+    except (AttributeError, TypeError):
+        duration = 0
 
     return {
         "available": response.status_code in (200, 301, 302),
         "status code": response.status_code,
         "start time": response.start_time,
         "end time": response.end_time,
-        "duration": (
-            response.end_time - response.start_time).seconds,
+        "duration": duration,
     }
 
 
@@ -690,6 +694,57 @@ def check_html_webpages_availability(website_url, html_data_items, assets_data, 
         "total": len(html_data_items),
         "total unavailable": unavailable,
         "total incomplete": incomplete,
+    }
+    return report, summary
+
+
+def check_pdf_webpages_availability(website_url, doc_data_list):
+    """
+    Verifica a disponibilidade do documento nos respectivos idiomas.
+    Args:
+        website_url (str): URL do site público
+        doc_data_list (list of dict): dicionário contém metadados do documento
+            suficientes para formar URI e também identificar o documento.
+            Um documento pode ter várias URI devido à variação de formatos e
+            idiomas
+
+    Returns:
+        tuple (list of dict, dict):
+            list of dict: mesma lista `doc_data_list`, sendo que cada
+                elemento, recebe novas chaves e valores:
+                    `uri` (formada com os dados),
+                    `available` (bool),
+            dict: {"total": 1, "total unavailable": 0}
+    """
+    report = []
+    summary = {}
+    unavailable = 0
+
+    uri_items = [
+        website_url + doc_data.get("uri")
+        for doc_data in doc_data_list
+    ]
+    responses = async_requests.parallel_requests(uri_items, head=True)
+    responses = {resp.uri: resp for resp in responses}
+
+    for doc_data in doc_data_list:
+        doc_uri = website_url + doc_data.get("uri")
+        result = doc_data.copy()
+        if "uri_alternatives" in result.keys():
+            del result["uri_alternatives"]
+        result.update({"uri": doc_uri})
+        Logger.info("Verificando página do documento: %s", doc_uri)
+
+        result.update(eval_response(
+            responses.get(doc_uri) or InvalidResponse(doc_uri)))
+        report.append(result)
+
+        if result["available"] is False:
+            unavailable += 1
+
+    summary = {
+        "total": len(doc_data_list),
+        "total unavailable": unavailable,
     }
     return report, summary
 
