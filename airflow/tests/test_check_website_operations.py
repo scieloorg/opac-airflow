@@ -47,6 +47,7 @@ from operations.check_website_operations import (
     get_status,
     check_website_uri_list_deeply,
     group_doc_data_by_webpage_type,
+    add_responses,
 )
 
 T5 = datetime.utcnow()
@@ -4590,3 +4591,108 @@ class TestCheckPdfWebpagesAvailability(TestCase):
         )
         self.assertListEqual(expected, result)
 
+
+class TestAddResponses(TestCase):
+
+    @patch('operations.check_website_operations.async_requests.parallel_requests')
+    def test_add_responses_returns_data_with_complete_uri_and_responses(self, mock_parallel_requests):
+        doc_data_list = [
+           {
+                "lang": "en",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=pdf&lang=en",
+            },
+            {
+                "lang": "es",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=pdf&lang=es",
+            },
+        ]
+        website_url = "https://www.scielo.br"
+        response1 = MockClientResponse(
+                200, "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en")
+        response2 = MockClientResponse(
+                200, "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=es")
+
+        mock_parallel_requests.return_value = [
+            response1, response2
+        ]
+        expected = [
+            {
+                "lang": "en",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en",
+                "response": response1,
+            },
+            {
+                "lang": "es",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=es",
+                "response": response2,
+            },
+        ]
+        result = add_responses(doc_data_list, website_url)
+        self.assertEqual(expected, result)
+
+    @patch('operations.check_website_operations.async_requests.parallel_requests')
+    def test_add_responses_returns_data_with_responses(self, mock_parallel_requests):
+        doc_data_list = [
+           {
+                "lang": "en",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en",
+            },
+            {
+                "lang": "es",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=es",
+            },
+        ]
+        response1 = MockClientResponse(
+                200, "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en")
+        response2 = MockClientResponse(
+                200, "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=es")
+
+        mock_parallel_requests.return_value = [
+            response1, response2
+        ]
+        expected = [
+            {
+                "lang": "en",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en",
+                "response": response1,
+            },
+            {
+                "lang": "es",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=es",
+                "response": response2,
+            },
+        ]
+        result = add_responses(doc_data_list)
+        self.assertEqual(expected, result)

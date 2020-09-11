@@ -694,15 +694,34 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
     return report, summary
 
 
-def check_html_webpages_availability(website_url, html_data_items, assets_data, webpages_data, object_store_url):
+def add_responses(doc_data_list, website_url=None):
     """
-    Verifica a disponibilidade do documento nos respectivos idiomas.
+    Add response
+    Update `website_url`, if applicable
+
+    """
+    head = True
+    if website_url:
+        for doc_data in doc_data_list:
+            doc_data["uri"] = (website_url or "") + doc_data.get("uri")
+            head = doc_data.get("format") != "html"
+    uri_items = (doc_data["uri"] for doc_data in doc_data_list)
+
+    responses = async_requests.parallel_requests(uri_items, head=head)
+    responses = {resp.uri: resp for resp in responses}
+
+    for doc_data in doc_data_list:
+        doc_data["response"] = responses.get(doc_data["uri"])
+    return doc_data_list
+
+
+def check_html_webpages_availability(html_data_items, assets_data, webpages_data, object_store_url):
+    """
     Verifica também se os ativos digitais e outras
     _webpages_ do documento (HTML e PDF) estão mencionadas dentro do HTML,
     ou seja, em `img/@src` e/ou `*[@href]`
 
     Args:
-        website_url (str): URL do site público
         html_data_items (list of dict): dicionário contém metadados do documento
             suficientes para formar URI e também identificar o documento.
             Um documento pode ter várias URI devido à variação de formatos e
@@ -734,18 +753,24 @@ def check_html_webpages_availability(website_url, html_data_items, assets_data, 
     incomplete = 0
 
     for doc_data in html_data_items:
-        doc_uri = website_url + doc_data.get("uri")
+        doc_uri = doc_data["uri"]
+
         result = doc_data.copy()
         if "uri_alternatives" in result.keys():
             del result["uri_alternatives"]
-        result.update({"uri": doc_uri})
+
         Logger.info("Verificando página do documento: %s", doc_uri)
 
         # lista de uri para outro idioma e/ou formato
         other_webpages_data = webpages_data.copy()
         other_webpages_data.remove(doc_data)
-        components_result = check_document_html(
-                                    doc_uri,
+
+        try:
+            content = doc_data["response"].text()
+        except (AttributeError):
+            content = None
+        components_result = check_document_html_content(
+                                    content,
                                     assets_data,
                                     other_webpages_data,
                                     object_store_url)
