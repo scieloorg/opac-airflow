@@ -792,11 +792,10 @@ def check_html_webpages_availability(html_data_items, assets_data, webpages_data
     return report, summary
 
 
-def check_pdf_webpages_availability(website_url, doc_data_list):
+def check_pdf_webpages_availability(doc_data_list):
     """
     Verifica a disponibilidade do documento nos respectivos idiomas.
     Args:
-        website_url (str): URL do site público
         doc_data_list (list of dict): dicionário contém metadados do documento
             suficientes para formar URI e também identificar o documento.
             Um documento pode ter várias URI devido à variação de formatos e
@@ -814,23 +813,20 @@ def check_pdf_webpages_availability(website_url, doc_data_list):
     summary = {}
     unavailable = 0
 
-    uri_items = [
-        website_url + doc_data.get("uri")
-        for doc_data in doc_data_list
-    ]
-    responses = async_requests.parallel_requests(uri_items, head=True)
-    responses = {resp.uri: resp for resp in responses}
-
     for doc_data in doc_data_list:
-        doc_uri = website_url + doc_data.get("uri")
+        doc_uri = doc_data["uri"]
+
+        response = doc_data["response"]
+        del doc_data["response"]
+
         result = doc_data.copy()
         if "uri_alternatives" in result.keys():
             del result["uri_alternatives"]
-        result.update({"uri": doc_uri})
+
         Logger.info("Verificando página do documento: %s", doc_uri)
 
-        result.update(eval_response(
-            responses.get(doc_uri) or InvalidResponse(doc_uri)))
+        # lista de uri para outro idioma e/ou formato
+        result.update(eval_response(response))
         report.append(result)
 
         if result["available"] is False:
