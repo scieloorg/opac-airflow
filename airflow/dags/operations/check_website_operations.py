@@ -930,6 +930,28 @@ def format_document_items_availability_to_register(document_data,
     return rows
 
 
+def group_doc_data_by_webpage_type(document_webpages_data):
+    """
+    Cria um dicionário em que:
+    as chaves: "web " + o valor de `document_webpages_data[index]['format']`,
+        ou seja, _web pdf_ ou _web html_
+    os valores: os ítens
+
+    Args:
+        document_webpages_data (list of dict): retorno de
+            `get_document_webpages_data`
+    Returns:
+        dict: mesmos dados mas orgnizados em dicionário em que os valores das
+        chaves são "web pdf" e "web html"
+    """
+    d = {}
+    for doc_data in document_webpages_data:
+        key = "web {}".format(doc_data["format"])
+        d[key] = d.get(key, [])
+        d[key].append(doc_data)
+    return d
+
+
 def check_document_availability(doc_id, website_url, object_store_url):
     """
     Verifica a disponibilidade do documento `doc_id`, verificando a
@@ -944,6 +966,8 @@ def check_document_availability(doc_id, website_url, object_store_url):
     doc_data = get_document_data_to_generate_uri(current_version)
 
     document_webpages_data = get_document_webpages_data(doc_id, doc_data)
+    doc_data_grouped_by_webpage_type = group_doc_data_by_webpage_type(
+        document_webpages_data)
     assets_data = get_document_assets_data(current_version)
     renditions_data = get_document_renditions_data(current_version)
 

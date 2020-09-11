@@ -43,6 +43,7 @@ from operations.check_website_operations import (
     format_document_availability_result_to_register,
     get_status,
     check_website_uri_list_deeply,
+    group_doc_data_by_webpage_type,
 )
 
 T5 = datetime.utcnow()
@@ -3489,4 +3490,27 @@ class TestCheckWebsiteUriListDeeply(TestCase):
             expected_calls,
             mock_add_execution_in_database.call_args_list
         )
+
+
+class TestGroupDocDataByWebpageType(TestCase):
+
+    def test_group_doc_data_by_webpage_type(self):
+        doc_webpages_data = [
+            {"doc_id": "x", "data": "2", "format": "html"},
+            {"doc_id": "x", "data": "1", "format": "pdf"},
+            {"doc_id": "x", "data": "b", "format": "html"},
+            {"doc_id": "x", "data": "a", "format": "pdf"},
+        ]
+        expected = {
+            "web html": [
+                {"doc_id": "x", "data": "2", "format": "html"},
+                {"doc_id": "x", "data": "b", "format": "html"},
+            ],
+            "web pdf": [
+                {"doc_id": "x", "data": "1", "format": "pdf"},
+                {"doc_id": "x", "data": "a", "format": "pdf"},
+            ],
+        }
+        result = group_doc_data_by_webpage_type(doc_webpages_data)
+        self.assertDictEqual(expected, result)
 
