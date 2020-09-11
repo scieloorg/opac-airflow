@@ -25,6 +25,7 @@ from operations.check_website_operations import (
     check_pdf_webpages_availability,
     check_html_webpages_availability,
     check_document_html,
+    check_document_html_content,
     check_document_assets_availability,
     check_document_renditions_availability,
     format_document_webpage_availability_to_register,
@@ -1903,6 +1904,175 @@ class TestCheckDocumentHtml(TestCase):
         object_store_url = None
         result = check_document_html(
             uri, assets_data, other_webpages_data, object_store_url)
+        self.assertEqual(expected, result)
+
+
+class TestCheckDocumentHtmlContent(TestCase):
+
+    def test_check_document_html_content_returns_not_available(self):
+        assets_data = []
+        other_webpages_data = []
+        expected = {
+            "total expected components": 0,
+            "total missing components": 0,
+        }
+        object_store_url = None
+        result = check_document_html_content(
+            None, assets_data, other_webpages_data, object_store_url)
+        self.assertEqual(expected, result)
+
+    def test_check_document_html_content_returns_available_and_empty_components(self):
+        assets_data = []
+        other_webpages_data = []
+        expected = {
+            "components": [],
+            "total missing components": 0,
+            "total expected components": 0,
+            "assets": {
+                "total expected": 0,
+                "total missing": 0,
+                "total alternatives": 0,
+                "total alternatives present in html": 0,
+            },
+        }
+        object_store_url = None
+        result = check_document_html_content(
+            "", assets_data, other_webpages_data, object_store_url)
+        self.assertEqual(expected, result)
+
+    def test_check_document_html_content_returns_available_and_components_are_absent(self):
+        assets_data = [
+            {
+                "prefix": "asset_uri_1",
+                "uri_alternatives": [
+                    "asset_uri_1.tiff", "asset_uri_1.jpg", "asset_uri_1.png"]
+            },
+        ]
+        other_webpages_data = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
+            },
+        ]
+        expected = {
+            "components": [
+                {
+                    "type": "asset",
+                    "id": "asset_uri_1",
+                    "present_in_html": [],
+                    "absent_in_html": [
+                        "asset_uri_1.tiff", "asset_uri_1.jpg",
+                        "asset_uri_1.png"],
+                },
+                {
+                    "type": "html",
+                    "id": "en",
+                    "present_in_html": [],
+                    "absent_in_html": [
+                        "/j/xjk/a/ldld?format=html&lang=en",
+                        "/j/xjk/a/ldld?lang=en&format=html",
+                        "/j/xjk/a/ldld?format=html",
+                        "/j/xjk/a/ldld?lang=en",
+                        "/j/xjk/a/ldld/?format=html&lang=en",
+                        "/j/xjk/a/ldld/?lang=en&format=html",
+                        "/j/xjk/a/ldld/?format=html",
+                        "/j/xjk/a/ldld/?lang=en",
+                    ],
+                },
+            ],
+            "total missing components": 2,
+            "total expected components": 2,
+            "html": {"total": 1, "missing": 1},
+            "assets": {
+                "total expected": 1,
+                "total missing": 1,
+                "total alternatives": 3,
+                "total alternatives present in html": 0,
+            },
+            "existing_uri_items_in_html": []
+        }
+        object_store_url = None
+        result = check_document_html_content(
+            "", assets_data, other_webpages_data, object_store_url)
+        self.assertEqual(expected, result)
+
+    def test_check_document_html_content_returns_available_and_components_are_present(self):
+        content = """
+        <img src="asset_uri_1.jpg"/>
+        <a href="/j/xjk/a/ldld?lang=en"/>
+        """
+        assets_data = [
+            {
+                "prefix": "asset_uri_1",
+                "uri_alternatives": [
+                    "asset_uri_1.tiff", "asset_uri_1.jpg", "asset_uri_1.png"]
+            },
+        ]
+        other_webpages_data = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
+            },
+        ]
+        expected = {
+            "components": [
+                {
+                    "type": "asset",
+                    "id": "asset_uri_1",
+                    "present_in_html": ["asset_uri_1.jpg"],
+                    "absent_in_html": [
+                        "asset_uri_1.tiff", "asset_uri_1.png"
+                    ],
+                },
+                {
+                    "type": "html",
+                    "id": "en",
+                    "present_in_html": [
+                        "/j/xjk/a/ldld?lang=en",
+                    ],
+                },
+            ],
+            "total missing components": 0,
+            "total expected components": 2,
+            "html": {"total": 1, "missing": 0},
+            "assets": {
+                "total expected": 1,
+                "total missing": 0,
+                "total alternatives": 3,
+                "total alternatives present in html": 1,
+            },
+        }
+        object_store_url = None
+        result = check_document_html_content(
+            content, assets_data, other_webpages_data, object_store_url)
         self.assertEqual(expected, result)
 
 

@@ -551,6 +551,71 @@ def check_document_html(uri, assets_data, other_webpages_data, object_store_url)
     return result
 
 
+def check_document_html_content(content, assets_data, other_webpages_data, object_store_url):
+    """
+    Verifica se, no documento HTML, os ativos digitais e outras
+    _webpages_ do documento (HTML e PDF) estão mencionados,
+    ou seja, em `img/@src` e/ou `*[@href]`
+
+    Args:
+        html_content (str): conteúdo do html
+        assets_data (list of dict): dicionário contém dados do ativo digital
+        other_webpages_data (list of dict): dicionário contém metadados do
+            documento suficientes para formar URI e também identificar
+            o documento.
+            Um documento pode ter várias URI devido à variação de formatos e
+            idiomas
+        object_store_url (str): URL do _Object Store_, usada para obter as
+            URI encontradas no HTML que sejam apenas do _domínio_ do SPF
+    Returns:
+        report (dict):
+            `available` (bool),
+            `components` (list of dict): validação de cada ativos digital, ou
+                menção às demais _webpages_ do documento (HTML/PDF/idiomas)
+
+    """
+    result = {}
+    expected_components_qty = len(assets_data) + len(other_webpages_data)
+    if content is None:
+        result["total expected components"] = expected_components_qty
+        result["total missing components"] = expected_components_qty
+        return result
+
+    # lista de uri encontradas dentro da página
+    filtered_by = []
+    if object_store_url:
+        parsed = urlparse(object_store_url)
+        filtered_by = [parsed.netloc, ""]
+    existing_uri_items_in_html = filter_uri_list(
+        find_uri_items(content), filtered_by)
+
+    # verifica se as uri esperadas estão present_in_html e no html da página
+    # do documento, dados os dados dos ativos digitais e das
+    # demais _webpages_ (formato e idioma) do documento
+    check_doc_webpages_result, summarized_doc_webpages_result = check_doc_webpage_uri_items_expected_in_webpage(
+        existing_uri_items_in_html, other_webpages_data
+    )
+    check_assets_result, summarized_check_assets_result = check_asset_uri_items_expected_in_webpage(
+        existing_uri_items_in_html, assets_data
+    )
+    missing_doc_webpages = sum(
+        [r["missing"]
+         for r in summarized_doc_webpages_result.values()])
+    missing_assets = summarized_check_assets_result["total missing"]
+    result.update({
+        "components": check_assets_result + check_doc_webpages_result,
+        "total expected components": expected_components_qty,
+        "total missing components": missing_doc_webpages + missing_assets,
+    })
+    result.update(summarized_doc_webpages_result)
+    result.update({"assets": summarized_check_assets_result})
+
+    if missing_doc_webpages + missing_assets:
+        result.update(
+            {"existing_uri_items_in_html": sorted(existing_uri_items_in_html)})
+    return result
+
+
 def check_document_webpages_availability(website_url, doc_data_list, assets_data, object_store_url):
     """
     Verifica a disponibilidade do documento nos respectivos formatos e idiomas.
