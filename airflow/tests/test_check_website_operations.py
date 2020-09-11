@@ -2436,31 +2436,44 @@ class TestCheckDocumentAvailability(TestCase):
         """
 
     @patch("operations.check_website_operations.datetime")
-    @patch("operations.check_website_operations.requests.head")
+    @patch("operations.check_website_operations.async_requests.parallel_requests")
     @patch("operations.check_website_operations.requests.get")
     @patch("operations.docs_utils.hooks.kernel_connect")
     def test_check_document_availability_returns_doc_is_totally_complete(
-            self, mock_doc_manifest, mock_get, mock_head, mock_dt):
+            self, mock_doc_manifest, mock_get, mock_request, mock_dt):
         doc_id = "BrT6FWNFFR3KBKHZVPN8Y9N"
         website_url = "https://www.scielo.br"
         object_store_url = "https://minio.scielo.br"
         mock_doc_manifest.return_value = read_file(
             "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.manifest.json")
-        mock_get.side_effect = [
-            MockResponse(
+        mock_get.return_value = MockResponse(
                 200,
                 read_file(
-                    "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.xml")),
-            MockResponse(
-                200,
-                read_file(
-                    "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N_pt.html")),
+                    "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.xml")
+                )
+        mock_request.side_effect = [
+            [
+                MockClientResponse(
+                    200,
+                    "https://www.scielo.br/j/esa/a/BrT6FWNFFR3KBKHZVPN8Y9N"
+                    "?format=html&lang=pt",
+                    read_file(
+                        "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N_pt.html"
+                    )
+                ),
+            ],
+            [
+                MockClientResponse(
+                    200,
+                    "https://www.scielo.br/j/esa/a/BrT6FWNFFR3KBKHZVPN8Y9N"
+                    "?format=pdf&lang=pt"
+                ),
+            ],
         ]
-        mock_head.side_effect = [MockResponse(200)] * 8
 
-        mock_dt.utcnow.side_effect = [T0] + ([START_TIME, END_TIME] * 9) + [T5]
+        mock_dt.utcnow.side_effect = [T0] + ([START_TIME, END_TIME] * 7) + [T5]
 
-        webpages_availability = [{
+        web_html_availability = [{
             "lang": "pt",
             "format": "html",
             "pid_v2": "S1413-41522020005004201",
@@ -2558,6 +2571,20 @@ class TestCheckDocumentAvailability(TestCase):
                 '/static/js/scienceopen.js',
                 'https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/8972aaa0916382b6f2d51a6d22732bb083851913.png'
             ],
+        }]
+        web_pdf_availability = [{
+            "lang": "pt",
+            "format": "pdf",
+            "pid_v2": "S1413-41522020005004201",
+            "acron": "esa",
+            "doc_id_for_human": "1809-4457-esa-ahead-S1413-41522020182506",
+            "doc_id": "BrT6FWNFFR3KBKHZVPN8Y9N",
+            "uri": "https://www.scielo.br/j/esa/a/BrT6FWNFFR3KBKHZVPN8Y9N?format=pdf&lang=pt",
+            "available": True,
+            "status code": 200,
+            "start time": START_TIME,
+            "end time": END_TIME,
+            "duration": DURATION,
         }]
         # https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/409acdeb8f632022d41b3d94a3f00a837867937c.pdf
         renditions_availability = [
@@ -2669,7 +2696,8 @@ class TestCheckDocumentAvailability(TestCase):
                     {"start": T0, "end": T5, "duration": T0_to_T5}
             },
             "detail": {
-                "webpages": webpages_availability,
+                "web html": web_html_availability,
+                "web pdf": web_pdf_availability,
                 "renditions": renditions_availability,
                 "assets": assets_availability,
             },
@@ -2686,8 +2714,8 @@ class TestCheckDocumentAvailability(TestCase):
             result["detail"]["assets"]
         )
 
-        _expected = expected["detail"]["webpages"][0]
-        _result = result["detail"]["webpages"][0]
+        _expected = expected["detail"]["web html"][0]
+        _result = result["detail"]["web html"][0]
 
         for name in ("total missing components", "total expected components", "existing_uri_items_in_html"):
             with self.subTest(name):
@@ -2695,6 +2723,7 @@ class TestCheckDocumentAvailability(TestCase):
                     _expected[name],
                     _result[name]
                 )
+
         for i in range(4):
             with self.subTest(i):
                 self.assertDictEqual(
@@ -3613,30 +3642,45 @@ class TestGetStatus(TestCase):
 
 class TestCheckWebsiteUriListDeeply(TestCase):
 
+    @patch("operations.check_website_operations.async_requests.parallel_requests")
     @patch("operations.check_website_operations.add_execution_in_database")
     @patch("operations.check_website_operations.datetime")
     @patch("operations.check_website_operations.requests.head")
     @patch("operations.check_website_operations.requests.get")
     @patch("operations.docs_utils.hooks.kernel_connect")
     def test_check_website_uri_list_deeply_calls(self, mock_doc_manifest,
-            mock_get, mock_head, mock_dt, mock_add_execution_in_database):
+            mock_get, mock_head, mock_dt, mock_add_execution_in_database,
+            mock_parallel_req):
         doc_id = "BrT6FWNFFR3KBKHZVPN8Y9N"
         website_url = "https://www.scielo.br"
         object_store_url = "https://minio.scielo.br"
         mock_doc_manifest.return_value = read_file(
             "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.manifest.json")
-        mock_get.side_effect = [
-            MockResponse(
+        mock_get.return_value = MockResponse(
                 200,
                 read_file(
-                    "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.xml")),
-            MockResponse(
-                200,
-                read_file(
-                    "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N_pt.html")),
+                    "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.xml"))
+
+        mock_parallel_req.side_effect = [
+            [
+                MockClientResponse(
+                    200,
+                    "https://www.scielo.br/j/esa/a/BrT6FWNFFR3KBKHZVPN8Y9N"
+                    "?format=html&lang=pt",
+                    read_file(
+                        "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N_pt.html")
+                )
+            ],
+            [
+                MockClientResponse(
+                    200,
+                    "https://www.scielo.br/j/esa/a/BrT6FWNFFR3KBKHZVPN8Y9N"
+                    "?format=pdf&lang=pt"
+                )
+            ],
         ]
-        mock_head.side_effect = [MockResponse(200)] * 10
-        mock_dt.utcnow.side_effect = [T0] + ([START_TIME, END_TIME] * 9) + [T5]
+        mock_head.side_effect = [MockResponse(200)] * 8
+        mock_dt.utcnow.side_effect = [T0] + ([START_TIME, END_TIME] * 7) + [T5]
 
         doc_id_list = [doc_id]
         dag_info = {"run_id": "xxxx"}
@@ -3660,9 +3704,9 @@ class TestCheckWebsiteUriListDeeply(TestCase):
         ]
         check_website_uri_list_deeply(
             doc_id_list, website_url, object_store_url, dag_info)
-        self.assertEqual(mock_get.call_count, 2)
-        self.assertEqual(mock_head.call_count, 8)
-        self.assertEqual(mock_dt.utcnow.call_count, 20)
+        self.assertEqual(mock_get.call_count, 1)
+        self.assertEqual(mock_head.call_count, 7)
+        self.assertEqual(mock_dt.utcnow.call_count, 16)
         self.assertListEqual(
             expected_calls,
             mock_add_execution_in_database.call_args_list

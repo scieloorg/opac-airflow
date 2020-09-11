@@ -703,7 +703,7 @@ def add_responses(doc_data_list, website_url=None):
     head = True
     if website_url:
         for doc_data in doc_data_list:
-            doc_data["uri"] = (website_url or "") + doc_data.get("uri")
+            doc_data["uri"] = website_url + doc_data["uri"]
             head = doc_data.get("format") != "html"
     uri_items = (doc_data["uri"] for doc_data in doc_data_list)
 
@@ -769,7 +769,7 @@ def check_html_webpages_availability(html_data_items, assets_data, webpages_data
         other_webpages_data.remove(doc_data)
 
         try:
-            content = response.text()
+            content = response.text
         except (AttributeError):
             content = None
         result.update(eval_response(response))
@@ -1017,9 +1017,12 @@ def concat_website_url_and_uri_list_items(website_url_list, uri_list_items):
 
 def check_uri_items(uri_list_items):
     """Acessa uma lista de URI e retorna o resultado da verificação"""
+
+    if not uri_list_items:
+        return [], []
+
     success = []
     failures = []
-
     responses = async_requests.parallel_requests(uri_list_items, head=True)
     for resp in responses:
         result = eval_response(resp)
@@ -1182,30 +1185,42 @@ def check_document_availability(doc_id, website_url, object_store_url):
     document_webpages_data = get_document_webpages_data(doc_id, doc_data)
     doc_data_grouped_by_webpage_type = group_doc_data_by_webpage_type(
         document_webpages_data)
+
+    html_webpages_data = add_responses(
+        doc_data_grouped_by_webpage_type["web html"], website_url)
+
+    pdf_webpages_data = add_responses(
+        doc_data_grouped_by_webpage_type["web pdf"], website_url)
+
     assets_data = get_document_assets_data(current_version)
     renditions_data = get_document_renditions_data(current_version)
 
-    webpages_availability, numbers = check_document_webpages_availability(
-                website_url,
-                document_webpages_data,
+    web_html_availability, web_html_numbers = check_html_webpages_availability(
+                html_webpages_data,
                 assets_data,
+                document_webpages_data,
                 object_store_url
             )
+    web_pdf_availability, web_pdf_numbers = check_pdf_webpages_availability(
+            pdf_webpages_data)
+
     renditions_availability, q_unavailable_renditions = check_document_renditions_availability(
                 renditions_data
             )
     assets_availability, q_unavailable_assets = check_document_assets_availability(assets_data)
     summarized = {}
-    summarized.update(numbers)
+    for name, numbers in (("web html", web_html_numbers), ("web pdf", web_pdf_numbers)):
+        if numbers:
+            summarized.update({name: numbers})
     summarized.update({
         "renditions": {
-            "total": len(renditions_data), "total unavailable": 0},
+            "total": len(renditions_data),
+            "total unavailable": q_unavailable_renditions},
         "assets": {
-            "total": len(assets_availability), "total unavailable": 0},
+            "total": len(assets_availability),
+            "total unavailable": q_unavailable_assets},
         }
     )
-    summarized["renditions"]["total unavailable"] = q_unavailable_renditions
-    summarized["assets"]["total unavailable"] = q_unavailable_assets
     t2 = datetime.utcnow()
     summarized["processing"] = {
         "start": t1, "end": t2, "duration": (t2 - t1).seconds
@@ -1215,7 +1230,8 @@ def check_document_availability(doc_id, website_url, object_store_url):
         "summary": summarized,
         "detail":
             {
-                "webpages": webpages_availability,
+                "web html": web_html_availability,
+                "web pdf": web_pdf_availability,
                 "renditions": renditions_availability,
                 "assets": assets_availability,
             },
