@@ -22,6 +22,7 @@ from operations.check_website_operations import (
     check_asset_uri_items_expected_in_webpage,
     check_doc_webpage_uri_items_expected_in_webpage,
     check_document_webpages_availability,
+    check_html_webpages_availability,
     check_document_html,
     check_document_assets_availability,
     check_document_renditions_availability,
@@ -3513,4 +3514,775 @@ class TestGroupDocDataByWebpageType(TestCase):
         }
         result = group_doc_data_by_webpage_type(doc_webpages_data)
         self.assertDictEqual(expected, result)
+
+
+class TestCheckHtmlWebpagesAvailability(TestCase):
+
+    @patch("operations.check_website_operations.do_request")
+    def test_check_html_webpages_availability_returns_success(self, mock_do_request):
+        website_url = "https://www.scielo.br"
+        html_data_list = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
+            },
+            {
+                "lang": "es",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=es",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=es",
+                    "/j/xjk/a/ldld?lang=es&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=es",
+                    "/j/xjk/a/ldld/?format=html&lang=es",
+                    "/j/xjk/a/ldld/?lang=es&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=es",
+                ],
+            },
+        ]
+        doc_data_list = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
+            },
+            {
+                "lang": "en",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=pdf&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=pdf&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=pdf",
+                    "/j/xjk/a/ldld?format=pdf",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=pdf&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=pdf",
+                    "/j/xjk/a/ldld/?format=pdf",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
+            },
+            {
+                "lang": "es",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=es",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=es",
+                    "/j/xjk/a/ldld?lang=es&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=es",
+                    "/j/xjk/a/ldld/?format=html&lang=es",
+                    "/j/xjk/a/ldld/?lang=es&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=es",
+                ],
+            },
+            {
+                "lang": "es",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=pdf&lang=es",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=pdf&lang=es",
+                    "/j/xjk/a/ldld?lang=es&format=pdf",
+                    "/j/xjk/a/ldld?format=pdf",
+                    "/j/xjk/a/ldld?lang=es",
+                    "/j/xjk/a/ldld/?format=pdf&lang=es",
+                    "/j/xjk/a/ldld/?lang=es&format=pdf",
+                    "/j/xjk/a/ldld/?format=pdf",
+                    "/j/xjk/a/ldld/?lang=es",
+                ],
+            },
+        ]
+        assets_data = [
+            {
+                "prefix": "asset_uri_1",
+                "uri_alternatives": [
+                    "asset_uri_1.tiff", "asset_uri_1.jpg", "asset_uri_1.png"]
+            },
+            {
+                "prefix": "asset_uri_2",
+                "uri_alternatives": [
+                    "asset_uri_2.tiff", "asset_uri_2.jpg", "asset_uri_2.png"]
+            }
+        ]
+        content = [
+            """
+            <a href="asset_uri_2.jpg"/>
+            <a href="asset_uri_1.jpg"/>
+            <a href="/j/xjk/a/ldld?format=pdf&lang=es"/>
+            <a href="/j/xjk/a/ldld?format=pdf&lang=en"/>
+            <a href="/j/xjk/a/ldld?format=html&lang=es"/>
+            """,
+            """
+            <a href="asset_uri_2.jpg"/>
+            <a href="asset_uri_1.jpg"/>
+            <a href="/j/xjk/a/ldld?format=pdf&lang=es"/>
+            <a href="/j/xjk/a/ldld?format=pdf&lang=en"/>
+            <a href="/j/xjk/a/ldld?format=html&lang=en"/>
+            """,
+        ]
+        mock_do_request.side_effect = [
+            MockResponse(200, content[0]),
+            MockResponse(200, content[1]),
+        ]
+        expected = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "components": [
+                    {
+                        "type": "asset",
+                        "id": "asset_uri_1",
+                        "present_in_html": [
+                            "asset_uri_1.jpg",
+                        ],
+                        "absent_in_html": [
+                            "asset_uri_1.tiff", "asset_uri_1.png",
+                        ],
+                    },
+                    {
+                        "type": "asset",
+                        "id": "asset_uri_2",
+                        "present_in_html": [
+                            "asset_uri_2.jpg",
+                        ],
+                        "absent_in_html": [
+                            "asset_uri_2.tiff", "asset_uri_2.png",
+                        ],
+                    },
+                    {
+                        "type": "pdf",
+                        "id": "en",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=pdf&lang=en",
+                        ],
+                    },
+                    {
+                        "type": "html",
+                        "id": "es",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=html&lang=es",
+                        ],
+                    },
+                    {
+                        "type": "pdf",
+                        "id": "es",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=pdf&lang=es",
+                        ],
+                    },
+                ],
+                "total missing components": 0,
+                "total expected components": 5,
+                "pdf": {"total": 2, "missing": 0},
+                "html": {"total": 1, "missing": 0},
+                "assets": {
+                    "total expected": 2,
+                    "total missing": 0,
+                    "total alternatives": 6,
+                    "total alternatives present in html": 2,
+                },
+            },
+            {
+                "lang": "es",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es",
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "components": [
+                    {
+                        "type": "asset",
+                        "id": "asset_uri_1",
+                        "present_in_html": [
+                            "asset_uri_1.jpg",
+                        ],
+                        "absent_in_html": [
+                            "asset_uri_1.tiff", "asset_uri_1.png",
+                        ],
+                    },
+                    {
+                        "type": "asset",
+                        "id": "asset_uri_2",
+                        "present_in_html": [
+                            "asset_uri_2.jpg",
+                        ],
+                        "absent_in_html": [
+                            "asset_uri_2.tiff", "asset_uri_2.png",
+                        ],
+                    },
+                    {
+                        "type": "html",
+                        "id": "en",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=html&lang=en",
+                        ],
+                    },
+                    {
+                        "type": "pdf",
+                        "id": "en",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=pdf&lang=en",
+                        ],
+                    },
+                    {
+                        "type": "pdf",
+                        "id": "es",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=pdf&lang=es",
+                        ],
+                    },
+                ],
+                "total expected components": 5,
+                "total missing components": 0,
+                "html": {"total": 1, "missing": 0},
+                "pdf": {"total": 2, "missing": 0},
+                "assets": {
+                    "total expected": 2,
+                    "total missing": 0,
+                    "total alternatives": 6,
+                    "total alternatives present in html": 2,
+                },
+            },
+        ]
+        object_store_url = None
+        result, summary = check_html_webpages_availability(
+            website_url, html_data_list, assets_data, doc_data_list,
+            object_store_url)
+        self.assertDictEqual(
+            {"total": 2, "total unavailable": 0, "total incomplete": 0, },
+            summary
+        )
+        self.assertListEqual(expected, result)
+
+    @patch("operations.check_website_operations.do_request")
+    def test_check_html_webpages_availability_returns_pdf_is_present_in_html(self, mock_do_request):
+        website_url = "https://www.scielo.br"
+        html_data_list = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
+            },
+        ]
+        doc_data_list = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
+            },
+            {
+                "lang": "en",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=pdf&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=pdf&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=pdf",
+                    "/j/xjk/a/ldld?format=pdf",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=pdf&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=pdf",
+                    "/j/xjk/a/ldld/?format=pdf",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
+            },
+        ]
+        assets_data = [
+        ]
+        content = """
+        <a href="/j/xjk/a/ldld?format=pdf&lang=en"/>
+        """
+        mock_do_request.side_effect = [
+            MockResponse(200, content)
+        ]
+        expected = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "components": [
+                    {
+                        "type": "pdf",
+                        "id": "en",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=pdf&lang=en",
+                        ],
+                    },
+                ],
+                "total missing components": 0,
+                "total expected components": 1,
+                "pdf": {"total": 1, "missing": 0},
+                "assets": {
+                    "total expected": 0,
+                    "total missing": 0,
+                    "total alternatives": 0,
+                    "total alternatives present in html": 0,
+                },
+            },
+        ]
+        object_store_url = None
+        result, summary = check_html_webpages_availability(
+            website_url, html_data_list, assets_data, doc_data_list, object_store_url)
+        self.assertDictEqual(
+            {"total": 1, "total unavailable": 0, "total incomplete": 0},
+            summary
+        )
+        self.assertListEqual(expected, result)
+
+    @patch("operations.check_website_operations.do_request")
+    def test_check_html_webpages_availability_returns_pdf_it_is_not_present_in_html(self, mock_do_request):
+        website_url = "https://www.scielo.br"
+        html_data_list = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
+            },
+        ]
+        doc_data_list = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
+            },
+            {
+                "lang": "en",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=pdf&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=pdf&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=pdf",
+                    "/j/xjk/a/ldld?format=pdf",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=pdf&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=pdf",
+                    "/j/xjk/a/ldld/?format=pdf",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
+            },
+        ]
+        assets_data = [
+        ]
+        mock_do_request.side_effect = [
+            MockResponse(200, ""),
+        ]
+        expected = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "components": [
+                    {
+                        "type": "pdf",
+                        "id": "en",
+                        "present_in_html": [],
+                        "absent_in_html": [
+                            "/j/xjk/a/ldld?format=pdf&lang=en",
+                            "/j/xjk/a/ldld?lang=en&format=pdf",
+                            "/j/xjk/a/ldld?format=pdf",
+                            "/j/xjk/a/ldld?lang=en",
+                            "/j/xjk/a/ldld/?format=pdf&lang=en",
+                            "/j/xjk/a/ldld/?lang=en&format=pdf",
+                            "/j/xjk/a/ldld/?format=pdf",
+                            "/j/xjk/a/ldld/?lang=en",
+                        ],
+                    },
+                ],
+                "total expected components": 1,
+                "total missing components": 1,
+                "pdf": {"total": 1, "missing": 1},
+                "assets": {
+                    "total expected": 0,
+                    "total missing": 0,
+                    "total alternatives": 0,
+                    "total alternatives present in html": 0,
+                },
+                "existing_uri_items_in_html": [],
+            },
+        ]
+        object_store_url = None
+        result, summary = check_html_webpages_availability(
+            website_url, html_data_list, assets_data, doc_data_list, object_store_url)
+        self.assertDictEqual({
+                "total": 1, "total unavailable": 0, "total incomplete": 1
+            },
+            summary
+        )
+        self.assertListEqual(expected, result)
+
+    @patch("operations.check_website_operations.do_request")
+    def test_check_html_webpages_availability_returns_html_es_is_not_available_but_it_is_present_in_html_en(self, mock_do_request):
+        website_url = "https://www.scielo.br"
+        html_data_list = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
+            },
+            {
+                "lang": "es",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=es",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=es",
+                    "/j/xjk/a/ldld?lang=es&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=es",
+                    "/j/xjk/a/ldld/?format=html&lang=es",
+                    "/j/xjk/a/ldld/?lang=es&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=es",
+                ],
+            },
+        ]
+        doc_data_list = html_data_list.copy()
+        assets_data = [
+        ]
+        mock_do_request.side_effect = [
+            MockResponse(200,
+                """
+                Versão ingles no formato html
+                <a href="/j/xjk/a/ldld?format=html&lang=es"/>
+                """
+            ),
+            MockResponse(None)
+        ]
+        expected = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "components": [
+                    {
+                        "type": "html",
+                        "id": "es",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=html&lang=es",
+                        ],
+                    },
+                ],
+                "total missing components": 0,
+                "total expected components": 1,
+                "html": {"total": 1, "missing": 0},
+                "assets": {
+                    "total expected": 0,
+                    "total missing": 0,
+                    "total alternatives": 0,
+                    "total alternatives present in html": 0,
+                },
+            },
+            {
+                "lang": "es",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es",
+                "available": False,
+                "status code": None,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "total missing components": 1,
+                "total expected components": 1,
+            },
+        ]
+        object_store_url = None
+        result, summary = check_html_webpages_availability(
+            website_url, html_data_list, assets_data, doc_data_list, object_store_url)
+        self.assertDictEqual(
+            {"total": 2, "total unavailable": 1, "total incomplete": 0},
+            summary
+        )
+        self.assertListEqual(expected, result)
+
+    @patch("operations.check_website_operations.do_request")
+    def test_check_html_webpages_availability_returns_html_es_is_available_but_it_is_not_present_in_html_en(self, mock_do_request):
+        website_url = "https://www.scielo.br"
+        html_data_list = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=en",
+                    "/j/xjk/a/ldld?lang=en&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=en",
+                    "/j/xjk/a/ldld/?format=html&lang=en",
+                    "/j/xjk/a/ldld/?lang=en&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=en",
+                ],
+            },
+            {
+                "lang": "es",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "/j/xjk/a/ldld?format=html&lang=es",
+                "uri_alternatives": [
+                    "/j/xjk/a/ldld?format=html&lang=es",
+                    "/j/xjk/a/ldld?lang=es&format=html",
+                    "/j/xjk/a/ldld?format=html",
+                    "/j/xjk/a/ldld?lang=es",
+                    "/j/xjk/a/ldld/?format=html&lang=es",
+                    "/j/xjk/a/ldld/?lang=es&format=html",
+                    "/j/xjk/a/ldld/?format=html",
+                    "/j/xjk/a/ldld/?lang=es",
+                ],
+            },
+        ]
+        doc_data_list = html_data_list.copy()
+        assets_data = [
+        ]
+        mock_do_request.side_effect = [
+            MockResponse(
+                200, "documento sem links, conteúdo do html em Ingles"),
+            MockResponse(
+                200,
+                """
+                conteúdo do documento em espanhol com link para a versão ingles
+                    <a href="/j/xjk/a/ldld?format=html"/>
+                """
+            ),
+        ]
+        expected = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "components": [
+                    {
+                        "type": "html",
+                        "id": "es",
+                        "present_in_html": [],
+                        "absent_in_html": [
+                            "/j/xjk/a/ldld?format=html&lang=es",
+                            "/j/xjk/a/ldld?lang=es&format=html",
+                            "/j/xjk/a/ldld?format=html",
+                            "/j/xjk/a/ldld?lang=es",
+                            "/j/xjk/a/ldld/?format=html&lang=es",
+                            "/j/xjk/a/ldld/?lang=es&format=html",
+                            "/j/xjk/a/ldld/?format=html",
+                            "/j/xjk/a/ldld/?lang=es",
+                        ],
+                    },
+                ],
+                "total expected components": 1,
+                "total missing components": 1,
+                "html": {"total": 1, "missing": 1},
+                "assets": {
+                    "total expected": 0,
+                    "total missing": 0,
+                    "total alternatives": 0,
+                    "total alternatives present in html": 0,
+                },
+                "existing_uri_items_in_html": []
+            },
+            {
+                "lang": "es",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es",
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "components": [
+                    {
+                        "type": "html",
+                        "id": "en",
+                        "present_in_html": [
+                            "/j/xjk/a/ldld?format=html",
+                        ],
+                    },
+                ],
+                "total expected components": 1,
+                "total missing components": 0,
+                "html": {"total": 1, "missing": 0},
+                "assets": {
+                    "total expected": 0,
+                    "total missing": 0,
+                    "total alternatives": 0,
+                    "total alternatives present in html": 0,
+                },
+            },
+        ]
+        object_store_url = None
+        result, summary = check_html_webpages_availability(
+            website_url, html_data_list, assets_data, doc_data_list, object_store_url)
+        self.assertDictEqual(
+            {"total": 2, "total unavailable": 0, "total incomplete": 1, },
+            summary
+        )
+        self.assertListEqual(expected, result)
+
 
