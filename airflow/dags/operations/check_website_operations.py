@@ -755,6 +755,9 @@ def check_html_webpages_availability(html_data_items, assets_data, webpages_data
     for doc_data in html_data_items:
         doc_uri = doc_data["uri"]
 
+        response = doc_data["response"]
+        del doc_data["response"]
+
         result = doc_data.copy()
         if "uri_alternatives" in result.keys():
             del result["uri_alternatives"]
@@ -766,9 +769,10 @@ def check_html_webpages_availability(html_data_items, assets_data, webpages_data
         other_webpages_data.remove(doc_data)
 
         try:
-            content = doc_data["response"].text()
+            content = response.text()
         except (AttributeError):
             content = None
+        result.update(eval_response(response))
         components_result = check_document_html_content(
                                     content,
                                     assets_data,

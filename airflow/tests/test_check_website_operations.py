@@ -162,11 +162,15 @@ class MockResponse:
 
 class MockClientResponse:
 
-    def __init__(self, code, uri):
+    def __init__(self, code, uri, _text=None):
         self.end_time = END_TIME
         self.start_time = START_TIME
         self.status_code = code
         self.uri = uri
+        self._text = _text
+
+    def text(self):
+        return self._text
 
 
 class MockLogger:
@@ -3690,47 +3694,31 @@ class TestGroupDocDataByWebpageType(TestCase):
 
 class TestCheckHtmlWebpagesAvailability(TestCase):
 
-    @patch("operations.check_website_operations.do_request")
-    def test_check_html_webpages_availability_returns_success(self, mock_do_request):
-        website_url = "https://www.scielo.br"
-        html_data_list = [
-            {
-                "lang": "en",
-                "format": "html",
-                "pid_v2": "pid-v2", "acron": "xjk",
-                "doc_id_for_human": "artigo-1234",
-                "doc_id": "ldld",
-                "uri": "/j/xjk/a/ldld?format=html&lang=en",
-                "uri_alternatives": [
-                    "/j/xjk/a/ldld?format=html&lang=en",
-                    "/j/xjk/a/ldld?lang=en&format=html",
-                    "/j/xjk/a/ldld?format=html",
-                    "/j/xjk/a/ldld?lang=en",
-                    "/j/xjk/a/ldld/?format=html&lang=en",
-                    "/j/xjk/a/ldld/?lang=en&format=html",
-                    "/j/xjk/a/ldld/?format=html",
-                    "/j/xjk/a/ldld/?lang=en",
-                ],
-            },
-            {
-                "lang": "es",
-                "format": "html",
-                "pid_v2": "pid-v2", "acron": "xjk",
-                "doc_id_for_human": "artigo-1234",
-                "doc_id": "ldld",
-                "uri": "/j/xjk/a/ldld?format=html&lang=es",
-                "uri_alternatives": [
-                    "/j/xjk/a/ldld?format=html&lang=es",
-                    "/j/xjk/a/ldld?lang=es&format=html",
-                    "/j/xjk/a/ldld?format=html",
-                    "/j/xjk/a/ldld?lang=es",
-                    "/j/xjk/a/ldld/?format=html&lang=es",
-                    "/j/xjk/a/ldld/?lang=es&format=html",
-                    "/j/xjk/a/ldld/?format=html",
-                    "/j/xjk/a/ldld/?lang=es",
-                ],
-            },
+    def test_check_html_webpages_availability_returns_success(self):
+        responses = [
+            MockClientResponse(
+                200,
+                "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en"
+            ),
+            MockClientResponse(
+                200,
+                "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es"
+            ),
         ]
+        responses[0]._text = """
+            <a href="asset_uri_2.jpg"/>
+            <a href="asset_uri_1.jpg"/>
+            <a href="/j/xjk/a/ldld?format=pdf&lang=es"/>
+            <a href="/j/xjk/a/ldld?format=pdf&lang=en"/>
+            <a href="/j/xjk/a/ldld?format=html&lang=es"/>
+            """
+        responses[1]._text = """
+            <a href="asset_uri_2.jpg"/>
+            <a href="asset_uri_1.jpg"/>
+            <a href="/j/xjk/a/ldld?format=pdf&lang=es"/>
+            <a href="/j/xjk/a/ldld?format=pdf&lang=en"/>
+            <a href="/j/xjk/a/ldld?format=html&lang=en"/>
+            """
         doc_data_list = [
             {
                 "lang": "en",
@@ -3738,7 +3726,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                 "pid_v2": "pid-v2", "acron": "xjk",
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
-                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
                 "uri_alternatives": [
                     "/j/xjk/a/ldld?format=html&lang=en",
                     "/j/xjk/a/ldld?lang=en&format=html",
@@ -3749,6 +3737,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                     "/j/xjk/a/ldld/?format=html",
                     "/j/xjk/a/ldld/?lang=en",
                 ],
+                "response": responses[0]
             },
             {
                 "lang": "en",
@@ -3756,7 +3745,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                 "pid_v2": "pid-v2", "acron": "xjk",
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
-                "uri": "/j/xjk/a/ldld?format=pdf&lang=en",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en",
                 "uri_alternatives": [
                     "/j/xjk/a/ldld?format=pdf&lang=en",
                     "/j/xjk/a/ldld?lang=en&format=pdf",
@@ -3774,7 +3763,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                 "pid_v2": "pid-v2", "acron": "xjk",
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
-                "uri": "/j/xjk/a/ldld?format=html&lang=es",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es",
                 "uri_alternatives": [
                     "/j/xjk/a/ldld?format=html&lang=es",
                     "/j/xjk/a/ldld?lang=es&format=html",
@@ -3785,6 +3774,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                     "/j/xjk/a/ldld/?format=html",
                     "/j/xjk/a/ldld/?lang=es",
                 ],
+                "response": responses[1]
             },
             {
                 "lang": "es",
@@ -3792,7 +3782,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                 "pid_v2": "pid-v2", "acron": "xjk",
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
-                "uri": "/j/xjk/a/ldld?format=pdf&lang=es",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=es",
                 "uri_alternatives": [
                     "/j/xjk/a/ldld?format=pdf&lang=es",
                     "/j/xjk/a/ldld?lang=es&format=pdf",
@@ -3805,6 +3795,10 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                 ],
             },
         ]
+        html_data_list = [
+            doc_data_list[0],
+            doc_data_list[2],
+        ]
         assets_data = [
             {
                 "prefix": "asset_uri_1",
@@ -3816,26 +3810,6 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                 "uri_alternatives": [
                     "asset_uri_2.tiff", "asset_uri_2.jpg", "asset_uri_2.png"]
             }
-        ]
-        content = [
-            """
-            <a href="asset_uri_2.jpg"/>
-            <a href="asset_uri_1.jpg"/>
-            <a href="/j/xjk/a/ldld?format=pdf&lang=es"/>
-            <a href="/j/xjk/a/ldld?format=pdf&lang=en"/>
-            <a href="/j/xjk/a/ldld?format=html&lang=es"/>
-            """,
-            """
-            <a href="asset_uri_2.jpg"/>
-            <a href="asset_uri_1.jpg"/>
-            <a href="/j/xjk/a/ldld?format=pdf&lang=es"/>
-            <a href="/j/xjk/a/ldld?format=pdf&lang=en"/>
-            <a href="/j/xjk/a/ldld?format=html&lang=en"/>
-            """,
-        ]
-        mock_do_request.side_effect = [
-            MockResponse(200, content[0]),
-            MockResponse(200, content[1]),
         ]
         expected = [
             {
@@ -3973,7 +3947,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
         ]
         object_store_url = None
         result, summary = check_html_webpages_availability(
-            website_url, html_data_list, assets_data, doc_data_list,
+            html_data_list, assets_data, doc_data_list,
             object_store_url)
         self.assertDictEqual(
             {"total": 2, "total unavailable": 0, "total incomplete": 0, },
@@ -3981,29 +3955,12 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
         )
         self.assertListEqual(expected, result)
 
-    @patch("operations.check_website_operations.do_request")
-    def test_check_html_webpages_availability_returns_pdf_is_present_in_html(self, mock_do_request):
-        website_url = "https://www.scielo.br"
-        html_data_list = [
-            {
-                "lang": "en",
-                "format": "html",
-                "pid_v2": "pid-v2", "acron": "xjk",
-                "doc_id_for_human": "artigo-1234",
-                "doc_id": "ldld",
-                "uri": "/j/xjk/a/ldld?format=html&lang=en",
-                "uri_alternatives": [
-                    "/j/xjk/a/ldld?format=html&lang=en",
-                    "/j/xjk/a/ldld?lang=en&format=html",
-                    "/j/xjk/a/ldld?format=html",
-                    "/j/xjk/a/ldld?lang=en",
-                    "/j/xjk/a/ldld/?format=html&lang=en",
-                    "/j/xjk/a/ldld/?lang=en&format=html",
-                    "/j/xjk/a/ldld/?format=html",
-                    "/j/xjk/a/ldld/?lang=en",
-                ],
-            },
-        ]
+    def test_check_html_webpages_availability_returns_pdf_is_present_in_html(self):
+        response = MockClientResponse(
+            200, "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en")
+        response._text = """
+        <a href="/j/xjk/a/ldld?format=pdf&lang=en"/>
+        """
         doc_data_list = [
             {
                 "lang": "en",
@@ -4011,7 +3968,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                 "pid_v2": "pid-v2", "acron": "xjk",
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
-                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
                 "uri_alternatives": [
                     "/j/xjk/a/ldld?format=html&lang=en",
                     "/j/xjk/a/ldld?lang=en&format=html",
@@ -4022,6 +3979,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                     "/j/xjk/a/ldld/?format=html",
                     "/j/xjk/a/ldld/?lang=en",
                 ],
+                "response": response,
             },
             {
                 "lang": "en",
@@ -4029,7 +3987,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                 "pid_v2": "pid-v2", "acron": "xjk",
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
-                "uri": "/j/xjk/a/ldld?format=pdf&lang=en",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en",
                 "uri_alternatives": [
                     "/j/xjk/a/ldld?format=pdf&lang=en",
                     "/j/xjk/a/ldld?lang=en&format=pdf",
@@ -4042,13 +4000,8 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                 ],
             },
         ]
+        html_data_list = [doc_data_list[0]]
         assets_data = [
-        ]
-        content = """
-        <a href="/j/xjk/a/ldld?format=pdf&lang=en"/>
-        """
-        mock_do_request.side_effect = [
-            MockResponse(200, content)
         ]
         expected = [
             {
@@ -4085,36 +4038,17 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
         ]
         object_store_url = None
         result, summary = check_html_webpages_availability(
-            website_url, html_data_list, assets_data, doc_data_list, object_store_url)
+            html_data_list, assets_data, doc_data_list, object_store_url)
         self.assertDictEqual(
             {"total": 1, "total unavailable": 0, "total incomplete": 0},
             summary
         )
         self.assertListEqual(expected, result)
 
-    @patch("operations.check_website_operations.do_request")
-    def test_check_html_webpages_availability_returns_pdf_it_is_not_present_in_html(self, mock_do_request):
-        website_url = "https://www.scielo.br"
-        html_data_list = [
-            {
-                "lang": "en",
-                "format": "html",
-                "pid_v2": "pid-v2", "acron": "xjk",
-                "doc_id_for_human": "artigo-1234",
-                "doc_id": "ldld",
-                "uri": "/j/xjk/a/ldld?format=html&lang=en",
-                "uri_alternatives": [
-                    "/j/xjk/a/ldld?format=html&lang=en",
-                    "/j/xjk/a/ldld?lang=en&format=html",
-                    "/j/xjk/a/ldld?format=html",
-                    "/j/xjk/a/ldld?lang=en",
-                    "/j/xjk/a/ldld/?format=html&lang=en",
-                    "/j/xjk/a/ldld/?lang=en&format=html",
-                    "/j/xjk/a/ldld/?format=html",
-                    "/j/xjk/a/ldld/?lang=en",
-                ],
-            },
-        ]
+    def test_check_html_webpages_availability_returns_pdf_it_is_not_present_in_html(self):
+        response = MockClientResponse(
+                200, "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
+                "")
         doc_data_list = [
             {
                 "lang": "en",
@@ -4122,7 +4056,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                 "pid_v2": "pid-v2", "acron": "xjk",
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
-                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
                 "uri_alternatives": [
                     "/j/xjk/a/ldld?format=html&lang=en",
                     "/j/xjk/a/ldld?lang=en&format=html",
@@ -4133,6 +4067,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                     "/j/xjk/a/ldld/?format=html",
                     "/j/xjk/a/ldld/?lang=en",
                 ],
+                "response": response,
             },
             {
                 "lang": "en",
@@ -4140,7 +4075,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                 "pid_v2": "pid-v2", "acron": "xjk",
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
-                "uri": "/j/xjk/a/ldld?format=pdf&lang=en",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en",
                 "uri_alternatives": [
                     "/j/xjk/a/ldld?format=pdf&lang=en",
                     "/j/xjk/a/ldld?lang=en&format=pdf",
@@ -4155,9 +4090,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
         ]
         assets_data = [
         ]
-        mock_do_request.side_effect = [
-            MockResponse(200, ""),
-        ]
+        html_data_list = [doc_data_list[0]]
         expected = [
             {
                 "lang": "en",
@@ -4202,7 +4135,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
         ]
         object_store_url = None
         result, summary = check_html_webpages_availability(
-            website_url, html_data_list, assets_data, doc_data_list, object_store_url)
+            html_data_list, assets_data, doc_data_list, object_store_url)
         self.assertDictEqual({
                 "total": 1, "total unavailable": 0, "total incomplete": 1
             },
@@ -4210,9 +4143,18 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
         )
         self.assertListEqual(expected, result)
 
-    @patch("operations.check_website_operations.do_request")
-    def test_check_html_webpages_availability_returns_html_es_is_not_available_but_it_is_present_in_html_en(self, mock_do_request):
-        website_url = "https://www.scielo.br"
+    def test_check_html_webpages_availability_returns_html_es_is_not_available_but_it_is_present_in_html_en(self):
+        responses = [
+            MockClientResponse(200,
+                "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
+                """
+                Versão ingles no formato html
+                <a href="/j/xjk/a/ldld?format=html&lang=es"/>
+                """
+            ),
+            MockClientResponse(
+                None, "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es")
+        ]
         html_data_list = [
             {
                 "lang": "en",
@@ -4220,7 +4162,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                 "pid_v2": "pid-v2", "acron": "xjk",
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
-                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
                 "uri_alternatives": [
                     "/j/xjk/a/ldld?format=html&lang=en",
                     "/j/xjk/a/ldld?lang=en&format=html",
@@ -4231,6 +4173,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                     "/j/xjk/a/ldld/?format=html",
                     "/j/xjk/a/ldld/?lang=en",
                 ],
+                "response": responses[0]
             },
             {
                 "lang": "es",
@@ -4238,7 +4181,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                 "pid_v2": "pid-v2", "acron": "xjk",
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
-                "uri": "/j/xjk/a/ldld?format=html&lang=es",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es",
                 "uri_alternatives": [
                     "/j/xjk/a/ldld?format=html&lang=es",
                     "/j/xjk/a/ldld?lang=es&format=html",
@@ -4249,20 +4192,13 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                     "/j/xjk/a/ldld/?format=html",
                     "/j/xjk/a/ldld/?lang=es",
                 ],
+                "response": responses[1]
             },
         ]
         doc_data_list = html_data_list.copy()
         assets_data = [
         ]
-        mock_do_request.side_effect = [
-            MockResponse(200,
-                """
-                Versão ingles no formato html
-                <a href="/j/xjk/a/ldld?format=html&lang=es"/>
-                """
-            ),
-            MockResponse(None)
-        ]
+
         expected = [
             {
                 "lang": "en",
@@ -4313,16 +4249,28 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
         ]
         object_store_url = None
         result, summary = check_html_webpages_availability(
-            website_url, html_data_list, assets_data, doc_data_list, object_store_url)
+            html_data_list, assets_data, doc_data_list, object_store_url)
         self.assertDictEqual(
             {"total": 2, "total unavailable": 1, "total incomplete": 0},
             summary
         )
         self.assertListEqual(expected, result)
 
-    @patch("operations.check_website_operations.do_request")
-    def test_check_html_webpages_availability_returns_html_es_is_available_but_it_is_not_present_in_html_en(self, mock_do_request):
-        website_url = "https://www.scielo.br"
+    def test_check_html_webpages_availability_returns_html_es_is_available_but_it_is_not_present_in_html_en(self):
+        responses = [
+            MockClientResponse(
+                200,
+                "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
+                "documento sem links, conteúdo do html em Ingles"),
+            MockClientResponse(
+                200,
+                "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es",
+                """
+                conteúdo do documento em espanhol com link para a versão ingles
+                    <a href="/j/xjk/a/ldld?format=html"/>
+                """
+            ),
+        ]
         html_data_list = [
             {
                 "lang": "en",
@@ -4330,7 +4278,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                 "pid_v2": "pid-v2", "acron": "xjk",
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
-                "uri": "/j/xjk/a/ldld?format=html&lang=en",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
                 "uri_alternatives": [
                     "/j/xjk/a/ldld?format=html&lang=en",
                     "/j/xjk/a/ldld?lang=en&format=html",
@@ -4341,6 +4289,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                     "/j/xjk/a/ldld/?format=html",
                     "/j/xjk/a/ldld/?lang=en",
                 ],
+                "response": responses[0],
             },
             {
                 "lang": "es",
@@ -4348,7 +4297,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                 "pid_v2": "pid-v2", "acron": "xjk",
                 "doc_id_for_human": "artigo-1234",
                 "doc_id": "ldld",
-                "uri": "/j/xjk/a/ldld?format=html&lang=es",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es",
                 "uri_alternatives": [
                     "/j/xjk/a/ldld?format=html&lang=es",
                     "/j/xjk/a/ldld?lang=es&format=html",
@@ -4359,22 +4308,13 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                     "/j/xjk/a/ldld/?format=html",
                     "/j/xjk/a/ldld/?lang=es",
                 ],
+                "response": responses[1],
             },
         ]
         doc_data_list = html_data_list.copy()
         assets_data = [
         ]
-        mock_do_request.side_effect = [
-            MockResponse(
-                200, "documento sem links, conteúdo do html em Ingles"),
-            MockResponse(
-                200,
-                """
-                conteúdo do documento em espanhol com link para a versão ingles
-                    <a href="/j/xjk/a/ldld?format=html"/>
-                """
-            ),
-        ]
+        
         expected = [
             {
                 "lang": "en",
@@ -4450,7 +4390,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
         ]
         object_store_url = None
         result, summary = check_html_webpages_availability(
-            website_url, html_data_list, assets_data, doc_data_list, object_store_url)
+            html_data_list, assets_data, doc_data_list, object_store_url)
         self.assertDictEqual(
             {"total": 2, "total unavailable": 0, "total incomplete": 1, },
             summary
