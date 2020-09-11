@@ -71,7 +71,7 @@ def seq_requests(uri_items, head=False):
     return resps
 
 
-if __name__ == "__main__":
+def main():
     lista = [
         'https://www.scielo.br/scielo.php?script=sci_arttext&pid=S0102-67202020000200304&lng=en&nrm=iso&tlng=en',
         'https://www.scielo.br/scielo.php?script=sci_arttext&pid=S0102-67202020000200305&lng=en&nrm=iso',
@@ -85,5 +85,23 @@ if __name__ == "__main__":
     parallel_requests(lista, True)
     t4 = datetime.utcnow()
 
-    print((t2 - t1).microseconds)
-    print((t4 - t3).microseconds)
+    print((t2 - t1).microseconds, (t2 - t1).seconds)
+    print((t4 - t3).microseconds, (t4 - t3).seconds)
+
+    lista = [
+        'https://www.scielo.br/scielo.php?script=sci_arttext&pid=S0102-67202020000200304&lng=en&nrm=iso&tlng=en',
+    ]
+    t1 = datetime.utcnow()
+    seq_requests(lista, True)
+    t2 = datetime.utcnow()
+
+    t3 = datetime.utcnow()
+    parallel_requests(lista, True)
+    t4 = datetime.utcnow()
+
+    print((t2 - t1).microseconds, (t2 - t1).seconds)
+    print((t4 - t3).microseconds, (t4 - t3).seconds)
+
+
+if __name__ == "__main__":
+    main()
