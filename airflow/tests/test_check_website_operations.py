@@ -167,10 +167,7 @@ class MockClientResponse:
         self.start_time = START_TIME
         self.status_code = code
         self.uri = uri
-        self._text = _text
-
-    def text(self):
-        return self._text
+        self.text = _text
 
 
 class MockLogger:
@@ -3749,14 +3746,14 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
                 "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es"
             ),
         ]
-        responses[0]._text = """
+        responses[0].text = """
             <a href="asset_uri_2.jpg"/>
             <a href="asset_uri_1.jpg"/>
             <a href="/j/xjk/a/ldld?format=pdf&lang=es"/>
             <a href="/j/xjk/a/ldld?format=pdf&lang=en"/>
             <a href="/j/xjk/a/ldld?format=html&lang=es"/>
             """
-        responses[1]._text = """
+        responses[1].text = """
             <a href="asset_uri_2.jpg"/>
             <a href="asset_uri_1.jpg"/>
             <a href="/j/xjk/a/ldld?format=pdf&lang=es"/>
@@ -4002,7 +3999,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
     def test_check_html_webpages_availability_returns_pdf_is_present_in_html(self):
         response = MockClientResponse(
             200, "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en")
-        response._text = """
+        response.text = """
         <a href="/j/xjk/a/ldld?format=pdf&lang=en"/>
         """
         doc_data_list = [

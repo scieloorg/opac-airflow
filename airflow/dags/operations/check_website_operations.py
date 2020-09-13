@@ -700,14 +700,14 @@ def add_responses(doc_data_list, website_url=None):
     Update `website_url`, if applicable
 
     """
-    head = True
+    body = False
     if website_url:
         for doc_data in doc_data_list:
             doc_data["uri"] = website_url + doc_data["uri"]
-            head = doc_data.get("format") != "html"
+            body = doc_data.get("format") == "html"
     uri_items = (doc_data["uri"] for doc_data in doc_data_list)
 
-    responses = async_requests.parallel_requests(uri_items, head=head)
+    responses = async_requests.parallel_requests(uri_items, body=body)
     responses = {resp.uri: resp for resp in responses}
 
     for doc_data in doc_data_list:
@@ -1023,7 +1023,7 @@ def check_uri_items(uri_list_items):
 
     success = []
     failures = []
-    responses = async_requests.parallel_requests(uri_list_items, head=True)
+    responses = async_requests.parallel_requests(uri_list_items)
     for resp in responses:
         result = eval_response(resp)
         result.update({"uri": resp.uri})
