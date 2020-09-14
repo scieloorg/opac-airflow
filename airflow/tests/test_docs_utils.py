@@ -1145,9 +1145,9 @@ class TestGetDocumentDataToGenerateUri(TestCase):
         self.assertListEqual(expected, result)
 
 
-class Testget_document_assets_data(TestCase):
+class TestGetDocumentAssetsData(TestCase):
 
-    def test_get_document_assets_data(self):
+    def test_get_document_assets_data_returns_assets_data_list_and_also_grouped_by_asset_id(self):
         data = {}
         data["assets"] = {
             "a01.png": [
@@ -1183,8 +1183,57 @@ class Testget_document_assets_data(TestCase):
                 ],
             },
         ]
-        result = get_document_assets_data(data)
-        self.assertEqual(expected, result)
+        expected_assets_data = [
+            {"asset_id": "a01.png", "uri": "https://..a01.png"},
+            {"asset_id": "a01.jpg", "uri": "https://..a01.jpg"},
+            {"asset_id": "a02.png", "uri": "https://vrsao2/a02.png"},
+            {"asset_id": "a02.jpg", "uri": "https://vrsao2/a02.jpg"},
+        ]
+        assets_data, grouped_by_id = get_document_assets_data(data)
+        self.assertEqual(expected, grouped_by_id)
+        self.assertEqual(expected_assets_data, assets_data)
+
+    def test_get_document_assets_data_asserts_data_items_are_same_objects_contained_in_asset_alternatives(self):
+        data = {}
+        data["assets"] = {
+            "a01.png": [
+                ["2020-08-10T11:38:46.759859Z", "https://..a01.png"],
+            ],
+            "a01.jpg": [
+                ["2020-08-10T11:38:46.759859Z", "https://..a01.jpg"],
+            ],
+            "a02.png": [
+                ["2019-08-10T11:38:46.759859Z", "https://vrsao1/a02.png"],
+                ["2020-08-10T11:38:46.759859Z", "https://vrsao2/a02.png"],
+            ],
+            "a02.jpg": [
+                ["2020-08-10T11:38:46.759859Z", "https://vrsao2/a02.jpg"],
+            ],
+        }
+        expected = [
+            {
+                "prefix": "a01",
+                "uri_alternatives": ["https://..a01.png", "https://..a01.jpg"],
+                "asset_alternatives": [
+                    {"asset_id": "a01.png", "uri": "https://..a01.png"},
+                    {"asset_id": "a01.jpg", "uri": "https://..a01.jpg"},
+                ],
+            },
+            {
+                "prefix": "a02",
+                "uri_alternatives": [
+                    "https://vrsao2/a02.png", "https://vrsao2/a02.jpg"],
+                "asset_alternatives": [
+                    {"asset_id": "a02.png", "uri": "https://vrsao2/a02.png"},
+                    {"asset_id": "a02.jpg", "uri": "https://vrsao2/a02.jpg"},
+                ],
+            },
+        ]
+        assets_data, grouped_by_id = get_document_assets_data(data)
+        self.assertIs(assets_data[0], grouped_by_id[0]["asset_alternatives"][0])
+        self.assertIs(assets_data[1], grouped_by_id[0]["asset_alternatives"][1])
+        self.assertIs(assets_data[2], grouped_by_id[1]["asset_alternatives"][0])
+        self.assertIs(assets_data[3], grouped_by_id[1]["asset_alternatives"][1])
 
 
 class Testget_document_renditions_data(TestCase):

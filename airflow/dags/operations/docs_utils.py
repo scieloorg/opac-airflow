@@ -116,21 +116,23 @@ def get_document_assets_data(current_version):
     LAST_VERSION = -1
     # agrupa items que representam o mesmo ativo
     assets_by_prefix = {}
+    assets_data = []
     assets = current_version.get("assets") or {}
     for asset_id, asset in assets.items():
         prefix, ext = os.path.splitext(asset_id)
         prefix = prefix.replace(".thumbnail", "")
         assets_by_prefix[prefix] = assets_by_prefix.get(prefix) or []
-        assets_by_prefix[prefix].append(
-            {
+        uri = {
                 "asset_id": asset_id,
                 "uri": asset[LAST_VERSION][1],
             }
-        )
+        assets_by_prefix[prefix].append(uri)
+        assets_data.append(uri)
     # cria lista dos grupos de ativos digitais
-    assets = []
+
+    assets_grouped_by_id = []
     for prefix, asset_alternatives in assets_by_prefix.items():
-        assets.append(
+        assets_grouped_by_id.append(
             {
                 "prefix": prefix,
                 "uri_alternatives": [
@@ -140,7 +142,7 @@ def get_document_assets_data(current_version):
                 "asset_alternatives": asset_alternatives,
             }
         )
-    return assets
+    return assets_data, assets_grouped_by_id
 
 
 def get_document_renditions_data(current_version):

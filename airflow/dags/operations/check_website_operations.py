@@ -1192,12 +1192,12 @@ def check_document_availability(doc_id, website_url, object_store_url):
     pdf_webpages_data = add_responses(
         doc_data_grouped_by_webpage_type["web pdf"], website_url)
 
-    assets_data = get_document_assets_data(current_version)
+    assets_data, assets_data_grouped_by_id = get_document_assets_data(current_version)
     renditions_data = get_document_renditions_data(current_version)
 
     web_html_availability, web_html_numbers = check_html_webpages_availability(
                 html_webpages_data,
-                assets_data,
+                assets_data_grouped_by_id,
                 document_webpages_data,
                 object_store_url
             )
@@ -1207,7 +1207,7 @@ def check_document_availability(doc_id, website_url, object_store_url):
     renditions_availability, q_unavailable_renditions = check_document_renditions_availability(
                 renditions_data
             )
-    assets_availability, q_unavailable_assets = check_document_assets_availability(assets_data)
+    assets_availability, q_unavailable_assets = check_document_assets_availability(assets_data_grouped_by_id)
     summarized = {}
     for name, numbers in (("web html", web_html_numbers), ("web pdf", web_pdf_numbers)):
         if numbers:
