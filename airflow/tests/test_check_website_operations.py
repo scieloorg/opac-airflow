@@ -26,8 +26,7 @@ from operations.check_website_operations import (
     check_html_webpages_availability,
     check_document_html,
     check_document_html_content,
-    check_document_assets_availability,
-    check_document_renditions_availability,
+    check_responses,
     format_document_webpage_availability_to_register,
     format_document_items_availability_to_register,
     get_kernel_document_id_from_classic_document_uri,
@@ -2078,81 +2077,20 @@ class TestCheckDocumentHtmlContent(TestCase):
         self.assertEqual(expected, result)
 
 
-class TestCheckDocumentAssetsAvailability(TestCase):
-    @patch("operations.check_website_operations.do_request")
-    def test_check_document_assets_availability_returns_one_of_three_is_false(self, mock_do_request):
-        mock_do_request.side_effect = [
-            MockResponse(200),
-            MockResponse(None),
-            MockResponse(200)]
-        assets_data = [
-            {
-                "prefix": "a01",
-                "asset_alternatives": [
-                    {"asset_id": "a01.png",
-                     "uri": "uri de a01.png no object store"},
-                    {"asset_id": "a01.jpg",
-                     "uri": "uri de a01.jpg no object store"},
-                ]
-            },
-            {
-                "prefix": "a02",
-                "asset_alternatives": [
-                    {"asset_id": "a02.png",
-                     "uri": "uri de a02.png no object store"},
-                ]
-            }
-        ]
-        expected = [
-            {"asset_id": "a01.png",
-             "uri": "uri de a01.png no object store",
-             "available": True,
-             "status code": 200,
-             "start time": START_TIME,
-             "end time": END_TIME,
-             "duration": DURATION,
-            },
-            {"asset_id": "a01.jpg",
-             "uri": "uri de a01.jpg no object store",
-             "available": False,
-             "status code": None,
-             "start time": START_TIME,
-             "end time": END_TIME,
-             "duration": DURATION,
-            },
-            {"asset_id": "a02.png",
-             "uri": "uri de a02.png no object store",
-             "available": True,
-             "status code": 200,
-             "start time": START_TIME,
-             "end time": END_TIME,
-             "duration": DURATION,
-            },
-        ]
-        result, q_unavailable = check_document_assets_availability(assets_data)
-        self.assertEqual(1, q_unavailable)
-        self.assertListEqual(expected, result)
-
-    def test_check_document_assets_availability_returns_empty_list(self):
-        assets_data = []
-        expected = []
-        result, q_unavailable = check_document_assets_availability(assets_data)
-        self.assertEqual(0, q_unavailable)
-        self.assertEqual(expected, result)
-
-
-class TestCheckDocumentRenditionsAvailability(TestCase):
-    @patch("operations.check_website_operations.do_request")
-    def test_check_document_renditions_availability_returns_one_of_three_is_false(self, mock_do_request):
-        mock_do_request.side_effect = [MockResponse(200), MockResponse(None)]
+class TestCheckResponses(TestCase):
+    def test_check_responses_returns_one_of_two_is_false(self):
         renditions = [
             {
                 "lang": "es",
                 "uri": "uri de original.pdf no object store",
+                "response": MockClientResponse(
+                    200, "uri de original.pdf no object store")
             },
             {
                 "lang": "en",
                 "uri": "uri de original-en.pdf  no object store",
+                "response": MockClientResponse(
+                    None, "uri de original-en.pdf  no object store")
             }
         ]
         expected = [
@@ -2175,16 +2113,14 @@ class TestCheckDocumentRenditionsAvailability(TestCase):
                 "duration": DURATION,
             }
         ]
-        result, q_unavailable = check_document_renditions_availability(
-            renditions)
+        result, q_unavailable = check_responses(renditions)
         self.assertEqual(1, q_unavailable)
         self.assertListEqual(expected, result)
 
-    def test_check_document_renditions_availability_returns_empty_list(self):
+    def test_check_responses_returns_empty_list(self):
         rendition = []
         expected = []
-        result, q_unavailable = check_document_renditions_availability(
-            rendition)
+        result, q_unavailable = check_responses(rendition)
         self.assertEqual(0, q_unavailable)
         self.assertEqual(expected, result)
 
@@ -2466,9 +2402,59 @@ class TestCheckDocumentAvailability(TestCase):
                     "?format=pdf&lang=pt"
                 ),
             ],
+            [
+                MockClientResponse(
+                    200,
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "409acdeb8f632022d41b3d94a3f00a837867937c.pdf"
+                    ),
+
+                MockClientResponse(
+                    200,
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "8972aaa0916382b6f2d51a6d22732bb083851913.png"
+                    ),
+
+                MockClientResponse(
+                    200,
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "3c30f9fec6947d47f404043fe08aaca8bc51b1fb.jpg"
+                    ),
+
+                MockClientResponse(
+                    200,
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "36080074121a60c8e28fa1b28876e1adad4fe5d7.png"
+                    ),
+
+                MockClientResponse(
+                    200,
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "b5b4bb9bc267794ececde428a33f5af705b0b1a6.jpg"
+                    ),
+
+                MockClientResponse(
+                    200,
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "73a98051b6cf623aeb1146017ceb0b947df75ec8.png"
+                    ),
+
+                MockClientResponse(
+                    200,
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "df14e57dc001993fd7f3fbcefa642e40e6964224.jpg"
+                ),
+            ]
         ]
 
-        mock_dt.utcnow.side_effect = [T0] + ([START_TIME, END_TIME] * 7) + [T5]
+        mock_dt.utcnow.side_effect = [T0] + [T5]
 
         web_html_availability = [{
             "lang": "pt",
@@ -3675,9 +3661,58 @@ class TestCheckWebsiteUriListDeeply(TestCase):
                     "?format=pdf&lang=pt"
                 )
             ],
+                        [
+                MockClientResponse(
+                    200,
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "409acdeb8f632022d41b3d94a3f00a837867937c.pdf"
+                    ),
+
+                MockClientResponse(
+                    200,
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "8972aaa0916382b6f2d51a6d22732bb083851913.png"
+                    ),
+
+                MockClientResponse(
+                    200,
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "3c30f9fec6947d47f404043fe08aaca8bc51b1fb.jpg"
+                    ),
+
+                MockClientResponse(
+                    200,
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "36080074121a60c8e28fa1b28876e1adad4fe5d7.png"
+                    ),
+
+                MockClientResponse(
+                    200,
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "b5b4bb9bc267794ececde428a33f5af705b0b1a6.jpg"
+                    ),
+
+                MockClientResponse(
+                    200,
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "73a98051b6cf623aeb1146017ceb0b947df75ec8.png"
+                    ),
+
+                MockClientResponse(
+                    200,
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "BrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "df14e57dc001993fd7f3fbcefa642e40e6964224.jpg"
+                ),
+            ]
         ]
-        mock_head.side_effect = [MockResponse(200)] * 8
-        mock_dt.utcnow.side_effect = [T0] + ([START_TIME, END_TIME] * 7) + [T5]
+        mock_dt.utcnow.side_effect = [T0] + [T5]
 
         doc_id_list = [doc_id]
         dag_info = {"run_id": "xxxx"}
@@ -3706,8 +3741,7 @@ class TestCheckWebsiteUriListDeeply(TestCase):
         check_website_uri_list_deeply(
             doc_id_list, website_url, object_store_url, dag_info)
         self.assertEqual(mock_get.call_count, 1)
-        self.assertEqual(mock_head.call_count, 7)
-        self.assertEqual(mock_dt.utcnow.call_count, 16)
+        self.assertEqual(mock_dt.utcnow.call_count, 2)
         self.assertListEqual(
             expected_calls,
             mock_add_execution_in_database.call_args_list

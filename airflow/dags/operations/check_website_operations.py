@@ -792,6 +792,31 @@ def check_html_webpages_availability(html_data_items, assets_data, webpages_data
     return report, summary
 
 
+def check_responses(uri_data_items):
+    """
+    Verifica os dados de `response`
+
+    Args:
+        uri_data_items (list of dict): lista de _renditions_ ou de _assets_
+    Returns:
+        list of dict, int:
+            mesma lista de dicionários da entrada + dados da avaliação de
+                `response`
+            quantidade de ítens indisponíveis
+    """
+    report = []
+    unavailable = 0
+    for item in uri_data_items:
+        result = item.copy()
+        result.update(eval_response(item["response"]))
+
+        del result["response"]
+        report.append(result)
+        if result["available"] is False:
+            unavailable += 1
+    return report, unavailable
+
+
 def check_pdf_webpages_availability(doc_data_list):
     """
     Verifica a disponibilidade do documento nos respectivos idiomas.
@@ -837,59 +862,6 @@ def check_pdf_webpages_availability(doc_data_list):
         "total unavailable": unavailable,
     }
     return report, summary
-
-
-def check_document_assets_availability(assets_data):
-    """
-    Verifica a disponibilidade cada ativo digital, usando a URI, tal como
-    o ativo foi registrado, ou seja, a URI do Object Store
-
-    Args:
-        assets_data (list of dict): retorno de
-            `docs_utils.get_document_assets_data`
-    Returns:
-        report (list of dict): mesma lista de dicionários da entrada, sendo
-            que cada elemento da lista, recebe mais uma chave, "available",
-            cujo conteúdo é True para disponível e False para indisponível
-    """
-    report = []
-    unavailable = 0
-    for asset_data in assets_data:
-        for item in asset_data["asset_alternatives"]:
-            uri = item.get("uri")
-            Logger.info("Verificando %s", uri)
-            result = item.copy()
-            result.update(eval_response(do_request(uri)))
-            report.append(result)
-            if result["available"] is False:
-                unavailable += 1
-    return report, unavailable
-
-
-def check_document_renditions_availability(renditions):
-    """
-    Verifica a disponibilidade cada manifestação, usando a URI, tal como
-    a manifestação foi registrada, ou seja, a URI do Object Store
-
-    Args:
-        renditions (list of dict): retorno de
-            `docs_utils.get_document_renditions_data`
-    Returns:
-        report (list of dict): mesma lista de dicionários da entrada, sendo
-            que cada elemento da lista, recebe mais uma chave, "available",
-            cujo conteúdo é True para disponível e False para indisponível
-    """
-    report = []
-    unavailable = 0
-    for item in renditions:
-        uri = item.get("uri")
-        Logger.info("Verificando %s", uri)
-        result = item.copy()
-        result.update(eval_response(do_request(uri)))
-        report.append(result)
-        if result["available"] is False:
-            unavailable += 1
-    return report, unavailable
 
 
 def check_website_uri_list(uri_list_items, label=""):
@@ -1195,6 +1167,8 @@ def check_document_availability(doc_id, website_url, object_store_url):
     assets_data, assets_data_grouped_by_id = get_document_assets_data(current_version)
     renditions_data = get_document_renditions_data(current_version)
 
+    add_responses(assets_data + renditions_data)
+
     web_html_availability, web_html_numbers = check_html_webpages_availability(
                 html_webpages_data,
                 assets_data_grouped_by_id,
@@ -1204,10 +1178,10 @@ def check_document_availability(doc_id, website_url, object_store_url):
     web_pdf_availability, web_pdf_numbers = check_pdf_webpages_availability(
             pdf_webpages_data)
 
-    renditions_availability, q_unavailable_renditions = check_document_renditions_availability(
+    renditions_availability, q_unavailable_renditions = check_responses(
                 renditions_data
             )
-    assets_availability, q_unavailable_assets = check_document_assets_availability(assets_data_grouped_by_id)
+    assets_availability, q_unavailable_assets = check_responses(assets_data)
     summarized = {}
     for name, numbers in (("web html", web_html_numbers), ("web pdf", web_pdf_numbers)):
         if numbers:
