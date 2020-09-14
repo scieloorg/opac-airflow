@@ -1349,6 +1349,10 @@ def format_document_availability_result_to_register(
       dag_run varchar(255),                             -- Identificador de execução da dag `check_website`
       input_file_name varchar(255) NULL,                -- Nome do arquivo de entrada: csv com PIDs v2 ou uri_list
       pid_v3 varchar(23),                               -- scielo-pid-v3 presente no xml
+      pid_v2_journal varchar(9),                        -- ISSN ID do periódico
+      pid_v2_issue varchar(17),                         -- PID do fascículo
+      pid_v2_doc varchar(23),                           -- PID do documento
+      previous_pid_v2_doc varchar(23) NULL,             -- previous PID do documento
       status varchar(8),                                -- "complete" or "partial" or "missing"
       detail json,                                      -- Detalhes da verificação profunda
       created_at timestamptz default now()
@@ -1359,10 +1363,19 @@ def format_document_availability_result_to_register(
     Returns:
         dict: dados da coluna
     """
+    doc_data = (doc_checkup_result["detail"].get("web html") or
+                doc_checkup_result["detail"].get("web pdf"))[0]
+    pid_v2 = doc_data["pid_v2"]
+    previous_pid_v2 = doc_data.get("previous_pid_v2")
+
     data = {}
     data["dag_run"] = dag_info.get("run_id")
     data["input_file_name"] = dag_info.get("input_file_name")
     data["pid_v3"] = doc_id
+    data["pid_v2_journal"] = pid_v2[1:10]
+    data["pid_v2_issue"] = pid_v2[1:18]
+    data["pid_v2_doc"] = pid_v2
+    data["previous_pid_v2_doc"] = previous_pid_v2
     data["status"] = get_status(
         doc_checkup_result.get("summary", {})) or "unidentified"
     data["detail"] = json.dumps(doc_checkup_result, default=fixes_for_json)

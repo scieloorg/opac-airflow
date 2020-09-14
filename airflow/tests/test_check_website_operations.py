@@ -3694,6 +3694,10 @@ class TestCheckWebsiteUriListDeeply(TestCase):
                     "dag_run": "xxxx",
                     "input_file_name": None,
                     "pid_v3": "BrT6FWNFFR3KBKHZVPN8Y9N",
+                    "pid_v2_journal": "1413-4152",
+                    "pid_v2_issue": "1413-415220200050",
+                    "pid_v2_doc": "S1413-41522020005004201",
+                    "previous_pid_v2_doc": None,
                     "status": "partial",
                     "detail": detail.replace("t0", t0).replace(
                         "t1", t1).replace("t2", t2).replace("t3", t3)
@@ -4674,3 +4678,27 @@ class TestAddResponses(TestCase):
         ]
         result = add_responses(doc_data_list)
         self.assertEqual(expected, result)
+
+
+class TestFormatDocumentAvailabilityResultToRegister(TestCase):
+
+    def test_format_document_availability_result_to_register(self):
+        doc_id = "DOC123"
+        file_content = read_file(
+            "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.inline.json")
+        doc_checkup_result = json.loads(file_content)
+        dag_info = {"run_id": "RUN ID", "whatever": "whatever"}
+        expected = {
+            "dag_run": "RUN ID",
+            "input_file_name": None,
+            "pid_v3": "DOC123",
+            "pid_v2_journal": "1413-4152",
+            "pid_v2_issue": "1413-415220200050",
+            "pid_v2_doc": "S1413-41522020005004201",
+            "previous_pid_v2_doc": None,
+            "status": "partial",
+            "detail": file_content,
+        }
+        result = format_document_availability_result_to_register(
+            doc_id, doc_checkup_result, dag_info)
+        self.assertDictEqual(expected, result)
