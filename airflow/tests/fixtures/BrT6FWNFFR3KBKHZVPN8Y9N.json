@@ -24,7 +24,7 @@
       }
    },
    "detail": {
-      "webpages": [
+      "web html": [
          {
             "lang": "pt",
             "format": "html",
@@ -113,6 +113,8 @@
                "https://minio.scielo.br/documentstore/1809-4457/BrT6FWNFFR3KBKHZVPN8Y9N/8972aaa0916382b6f2d51a6d22732bb083851913.png"
             ]
          },
+      ],
+      "web pdf": [
          {
             "lang": "pt",
             "format": "pdf",
