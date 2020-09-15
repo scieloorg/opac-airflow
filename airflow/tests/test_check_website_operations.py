@@ -2763,53 +2763,45 @@ class TestGetUriListFromGroupedPIDs(TestCase):
 class TestGetPIDv3List(TestCase):
 
     @patch("operations.check_website_operations.requests.head")
-    def test_get_pid_v3_list_returns_pid_v3_list_and_website_url_for_all_items(self, mock_head):
-        responses = []
-        for doc_id in (None, "S1Y3X-5678198700010Y3X5", "S123X-56k8198k0001023X5", "S1PLX-5678198700010PLX5"):
-            status_code = 301
-            if not doc_id:
-                status_code = 404
-            responses.append(MockResponse(status_code, loc_doc_id=doc_id))
-
-        mock_head.side_effect = responses
+    def test_get_pid_v3_list_returns_pid_v3_list_for_all_items(self, mock_head):
+        mock_head.side_effect = [
+            MockResponse(301, loc_doc_id="S1Y3X-5678198700010Y3X5"),
+            MockResponse(301, loc_doc_id="S123X-56k8198k0001023X5"),
+            MockResponse(301, loc_doc_id="S1PLX-5678198700010PLX5"),
+        ]
         uri_items = [
             "/scielo.php?script=sci_arttext&pid=S1234-56781987000112305",
             "/scielo.php?script=sci_arttext&pid=S1234-56781987000102315",
             "/scielo.php?script=sci_arttext&pid=S1234-56781987000112345",
         ]
-        website_url_list = ["https://old.scielo.br", "https://www.scielo.br", ]
-        pid_list, website_url = get_pid_v3_list(uri_items, website_url_list)
+        website_url = ["https://www.scielo.br", ]
+        pid_list = get_pid_v3_list(uri_items, website_url)
         expected = [
             "S1Y3X-5678198700010Y3X5",
             "S123X-56k8198k0001023X5",
             "S1PLX-5678198700010PLX5",
         ]
         self.assertListEqual(expected, pid_list)
-        self.assertEqual("https://www.scielo.br", website_url)
 
     @patch("operations.check_website_operations.requests.head")
-    def test_get_pid_v3_list_returns_pid_v3_list_and_website_url_for_two_of_three_items(self, mock_head):
-        responses = []
-        for doc_id in (None, None, None, "S123X-56k8198k0001023X5", "S1PLX-5678198700010PLX5"):
-            status_code = 301
-            if not doc_id:
-                status_code = 404
-            responses.append(MockResponse(status_code, loc_doc_id=doc_id))
-
-        mock_head.side_effect = responses
+    def test_get_pid_v3_list_returns_pid_v3_list_for_two_of_three_items(self, mock_head):
+        mock_head.side_effect = [
+            MockResponse(404, loc_doc_id="S1Y3X-5678198700010Y3X5"),
+            MockResponse(301, loc_doc_id="S123X-56k8198k0001023X5"),
+            MockResponse(301, loc_doc_id="S1PLX-5678198700010PLX5"),
+        ]
         uri_items = [
             "/scielo.php?script=sci_arttext&pid=S1234-56781987000112305",
             "/scielo.php?script=sci_arttext&pid=S1234-56781987000102315",
             "/scielo.php?script=sci_arttext&pid=S1234-56781987000112345",
         ]
-        website_url_list = ["https://old.scielo.br", "https://www.scielo.br", ]
-        pid_list, website_url = get_pid_v3_list(uri_items, website_url_list)
+        website_url = "https://www.scielo.br"
+        pid_list = get_pid_v3_list(uri_items, website_url)
         expected = [
             "S123X-56k8198k0001023X5",
             "S1PLX-5678198700010PLX5",
         ]
         self.assertListEqual(expected, pid_list)
-        self.assertEqual("https://www.scielo.br", website_url)
 
 
 class TestGetPIDListFromCSV(TestCase):

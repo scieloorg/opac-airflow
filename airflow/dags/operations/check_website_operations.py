@@ -1256,7 +1256,7 @@ def get_status(summary):
     return "partial"
 
 
-def get_pid_v3_list(uri_items, website_url_list):
+def get_pid_v3_list(uri_items, website_url):
     """
     Retorna o PID v3 de cada um dos itens de `uri_items`,
     acessando o link do padrão:
@@ -1267,22 +1267,19 @@ def get_pid_v3_list(uri_items, website_url_list):
     Args:
         uri_items (str list): lista de URI no padrão
             /scielo.php?script=sci_arttext&pid=S0001-37652020000501101&tlng=lang
-        website_url_list (str list): lista de URL de site
+        website_url (str): URL de site
     Returns:
         str list: lista de PID v3
     """
-    website_url = None
     pid_v3_list = []
     for uri in uri_items:
-        for url in website_url or website_url_list:
-            doc_uri = "{}{}".format(url, uri)
-            doc_id = get_kernel_document_id_from_classic_document_uri(doc_uri)
-            if doc_id:
-                pid_v3_list.append(doc_id)
-                website_url = website_url or [url]
-            else:
-                Logger.error("Unable to find PID v3 from %s", doc_uri)
-    return pid_v3_list, website_url[0]
+        doc_uri = "{}{}".format(website_url, uri)
+        doc_id = get_kernel_document_id_from_classic_document_uri(doc_uri)
+        if doc_id:
+            pid_v3_list.append(doc_id)
+        else:
+            Logger.error("Unable to find PID v3 from %s", doc_uri)
+    return pid_v3_list
 
 
 def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url, dag_info):
