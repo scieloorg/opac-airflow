@@ -176,7 +176,7 @@ def get_uri_items_from_uri_list_files(**context):
 
         Logger.info("Partial total: %i items", len(all_items))
 
-    context["ti"].xcom_push("uri_items", sorted(list(all_items)))
+    context["ti"].xcom_push("uri_items", sorted(all_items))
     Logger.info("Total: %i URIs", len(all_items))
 
 
@@ -238,7 +238,7 @@ def get_uri_items_from_pid_list_csv_files(**context):
 
     items = check_website_operations.get_uri_list_from_pid_dict(
         group_pids(pids))
-    context["ti"].xcom_push("pid_items", sorted(list(pids)))
+    context["ti"].xcom_push("pid_items", sorted(pids))
     context["ti"].xcom_push("uri_items", items)
     Logger.info("Total: %i URIs", len(items))
 
@@ -267,21 +267,18 @@ def merge_uri_items_from_different_sources(**context):
     removendo repetições
     """
     Logger.info("Merge URI items from `uri_list_*.lst` and `*.csv`")
-    uri_items = (
-        set(
+    uri_items = set(
             context["ti"].xcom_pull(
                 task_ids="get_uri_items_from_uri_list_files_id",
                 key="uri_items"
-            )) |
-        set(
+            ) +
             context["ti"].xcom_pull(
                 task_ids="get_uri_items_from_pid_list_csv_files_id",
                 key="uri_items"
             )
-        )
     )
     Logger.info("Total %i URIs", len(uri_items))
-    context["ti"].xcom_push("uri_items", sorted(list(uri_items)))
+    context["ti"].xcom_push("uri_items", sorted(uri_items))
 
 
 def merge_pid_items_from_different_sources(**context):
@@ -290,21 +287,20 @@ def merge_pid_items_from_different_sources(**context):
     removendo repetições
     """
     Logger.info("Merge PID items from `uri_list_*.lst` and `*.csv`")
-    pid_items = (
-        set(
+    pid_items = set(
+        (
             context["ti"].xcom_pull(
                 task_ids="group_uri_items_from_uri_lists_by_script_name_id",
                 key="sci_arttext"
-            )) |
-        set(
-            context["ti"].xcom_pull(
-                task_ids="get_uri_items_from_pid_list_csv_files_id",
-                key="pid_items"
-            )
+            ) or []
+        ) +
+        context["ti"].xcom_pull(
+            task_ids="get_uri_items_from_pid_list_csv_files_id",
+            key="pid_items"
         )
     )
     Logger.info("Total %i PIDs", len(pid_items))
-    context["ti"].xcom_push("pid_items", sorted(list(pid_items)))
+    context["ti"].xcom_push("pid_items", sorted(pid_items))
 
 
 def get_uri_items_grouped_by_script_name(**context):
