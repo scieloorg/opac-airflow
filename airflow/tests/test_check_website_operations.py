@@ -2957,6 +2957,12 @@ class TestGetJournalIssueDocPids(TestCase):
         result = get_journal_issue_doc_pids(data)
         self.assertEqual(expected, result)
 
+    def test_get_journal_issue_doc_pids_returns_no_pids_at_all(self):
+        expected = None, None, None
+        data = "/scielo.php?script=sci_pdf&nones="
+        result = get_journal_issue_doc_pids(data)
+        self.assertEqual(expected, result)
+
     def test_get_journal_issue_doc_pids_returns_journal_pid(self):
         expected = "2234-5679", None, None
         data = "/scielo.php?script=sci_xxx&pid=2234-5679"

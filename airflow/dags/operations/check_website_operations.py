@@ -341,6 +341,12 @@ def group_items_by_script_name(uri_items):
 
 
 def get_journal_issue_doc_pids(uri):
+    """
+    A partir de um URI neste padrão:
+        /scielo.php?script=sci_arttext&pid=S0001-37652020000501101&tlng=lang
+        /scielo.php?script=sci_pdf&pid=S0001-37652020000501101&tlng=lang
+    extrair os respectivos PIDs: journal, issue, doc
+    """
     parsed = urlparse(uri)
     query_items = parse_qs(parsed.query)
     values = query_items.get('pid')
