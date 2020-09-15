@@ -42,7 +42,7 @@ def get_document_manifest(doc_id):
             )
         ) from None
     else:
-        return json.loads(document_manifest)
+        return json.loads(document_manifest.text)
 
 
 def get_document_sps_package(current_version):

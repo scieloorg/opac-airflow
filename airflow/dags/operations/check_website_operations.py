@@ -39,10 +39,11 @@ def get_pid_list_from_csv(csv_file_path):
     try:
         with open(csv_file_path, newline='') as f:
             for row in csv.reader(f):
-                pids.append(row[0])
+                if len(row) > 0:
+                    pids.append(row[0])
                 if len(row) > 1 and len(row[1]) == 23:
                     pids.append(row[1])
-    except (csv.Error, IndexError, OSError) as e:
+    except (csv.Error, OSError) as e:
         Logger.exception("Unable to get PIDs from %s (%s)", csv_file_path, e)
     return pids
 

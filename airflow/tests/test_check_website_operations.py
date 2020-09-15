@@ -2377,8 +2377,11 @@ class TestCheckDocumentAvailability(TestCase):
         doc_id = "BrT6FWNFFR3KBKHZVPN8Y9N"
         website_url = "https://www.scielo.br"
         object_store_url = "https://minio.scielo.br"
-        mock_doc_manifest.return_value = read_file(
-            "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.manifest.json")
+        mock_doc_manifest.return_value = MockResponse(
+            200,
+            read_file(
+                "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.manifest.json")
+        )
         mock_get.return_value = MockResponse(
                 200,
                 read_file(
@@ -3635,8 +3638,11 @@ class TestCheckWebsiteUriListDeeply(TestCase):
         doc_id = "BrT6FWNFFR3KBKHZVPN8Y9N"
         website_url = "https://www.scielo.br"
         object_store_url = "https://minio.scielo.br"
-        mock_doc_manifest.return_value = read_file(
-            "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.manifest.json")
+        mock_doc_manifest.return_value = MockResponse(
+            200,
+            read_file(
+                "./tests/fixtures/BrT6FWNFFR3KBKHZVPN8Y9N.manifest.json")
+        )
         mock_get.return_value = MockResponse(
                 200,
                 read_file(
