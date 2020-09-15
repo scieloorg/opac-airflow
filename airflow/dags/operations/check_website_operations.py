@@ -1282,6 +1282,18 @@ def get_pid_v3_list(uri_items, website_url):
     return pid_v3_list
 
 
+def get_main_website_url(website_url_list):
+    """
+    Dentre a lista de URL de website SciELO para testar, verifica qual é a
+    do site novo
+    """
+    for url in website_url_list:
+        resp = do_request("{}/journals/alpha".format(url))
+        if is_valid_response(resp):
+            return url
+    return website_url_list[0]
+
+
 def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url, dag_info):
     """
     Executa a verificação da disponibilidade profundamente e

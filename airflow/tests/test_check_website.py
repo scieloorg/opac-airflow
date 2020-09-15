@@ -1162,10 +1162,14 @@ class TestGetPIDv3List(TestCase):
             "run_id": "test_run_id",
         }
 
+    @patch("check_website.check_website_operations.get_main_website_url")
     @patch("check_website.check_website_operations.get_pid_v3_list")
-    def test_get_pid_v3_list_assert_called_xcom_pull_with_sci_arttext_value(self, mock_get):
+    def test_get_pid_v3_list_assert_called_xcom_pull_with_sci_arttext_value(
+            self, mock_get, mock_get_main_website_url):
         mock_get.return_value = (
-            ["DOCID1", "DOCID2"],
+            ["DOCID1", "DOCID2"]
+        )
+        mock_get_main_website_url.return_value = (
             "https://www.scielo.br"
         )
         get_pid_v3_list(**self.kwargs)
@@ -1174,10 +1178,14 @@ class TestGetPIDv3List(TestCase):
             key="sci_arttext"
         )
 
+    @patch("check_website.check_website_operations.get_main_website_url")
     @patch("check_website.check_website_operations.get_pid_v3_list")
-    def test_get_pid_v3_list_assert_called_xcom_push_with_pid_v3_list(self, mock_get):
+    def test_get_pid_v3_list_assert_called_xcom_push_with_pid_v3_list(
+            self, mock_get, mock_get_main_website_url):
         mock_get.return_value = (
-            ["DOCID1", "DOCID2"],
+            ["DOCID1", "DOCID2"]
+        )
+        mock_get_main_website_url.return_value = (
             "https://www.scielo.br"
         )
         get_pid_v3_list(**self.kwargs)

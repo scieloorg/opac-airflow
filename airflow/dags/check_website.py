@@ -481,8 +481,10 @@ def get_pid_v3_list(**context):
     uri_items = context["ti"].xcom_pull(
         task_ids="get_uri_items_grouped_by_script_name_id",
         key="sci_arttext")
-    pid_v3_list, website_url = check_website_operations.get_pid_v3_list(
-        uri_items, _website_url_list)
+    website_url = check_website_operations.get_main_website_url(_website_url_list)
+
+    pid_v3_list = check_website_operations.get_pid_v3_list(
+        uri_items, website_url)
 
     context["ti"].xcom_push("pid_v3_list", pid_v3_list)
     context["ti"].xcom_push("website_url", website_url)
