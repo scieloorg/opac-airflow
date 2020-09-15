@@ -320,9 +320,10 @@ def get_uri_items_grouped_by_script_name(**context):
 
 
 def get_website_url_list():
-    Logger.info("Pre req to Check URI list")
+    Logger.info("Get website URL list")
     _website_url_list = Variable.get(
         "WEBSITE_URL_LIST", default_var=[], deserialize_json=True)
+    Logger.info(_website_url_list)
     if not _website_url_list:
         raise ValueError("`Variable[\"WEBSITE_URL_LIST\"]` is required")
     return _website_url_list

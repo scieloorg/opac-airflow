@@ -4658,7 +4658,8 @@ class TestAddResponses(TestCase):
             },
         ]
         result = add_responses(doc_data_list, website_url)
-        self.assertEqual(expected, result)
+        self.assertEqual(expected, doc_data_list)
+        self.assertIsNone(result)
 
     @patch('operations.check_website_operations.async_requests.parallel_requests')
     def test_add_responses_returns_data_with_responses(self, mock_parallel_requests):
@@ -4709,7 +4710,8 @@ class TestAddResponses(TestCase):
             },
         ]
         result = add_responses(doc_data_list)
-        self.assertEqual(expected, result)
+        self.assertEqual(expected, doc_data_list)
+        self.assertIsNone(result)
 
 
 class TestFormatDocumentAvailabilityResultToRegister(TestCase):

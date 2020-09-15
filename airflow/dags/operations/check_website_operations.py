@@ -705,9 +705,16 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
 
 def add_responses(doc_data_list, website_url=None):
     """
-    Add response
-    Update `website_url`, if applicable
-
+    Dada uma lista de dicionários que contém uma chave `uri`,
+    se aplicável, concatena valor de `uri` com valor de `website_url`,
+    faz as requisições de todos os URI presentes nesta lista,
+    e atualiza cada elemento da lista (dicionário) com a chave `response` e o
+    respectivo resultado da requisição
+    Args:
+        doc_data_list (list of dict): lista de dicionários, obrigatoriamente
+        tem a chave `uri`.
+    Returns:
+        None
     """
     body = False
     if website_url:
@@ -721,7 +728,6 @@ def add_responses(doc_data_list, website_url=None):
 
     for doc_data in doc_data_list:
         doc_data["response"] = responses.get(doc_data["uri"])
-    return doc_data_list
 
 
 def check_html_webpages_availability(html_data_items, assets_data, webpages_data, object_store_url):
@@ -1167,11 +1173,9 @@ def check_document_availability(doc_id, website_url, object_store_url):
     doc_data_grouped_by_webpage_type = group_doc_data_by_webpage_type(
         document_webpages_data)
 
-    html_webpages_data = add_responses(
-        doc_data_grouped_by_webpage_type["web html"], website_url)
+    add_responses(doc_data_grouped_by_webpage_type["web html"], website_url)
 
-    pdf_webpages_data = add_responses(
-        doc_data_grouped_by_webpage_type["web pdf"], website_url)
+    add_responses(doc_data_grouped_by_webpage_type["web pdf"], website_url)
 
     assets_data, assets_data_grouped_by_id = get_document_assets_data(current_version)
     renditions_data = get_document_renditions_data(current_version)
@@ -1179,13 +1183,13 @@ def check_document_availability(doc_id, website_url, object_store_url):
     add_responses(assets_data + renditions_data)
 
     web_html_availability, web_html_numbers = check_html_webpages_availability(
-                html_webpages_data,
+                doc_data_grouped_by_webpage_type["web html"],
                 assets_data_grouped_by_id,
                 document_webpages_data,
                 object_store_url
             )
     web_pdf_availability, web_pdf_numbers = check_pdf_webpages_availability(
-            pdf_webpages_data)
+            doc_data_grouped_by_webpage_type["web pdf"])
 
     renditions_availability, q_unavailable_renditions = check_responses(
                 renditions_data
