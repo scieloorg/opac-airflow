@@ -465,7 +465,7 @@ def check_documents_deeply(**context):
         key="pid_v3_list")
 
     check_website_operations.check_website_uri_list_deeply(
-        pid_v3_list, website_url, object_store_url)
+        pid_v3_list, website_url, object_store_url, context)
     Logger.info("Checked %i documents", len(pid_v3_list))
 
 
@@ -491,13 +491,6 @@ def get_pid_v3_list(**context):
 
     Logger.info("PID v3: %i items", len(pid_v3_list))
 
-
-check_website_uri_list_task = PythonOperator(
-    task_id="check_website_uri_list_id",
-    provide_context=True,
-    python_callable=check_website_uri_list,
-    dag=dag,
-)
 
 get_uri_list_file_paths_task = PythonOperator(
     task_id="get_uri_list_file_paths_id",
