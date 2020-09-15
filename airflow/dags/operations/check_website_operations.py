@@ -2,7 +2,7 @@ import logging
 import requests
 import time
 import json
-from csv import reader
+import csv
 from urllib3.exceptions import MaxRetryError, NewConnectionError
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime, date
@@ -36,11 +36,14 @@ def get_pid_list_from_csv(csv_file_path):
         list: lista de pid v2
     """
     pids = []
-    with open(csv_file_path, newline='') as f:
-        for row in reader(f):
-            pids.append(row[0])
-            if len(row) > 1 and len(row[1]) == 23:
-                pids.append(row[1])
+    try:
+        with open(csv_file_path, newline='') as f:
+            for row in csv.reader(f):
+                pids.append(row[0])
+                if len(row) > 1 and len(row[1]) == 23:
+                    pids.append(row[1])
+    except (csv.Error, IndexError, OSError) as e:
+        Logger.exception("Unable to get PIDs from %s (%s)", csv_file_path, e)
     return pids
 
 
