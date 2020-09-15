@@ -30,6 +30,7 @@ async def fetch(uri, session, body=False):
             AttributeError) as e:
         response = InvalidClientResponse()
         Logger.exception(e)
+        text = None
     finally:
         # acrescenta novos atributos para o objeto ClientResponse
         response.uri = uri
