@@ -1319,6 +1319,8 @@ def get_main_website_url(website_url_list):
     """
     for url in website_url_list:
         resp = do_request("{}/journals/alpha".format(url))
+        Logger.info(resp)
+        Logger.info(eval_response(resp))
         if is_valid_response(resp):
             return url
     return website_url_list[0]
@@ -1339,6 +1341,8 @@ def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url, da
     total = len(doc_id_list)
     Logger.info("Check availability of %i documents", total)
 
+    checked_pids = []
+
     for i, doc_id in enumerate(doc_id_list):
         Logger.info(
             "Check document availability of %s (%i/%i)", doc_id, i, total)
@@ -1349,8 +1353,14 @@ def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url, da
         row = format_document_availability_result_to_register(
             doc_id, report, dag_info)
 
+        # identifica os PIDs processados
+        for name in ("pid_v2_doc", "previous_pid_v2_doc"):
+            if row.get(name):
+                checked_pids.append(row[name])
+
         Logger.info("Register document availability checking result")
         add_execution_in_database("doc_deep_checkup", row)
+    return checked_pids
 
 
 def format_document_availability_result_to_register(

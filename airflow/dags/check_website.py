@@ -281,28 +281,6 @@ def merge_uri_items_from_different_sources(**context):
     context["ti"].xcom_push("uri_items", sorted(uri_items))
 
 
-def merge_pid_items_from_different_sources(**context):
-    """
-    Une todos PID provenientes de `uri_list_*.lst` and `*.csv`,
-    removendo repetições
-    """
-    Logger.info("Merge PID items from `uri_list_*.lst` and `*.csv`")
-    pid_items = set(
-        (
-            context["ti"].xcom_pull(
-                task_ids="group_uri_items_from_uri_lists_by_script_name_id",
-                key="sci_arttext"
-            ) or []
-        ) +
-        context["ti"].xcom_pull(
-            task_ids="get_uri_items_from_pid_list_csv_files_id",
-            key="pid_items"
-        )
-    )
-    Logger.info("Total %i PIDs", len(pid_items))
-    context["ti"].xcom_push("pid_items", sorted(pid_items))
-
-
 def get_uri_items_grouped_by_script_name(**context):
     """
     Agrupa URI items pelo nome do script
@@ -507,8 +485,12 @@ def check_documents_deeply(**context):
 
     extra_data = context.copy()
     extra_data.update(flags)
-    check_website_operations.check_website_uri_list_deeply(
+
+    pid_v2_processed = check_website_operations.check_website_uri_list_deeply(
         pid_v3_list, website_url, object_store_url, extra_data)
+
+    context["ti"].xcom_push("processed_pid_v2_items", sorted(pid_v2_processed))
+
     Logger.info("Checked %i documents", len(pid_v3_list))
 
 
@@ -533,6 +515,60 @@ def get_pid_v3_list(**context):
     context["ti"].xcom_push("website_url", website_url)
 
     Logger.info("PID v3: %i items", len(pid_v3_list))
+
+
+def check_input_vs_processed_pids(**context):
+    """
+    Une todos PID provenientes de `uri_list_*.lst` and `*.csv`,
+    removendo repetições
+    """
+    Logger.info("Merge PID items from `uri_list_*.lst` and `*.csv`")
+    pid_items = set(
+        (
+            context["ti"].xcom_pull(
+                task_ids="group_uri_items_from_uri_lists_by_script_name_id",
+                key="sci_arttext"
+            ) or []
+        ) +
+        context["ti"].xcom_pull(
+            task_ids="get_uri_items_from_pid_list_csv_files_id",
+            key="pid_items"
+        )
+    )
+    processed = set(context["ti"].xcom_pull(
+        task_ids="check_documents_deeply_task_id",
+        key="processed_pid_v2_items") or [])
+    Logger.info("Total %i input PIDs", len(pid_items))
+    Logger.info("Total %i processed PIDs", len(processed))
+
+    present_in_pid_items_but_not_in_processed = sorted(pid_items - processed)
+    present_in_processed_but_not_in_pid_items = sorted(processed - pid_items)
+    present_in_both = pid_items & processed
+
+    if present_in_processed_but_not_in_pid_items:
+        Logger.warning(
+            "There are %i processed PIDs which were not in input lists:\n%s"
+            "(Probably because they are previous PID)",
+            len(present_in_processed_but_not_in_pid_items),
+            "\n".join(present_in_processed_but_not_in_pid_items))
+    if present_in_pid_items_but_not_in_processed:
+        Logger.error(
+            "There are %i PIDs which are in input lists, "
+            "but were not processed:\n%s",
+            len(present_in_pid_items_but_not_in_processed),
+            "\n".join(present_in_pid_items_but_not_in_processed))
+
+    # intersecção de pid_items e processed é igual a pid_items
+    # então, todos os PIDs de entrada foram processados
+    if present_in_both == pid_items:
+        Logger.info("All the PIDs were processed")
+
+    context["ti"].xcom_push(
+        "present_in_processed_but_not_in_pid_items",
+        present_in_processed_but_not_in_pid_items)
+    context["ti"].xcom_push(
+        "present_in_pid_items_but_not_in_processed",
+        present_in_pid_items_but_not_in_processed)
 
 
 get_uri_list_file_paths_task = PythonOperator(
@@ -574,13 +610,6 @@ merge_uri_items_from_different_sources_task = PythonOperator(
     task_id="merge_uri_items_from_different_sources_id",
     provide_context=True,
     python_callable=merge_uri_items_from_different_sources,
-    dag=dag,
-)
-
-merge_pid_items_from_different_sources_task = PythonOperator(
-    task_id="merge_pid_items_from_different_sources_id",
-    provide_context=True,
-    python_callable=merge_pid_items_from_different_sources,
     dag=dag,
 )
 
@@ -639,6 +668,13 @@ check_documents_deeply_task = PythonOperator(
     python_callable=check_documents_deeply,
     dag=dag,
 )
+
+check_input_vs_processed_pids_task = PythonOperator(
+    task_id="check_input_vs_processed_pids_id",
+    provide_context=True,
+    python_callable=check_input_vs_processed_pids,
+    dag=dag,
+)
 """
 Dependência das tarefas
     o
@@ -654,16 +690,13 @@ Dependência das tarefas
                     |   +--------------------------------------------------+ |
                     +-->|group_uri_items_from_uri_lists_by_script_name_task| |
                         +--------------------------------------------------+ |
-                            |                                                |
-                            |   +-------------------------------------------+|
-                            +-->|merge_pid_items_from_different_sources_task||
-                                +-------------------------------------------+|
-o                                           ^                                |
-|                                           |                                |
-|   +--------------------------------+      |                                |
-+-->|get_pid_list_csv_file_paths_task|      |                                |
-    +--------------------------------+      |                                |
-        |                                   |                                |
+                                                                             |
+o                                                                            |
+|                                                                            |
+|   +--------------------------------+                                       |
++-->|get_pid_list_csv_file_paths_task|                                       |
+    +--------------------------------+                                       |
+        |                                                                    |
         |   +------------------------------------------+                     |
         +-->|get_uri_items_from_pid_list_csv_files_task|                     |
             +------------------------------------------+                     |
@@ -703,6 +736,10 @@ o                                           ^                                |
                                         |   +---------------------------+
                                         +-->|check_documents_deeply_task|
                                             +---------------------------+
+                                                |
+                                                |   +----------------------------------+
+                                                +-->|check_input_vs_processed_pids_task|
+                                                    +----------------------------------+
 
 """
 # obtém a lista de arquivos uri_list
@@ -714,9 +751,6 @@ get_uri_items_from_uri_list_files_task >> group_uri_items_from_uri_lists_by_scri
 # obtém a lista de arquivos que contém pid v2
 # ler todos os arquivos que contém pid v2 e retorna uma lista de URI
 get_pid_list_csv_file_paths_task >> get_uri_items_from_pid_list_csv_files_task
-
-# junta os ítens de PID provenientes de ambos tipos de arquivos
-get_uri_items_from_pid_list_csv_files_task >> merge_pid_items_from_different_sources_task << group_uri_items_from_uri_lists_by_script_name_task
 
 # junta os ítens de URI provenientes de ambos tipos de arquivos
 get_uri_items_from_pid_list_csv_files_task >> merge_uri_items_from_different_sources_task << get_uri_items_from_uri_list_files_task
@@ -739,6 +773,11 @@ get_uri_items_grouped_by_script_name_task >> check_sci_pdf_uri_items_task
 # valida os URI de sci_arttext (HTML dos documentos)
 get_uri_items_grouped_by_script_name_task >> check_sci_arttext_uri_items_task
 
-# valida os URI de documentos no nível mais profundo
-get_uri_items_grouped_by_script_name_task >> get_pid_v3_list_task >> check_documents_deeply_task
+# obtém a lista de pid v3
+get_uri_items_grouped_by_script_name_task >> get_pid_v3_list_task
 
+# valida os documentos no nível mais profundo
+get_pid_v3_list_task >> check_documents_deeply_task
+
+# verifica os PID v2 de entrada vs os PID v2 processados
+check_documents_deeply_task >> check_input_vs_processed_pids_task

@@ -26,7 +26,6 @@ from check_website import (
     get_website_url_list,
     group_uri_items_from_uri_lists_by_script_name,
     merge_uri_items_from_different_sources,
-    merge_pid_items_from_different_sources,
 )
 from .test_check_website_operations import (
     MockClientResponse,
@@ -1244,40 +1243,6 @@ class TestGroupUriItemsFromUriListsByScriptName(TestCase):
         )
 
 
-class TestMergePidItemsFromDifferentSources(TestCase):
-
-    def setUp(self):
-        self.kwargs = {
-            "ti": MagicMock(),
-            "conf": None,
-            "run_id": "test_run_id",
-        }
-
-    def test_merge_pid_items_from_different_sources(self):
-        self.kwargs["ti"].xcom_pull.side_effect = [
-            [
-                "0001-376520200005",
-            ],
-            [
-                "0001-303520200005",
-                "0001-376520200005",
-            ],
-        ]
-        merge_pid_items_from_different_sources(**self.kwargs)
-
-        self.assertListEqual([
-            call(key="sci_arttext",
-                 task_ids="group_uri_items_from_uri_lists_by_script_name_id",),
-            call(key="pid_items",
-                 task_ids="get_uri_items_from_pid_list_csv_files_id",)
-            ],
-            self.kwargs["ti"].xcom_pull.call_args_list
-        )
-        self.kwargs["ti"].xcom_push.assert_called_once_with(
-            "pid_items",
-            ["0001-303520200005", "0001-376520200005"]
-        )
-
 
 class TestMergeUriItemsFromDifferentSources(TestCase):
 
@@ -1318,3 +1283,5 @@ class TestMergeUriItemsFromDifferentSources(TestCase):
                 "/scielo.php?script=sci_pdf&pid=0001-376520200005",
             ]
         )
+
+
