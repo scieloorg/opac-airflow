@@ -329,7 +329,36 @@ def get_website_url_list():
     return _website_url_list
 
 
+def get_task_execution_flag(flag_name, task_name):
+    """
+    FLAGS:
+        CHECK_SCI_SERIAL_PAGES,
+        CHECK_SCI_ISSUES_PAGES,
+        CHECK_SCI_ISSUETOC_PAGES,
+        CHECK_SCI_ARTTEXT_PAGES,
+        CHECK_SCI_PDF_PAGES,
+        CHECK_RENDITIONS,
+        CHECK_DIGITAL_ASSETS,
+        CHECK_WEB_HTML_PAGES,
+        CHECK_WEB_PDF_PAGES,
+    """
+    flag = Variable.get(flag_name, default_var=True, deserialize_json=True)
+    Logger.info("%s: %s", flag_name, "on" if flag else "off")
+    if flag is False:
+        Logger.info(
+            "Skip '%s', because '%s' is off",
+            task_name, flag_name)
+    return flag
+
+
 def check_any_uri_items(uri_list_items, label, dag_info):
+    flag_name = "CHECK_{}_PAGES".format(label.upper())
+    flag = get_task_execution_flag(
+        flag_name, "checking '%s' pages".format(label))
+
+    if flag is False:
+        return 0
+
     _website_url_list = get_website_url_list()
 
     # concatena cada item de `_website_url_list` com
@@ -453,7 +482,18 @@ def check_documents_deeply(**context):
     """
     Executa ``check_website.check_documents_deeply`` para a lista de PID v3
     """
-    Logger.info("Check `sci_arttext` URI list")
+    Logger.info("Check documents deeply")
+
+    flags = {
+        name: get_task_execution_flag(
+            name, name.replace("CHECK", "checking").replace("_", " ").lower())
+        for name in ("CHECK_RENDITIONS",
+                     "CHECK_DIGITAL_ASSETS",
+                     "CHECK_WEB_HTML_PAGES",
+                     "CHECK_WEB_PDF_PAGES",)
+    }
+    if not any(flags.values()):
+        return
 
     website_url = context["ti"].xcom_pull(
         task_ids="get_pid_v3_list_id",
@@ -465,8 +505,10 @@ def check_documents_deeply(**context):
         task_ids="get_pid_v3_list_id",
         key="pid_v3_list")
 
+    extra_data = context.copy()
+    extra_data.update(flags)
     check_website_operations.check_website_uri_list_deeply(
-        pid_v3_list, website_url, object_store_url, context)
+        pid_v3_list, website_url, object_store_url, extra_data)
     Logger.info("Checked %i documents", len(pid_v3_list))
 
 

@@ -1161,7 +1161,7 @@ def group_doc_data_by_webpage_type(document_webpages_data):
     return d
 
 
-def check_document_availability(doc_id, website_url, object_store_url):
+def check_document_availability(doc_id, website_url, object_store_url, flags):
     """
     Verifica a disponibilidade do documento `doc_id`, verificando a
     disponibilidade de todas as _webpages_ (HTML/PDF/idiomas) e de todos os ativos
@@ -1178,14 +1178,20 @@ def check_document_availability(doc_id, website_url, object_store_url):
     doc_data_grouped_by_webpage_type = group_doc_data_by_webpage_type(
         document_webpages_data)
 
-    add_responses(doc_data_grouped_by_webpage_type["web html"], website_url)
+    if flags.get("CHECK_WEB_HTML_PAGES"):
+        add_responses(
+            doc_data_grouped_by_webpage_type["web html"], website_url)
 
-    add_responses(doc_data_grouped_by_webpage_type["web pdf"], website_url)
+    if flags.get("CHECK_WEB_PDF_PAGES"):
+        add_responses(doc_data_grouped_by_webpage_type["web pdf"], website_url)
 
     assets_data, assets_data_grouped_by_id = get_document_assets_data(current_version)
     renditions_data = get_document_renditions_data(current_version)
 
-    add_responses(assets_data + renditions_data)
+    if flags.get("CHECK_ASSETS"):
+        add_responses(assets_data)
+    if flags.get("CHECK_RENDITIONS"):
+        add_responses(renditions_data)
 
     web_html_availability, web_html_numbers = check_html_webpages_availability(
                 doc_data_grouped_by_webpage_type["web html"],
@@ -1330,7 +1336,7 @@ def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url, da
         Logger.info(
             "Check document availability of %s (%i/%i)", doc_id, i, total)
         report = check_document_availability(
-            doc_id, website_url, object_store_url)
+            doc_id, website_url, object_store_url, dag_info)
 
         Logger.info("Format table row data")
         row = format_document_availability_result_to_register(
