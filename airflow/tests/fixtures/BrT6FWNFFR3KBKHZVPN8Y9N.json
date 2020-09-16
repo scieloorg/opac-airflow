@@ -20,7 +20,7 @@
       "processing": {
          "start": "t0",
          "end": "t3",
-         "duration": 5
+         "duration": 2.7e-05
       }
    },
    "detail": {
@@ -37,7 +37,7 @@
             "status code": 200,
             "start time": "t1",
             "end time": "t2",
-            "duration": 2,
+            "duration": 9e-06,
             "components": [
                {
                   "type": "asset",

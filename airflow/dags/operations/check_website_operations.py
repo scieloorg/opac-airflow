@@ -22,6 +22,11 @@ from operations.docs_utils import (
 Logger = logging.getLogger(__name__)
 
 
+def time_diff(t1, t2):
+    dt = t2 - t1
+    return dt.total_seconds()
+
+
 def fixes_for_json(o):
     if isinstance(o, (date, datetime)):
         return o.isoformat() + "Z"
@@ -129,10 +134,9 @@ def is_valid_response(response):
 
 def eval_response(response):
     try:
-        duration = (response.end_time - response.start_time).seconds
+        duration = time_diff(response.start_time, response.end_time)
     except (AttributeError, TypeError):
-        duration = 0
-
+        duration = None
     return {
         "available": response.status_code in (200, 301, 302),
         "status code": response.status_code,
@@ -1211,9 +1215,8 @@ def check_document_availability(doc_id, website_url, object_store_url):
     )
     t2 = datetime.utcnow()
     summarized["processing"] = {
-        "start": t1, "end": t2, "duration": (t2 - t1).seconds
+        "start": t1, "end": t2, "duration": time_diff(t1, t2)
     }
-
     return {
         "summary": summarized,
         "detail":

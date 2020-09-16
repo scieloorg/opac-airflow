@@ -47,15 +47,19 @@ from operations.check_website_operations import (
     check_website_uri_list_deeply,
     group_doc_data_by_webpage_type,
     add_responses,
+    time_diff,
 )
 
-T5 = datetime.utcnow()
-END_TIME = T5 - timedelta(seconds=1)
-START_TIME = T5 - timedelta(seconds=3)
-T0 = T5 - timedelta(seconds=5)
+T0 = datetime(2019, 12, 31, 22, 0, 0, 0).utcnow()
+T1 = datetime(2019, 12, 31, 22, 0, 1, 0).utcnow()
+T2 = datetime(2019, 12, 31, 22, 0, 3, 0).utcnow()
+T5 = datetime(2019, 12, 31, 22, 0, 5, 0).utcnow()
 
-DURATION = (END_TIME - START_TIME).seconds
-T0_to_T5 = (T5 - T0).seconds
+START_TIME = T1
+END_TIME = T2
+
+DURATION = time_diff(START_TIME, END_TIME)
+T0_to_T5 = time_diff(T0, T5)
 
 
 def read_file(file_path):
@@ -2457,7 +2461,7 @@ class TestCheckDocumentAvailability(TestCase):
             ]
         ]
 
-        mock_dt.utcnow.side_effect = [T0] + [T5]
+        mock_dt.utcnow.side_effect = [T0, T5]
 
         web_html_availability = [{
             "lang": "pt",
@@ -3665,7 +3669,7 @@ class TestCheckWebsiteUriListDeeply(TestCase):
                     "?format=pdf&lang=pt"
                 )
             ],
-                        [
+            [
                 MockClientResponse(
                     200,
                     "https://minio.scielo.br/documentstore/1809-4457/"
@@ -3716,7 +3720,7 @@ class TestCheckWebsiteUriListDeeply(TestCase):
                 ),
             ]
         ]
-        mock_dt.utcnow.side_effect = [T0] + [T5]
+        mock_dt.utcnow.side_effect = [T0, T5]
 
         doc_id_list = [doc_id]
         dag_info = {"run_id": "xxxx"}
@@ -3739,7 +3743,9 @@ class TestCheckWebsiteUriListDeeply(TestCase):
                     "previous_pid_v2_doc": None,
                     "status": "partial",
                     "detail": detail.replace("t0", t0).replace(
-                        "t1", t1).replace("t2", t2).replace("t3", t3)
+                        "t1", t1).replace("t2", t2).replace("t3", t3).replace(
+                        '2.7e-05', str(T0_to_T5)).replace(
+                        '9e-06', str(DURATION))
                     }),
         ]
         check_website_uri_list_deeply(
@@ -4742,3 +4748,26 @@ class TestFormatDocumentAvailabilityResultToRegister(TestCase):
         result = format_document_availability_result_to_register(
             doc_id, doc_checkup_result, dag_info)
         self.assertDictEqual(expected, result)
+
+
+class TestTimeDiff(TestCase):
+
+    def test_time_diff_returns_one_second(self):
+        t1 = datetime(2000, 1, 10, 0, 0, 0, 600)
+        t2 = datetime(2000, 1, 10, 0, 0, 1, 600)
+        result = time_diff(t1, t2)
+        self.assertEqual(1.000000, result)
+
+    def test_time_diff_returns_one_second_and_one_microsecond(self):
+        t1 = datetime(2000, 1, 10, 0, 0, 0, 600)
+        t2 = datetime(2000, 1, 10, 0, 0, 1, 601)
+        result = time_diff(t1, t2)
+        self.assertEqual(1.000001, result)
+
+    def test_time_diff_returns_61_seconds_and_one_microsecond(self):
+        # 2000-01-10 00:00:00 600ms
+        t1 = datetime(2000, 1, 10, 0, 0, 0, 600)
+        # 2000-01-10 00:01:01 601ms
+        t2 = datetime(2000, 1, 10, 0, 1, 1, 601)
+        result = time_diff(t1, t2)
+        self.assertEqual(61.000001, result)
