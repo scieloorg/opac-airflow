@@ -536,7 +536,7 @@ def check_input_vs_processed_pids(**context):
         )
     )
     processed = set(context["ti"].xcom_pull(
-        task_ids="check_documents_deeply_task_id",
+        task_ids="check_documents_deeply_id",
         key="processed_pid_v2_items") or [])
     Logger.info("Total %i input PIDs", len(pid_items))
     Logger.info("Total %i processed PIDs", len(processed))

@@ -26,6 +26,8 @@ from check_website import (
     get_website_url_list,
     group_uri_items_from_uri_lists_by_script_name,
     merge_uri_items_from_different_sources,
+    check_input_vs_processed_pids,
+
 )
 from .test_check_website_operations import (
     MockClientResponse,
@@ -1284,4 +1286,132 @@ class TestMergeUriItemsFromDifferentSources(TestCase):
             ]
         )
 
+class TestCheckInputVsProcessedPids(TestCase):
 
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    def test_check_input_vs_processed_pids_gets_merge_pids_from_different_tasks(self):
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            [
+                "0001-376520200005",
+            ],
+            [
+                "0001-303520200005",
+                "0001-376520200005",
+            ],
+            [
+                "0001-303520200005",
+                "0001-376520200005",
+            ],
+        ]
+        check_input_vs_processed_pids(**self.kwargs)
+
+        self.assertListEqual([
+            call(key="sci_arttext",
+                 task_ids="group_uri_items_from_uri_lists_by_script_name_id",),
+            call(key="pid_items",
+                 task_ids="get_uri_items_from_pid_list_csv_files_id",),
+            call(key="processed_pid_v2_items",
+                 task_ids="check_documents_deeply_id",),
+            ],
+            self.kwargs["ti"].xcom_pull.call_args_list
+        )
+
+    @patch("check_website.Logger")
+    def test_check_input_vs_processed_pids_registers_success(
+            self, mock_logger):
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            [
+                "0001-303520200005",
+            ],
+            [
+                "0001-376520200005",
+            ],
+            [
+                "0001-303520200005", "0001-376520200005",
+            ]
+        ]
+        check_input_vs_processed_pids(**self.kwargs)
+
+        self.assertListEqual([
+                call("Merge PID items from `uri_list_*.lst` and `*.csv`"),
+                call("Total %i input PIDs", 2),
+                call("Total %i processed PIDs", 2),
+                call("All the PIDs were processed"),
+            ],
+            mock_logger.info.call_args_list
+        )
+
+    @patch("check_website.Logger")
+    def test_check_input_vs_processed_pids_registers_error(
+            self, mock_logger):
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            [
+                "0001-303520200005",
+            ],
+            [
+                "0001-376520200005",
+            ],
+            []
+        ]
+        check_input_vs_processed_pids(**self.kwargs)
+
+        self.assertListEqual([
+                call("Merge PID items from `uri_list_*.lst` and `*.csv`"),
+                call("Total %i input PIDs", 2),
+                call("Total %i processed PIDs", 0),
+            ],
+            mock_logger.info.call_args_list
+        )
+        self.assertListEqual([
+                call(
+                    "There are %i PIDs which are in input lists, "
+                    "but were not processed:\n%s",
+                    2, "0001-303520200005\n0001-376520200005"
+                ),
+            ],
+            mock_logger.error.call_args_list
+        )
+
+    @patch("check_website.Logger")
+    def test_check_input_vs_processed_pids_registers_warning(
+            self, mock_logger):
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            [
+                "0001-303520200005",
+            ],
+            [
+                "0001-376520200005",
+            ],
+            [
+                "0001-303520200005",
+                "0001-376520200005",
+                "0001-30352020XXX5",
+            ]
+        ]
+        check_input_vs_processed_pids(**self.kwargs)
+
+        self.assertListEqual([
+                call("Merge PID items from `uri_list_*.lst` and `*.csv`"),
+                call("Total %i input PIDs", 2),
+                call("Total %i processed PIDs", 3),
+                call("All the PIDs were processed"),
+            ],
+            mock_logger.info.call_args_list
+        )
+        self.assertListEqual([
+                call(
+                    "There are %i processed PIDs which were not"
+                    " in input lists:\n%s"
+                    "(Probably because they are previous PID)",
+                    1,
+                    "0001-30352020XXX5"
+                ),
+            ],
+            mock_logger.warning.call_args_list
+        )
