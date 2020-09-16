@@ -3,19 +3,23 @@
       "web html": {
          "total": 1,
          "total unavailable": 0,
-         "total incomplete": 1
+         "total incomplete": 1,
+         "requested": true
       },
       "web pdf": {
          "total": 1,
-         "total unavailable": 0
+         "total unavailable": 0,
+         "requested": true
       },
       "renditions": {
          "total": 1,
-         "total unavailable": 0
+         "total unavailable": 0,
+         "requested": true
       },
       "assets": {
          "total": 6,
-         "total unavailable": 0
+         "total unavailable": 0,
+         "requested": true
       },
       "processing": {
          "start": "t0",

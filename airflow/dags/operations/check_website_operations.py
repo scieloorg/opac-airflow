@@ -133,9 +133,11 @@ def is_valid_response(response):
 
 
 def eval_response(response):
+    if response is None:
+        return {}
     try:
         duration = time_diff(response.start_time, response.end_time)
-    except (AttributeError, TypeError):
+    except (AttributeError, TypeError, ValueError):
         duration = None
     return {
         "available": response.status_code in (200, 301, 302),
@@ -523,7 +525,7 @@ def check_document_html(uri, assets_data, other_webpages_data, object_store_url)
     response = do_request(uri, requests.get)
     result = eval_response(response)
     expected_components_qty = len(assets_data) + len(other_webpages_data)
-    if result["available"] is False:
+    if result.get("available") is False:
         result["total expected components"] = expected_components_qty
         result["total missing components"] = expected_components_qty
         return result
@@ -694,7 +696,7 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
                                         other_webpages_data,
                                         object_store_url)
             result.update(components_result)
-            if bool(result["available"]) and result["total missing components"] > 0:
+            if result.get("available") is True and result["total missing components"] > 0:
                 summary[key]["total incomplete"] += 1
             report.append(result)
         else:
@@ -702,13 +704,13 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
                 eval_response(do_request(doc_uri))
             )
             report.append(result)
-        if result["available"] is False:
+        if result.get("available") is False:
             summary[key]["total unavailable"] += 1
 
     return report, summary
 
 
-def add_responses(doc_data_list, website_url=None):
+def add_responses(doc_data_list, website_url=None, request=True):
     """
     Dada uma lista de dicionários que contém uma chave `uri`,
     se aplicável, concatena valor de `uri` com valor de `website_url`,
@@ -728,8 +730,10 @@ def add_responses(doc_data_list, website_url=None):
             body = doc_data.get("format") == "html"
     uri_items = (doc_data["uri"] for doc_data in doc_data_list)
 
-    responses = async_requests.parallel_requests(uri_items, body=body)
-    responses = {resp.uri: resp for resp in responses}
+    responses = {}
+    if request:
+        responses = async_requests.parallel_requests(uri_items, body=body)
+        responses = {resp.uri: resp for resp in responses}
 
     for doc_data in doc_data_list:
         doc_data["response"] = responses.get(doc_data["uri"])
@@ -800,9 +804,9 @@ def check_html_webpages_availability(html_data_items, assets_data, webpages_data
                                     object_store_url)
         result.update(components_result)
         report.append(result)
-        if bool(result["available"]) and result["total missing components"] > 0:
+        if result.get("available") is True and result["total missing components"] > 0:
             incomplete += 1
-        if result["available"] is False:
+        if result.get("available") is False:
             unavailable += 1
     summary = {
         "total": len(html_data_items),
@@ -832,7 +836,7 @@ def check_responses(uri_data_items):
 
         del result["response"]
         report.append(result)
-        if result["available"] is False:
+        if result.get("available") is False:
             unavailable += 1
     return report, unavailable
 
@@ -874,7 +878,7 @@ def check_pdf_webpages_availability(doc_data_list):
         result.update(eval_response(response))
         report.append(result)
 
-        if result["available"] is False:
+        if result.get("available") is False:
             unavailable += 1
 
     summary = {
@@ -981,7 +985,7 @@ def format_sci_page_availability_result_to_register(sci_page_availability_result
     data["dag_run"] = dag_info.get("run_id")
     data["input_file_name"] = dag_info.get("input_file_name")
     data["uri"] = sci_page_availability_result["uri"]
-    data["failed"] = sci_page_availability_result["available"] is False
+    data["failed"] = sci_page_availability_result.get("available") is False
     data["detail"] = json.dumps(
         sci_page_availability_result, default=fixes_for_json)
     data["pid_v2_journal"] = parsed_pids[0]
@@ -1019,7 +1023,7 @@ def check_uri_items(uri_list_items):
     for resp in responses:
         result = eval_response(resp)
         result.update({"uri": resp.uri})
-        if result["available"] is True:
+        if result.get("available") is True:
             success.append(result)
         else:
             failures.append(result)
@@ -1161,7 +1165,7 @@ def group_doc_data_by_webpage_type(document_webpages_data):
     return d
 
 
-def check_document_availability(doc_id, website_url, object_store_url, flags):
+def check_document_availability(doc_id, website_url, object_store_url, flags={}):
     """
     Verifica a disponibilidade do documento `doc_id`, verificando a
     disponibilidade de todas as _webpages_ (HTML/PDF/idiomas) e de todos os ativos
@@ -1178,20 +1182,17 @@ def check_document_availability(doc_id, website_url, object_store_url, flags):
     doc_data_grouped_by_webpage_type = group_doc_data_by_webpage_type(
         document_webpages_data)
 
-    if flags.get("CHECK_WEB_HTML_PAGES"):
-        add_responses(
-            doc_data_grouped_by_webpage_type["web html"], website_url)
+    add_responses(doc_data_grouped_by_webpage_type["web html"], website_url,
+                  flags.get("CHECK_WEB_HTML_PAGES", True))
 
-    if flags.get("CHECK_WEB_PDF_PAGES"):
-        add_responses(doc_data_grouped_by_webpage_type["web pdf"], website_url)
+    add_responses(doc_data_grouped_by_webpage_type["web pdf"], website_url,
+                  flags.get("CHECK_WEB_PDF_PAGES", True))
 
     assets_data, assets_data_grouped_by_id = get_document_assets_data(current_version)
     renditions_data = get_document_renditions_data(current_version)
 
-    if flags.get("CHECK_ASSETS"):
-        add_responses(assets_data)
-    if flags.get("CHECK_RENDITIONS"):
-        add_responses(renditions_data)
+    add_responses(renditions_data, request=flags.get("CHECK_RENDITIONS", True))
+    add_responses(assets_data, request=flags.get("CHECK_ASSETS", True))
 
     web_html_availability, web_html_numbers = check_html_webpages_availability(
                 doc_data_grouped_by_webpage_type["web html"],
@@ -1219,6 +1220,12 @@ def check_document_availability(doc_id, website_url, object_store_url, flags):
             "total unavailable": q_unavailable_assets},
         }
     )
+    for name, flag_name in (("web html", "CHECK_WEB_HTML_PAGES"),
+                       ("web pdf", "CHECK_WEB_PDF_PAGES"),
+                       ("renditions", "CHECK_RENDITIONS"),
+                       ("assets", "CHECK_DIGITAL_ASSETS"),):
+        summarized[name]["requested"] = flags.get(flag_name, True)
+
     t2 = datetime.utcnow()
     summarized["processing"] = {
         "start": t1, "end": t2, "duration": time_diff(t1, t2)

@@ -2416,7 +2416,8 @@ class TestCheckDocumentAvailability(TestCase):
                     "BrT6FWNFFR3KBKHZVPN8Y9N/"
                     "409acdeb8f632022d41b3d94a3f00a837867937c.pdf"
                     ),
-
+            ],
+            [
                 MockClientResponse(
                     200,
                     "https://minio.scielo.br/documentstore/1809-4457/"
@@ -2675,13 +2676,14 @@ class TestCheckDocumentAvailability(TestCase):
         expected = {
             "summary": {
                 "web html": {
-                    "total": 1, "total unavailable": 0, "total incomplete": 1},
+                    "total": 1, "total unavailable": 0, "total incomplete": 1,
+                    "requested": True},
                 "web pdf": {
-                    "total": 1, "total unavailable": 0},
+                    "total": 1, "total unavailable": 0, "requested": True},
                 "renditions": {
-                    "total": 1, "total unavailable": 0},
+                    "total": 1, "total unavailable": 0, "requested": True},
                 "assets": {
-                    "total": 6, "total unavailable": 0},
+                    "total": 6, "total unavailable": 0, "requested": True},
                 "processing":
                     {"start": T0, "end": T5, "duration": T0_to_T5}
             },
@@ -3676,7 +3678,8 @@ class TestCheckWebsiteUriListDeeply(TestCase):
                     "BrT6FWNFFR3KBKHZVPN8Y9N/"
                     "409acdeb8f632022d41b3d94a3f00a837867937c.pdf"
                     ),
-
+            ],
+            [
                 MockClientResponse(
                     200,
                     "https://minio.scielo.br/documentstore/1809-4457/"
@@ -4722,6 +4725,49 @@ class TestAddResponses(TestCase):
             },
         ]
         result = add_responses(doc_data_list)
+        self.assertEqual(expected, doc_data_list)
+        self.assertIsNone(result)
+
+    def test_add_responses_does_not_call_parallel_requests_and_add_unrequested_response(self):
+        doc_data_list = [
+           {
+                "lang": "en",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en",
+            },
+            {
+                "lang": "es",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=es",
+            },
+        ]
+        expected = [
+            {
+                "lang": "en",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=en",
+                "response": None,
+            },
+            {
+                "lang": "es",
+                "format": "pdf",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=pdf&lang=es",
+                "response": None,
+            },
+        ]
+        result = add_responses(doc_data_list, request=False)
         self.assertEqual(expected, doc_data_list)
         self.assertIsNone(result)
 
