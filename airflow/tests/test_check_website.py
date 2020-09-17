@@ -116,8 +116,10 @@ class TestGetUriListFilePaths(TestCase):
         shutil.rmtree(self.gate_dir)
         shutil.rmtree(self.proc_dir)
 
+    @patch("check_website.Variable.set")
     @patch("check_website.Variable.get")
-    def test_get_uri_list_file_paths_returns_the_two_files_copied_to_proc_dir_from_gate_dir(self, mock_get):
+    def test_get_uri_list_file_paths_returns_the_two_files_copied_to_proc_dir_from_gate_dir(
+            self, mock_get, mock_set):
         expected = [
             str(pathlib.Path(self.proc_dir) / "test_run_id" / "uri_list_2020-01-01.lst"),
             str(pathlib.Path(self.proc_dir) / "test_run_id" / "uri_list_2020-01-03.lst"),
@@ -137,8 +139,10 @@ class TestGetUriListFilePaths(TestCase):
             self.kwargs["ti"].xcom_push.call_args_list
         )
 
+    @patch("check_website.Variable.set")
     @patch("check_website.Variable.get")
-    def test_get_uri_list_file_paths_returns_all_files_found_in_proc_dir(self, mock_get):
+    def test_get_uri_list_file_paths_returns_all_files_found_in_proc_dir(
+            self, mock_get, mock_set):
         for f in ("uri_list_2020-03-01.lst", "uri_list_2020-03-02.lst", "uri_list_2020-03-03.lst"):
             file_path = pathlib.Path(self.dag_proc_dir) / f
             with open(file_path, "w") as fp:
@@ -313,6 +317,7 @@ class TestGetPidListCSVFilePaths(TestCase):
             self.proc_dir,
         ]
         get_pid_list_csv_file_paths(**self.kwargs)
+        print(self.kwargs["ti"].xcom_push.call_args_list)
         self.assertListEqual(
             [
                 call('old_file_paths', expected[:3]),
@@ -1177,32 +1182,42 @@ class TestGetPIDv3List(TestCase):
             "run_id": "test_run_id",
         }
 
+    @patch("check_website.get_website_url_list")
     @patch("check_website.check_website_operations.get_main_website_url")
     @patch("check_website.check_website_operations.get_pid_v3_list")
     def test_get_pid_v3_list_assert_called_xcom_pull_with_sci_arttext_value(
-            self, mock_get, mock_get_main_website_url):
+            self, mock_get, mock_get_main_website_url,
+            mock_get_website_url_list):
         mock_get.return_value = (
             ["DOCID1", "DOCID2"]
         )
         mock_get_main_website_url.return_value = (
             "https://www.scielo.br"
         )
+        mock_get_website_url_list.return_value = [
+            "https://www.scielo.br"
+        ]
         get_pid_v3_list(**self.kwargs)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="get_uri_items_grouped_by_script_name_id",
             key="sci_arttext"
         )
 
+    @patch("check_website.get_website_url_list")
     @patch("check_website.check_website_operations.get_main_website_url")
     @patch("check_website.check_website_operations.get_pid_v3_list")
     def test_get_pid_v3_list_assert_called_xcom_push_with_pid_v3_list(
-            self, mock_get, mock_get_main_website_url):
+            self, mock_get, mock_get_main_website_url,
+            mock_get_website_url_list):
         mock_get.return_value = (
             ["DOCID1", "DOCID2"]
         )
         mock_get_main_website_url.return_value = (
             "https://www.scielo.br"
         )
+        mock_get_website_url_list.return_value = [
+            "https://www.scielo.br"
+        ]
         get_pid_v3_list(**self.kwargs)
         self.assertListEqual(
             [
