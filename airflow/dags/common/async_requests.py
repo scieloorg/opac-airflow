@@ -4,6 +4,7 @@ import logging
 
 import aiohttp
 import requests
+import certifi
 
 
 Logger = logging.getLogger(__name__)
@@ -63,7 +64,7 @@ def seq_requests(uri_items, body=False):
     """
     performs sequential requests
     """
-    do_request = requests.head if head else requests.get
+    do_request = requests.head if body is False else requests.get
     resps = []
     for u in uri_items:
         resp = do_request(u)
