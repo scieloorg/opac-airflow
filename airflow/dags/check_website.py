@@ -506,7 +506,11 @@ def get_pid_v3_list(**context):
     uri_items = context["ti"].xcom_pull(
         task_ids="get_uri_items_grouped_by_script_name_id",
         key="sci_arttext")
-    website_url = check_website_operations.get_main_website_url(_website_url_list)
+    website_url = check_website_operations.get_main_website_url(
+        _website_url_list)
+    if website_url is None:
+        raise ValueError(
+            "%s is unavailable or is an invalid value for the new SciELO site")
 
     pid_v3_list = check_website_operations.get_pid_v3_list(
         uri_items, website_url)
