@@ -144,9 +144,9 @@ def get_uri_list_file_paths(conf, **kwargs):
         if _uri_list_file_path not in file_paths:
             file_paths.append(_uri_list_file_path)
 
-    kwargs["ti"].xcom_push("old_uri_list_file_paths", old_file_paths)
-    kwargs["ti"].xcom_push("new_uri_list_file_paths", file_paths)
-    kwargs["ti"].xcom_push("uri_list_file_paths", old_file_paths + file_paths)
+    kwargs["ti"].xcom_push("old_uri_list_file_paths", sorted(old_file_paths))
+    kwargs["ti"].xcom_push("new_uri_list_file_paths", sorted(file_paths))
+    kwargs["ti"].xcom_push("uri_list_file_paths", sorted(old_file_paths + file_paths))
     Logger.info("Found: %s", file_paths)
     # atribui um str vazia para sinalizar que o valor foi usado
     Variable.set("GERAPADRAO_ID_FOR_URI_LIST", [], serialize_json=True)
@@ -211,9 +211,9 @@ def get_pid_list_csv_file_paths(**kwargs):
         if _pid_list_csv_file_path not in file_paths:
             file_paths.append(_pid_list_csv_file_path)
 
-    kwargs["ti"].xcom_push("old_file_paths", old_file_paths)
-    kwargs["ti"].xcom_push("new_file_paths", file_paths)
-    kwargs["ti"].xcom_push("file_paths", old_file_paths + file_paths)
+    kwargs["ti"].xcom_push("old_file_paths", sorted(old_file_paths))
+    kwargs["ti"].xcom_push("new_file_paths", sorted(file_paths))
+    kwargs["ti"].xcom_push("file_paths", sorted(old_file_paths + file_paths))
     Logger.info("Found: %s", file_paths)
 
 

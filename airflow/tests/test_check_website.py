@@ -162,9 +162,9 @@ class TestGetUriListFilePaths(TestCase):
         get_uri_list_file_paths(**self.kwargs)
         self.assertListEqual(
             [
-                call('old_uri_list_file_paths', expected[:3]),
-                call('new_uri_list_file_paths', expected[-2:]),
-                call('uri_list_file_paths', expected),
+                call('old_uri_list_file_paths', sorted(expected[:3])),
+                call('new_uri_list_file_paths', sorted(expected[-2:])),
+                call('uri_list_file_paths', sorted(expected)),
             ],
             self.kwargs["ti"].xcom_push.call_args_list
         )
@@ -304,7 +304,7 @@ class TestGetPidListCSVFilePaths(TestCase):
             file_path = pathlib.Path(self.dag_proc_dir) / f
             with open(file_path, "w") as fp:
                 fp.write("")
-        expected = [
+        expected =[
             str(pathlib.Path(self.dag_proc_dir) / "pid_list_2020-03-01.csv"),
             str(pathlib.Path(self.dag_proc_dir) / "pid_list_2020-03-02.csv"),
             str(pathlib.Path(self.dag_proc_dir) / "pid_list_2020-03-03.csv"),
@@ -317,12 +317,11 @@ class TestGetPidListCSVFilePaths(TestCase):
             self.proc_dir,
         ]
         get_pid_list_csv_file_paths(**self.kwargs)
-        print(self.kwargs["ti"].xcom_push.call_args_list)
         self.assertListEqual(
             [
-                call('old_file_paths', expected[:3]),
-                call('new_file_paths', expected[-2:]),
-                call('file_paths', expected),
+                call('old_file_paths', sorted(expected[:3])),
+                call('new_file_paths', sorted(expected[-2:])),
+                call('file_paths', sorted(expected)),
             ],
             self.kwargs["ti"].xcom_push.call_args_list
         )
