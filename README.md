@@ -87,6 +87,15 @@ $ airflow webserver
 * `WEBSITE_URL_LIST`: Lista de URL de SciELO Website para validar a disponibilidade de recursos. Exemplo: ["http://www.scielo.br", "https://new.scielo.br"]
 * `PID_LIST_CSV_FILE_NAMES` (opcional): Lista de nomes de arquivos CSV que deverão estar presentes em `XC_SPS_PACKAGES_DIR` para que sejam copiados para `PROC_SPS_PACKAGES_DIR`/`DAG_RUN_ID`, e usados na DAG de verificação da disponibilidade dos documentos, ativos digitais e manifestações
 * `OBJECT_STORE_URL` (opcional, mas desejável): URL do Object Store para filtrar os URI existentes nos HTML para que sejam usados na verificação de presença/ausência de menção dos ativos digitais e manifestações do documento no código HTML
+* `CHECK_SCI_SERIAL_PAGES` (opcional, valor padrão é `true`): com valor `false` inibe a execução da verificação das páginas `sci_serial`
+* `CHECK_SCI_ISSUES_PAGES` (opcional, valor padrão é `true`): com valor `false` inibe a execução da verificação das páginas `sci_issues`
+* `CHECK_SCI_ISSUETOC_PAGES` (opcional, valor padrão é `true`): com valor `false` inibe a execução da verificação das páginas `sci_issuetoc`
+* `CHECK_SCI_ARTTEXT_PAGES` (opcional, valor padrão é `true`): com valor `false` inibe a execução da verificação das páginas `sci_arttext`
+* `CHECK_SCI_PDF_PAGES` (opcional, valor padrão é `true`): com valor `false` inibe a execução da verificação das páginas `sci_pdf`
+* `CHECK_RENDITIONS` (opcional, valor padrão é `true`): com valor `false` inibe a execução da verificação das manifestações, tal como estão registradas no _Object store_
+* `CHECK_DIGITAL_ASSETS` (opcional, valor padrão é `true`): com valor `false` inibe a execução da verificação dos ativos digitais, tal como estão registrados no _Object store_
+* `CHECK_WEB_HTML_PAGES` (opcional, valor padrão é `true`): com valor `false` inibe a execução da verificação das páginas Web do padrão `/j/:acron/a/:iddoc/format=html&lang=??`, com as variações de idioma. Também inibiria a verficação dos componentes do HTML resultante desta consulta, ou seja, a presença dos ativos digitais e a presença dos links para as demais versões do documento (formato e idioma)
+* `CHECK_WEB_PDF_PAGES` (opcional, valor padrão é `true`): inibe a execução da verificação das páginas Web do padrão `/j/:acron/a/:iddoc/format=pdf&lang=??`, com as variações de idioma
 
 ## Variáveis de ambiente:
 
