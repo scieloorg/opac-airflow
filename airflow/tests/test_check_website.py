@@ -538,7 +538,9 @@ class TestCheckSciSerialUriItems(TestCase):
             "run_id": "test_run_id",
         }
 
-    def test_check_sci_serial_uri_items_assert_called_xcom_pull_with_sci_serial_value(self):
+    @patch("check_website.check_any_uri_items")
+    def test_check_sci_serial_uri_items_assert_called_xcom_pull_with_sci_serial_value(self, mock_check_any):
+        mock_check_any.return_value = 0
         check_sci_serial_uri_items(**self.kwargs)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="get_uri_items_grouped_by_script_name_id",
@@ -572,7 +574,9 @@ class TestCheckSciIssuesUriItems(TestCase):
             "run_id": "test_run_id",
         }
 
-    def test_check_sci_issues_uri_items_assert_called_xcom_pull_with_sci_issues_value(self):
+    @patch("check_website.check_any_uri_items")
+    def test_check_sci_issues_uri_items_assert_called_xcom_pull_with_sci_issues_value(self, mock_check_any):
+        mock_check_any.return_value = 0
         check_sci_issues_uri_items(**self.kwargs)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="get_uri_items_grouped_by_script_name_id",
@@ -606,7 +610,9 @@ class TestCheckSciIssuetocUriItems(TestCase):
             "run_id": "test_run_id",
         }
 
-    def test_check_sci_issuetoc_uri_items_assert_called_xcom_pull_with_sci_issuetoc_value(self):
+    @patch("check_website.check_any_uri_items")
+    def test_check_sci_issuetoc_uri_items_assert_called_xcom_pull_with_sci_issuetoc_value(self, mock_check_any):
+        mock_check_any.return_value = 0
         check_sci_issuetoc_uri_items(**self.kwargs)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="get_uri_items_grouped_by_script_name_id",
@@ -640,7 +646,9 @@ class TestCheckSciPdfUriItems(TestCase):
             "run_id": "test_run_id",
         }
 
-    def test_check_sci_pdf_uri_items_assert_called_xcom_pull_with_sci_pdf_value(self):
+    @patch("check_website.check_any_uri_items")
+    def test_check_sci_pdf_uri_items_assert_called_xcom_pull_with_sci_pdf_value(self, mock_check_any):
+        mock_check_any.return_value = 0
         check_sci_pdf_uri_items(**self.kwargs)
 
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
@@ -675,7 +683,10 @@ class TestCheckSciArttextUriItems(TestCase):
             "run_id": "test_run_id",
         }
 
-    def test_check_sci_arttext_uri_items_assert_called_xcom_pull_with_sci_arttext_value(self):
+    @patch("check_website.check_any_uri_items")
+    def test_check_sci_arttext_uri_items_assert_called_xcom_pull_with_sci_arttext_value(
+            self, mock_check_any_uri_list):
+        mock_check_any_uri_list.return_value = 0
         check_sci_arttext_uri_items(**self.kwargs)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="get_uri_items_grouped_by_script_name_id",
