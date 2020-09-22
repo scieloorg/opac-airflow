@@ -118,7 +118,7 @@ class TestGetUriListFilePaths(TestCase):
 
     @patch("check_website.Variable.set")
     @patch("check_website.Variable.get")
-    def test_get_uri_list_file_paths_returns_the_two_files_copied_to_proc_dir_from_gate_dir(
+    def test_get_uri_list_file_paths_identifies_the_two_files_copied_to_proc_dir_from_gate_dir(
             self, mock_get, mock_set):
         expected = [
             str(pathlib.Path(self.proc_dir) / "test_run_id" / "uri_list_2020-01-01.lst"),
@@ -129,7 +129,7 @@ class TestGetUriListFilePaths(TestCase):
             self.gate_dir,
             self.proc_dir,
         ]
-        get_uri_list_file_paths(**self.kwargs)
+        result = get_uri_list_file_paths(**self.kwargs)
         self.assertListEqual(
             [
                 call('old_uri_list_file_paths', []),
@@ -138,10 +138,11 @@ class TestGetUriListFilePaths(TestCase):
             ],
             self.kwargs["ti"].xcom_push.call_args_list
         )
+        self.assertTrue(result)
 
     @patch("check_website.Variable.set")
     @patch("check_website.Variable.get")
-    def test_get_uri_list_file_paths_returns_all_files_found_in_proc_dir(
+    def test_get_uri_list_file_paths_identifies_all_files_found_in_proc_dir(
             self, mock_get, mock_set):
         for f in ("uri_list_2020-03-01.lst", "uri_list_2020-03-02.lst", "uri_list_2020-03-03.lst"):
             file_path = pathlib.Path(self.dag_proc_dir) / f
@@ -159,7 +160,7 @@ class TestGetUriListFilePaths(TestCase):
             self.gate_dir,
             self.proc_dir,
         ]
-        get_uri_list_file_paths(**self.kwargs)
+        result = get_uri_list_file_paths(**self.kwargs)
         self.assertListEqual(
             [
                 call('old_uri_list_file_paths', sorted(expected[:3])),
@@ -168,6 +169,24 @@ class TestGetUriListFilePaths(TestCase):
             ],
             self.kwargs["ti"].xcom_push.call_args_list
         )
+        self.assertTrue(result)
+
+    @patch("check_website.Variable.set")
+    @patch("check_website.Variable.get")
+    def test_get_uri_list_file_paths_returns_false_because_there_is_no_uri_list_files(
+            self, mock_get, mock_set):
+        for f in ("uri_list_2020-01-01.lst", "uri_list_2020-01-02.lst", "uri_list_2020-01-03.lst"):
+            file_path = pathlib.Path(self.gate_dir) / f
+            os.unlink(file_path)
+
+        mock_get.side_effect = [
+            [],
+            self.gate_dir,
+            self.proc_dir,
+        ]
+        result = get_uri_list_file_paths(**self.kwargs)
+        self.kwargs["ti"].xcom_push.assert_not_called()
+        self.assertFalse(result)
 
 
 class TestGetUriItemsFromUriListFiles(TestCase):

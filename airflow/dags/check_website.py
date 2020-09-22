@@ -144,12 +144,21 @@ def get_uri_list_file_paths(conf, **kwargs):
         if _uri_list_file_path not in file_paths:
             file_paths.append(_uri_list_file_path)
 
-    kwargs["ti"].xcom_push("old_uri_list_file_paths", sorted(old_file_paths))
-    kwargs["ti"].xcom_push("new_uri_list_file_paths", sorted(file_paths))
-    kwargs["ti"].xcom_push("uri_list_file_paths", sorted(old_file_paths + file_paths))
     Logger.info("Found: %s", file_paths)
+
     # atribui um str vazia para sinalizar que o valor foi usado
     Variable.set("GERAPADRAO_ID_FOR_URI_LIST", [], serialize_json=True)
+
+    if old_file_paths or file_paths:
+        kwargs["ti"].xcom_push(
+            "old_uri_list_file_paths", sorted(old_file_paths))
+        kwargs["ti"].xcom_push(
+            "new_uri_list_file_paths", sorted(file_paths))
+        kwargs["ti"].xcom_push(
+            "uri_list_file_paths", sorted(old_file_paths + file_paths))
+        return True
+    else:
+        return False
 
 
 def get_uri_items_from_uri_list_files(**context):
@@ -575,7 +584,7 @@ def check_input_vs_processed_pids(**context):
         present_in_pid_items_but_not_in_processed)
 
 
-get_uri_list_file_paths_task = PythonOperator(
+get_uri_list_file_paths_task = ShortCircuitOperator(
     task_id="get_uri_list_file_paths_id",
     provide_context=True,
     python_callable=get_uri_list_file_paths,
