@@ -220,10 +220,17 @@ def get_pid_list_csv_file_paths(**kwargs):
         if _pid_list_csv_file_path not in file_paths:
             file_paths.append(_pid_list_csv_file_path)
 
-    kwargs["ti"].xcom_push("old_file_paths", sorted(old_file_paths))
-    kwargs["ti"].xcom_push("new_file_paths", sorted(file_paths))
-    kwargs["ti"].xcom_push("file_paths", sorted(old_file_paths + file_paths))
     Logger.info("Found: %s", file_paths)
+    if old_file_paths or file_paths:
+        kwargs["ti"].xcom_push(
+            "old_uri_list_file_paths", sorted(old_file_paths))
+        kwargs["ti"].xcom_push(
+            "new_uri_list_file_paths", sorted(file_paths))
+        kwargs["ti"].xcom_push(
+            "uri_list_file_paths", sorted(old_file_paths + file_paths))
+        return True
+    else:
+        return False
 
 
 def get_uri_items_from_pid_list_csv_files(**context):
@@ -598,7 +605,7 @@ get_uri_items_from_uri_list_files_task = PythonOperator(
     dag=dag,
 )
 
-get_pid_list_csv_file_paths_task = PythonOperator(
+get_pid_list_csv_file_paths_task = ShortCircuitOperator(
     task_id="get_pid_list_csv_file_paths_id",
     provide_context=True,
     python_callable=get_pid_list_csv_file_paths,

@@ -297,7 +297,7 @@ class TestGetPidListCSVFilePaths(TestCase):
         shutil.rmtree(self.proc_dir)
 
     @patch("check_website.Variable.get")
-    def test_get_pid_list_csv_file_paths_returns_the_two_files_copied_to_proc_dir_from_gate_dir(self, mock_get):
+    def test_get_pid_list_csv_file_paths_finds_the_two_files_copied_to_proc_dir_from_gate_dir(self, mock_get):
         expected = [
             str(pathlib.Path(self.proc_dir) / "test_run_id" / "pid_list_2020-01-01.csv"),
             str(pathlib.Path(self.proc_dir) / "test_run_id" / "pid_list_2020-01-03.csv"),
@@ -307,7 +307,7 @@ class TestGetPidListCSVFilePaths(TestCase):
             self.gate_dir,
             self.proc_dir,
         ]
-        get_pid_list_csv_file_paths(**self.kwargs)
+        result = get_pid_list_csv_file_paths(**self.kwargs)
         self.assertListEqual(
             [
                 call('old_file_paths', []),
@@ -316,9 +316,10 @@ class TestGetPidListCSVFilePaths(TestCase):
             ],
             self.kwargs["ti"].xcom_push.call_args_list
         )
+        self.assertTrue(result)
 
     @patch("check_website.Variable.get")
-    def test_get_pid_list_csv_file_paths_returns_all_files_found_in_proc_dir(self, mock_get):
+    def test_get_pid_list_csv_file_paths_finds_all_files_found_in_proc_dir(self, mock_get):
         for f in ("pid_list_2020-03-01.csv", "pid_list_2020-03-02.csv", "pid_list_2020-03-03.csv"):
             file_path = pathlib.Path(self.dag_proc_dir) / f
             with open(file_path, "w") as fp:
@@ -335,7 +336,7 @@ class TestGetPidListCSVFilePaths(TestCase):
             self.gate_dir,
             self.proc_dir,
         ]
-        get_pid_list_csv_file_paths(**self.kwargs)
+        result = get_pid_list_csv_file_paths(**self.kwargs)
         self.assertListEqual(
             [
                 call('old_file_paths', sorted(expected[:3])),
@@ -344,6 +345,21 @@ class TestGetPidListCSVFilePaths(TestCase):
             ],
             self.kwargs["ti"].xcom_push.call_args_list
         )
+        self.assertTrue(result)
+
+    @patch("check_website.Variable.get")
+    def test_get_pid_list_csv_file_paths_returns_false(self, mock_get):
+        for f in ("pid_list_2020-01-01.csv", "pid_list_2020-01-02.csv", "pid_list_2020-01-03.csv"):
+            file_path = pathlib.Path(self.gate_dir) / f
+            os.unlink(file_path)
+        mock_get.side_effect = [
+            [],
+            self.gate_dir,
+            self.proc_dir,
+        ]
+        result = get_pid_list_csv_file_paths(**self.kwargs)
+        self.kwargs["ti"].xcom_push.assert_not_called()
+        self.assertFalse(result)
 
 
 class TestGetUriItemsFromPidFiles(TestCase):
