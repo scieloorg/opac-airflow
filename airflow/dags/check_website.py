@@ -363,11 +363,15 @@ def check_any_uri_items(uri_list_items, label, dag_info):
     flag_name = "CHECK_{}_PAGES".format(label.upper())
     flag = get_task_execution_flag(
         flag_name, "checking '%s' pages".format(label))
-
     if flag is False:
         return 0
 
     _website_url_list = get_website_url_list()
+
+    total = len(uri_list_items or [])
+    Logger.info("Total URI items: %i", total)
+    if total == 0:
+        return 0
 
     # concatena cada item de `_website_url_list` com
     # cada item de `uri_list_items`

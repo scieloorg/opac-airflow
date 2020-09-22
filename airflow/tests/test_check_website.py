@@ -805,6 +805,33 @@ class TestCheckAnyUriItems(TestCase):
             "run_id": "test_run_id",
         }
 
+    @patch("check_website.Variable.get")
+    def test_check_any_uri_items_returns_0_because_flag_is_off(self, mock_get):
+        uri_items = [
+            "/scielo.php?script=sci_issues&pid=0001-3035",
+            "/scielo.php?script=sci_issues&pid=0001-3765",
+        ]
+        mock_get.return_value = False
+        result = check_any_uri_items(uri_items, "label", {"daginfo": ""})
+        self.assertEqual(0, result)
+
+    @patch("check_website.Variable.get")
+    def test_check_any_uri_items_raises_value_error(self, mock_get):
+        uri_items = [
+            "/scielo.php?script=sci_issues&pid=0001-3035",
+            "/scielo.php?script=sci_issues&pid=0001-3765",
+        ]
+        mock_get.return_value = None
+        with self.assertRaises(ValueError):
+            check_any_uri_items(uri_items, "label", {"daginfo": ""})
+
+    @patch("check_website.Variable.get")
+    def test_check_any_uri_items_returns_0_because_uri_items_is_None(self, mock_get):
+        uri_items = None
+        mock_get.return_value = ["https://www.scielo.br"]
+        result = check_any_uri_items(uri_items, "label", {"daginfo": ""})
+        self.assertEqual(0, result)
+
     @patch("check_website.check_website_operations.concat_website_url_and_uri_list_items")
     @patch("check_website.Variable.get")
     def test_check_any_uri_items_assert_called_once_concat_website_url_and_uri_list_items(
@@ -814,7 +841,12 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
         mock_get.return_value = ["https://www.scielo.br"]
-        check_any_uri_items(uri_items, "label", {"daginfo": ""})
+        mock_concat_website_url_and_uri_list_items.return_value = [
+            "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
+            "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
+        ]
+        result = check_any_uri_items(uri_items, "label", {"daginfo": ""})
+        self.assertEqual(2, result)
         mock_concat_website_url_and_uri_list_items.assert_called_once_with(
             ["https://www.scielo.br"],
             [
@@ -833,7 +865,8 @@ class TestCheckAnyUriItems(TestCase):
         ]
         mock_get.return_value = ["https://www.scielo.br"]
         mock_check_website_uri_list.return_value = MagicMock(), MagicMock()
-        check_any_uri_items(uri_items, "label", self.kwargs)
+        result = check_any_uri_items(uri_items, "label", self.kwargs)
+        self.assertEqual(2, result)
         mock_check_website_uri_list.assert_called_once_with(
             [
                 "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
@@ -896,7 +929,8 @@ class TestCheckAnyUriItems(TestCase):
             failures,
         )
         dag_info = {"dag": "daginfo"}
-        check_any_uri_items(uri_items, "label", dag_info, )
+        result = check_any_uri_items(uri_items, "label", dag_info)
+        self.assertEqual(4, result)
 
         calls = [
             call(failures, dag_info),
@@ -1014,7 +1048,8 @@ class TestCheckAnyUriItems(TestCase):
                 "pid_v2_doc": None,
             },
         ]
-        check_any_uri_items(uri_items, "label", dag_info)
+        result = check_any_uri_items(uri_items, "label", dag_info)
+        self.assertEqual(4, result)
         calls = [
             call("sci_pages_availability", expected[0]),
             call("sci_pages_availability", expected[1]),
@@ -1133,7 +1168,8 @@ class TestCheckAnyUriItems(TestCase):
                 "pid_v2_doc": None,
             },
         ]
-        check_any_uri_items(uri_items, "label", dag_info)
+        result = check_any_uri_items(uri_items, "label", dag_info)
+        self.assertEqual(4, result)
         calls = [
             call("sci_pages_availability", expected[0]),
             call("sci_pages_availability", expected[1]),
@@ -1242,7 +1278,8 @@ class TestCheckAnyUriItems(TestCase):
                 "pid_v2_doc": None,
             },
         ]
-        check_any_uri_items(uri_items, "label", dag_info)
+        result = check_any_uri_items(uri_items, "label", dag_info)
+        self.assertEqual(4, result)
         calls = [
             call("sci_pages_availability", expected[0]),
             call("sci_pages_availability", expected[1]),
