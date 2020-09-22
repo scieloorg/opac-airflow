@@ -1383,7 +1383,7 @@ class TestMergeUriItemsFromDifferentSources(TestCase):
             "run_id": "test_run_id",
         }
 
-    def test_merge_uri_items_from_different_sources(self):
+    def test_merge_uri_items_from_different_sources_removes_repetition(self):
         self.kwargs["ti"].xcom_pull.side_effect = [
             [
                 "/scielo.php?script=sci_arttext&pid=0001-303520200005",
@@ -1395,7 +1395,8 @@ class TestMergeUriItemsFromDifferentSources(TestCase):
                 "/scielo.php?script=sci_arttext&pid=0001-303520200005",
             ],
         ]
-        merge_uri_items_from_different_sources(**self.kwargs)
+        result = merge_uri_items_from_different_sources(**self.kwargs)
+        self.assertTrue(result)
         self.assertListEqual([
             call(key="uri_items",
                  task_ids="get_uri_items_from_uri_list_files_id",),
@@ -1411,6 +1412,83 @@ class TestMergeUriItemsFromDifferentSources(TestCase):
                 "/scielo.php?script=sci_arttext&pid=0001-376520200005",
                 "/scielo.php?script=sci_pdf&pid=0001-303520200005",
                 "/scielo.php?script=sci_pdf&pid=0001-376520200005",
+            ]
+        )
+
+    def test_merge_uri_items_from_different_sources_pulls_three_uri_items_and_pushes_three_uri_items(self):
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            [
+                "/scielo.php?script=sci_pdf&pid=0001-303520200005",
+                "/scielo.php?script=sci_pdf&pid=0001-376520200005",
+            ],
+            [
+                "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+            ],
+        ]
+        result = merge_uri_items_from_different_sources(**self.kwargs)
+        self.assertTrue(result)
+        self.assertListEqual([
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_uri_list_files_id",),
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_pid_list_csv_files_id",)
+            ],
+            self.kwargs["ti"].xcom_pull.call_args_list
+        )
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            "uri_items",
+            [
+                "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+                "/scielo.php?script=sci_pdf&pid=0001-303520200005",
+                "/scielo.php?script=sci_pdf&pid=0001-376520200005",
+            ]
+        )
+
+    def test_merge_uri_items_from_different_sources_returns_true_only_from_csv(self):
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            None,
+            [
+                "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+            ],
+        ]
+        result = merge_uri_items_from_different_sources(**self.kwargs)
+        self.assertTrue(result)
+        self.assertListEqual([
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_uri_list_files_id",),
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_pid_list_csv_files_id",)
+            ],
+            self.kwargs["ti"].xcom_pull.call_args_list
+        )
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            "uri_items",
+            [
+                "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+            ]
+        )
+
+    def test_merge_uri_items_from_different_sources_returns_true_only_from_lst(self):
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            [
+                "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+            ],
+            None,
+        ]
+        result = merge_uri_items_from_different_sources(**self.kwargs)
+        self.assertTrue(result)
+        self.assertListEqual([
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_uri_list_files_id",),
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_pid_list_csv_files_id",)
+            ],
+            self.kwargs["ti"].xcom_pull.call_args_list
+        )
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            "uri_items",
+            [
+                "/scielo.php?script=sci_arttext&pid=0001-303520200005",
             ]
         )
 

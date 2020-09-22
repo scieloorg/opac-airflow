@@ -295,18 +295,19 @@ def merge_uri_items_from_different_sources(**context):
     removendo repetições
     """
     Logger.info("Merge URI items from `uri_list_*.lst` and `*.csv`")
-    uri_items = set(
-            context["ti"].xcom_pull(
-                task_ids="get_uri_items_from_uri_list_files_id",
-                key="uri_items"
-            ) +
-            context["ti"].xcom_pull(
-                task_ids="get_uri_items_from_pid_list_csv_files_id",
-                key="uri_items"
-            )
-    )
+    uri_items_from_lst = context["ti"].xcom_pull(
+        task_ids="get_uri_items_from_uri_list_files_id",
+        key="uri_items"
+    ) or []
+    uri_items_from_csv = context["ti"].xcom_pull(
+        task_ids="get_uri_items_from_pid_list_csv_files_id",
+        key="uri_items"
+    ) or []
+
+    uri_items = set(uri_items_from_lst + uri_items_from_csv)
     Logger.info("Total %i URIs", len(uri_items))
     context["ti"].xcom_push("uri_items", sorted(uri_items))
+    return True
 
 
 def get_uri_items_grouped_by_script_name(**context):
