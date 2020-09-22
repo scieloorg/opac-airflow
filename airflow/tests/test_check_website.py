@@ -415,15 +415,15 @@ class TestGetUriItemsFromPidFiles(TestCase):
     def tearDown(self):
         shutil.rmtree(self.proc_dir)
 
-    def test_get_uri_items_from_pid_list_csv_files_gets_uri_items(self):
+    def test_get_uri_items_from_pid_list_csv_files_gets_uri_items_returns_true(self):
         self.kwargs["ti"].xcom_pull.return_value = [
             pathlib.Path(self.proc_dir) / "pid_2020-01-01.csv",
             pathlib.Path(self.proc_dir) / "pid_2020-01-02.csv",
             pathlib.Path(self.proc_dir) / "pid_2020-01-03.csv",
 
         ]
-        get_uri_items_from_pid_list_csv_files(**self.kwargs)
-
+        result = get_uri_items_from_pid_list_csv_files(**self.kwargs)
+        self.assertTrue(result)
         self.assertListEqual([
             call(
                 "pid_items",
@@ -461,6 +461,23 @@ class TestGetUriItemsFromPidFiles(TestCase):
             )],
             self.kwargs["ti"].xcom_push.call_args_list
         )
+
+    @patch("check_website.check_website_operations.get_pid_list_from_csv")
+    def test_get_uri_items_from_pid_list_csv_files_gets_uri_items_returns_false(
+            self, mock_get_pid_list_from_csv):
+        self.kwargs["ti"].xcom_pull.return_value = [
+            pathlib.Path(self.proc_dir) / "pid_2020-01-01.csv",
+            pathlib.Path(self.proc_dir) / "pid_2020-01-02.csv",
+            pathlib.Path(self.proc_dir) / "pid_2020-01-03.csv",
+        ]
+        mock_get_pid_list_from_csv.side_effect = [
+            "invalidpidlist",
+            "",
+            "invalidpidlist\ninvalidpid",
+        ]
+        result = get_uri_items_from_pid_list_csv_files(**self.kwargs)
+        self.assertFalse(result)
+        self.kwargs["ti"].xcom_push.assert_not_called()
 
 
 class TestGetUriItemsGroupedByScriptName(TestCase):

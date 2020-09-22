@@ -253,16 +253,22 @@ def get_uri_items_from_pid_list_csv_files(**context):
 
     pids = set()
     for file_path in pid_list_csv_file_paths:
-        _items = check_website_operations.get_pid_list_from_csv(file_path)
+        _items = {item
+                  for item in check_website_operations.get_pid_list_from_csv(
+                    file_path)
+                  if item and len(item) == 23}
         Logger.info("File %s: %i pids", file_path, len(_items))
-        pids = pids | set(_items)
-        Logger.info("Partial total: %i pids", len(pids))
+        pids = pids | _items
+        total = len(pids)
+        Logger.info("Partial total: %i pids", total)
 
-    items = check_website_operations.get_uri_list_from_pid_dict(
-        group_pids(pids))
-    context["ti"].xcom_push("pid_items", sorted(pids))
-    context["ti"].xcom_push("uri_items", items)
-    Logger.info("Total: %i URIs", len(items))
+    if total:
+        items = check_website_operations.get_uri_list_from_pid_dict(
+            group_pids(pids))
+        context["ti"].xcom_push("pid_items", sorted(pids))
+        context["ti"].xcom_push("uri_items", items)
+        Logger.info("Total: %i URIs", len(items))
+    return total > 0
 
 
 def group_uri_items_from_uri_lists_by_script_name(**context):
@@ -618,7 +624,7 @@ get_pid_list_csv_file_paths_task = ShortCircuitOperator(
     dag=dag,
 )
 
-get_uri_items_from_pid_list_csv_files_task = PythonOperator(
+get_uri_items_from_pid_list_csv_files_task = ShortCircuitOperator(
     task_id="get_uri_items_from_pid_list_csv_files_id",
     provide_context=True,
     python_callable=get_uri_items_from_pid_list_csv_files,
