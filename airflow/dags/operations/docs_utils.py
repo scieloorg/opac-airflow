@@ -42,7 +42,7 @@ def get_document_manifest(doc_id):
             )
         ) from None
     else:
-        return json.loads(document_manifest)
+        return json.loads(document_manifest.text)
 
 
 def get_document_sps_package(current_version):
@@ -82,36 +82,29 @@ def get_document_data_to_generate_uri(current_version, sps_package=None):
     """
     sps_package = sps_package or get_document_sps_package(current_version)
     data = []
-    data.append(
-        {
-            "lang": sps_package.original_language,
-            "format": "html",
-            "pid_v2": sps_package.scielo_pid_v2,
-            "acron": sps_package.acron,
-            "doc_id_for_human": sps_package.package_name,
+    doc_data = {
+        "pid_v2": sps_package.scielo_pid_v2,
+        "acron": sps_package.acron,
+        "doc_id_for_human": sps_package.package_name,
+    }
+    if sps_package.scielo_previous_pid:
+        doc_data.update({"previous_pid_v2": sps_package.scielo_previous_pid})
 
+    for lang in [sps_package.original_language] + (sps_package.translation_languages or []):
+        _doc_data = {
+            "lang": lang,
+            "format": "html",
         }
-    )
-    for lang in sps_package.translation_languages or []:
-        data.append(
-            {
-                "lang": lang,
-                "format": "html",
-                "pid_v2": sps_package.scielo_pid_v2,
-                "acron": sps_package.acron,
-                "doc_id_for_human": sps_package.package_name,
-            }
-        )
+        _doc_data.update(doc_data)
+        data.append(_doc_data)
+
     for rendition in current_version.get("renditions") or []:
-        data.append(
-            {
-                "lang": rendition["lang"],
-                "format": "pdf",
-                "pid_v2": sps_package.scielo_pid_v2,
-                "acron": sps_package.acron,
-                "doc_id_for_human": sps_package.package_name,
-            }
-        )
+        _doc_data = {
+            "lang": rendition["lang"],
+            "format": "pdf",
+        }
+        _doc_data.update(doc_data)
+        data.append(_doc_data)
     return data
 
 
@@ -123,21 +116,23 @@ def get_document_assets_data(current_version):
     LAST_VERSION = -1
     # agrupa items que representam o mesmo ativo
     assets_by_prefix = {}
+    assets_data = []
     assets = current_version.get("assets") or {}
     for asset_id, asset in assets.items():
         prefix, ext = os.path.splitext(asset_id)
         prefix = prefix.replace(".thumbnail", "")
         assets_by_prefix[prefix] = assets_by_prefix.get(prefix) or []
-        assets_by_prefix[prefix].append(
-            {
+        uri = {
                 "asset_id": asset_id,
                 "uri": asset[LAST_VERSION][1],
             }
-        )
+        assets_by_prefix[prefix].append(uri)
+        assets_data.append(uri)
     # cria lista dos grupos de ativos digitais
-    assets = []
+
+    assets_grouped_by_id = []
     for prefix, asset_alternatives in assets_by_prefix.items():
-        assets.append(
+        assets_grouped_by_id.append(
             {
                 "prefix": prefix,
                 "uri_alternatives": [
@@ -147,7 +142,7 @@ def get_document_assets_data(current_version):
                 "asset_alternatives": asset_alternatives,
             }
         )
-    return assets
+    return assets_data, assets_grouped_by_id
 
 
 def get_document_renditions_data(current_version):
@@ -499,3 +494,23 @@ def update_aop_bundle_items(issn_id, documents_list):
 
                 update_documents_in_bundle(aop_bundle_id, updated_aop_items)
     return executions
+
+
+def group_pids(document_pids_list):
+    """
+    Agrupa os pid em journal, issue e documentos
+    Args:
+        document_pids_list (list of str): lista de pids v2
+    Returns:
+        dict: cuja chave é pid de journal, valor dict
+                (chave: pid de issue, valor: lista de pid de documentos)
+    """
+    group = {}
+    for doc_pid_v2 in sorted(list(set(document_pids_list))):
+        issue_pid = doc_pid_v2[1:18]
+        journal_pid = issue_pid[:9]
+        group[journal_pid] = group.get(journal_pid, {})
+        group[journal_pid][issue_pid] = group[journal_pid].get(issue_pid, [])
+        group[journal_pid][issue_pid].append(doc_pid_v2)
+    return group
+

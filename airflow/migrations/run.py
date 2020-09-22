@@ -34,7 +34,7 @@ def main():
 
     run_sql(sql, parsed.connection)
 
-    print(os.listdir("./migrations"))
+    #print(os.listdir("./migrations"))
 
 
 if __name__ == "__main__":

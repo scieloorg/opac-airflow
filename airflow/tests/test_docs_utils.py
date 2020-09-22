@@ -26,6 +26,7 @@ from operations.docs_utils import (
     get_document_data_to_generate_uri,
     get_document_assets_data,
     get_document_renditions_data,
+    group_pids,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -1069,7 +1070,7 @@ class TestUpdateAOPBundle(TestCase):
 
 class TestGetDocumentDataToGenerateUri(TestCase):
 
-    def test_get_document_data_to_generate_uri_returns_(self):
+    def test_get_document_data_to_generate_uri_returns_document_data_with_previous_pid(self):
         current_version = {
             "data": "bla.xml",
             "renditions": [
@@ -1080,27 +1081,73 @@ class TestGetDocumentDataToGenerateUri(TestCase):
         mock_sps_package = MagicMock()
         mock_sps_package.original_language = "en"
         mock_sps_package.translation_languages = ["es"]
-        mock_sps_package.scielo_pid_v2 = "xxxx"
+        mock_sps_package.scielo_pid_v2 = "S1234567890123456789012"
         mock_sps_package.acron = "abc"
         mock_sps_package.package_name = "artigo-1234"
+        mock_sps_package.scielo_previous_pid = "S1234567890123005089012"
 
         expected = [
-            {"lang": "en", "format": "html", "pid_v2": "xxxx", "acron": "abc",
-             "doc_id_for_human": "artigo-1234"},
-            {"lang": "es", "format": "html", "pid_v2": "xxxx", "acron": "abc",
-             "doc_id_for_human": "artigo-1234"},
-            {"lang": "en", "format": "pdf", "pid_v2": "xxxx", "acron": "abc",
-             "doc_id_for_human": "artigo-1234"},
-            {"lang": "es", "format": "pdf", "pid_v2": "xxxx", "acron": "abc",
-             "doc_id_for_human": "artigo-1234"},
+            {"lang": "en", "format": "html",
+             "pid_v2": "S1234567890123456789012", "acron": "abc",
+             "doc_id_for_human": "artigo-1234",
+             "previous_pid_v2": "S1234567890123005089012"},
+            {"lang": "es", "format": "html",
+             "pid_v2": "S1234567890123456789012", "acron": "abc",
+             "doc_id_for_human": "artigo-1234",
+             "previous_pid_v2": "S1234567890123005089012"},
+            {"lang": "en", "format": "pdf",
+             "pid_v2": "S1234567890123456789012", "acron": "abc",
+             "doc_id_for_human": "artigo-1234",
+             "previous_pid_v2": "S1234567890123005089012"},
+            {"lang": "es", "format": "pdf",
+             "pid_v2": "S1234567890123456789012", "acron": "abc",
+             "doc_id_for_human": "artigo-1234",
+             "previous_pid_v2": "S1234567890123005089012"},
         ]
         result = get_document_data_to_generate_uri(current_version, mock_sps_package)
-        self.assertEqual(expected, result)
+        self.assertListEqual(expected, result)
+
+    def test_get_document_data_to_generate_uri_does_not_includes_previous_pid(self):
+        current_version = {
+            "data": "bla.xml",
+            "renditions": [
+                {"lang": "en"},
+                {"lang": "es"},
+            ]
+        }
+        mock_sps_package = MagicMock()
+        mock_sps_package.original_language = "en"
+        mock_sps_package.translation_languages = ["es"]
+        mock_sps_package.scielo_pid_v2 = "S1234567890123456789012"
+        mock_sps_package.acron = "abc"
+        mock_sps_package.package_name = "artigo-1234"
+        mock_sps_package.scielo_previous_pid = None
+
+        expected = [
+            {"lang": "en", "format": "html",
+             "pid_v2": "S1234567890123456789012", "acron": "abc",
+             "doc_id_for_human": "artigo-1234",
+             },
+            {"lang": "es", "format": "html",
+             "pid_v2": "S1234567890123456789012", "acron": "abc",
+             "doc_id_for_human": "artigo-1234",
+             },
+            {"lang": "en", "format": "pdf",
+             "pid_v2": "S1234567890123456789012", "acron": "abc",
+             "doc_id_for_human": "artigo-1234",
+             },
+            {"lang": "es", "format": "pdf",
+             "pid_v2": "S1234567890123456789012", "acron": "abc",
+             "doc_id_for_human": "artigo-1234",
+             },
+        ]
+        result = get_document_data_to_generate_uri(current_version, mock_sps_package)
+        self.assertListEqual(expected, result)
 
 
-class Testget_document_assets_data(TestCase):
+class TestGetDocumentAssetsData(TestCase):
 
-    def test_get_document_assets_data(self):
+    def test_get_document_assets_data_returns_assets_data_list_and_also_grouped_by_asset_id(self):
         data = {}
         data["assets"] = {
             "a01.png": [
@@ -1136,8 +1183,57 @@ class Testget_document_assets_data(TestCase):
                 ],
             },
         ]
-        result = get_document_assets_data(data)
-        self.assertEqual(expected, result)
+        expected_assets_data = [
+            {"asset_id": "a01.png", "uri": "https://..a01.png"},
+            {"asset_id": "a01.jpg", "uri": "https://..a01.jpg"},
+            {"asset_id": "a02.png", "uri": "https://vrsao2/a02.png"},
+            {"asset_id": "a02.jpg", "uri": "https://vrsao2/a02.jpg"},
+        ]
+        assets_data, grouped_by_id = get_document_assets_data(data)
+        self.assertEqual(expected, grouped_by_id)
+        self.assertEqual(expected_assets_data, assets_data)
+
+    def test_get_document_assets_data_asserts_data_items_are_same_objects_contained_in_asset_alternatives(self):
+        data = {}
+        data["assets"] = {
+            "a01.png": [
+                ["2020-08-10T11:38:46.759859Z", "https://..a01.png"],
+            ],
+            "a01.jpg": [
+                ["2020-08-10T11:38:46.759859Z", "https://..a01.jpg"],
+            ],
+            "a02.png": [
+                ["2019-08-10T11:38:46.759859Z", "https://vrsao1/a02.png"],
+                ["2020-08-10T11:38:46.759859Z", "https://vrsao2/a02.png"],
+            ],
+            "a02.jpg": [
+                ["2020-08-10T11:38:46.759859Z", "https://vrsao2/a02.jpg"],
+            ],
+        }
+        expected = [
+            {
+                "prefix": "a01",
+                "uri_alternatives": ["https://..a01.png", "https://..a01.jpg"],
+                "asset_alternatives": [
+                    {"asset_id": "a01.png", "uri": "https://..a01.png"},
+                    {"asset_id": "a01.jpg", "uri": "https://..a01.jpg"},
+                ],
+            },
+            {
+                "prefix": "a02",
+                "uri_alternatives": [
+                    "https://vrsao2/a02.png", "https://vrsao2/a02.jpg"],
+                "asset_alternatives": [
+                    {"asset_id": "a02.png", "uri": "https://vrsao2/a02.png"},
+                    {"asset_id": "a02.jpg", "uri": "https://vrsao2/a02.jpg"},
+                ],
+            },
+        ]
+        assets_data, grouped_by_id = get_document_assets_data(data)
+        self.assertIs(assets_data[0], grouped_by_id[0]["asset_alternatives"][0])
+        self.assertIs(assets_data[1], grouped_by_id[0]["asset_alternatives"][1])
+        self.assertIs(assets_data[2], grouped_by_id[1]["asset_alternatives"][0])
+        self.assertIs(assets_data[3], grouped_by_id[1]["asset_alternatives"][1])
 
 
 class Testget_document_renditions_data(TestCase):
@@ -1176,6 +1272,39 @@ class Testget_document_renditions_data(TestCase):
             },
         ]
         result = get_document_renditions_data(data)
+        self.assertEqual(expected, result)
+
+
+class TestDocumentPIDList(TestCase):
+
+    def test_group_pids_returns_dictionary(self):
+        pid_list = [
+            "S2234-56791997001012305",
+            "S2234-56791997001002315",
+            "S1234-56781987000112305",
+            "S1234-56781987000102315",
+            "S1234-56781987000112345",
+            "S1234-56781987000102345",
+        ]
+        expected = {
+            "1234-5678":
+                {
+                    "1234-567819870001": [
+                        "S1234-56781987000102315",
+                        "S1234-56781987000102345",
+                        "S1234-56781987000112305",
+                        "S1234-56781987000112345",
+                    ]
+                },
+            "2234-5679":
+                {
+                    "2234-567919970010": [
+                        "S2234-56791997001002315",
+                        "S2234-56791997001012305",
+                    ]
+                },
+        }
+        result = group_pids(pid_list)
         self.assertEqual(expected, result)
 
 

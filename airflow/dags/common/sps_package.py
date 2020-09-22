@@ -326,6 +326,12 @@ class SPS_Package:
         return self.xmltree.findtext(".//article-id[@specific-use='scielo-v2']")
 
     @property
+    def scielo_previous_pid(self):
+        """The previous scielo id of the main document, version 2.
+        """
+        return self.xmltree.findtext(".//article-id[@specific-use='previous-pid']")
+
+    @property
     def original_language(self):
         """The the main document language.
         """
