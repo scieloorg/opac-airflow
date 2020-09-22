@@ -489,7 +489,7 @@ class TestGetUriItemsGroupedByScriptName(TestCase):
         }
 
     @patch("check_website.Logger.info")
-    def test_get_uri_items_grouped_by_script_name(self, mock_info):
+    def test_get_uri_items_grouped_by_script_name_returns_true(self, mock_info):
         uri_list = [
             "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
@@ -519,7 +519,8 @@ class TestGetUriItemsGroupedByScriptName(TestCase):
             "/scielo.php?script=sci_serial&pid=1213-1998",
         ]
         self.kwargs["ti"].xcom_pull.return_value = uri_list
-        get_uri_items_grouped_by_script_name(**self.kwargs)
+        result = get_uri_items_grouped_by_script_name(**self.kwargs)
+        self.assertTrue(result)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="merge_uri_items_from_different_sources_id",
             key="uri_items"
@@ -594,6 +595,16 @@ class TestGetUriItemsGroupedByScriptName(TestCase):
             ),
             self.kwargs["ti"].xcom_push.call_args_list
         )
+
+    @patch("check_website.Logger.info")
+    def test_get_uri_items_grouped_by_script_name_returns_false(self, mock_info):
+        bad_uri_list = [
+            "/scielo.php?param1=sci_arttext&pid=S0001-30352020000501101",
+        ]
+        self.kwargs["ti"].xcom_pull.return_value = bad_uri_list
+        result = get_uri_items_grouped_by_script_name(**self.kwargs)
+        self.assertFalse(result)
+        self.kwargs["ti"].xcom_push.assert_not_called()
 
 
 class TestGetWebsiteURLlist(TestCase):

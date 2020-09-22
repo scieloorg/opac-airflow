@@ -324,6 +324,7 @@ def get_uri_items_grouped_by_script_name(**context):
         Logger.info(
             "Total %i URIs for `%s`", len(_items), script_name)
         context["ti"].xcom_push(script_name, sorted(_items))
+    return bool(items)
 
 
 def get_website_url_list():
@@ -646,7 +647,7 @@ merge_uri_items_from_different_sources_task = PythonOperator(
     dag=dag,
 )
 
-get_uri_items_grouped_by_script_name_task = PythonOperator(
+get_uri_items_grouped_by_script_name_task = ShortCircuitOperator(
     task_id="get_uri_items_grouped_by_script_name_id",
     provide_context=True,
     python_callable=get_uri_items_grouped_by_script_name,
