@@ -178,15 +178,21 @@ def get_uri_items_from_uri_list_files(**context):
         # /scielo.php?script=sci_issues&pid=0001-3765
         # /scielo.php?script=sci_issuetoc&pid=0001-376520200005
         # /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
-        partial = check_website_operations.read_file(file_path)
+        partial = [row
+                   for row in check_website_operations.read_file(file_path)
+                   if len(row.strip())]
 
         Logger.info("File %s: %i items", file_path, len(partial))
         all_items = all_items | set(partial)
 
-        Logger.info("Partial total: %i items", len(all_items))
+        total = len(all_items)
+        Logger.info("Partial total: %i items", total)
 
-    context["ti"].xcom_push("uri_items", sorted(all_items))
-    Logger.info("Total: %i URIs", len(all_items))
+    Logger.info("Total: %i URIs", total)
+    if total:
+        context["ti"].xcom_push("uri_items", sorted(all_items))
+
+    return total > 0
 
 
 def get_pid_list_csv_file_paths(**kwargs):
@@ -598,7 +604,7 @@ get_uri_list_file_paths_task = ShortCircuitOperator(
     dag=dag,
 )
 
-get_uri_items_from_uri_list_files_task = PythonOperator(
+get_uri_items_from_uri_list_files_task = ShortCircuitOperator(
     task_id="get_uri_items_from_uri_list_files_id",
     provide_context=True,
     python_callable=get_uri_items_from_uri_list_files,

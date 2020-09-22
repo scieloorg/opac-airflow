@@ -236,14 +236,14 @@ class TestGetUriItemsFromUriListFiles(TestCase):
     def tearDown(self):
         shutil.rmtree(self.proc_dir)
 
-    def test_get_uri_items_from_uri_list_files_gets_uri_items(self):
+    def test_get_uri_items_from_uri_list_files_gets_uri_items_returns_true(self):
         self.kwargs["ti"].xcom_pull.return_value = [
             pathlib.Path(self.proc_dir) / "uri_list_2020-01-01.lst",
             pathlib.Path(self.proc_dir) / "uri_list_2020-01-02.lst",
             pathlib.Path(self.proc_dir) / "uri_list_2020-01-03.lst",
 
         ]
-        get_uri_items_from_uri_list_files(**self.kwargs)
+        result = get_uri_items_from_uri_list_files(**self.kwargs)
         self.kwargs["ti"].xcom_push.assert_called_once_with(
             "uri_items",
             sorted([
@@ -265,6 +265,24 @@ class TestGetUriItemsFromUriListFiles(TestCase):
                 "/scielo.php?script=sci_arttext&pid=S1213-19982121111511111",
             ]),
         )
+        self.assertTrue(result)
+
+    @patch("check_website.check_website_operations.read_file")
+    def test_get_uri_items_from_uri_list_files_gets_uri_items_returns_false(
+            self, mock_read_file):
+        self.kwargs["ti"].xcom_pull.return_value = [
+            pathlib.Path(self.proc_dir) / "uri_list_2020-01-01.lst",
+            pathlib.Path(self.proc_dir) / "uri_list_2020-01-02.lst",
+            pathlib.Path(self.proc_dir) / "uri_list_2020-01-03.lst",
+        ]
+        mock_read_file.side_effect = [
+            "\n\n\n",
+            "\n\n\n",
+            "",
+        ]
+        result = get_uri_items_from_uri_list_files(**self.kwargs)
+        self.kwargs["ti"].xcom_push.assert_not_called()
+        self.assertFalse(result)
 
 
 class TestGetPidListCSVFilePaths(TestCase):
@@ -1271,14 +1289,14 @@ class TestGroupUriItemsFromUriListsByScriptName(TestCase):
             "run_id": "test_run_id",
         }
 
-    def test_group_uri_items_from_uri_lists_by_script_name(self):
+    def test_group_uri_items_from_uri_lists_by_script_name_returns_true(self):
         self.kwargs["ti"].xcom_pull.return_value = [
             "/scielo.php?script=sci_arttext&pid=0001-303520200005",
             "/scielo.php?script=sci_arttext&pid=0001-376520200005",
             "/scielo.php?script=sci_pdf&pid=0001-303520200005",
             "/scielo.php?script=sci_pdf&pid=0001-376520200005",
         ]
-        group_uri_items_from_uri_lists_by_script_name(**self.kwargs)
+        result = group_uri_items_from_uri_lists_by_script_name(**self.kwargs)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="get_uri_items_from_uri_list_files_id",
             key="uri_items"
@@ -1303,7 +1321,40 @@ class TestGroupUriItemsFromUriListsByScriptName(TestCase):
             ),
             self.kwargs["ti"].xcom_push.call_args_list
         )
+        self.assertTrue(result)
 
+    def test_group_uri_items_from_uri_lists_by_script_name_returns_false(self):
+        self.kwargs["ti"].xcom_pull.return_value = [
+            "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+            "/scielo.php?script=sci_arttext&pid=0001-376520200005",
+            "/scielo.php?script=sci_pdf&pid=0001-303520200005",
+            "/scielo.php?script=sci_pdf&pid=0001-376520200005",
+        ]
+        result = group_uri_items_from_uri_lists_by_script_name(**self.kwargs)
+        self.kwargs["ti"].xcom_pull.assert_called_once_with(
+            task_ids="get_uri_items_from_uri_list_files_id",
+            key="uri_items"
+        )
+        self.assertIn(
+            call(
+                'sci_arttext',
+                [
+                    "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+                    "/scielo.php?script=sci_arttext&pid=0001-376520200005",
+                ]
+            ),
+            self.kwargs["ti"].xcom_push.call_args_list
+        )
+        self.assertIn(
+            call(
+                'sci_pdf',
+                [
+                    "/scielo.php?script=sci_pdf&pid=0001-303520200005",
+                    "/scielo.php?script=sci_pdf&pid=0001-376520200005",
+                ]
+            ),
+            self.kwargs["ti"].xcom_push.call_args_list
+        )
 
 
 class TestMergeUriItemsFromDifferentSources(TestCase):
