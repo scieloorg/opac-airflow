@@ -1299,6 +1299,49 @@ class TestGetPIDv3List(TestCase):
             "run_id": "test_run_id",
         }
 
+    @patch("check_website.Variable.get")
+    def test_get_pid_v3_list_raises_value_error_because_website_url_list_is_not_set(
+            self, mock_variabel_get):
+        mock_variabel_get.return_value = None
+
+        with self.assertRaises(ValueError) as exc_info:
+            get_pid_v3_list(**self.kwargs)
+        self.assertIn(
+            "`Variable[\"WEBSITE_URL_LIST\"]` is required",
+            str(exc_info.exception)
+        )
+
+    @patch("check_website.check_website_operations.get_main_website_url")
+    @patch("check_website.Variable.get")
+    def test_get_pid_v3_list_raises_value_error_because_main_website_url_is_not_set(
+            self, mock_variabel_get, mock_get_main_website_url):
+        mock_variabel_get.return_value = ["https://www.scielo.br"]
+        mock_get_main_website_url.return_value = None
+
+        with self.assertRaises(ValueError) as exc_info:
+            get_pid_v3_list(**self.kwargs)
+        self.assertIn(
+            "Unable to identify which one is the (new) SciELO website "
+            "in this list: ['https://www.scielo.br']",
+            str(exc_info.exception)
+        )
+
+    @patch("check_website.check_website_operations.get_main_website_url")
+    @patch("check_website.Variable.get")
+    def test_get_pid_v3_list_raises_value_error_because_xcom_pull_with_sci_arttext_is_none(
+            self, mock_variabel_get, mock_get_main_website_url):
+        mock_variabel_get.return_value = ["https://www.scielo.br"]
+        mock_get_main_website_url.return_value = (
+            "https://www.scielo.br"
+        )
+        self.kwargs["ti"].xcom_pull.return_value = None
+        with self.assertRaises(ValueError) as exc_info:
+            get_pid_v3_list(**self.kwargs)
+        self.assertIn(
+            "Missing URI items to get PID v3",
+            str(exc_info.exception)
+        )
+
     @patch("check_website.get_website_url_list")
     @patch("check_website.check_website_operations.get_main_website_url")
     @patch("check_website.check_website_operations.get_pid_v3_list")
@@ -1314,7 +1357,12 @@ class TestGetPIDv3List(TestCase):
         mock_get_website_url_list.return_value = [
             "https://www.scielo.br"
         ]
-        get_pid_v3_list(**self.kwargs)
+        self.kwargs["ti"].xcom_pull.return_value = [
+            "/scielo.php?script=sci_arttext&pid=x",
+            "/scielo.php?script=sci_arttext&pid=y",
+        ]
+        result = get_pid_v3_list(**self.kwargs)
+        self.assertTrue(result)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="get_uri_items_grouped_by_script_name_id",
             key="sci_arttext"
@@ -1335,7 +1383,12 @@ class TestGetPIDv3List(TestCase):
         mock_get_website_url_list.return_value = [
             "https://www.scielo.br"
         ]
-        get_pid_v3_list(**self.kwargs)
+        self.kwargs["ti"].xcom_pull.return_value = [
+            "/scielo.php?script=sci_arttext&pid=x",
+            "/scielo.php?script=sci_arttext&pid=y",
+        ]
+        result = get_pid_v3_list(**self.kwargs)
+        self.assertTrue(result)
         self.assertListEqual(
             [
                 call("pid_v3_list", ["DOCID1", "DOCID2"]),
@@ -1343,6 +1396,27 @@ class TestGetPIDv3List(TestCase):
             ],
             self.kwargs["ti"].xcom_push.call_args_list
         )
+
+    @patch("check_website.get_website_url_list")
+    @patch("check_website.check_website_operations.get_main_website_url")
+    @patch("check_website.check_website_operations.get_pid_v3_list")
+    def test_get_pid_v3_list_returns_false(
+            self, mock_get, mock_get_main_website_url,
+            mock_get_website_url_list):
+        mock_get.return_value = None
+        mock_get_main_website_url.return_value = (
+            "https://www.scielo.br"
+        )
+        mock_get_website_url_list.return_value = [
+            "https://www.scielo.br"
+        ]
+        self.kwargs["ti"].xcom_pull.return_value = [
+            "/scielo.php?script=sci_arttext&pid=x",
+            "/scielo.php?script=sci_arttext&pid=y",
+        ]
+        result = get_pid_v3_list(**self.kwargs)
+        self.assertFalse(result)
+        self.kwargs["ti"].xcom_push.assert_not_called()
 
 
 class TestGroupUriItemsFromUriListsByScriptName(TestCase):

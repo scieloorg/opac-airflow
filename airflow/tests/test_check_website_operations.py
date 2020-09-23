@@ -2783,7 +2783,7 @@ class TestGetPIDv3List(TestCase):
             "/scielo.php?script=sci_arttext&pid=S1234-56781987000102315",
             "/scielo.php?script=sci_arttext&pid=S1234-56781987000112345",
         ]
-        website_url = ["https://www.scielo.br", ]
+        website_url = "https://www.scielo.br"
         pid_list = get_pid_v3_list(uri_items, website_url)
         expected = [
             "S1Y3X-5678198700010Y3X5",

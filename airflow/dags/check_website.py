@@ -535,24 +535,32 @@ def get_pid_v3_list(**context):
     /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
     """
     Logger.info("Get PID v3 from old pattern document URI")
-    _website_url_list = get_website_url_list()
 
-    uri_items = context["ti"].xcom_pull(
-        task_ids="get_uri_items_grouped_by_script_name_id",
-        key="sci_arttext")
+    _website_url_list = get_website_url_list()
     website_url = check_website_operations.get_main_website_url(
         _website_url_list)
     if website_url is None:
         raise ValueError(
-            "%s is unavailable or is an invalid value for the new SciELO site")
+            "Unable to identify which one is the (new) SciELO website "
+            "in this list: {}".format(_website_url_list)
+        )
+
+    uri_items = context["ti"].xcom_pull(
+        task_ids="get_uri_items_grouped_by_script_name_id",
+        key="sci_arttext")
+    if uri_items is None or len(uri_items) == 0:
+        raise ValueError("Missing URI items to get PID v3")
 
     pid_v3_list = check_website_operations.get_pid_v3_list(
         uri_items, website_url)
 
-    context["ti"].xcom_push("pid_v3_list", pid_v3_list)
-    context["ti"].xcom_push("website_url", website_url)
+    if pid_v3_list:
+        context["ti"].xcom_push("pid_v3_list", pid_v3_list)
+        context["ti"].xcom_push("website_url", website_url)
 
-    Logger.info("PID v3: %i items", len(pid_v3_list))
+    total = len(pid_v3_list or [])
+    Logger.info("PID v3: %i items", total)
+    return total > 0
 
 
 def check_input_vs_processed_pids(**context):
@@ -693,7 +701,7 @@ check_sci_arttext_uri_items_task = PythonOperator(
     dag=dag,
 )
 
-get_pid_v3_list_task = PythonOperator(
+get_pid_v3_list_task = ShortCircuitOperator(
     task_id="get_pid_v3_list_id",
     provide_context=True,
     python_callable=get_pid_v3_list,
