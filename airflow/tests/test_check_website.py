@@ -1462,38 +1462,28 @@ class TestGroupUriItemsFromUriListsByScriptName(TestCase):
         )
         self.assertTrue(result)
 
-    def test_group_uri_items_from_uri_lists_by_script_name_returns_false(self):
+    @patch("check_website.check_website_operations.group_items_by_script_name")
+    def test_group_uri_items_from_uri_lists_by_script_name_returns_false(self, mock_f):
         self.kwargs["ti"].xcom_pull.return_value = [
             "/scielo.php?script=sci_arttext&pid=0001-303520200005",
             "/scielo.php?script=sci_arttext&pid=0001-376520200005",
             "/scielo.php?script=sci_pdf&pid=0001-303520200005",
             "/scielo.php?script=sci_pdf&pid=0001-376520200005",
         ]
+        mock_f.return_value = {}
+        result = group_uri_items_from_uri_lists_by_script_name(**self.kwargs)
+        self.assertFalse(result)
+        self.kwargs["ti"].xcom_push.assert_not_called()
+
+    def test_group_uri_items_from_uri_lists_by_script_name_returns_true_because_there_is_no_input(self):
+        self.kwargs["ti"].xcom_pull.return_value = None
         result = group_uri_items_from_uri_lists_by_script_name(**self.kwargs)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="get_uri_items_from_uri_list_files_id",
             key="uri_items"
         )
-        self.assertIn(
-            call(
-                'sci_arttext',
-                [
-                    "/scielo.php?script=sci_arttext&pid=0001-303520200005",
-                    "/scielo.php?script=sci_arttext&pid=0001-376520200005",
-                ]
-            ),
-            self.kwargs["ti"].xcom_push.call_args_list
-        )
-        self.assertIn(
-            call(
-                'sci_pdf',
-                [
-                    "/scielo.php?script=sci_pdf&pid=0001-303520200005",
-                    "/scielo.php?script=sci_pdf&pid=0001-376520200005",
-                ]
-            ),
-            self.kwargs["ti"].xcom_push.call_args_list
-        )
+        self.assertTrue(result)
+        self.kwargs["ti"].xcom_push.assert_not_called()
 
 
 class TestMergeUriItemsFromDifferentSources(TestCase):

@@ -281,12 +281,17 @@ def group_uri_items_from_uri_lists_by_script_name(**context):
                 task_ids="get_uri_items_from_uri_list_files_id",
                 key="uri_items"
             )
-    Logger.info("Total %i URIs", len(uri_items))
+    total = len(uri_items or [])
+    Logger.info("Total %i URIs", total)
+    if total == 0:
+        return True
+
     items = check_website_operations.group_items_by_script_name(uri_items)
     for script_name, _items in items.items():
         Logger.info(
             "Total %i URIs for `%s`", len(_items), script_name)
         context["ti"].xcom_push(script_name, sorted(_items))
+    return len(items) > 0
 
 
 def merge_uri_items_from_different_sources(**context):
