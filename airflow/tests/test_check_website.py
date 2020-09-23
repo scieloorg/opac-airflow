@@ -1614,6 +1614,7 @@ class TestMergeUriItemsFromDifferentSources(TestCase):
             ]
         )
 
+
 class TestCheckInputVsProcessedPids(TestCase):
 
     def setUp(self):
@@ -1637,7 +1638,8 @@ class TestCheckInputVsProcessedPids(TestCase):
                 "0001-376520200005",
             ],
         ]
-        check_input_vs_processed_pids(**self.kwargs)
+        result = check_input_vs_processed_pids(**self.kwargs)
+        self.assertTrue(result)
 
         self.assertListEqual([
             call(key="sci_arttext",
@@ -1664,10 +1666,16 @@ class TestCheckInputVsProcessedPids(TestCase):
                 "0001-303520200005", "0001-376520200005",
             ]
         ]
-        check_input_vs_processed_pids(**self.kwargs)
+        result = check_input_vs_processed_pids(**self.kwargs)
+        self.assertTrue(result)
 
         self.assertListEqual([
-                call("Merge PID items from `uri_list_*.lst` and `*.csv`"),
+                call(
+                    "Check if all the PID items from `uri_list_*.lst` "
+                    "and `*.csv` were processed at the end"
+                ),
+                call("Total %i PIDs v2 from uri_list", 1),
+                call("Total %i PIDs v2 from csv", 1),
                 call("Total %i input PIDs", 2),
                 call("Total %i processed PIDs", 2),
                 call("All the PIDs were processed"),
@@ -1687,10 +1695,16 @@ class TestCheckInputVsProcessedPids(TestCase):
             ],
             []
         ]
-        check_input_vs_processed_pids(**self.kwargs)
+        result = check_input_vs_processed_pids(**self.kwargs)
+        self.assertFalse(result)
 
         self.assertListEqual([
-                call("Merge PID items from `uri_list_*.lst` and `*.csv`"),
+                call(
+                    "Check if all the PID items from `uri_list_*.lst` "
+                    "and `*.csv` were processed at the end"
+                ),
+                call("Total %i PIDs v2 from uri_list", 1),
+                call("Total %i PIDs v2 from csv", 1),
                 call("Total %i input PIDs", 2),
                 call("Total %i processed PIDs", 0),
             ],
@@ -1722,10 +1736,16 @@ class TestCheckInputVsProcessedPids(TestCase):
                 "0001-30352020XXX5",
             ]
         ]
-        check_input_vs_processed_pids(**self.kwargs)
+        result = check_input_vs_processed_pids(**self.kwargs)
+        self.assertTrue(result)
 
         self.assertListEqual([
-                call("Merge PID items from `uri_list_*.lst` and `*.csv`"),
+                call(
+                    "Check if all the PID items from `uri_list_*.lst` "
+                    "and `*.csv` were processed at the end"
+                ),
+                call("Total %i PIDs v2 from uri_list", 1),
+                call("Total %i PIDs v2 from csv", 1),
                 call("Total %i input PIDs", 2),
                 call("Total %i processed PIDs", 3),
                 call("All the PIDs were processed"),

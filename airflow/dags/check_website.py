@@ -584,23 +584,30 @@ def check_input_vs_processed_pids(**context):
     """
     Une todos PID provenientes de `uri_list_*.lst` and `*.csv`,
     removendo repetições
+    E verifica se todos eles foram processados, comparando com o resultado
+    da tarefa `check_documents_deeply` 
     """
-    Logger.info("Merge PID items from `uri_list_*.lst` and `*.csv`")
-    pid_items = set(
-        (
-            context["ti"].xcom_pull(
-                task_ids="group_uri_items_from_uri_lists_by_script_name_id",
-                key="sci_arttext"
-            ) or []
-        ) +
-        context["ti"].xcom_pull(
-            task_ids="get_uri_items_from_pid_list_csv_files_id",
-            key="pid_items"
-        )
+    Logger.info(
+        "Check if all the PID items from `uri_list_*.lst` and `*.csv` "
+        "were processed at the end"
     )
+    pid_v2_items_from_lst = context["ti"].xcom_pull(
+        task_ids="group_uri_items_from_uri_lists_by_script_name_id",
+        key="sci_arttext"
+    ) or []
+    pid_v2_items_from_csv = context["ti"].xcom_pull(
+        task_ids="get_uri_items_from_pid_list_csv_files_id",
+        key="pid_items"
+    ) or []
+
+    Logger.info("Total %i PIDs v2 from uri_list", len(pid_v2_items_from_lst))
+    Logger.info("Total %i PIDs v2 from csv", len(pid_v2_items_from_csv))
+
+    pid_items = set(pid_v2_items_from_lst + pid_v2_items_from_csv)
     processed = set(context["ti"].xcom_pull(
         task_ids="check_documents_deeply_id",
         key="processed_pid_v2_items") or [])
+
     Logger.info("Total %i input PIDs", len(pid_items))
     Logger.info("Total %i processed PIDs", len(processed))
 
@@ -632,6 +639,7 @@ def check_input_vs_processed_pids(**context):
     context["ti"].xcom_push(
         "present_in_pid_items_but_not_in_processed",
         present_in_pid_items_but_not_in_processed)
+    return present_in_both == pid_items
 
 
 get_uri_list_file_paths_task = ShortCircuitOperator(
