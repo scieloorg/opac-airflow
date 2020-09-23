@@ -27,7 +27,7 @@ from check_website import (
     group_uri_items_from_uri_lists_by_script_name,
     merge_uri_items_from_different_sources,
     check_input_vs_processed_pids,
-
+    check_documents_deeply,
 )
 from .test_check_website_operations import (
     MockClientResponse,
@@ -1742,4 +1742,126 @@ class TestCheckInputVsProcessedPids(TestCase):
                 ),
             ],
             mock_logger.warning.call_args_list
+        )
+
+
+class TestCheckDocumentsDeeply(TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    @patch("check_website.Logger")
+    @patch("check_website.Variable.get")
+    def test_check_documents_deeply_return_false_because_all_flag_were_set_as_false(
+            self, mock_var_get, mock_logger):
+        mock_var_get.side_effect = [
+            False, False, False, False
+        ]
+        result = check_documents_deeply(**self.kwargs)
+        self.assertFalse(result)
+        mock_logger.warning.assert_called_once_with(
+            "'check_documents_deeply_id' was NOT executed because "
+            "all FLAGS are set to 'false'"
+        )
+
+    @patch("check_website.Logger")
+    @patch("check_website.Variable.get")
+    def test_check_documents_deeply_raises_value_error(
+            self, mock_var_get, mock_logger):
+        mock_var_get.side_effect = [
+            True, False, False, False
+        ]
+        self.kwargs["ti"].xcom_pull.return_value = None
+        with self.assertRaises(ValueError) as exc_info:
+            result = check_documents_deeply(**self.kwargs)
+        self.assertEqual(
+            str(exc_info.exception),
+            "Unable to execute this task because `website_url` is not set"
+        )
+
+    @patch("check_website.Logger")
+    @patch("check_website.Variable.get")
+    def test_check_documents_deeply_registers_no_pid_v3_to_checkup(
+            self, mock_var_get, mock_logger):
+        mock_var_get.side_effect = [
+            True, False, False, False,
+            "https://minio.scielo.br",
+        ]
+        pid_v3_items = None
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            "https://www.scielo.br",
+            pid_v3_items,
+        ]
+        result = check_documents_deeply(**self.kwargs)
+        self.assertFalse(result)
+        mock_logger.warning.assert_called_once_with(
+            "There is no PID v3 to check"
+        )
+
+    @patch("check_website.check_website_operations.check_website_uri_list_deeply")
+    @patch("check_website.Logger")
+    @patch("check_website.Variable.get")
+    def test_check_documents_deeply_registers_returns_true(
+            self, mock_var_get, mock_logger, mock_check_website_uri_list):
+        mock_var_get.side_effect = [
+            True, False, False, False,
+            "https://minio.scielo.br",
+        ]
+        pid_v3_items = ["DOCPIDV3"]
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            "https://www.scielo.br",
+            pid_v3_items,
+        ]
+        mock_check_website_uri_list.return_value = [
+            "PID_V2_1",
+            "PID_V2_2",
+        ]
+        result = check_documents_deeply(**self.kwargs)
+        self.assertTrue(result)
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            "processed_pid_v2_items",
+            [
+                "PID_V2_1",
+                "PID_V2_2",
+            ]
+        )
+        self.assertIn(
+            call("Checked %i documents", 1),
+            mock_logger.info.call_args_list
+        )
+        self.assertIn(
+            call("Checked %i PID v2 items", 2),
+            mock_logger.info.call_args_list
+        )
+
+    @patch("check_website.check_website_operations.check_website_uri_list_deeply")
+    @patch("check_website.Logger")
+    @patch("check_website.Variable.get")
+    def test_check_documents_deeply_registers_returns_false(
+            self, mock_var_get, mock_logger, mock_check_website_uri_list):
+        mock_var_get.side_effect = [
+            True, False, False, False,
+            "https://minio.scielo.br",
+        ]
+        pid_v3_items = ["DOCPIDV3"]
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            "https://www.scielo.br",
+            pid_v3_items,
+        ]
+        mock_check_website_uri_list.return_value = None
+        result = check_documents_deeply(**self.kwargs)
+        self.assertFalse(result)
+        self.kwargs["ti"].xcom_push.assert_not_called()
+
+        self.assertIn(
+            call("Checked %i documents", 1),
+            mock_logger.info.call_args_list
+        )
+        self.assertIn(
+            call("Checked %i PID v2 items", 0),
+            mock_logger.info.call_args_list
         )

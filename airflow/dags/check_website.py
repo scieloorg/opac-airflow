@@ -505,11 +505,17 @@ def check_documents_deeply(**context):
                      "CHECK_WEB_PDF_PAGES",)
     }
     if not any(flags.values()):
-        return
+        Logger.warning(
+            "'check_documents_deeply_id' was NOT executed because "
+            "all FLAGS are set to 'false'")
+        return False
 
     website_url = context["ti"].xcom_pull(
         task_ids="get_pid_v3_list_id",
         key="website_url")
+    if website_url is None:
+        raise ValueError(
+            "Unable to execute this task because `website_url` is not set")
 
     object_store_url = Variable.get("OBJECT_STORE_URL", default_var="")
 
@@ -517,15 +523,26 @@ def check_documents_deeply(**context):
         task_ids="get_pid_v3_list_id",
         key="pid_v3_list")
 
+    total = len(pid_v3_list or [])
+    Logger.info("PID v3: %i items", total)
+    if total == 0:
+        Logger.warning("There is no PID v3 to check")
+        return False
+
     extra_data = context.copy()
     extra_data.update(flags)
 
     pid_v2_processed = check_website_operations.check_website_uri_list_deeply(
         pid_v3_list, website_url, object_store_url, extra_data)
+    total_processed_pid_v2 = len(pid_v2_processed or [])
 
-    context["ti"].xcom_push("processed_pid_v2_items", sorted(pid_v2_processed))
+    if total_processed_pid_v2 > 0:
+        context["ti"].xcom_push(
+            "processed_pid_v2_items", sorted(pid_v2_processed))
 
-    Logger.info("Checked %i documents", len(pid_v3_list))
+    Logger.info("Checked %i documents", total)
+    Logger.info("Checked %i PID v2 items", total_processed_pid_v2)
+    return total_processed_pid_v2 > 0
 
 
 def get_pid_v3_list(**context):
