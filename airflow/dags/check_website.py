@@ -229,11 +229,11 @@ def get_pid_list_csv_file_paths(**kwargs):
     Logger.info("Found: %s", file_paths)
     if old_file_paths or file_paths:
         kwargs["ti"].xcom_push(
-            "old_uri_list_file_paths", sorted(old_file_paths))
+            "old_file_paths", sorted(old_file_paths))
         kwargs["ti"].xcom_push(
-            "new_uri_list_file_paths", sorted(file_paths))
+            "new_file_paths", sorted(file_paths))
         kwargs["ti"].xcom_push(
-            "uri_list_file_paths", sorted(old_file_paths + file_paths))
+            "file_paths", sorted(old_file_paths + file_paths))
         return True
     else:
         return False
