@@ -1604,6 +1604,23 @@ class TestMergeUriItemsFromDifferentSources(TestCase):
             ]
         )
 
+    def test_merge_uri_items_from_different_sources_returns_false(self):
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            None,
+            None,
+        ]
+        result = merge_uri_items_from_different_sources(**self.kwargs)
+        self.assertFalse(result)
+        self.assertListEqual([
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_uri_list_files_id",),
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_pid_list_csv_files_id",)
+            ],
+            self.kwargs["ti"].xcom_pull.call_args_list
+        )
+        self.kwargs["ti"].xcom_push.assert_not_called()
+
 
 class TestCheckInputVsProcessedPids(TestCase):
 

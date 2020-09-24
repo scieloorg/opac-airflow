@@ -168,7 +168,7 @@ def get_uri_items_from_uri_list_files(**context):
     Logger.info("Get URI items from `url_list_*.lst`")
     uri_list_file_paths = context["ti"].xcom_pull(
         task_ids="get_uri_list_file_paths_id", key="uri_list_file_paths"
-    )
+    ) or []
 
     all_items = set()
     for file_path in uri_list_file_paths:
@@ -188,6 +188,7 @@ def get_uri_items_from_uri_list_files(**context):
         total = len(all_items)
         Logger.info("Partial total: %i items", total)
 
+    total = len(all_items)
     Logger.info("Total: %i URIs", total)
     if total:
         context["ti"].xcom_push("uri_items", sorted(all_items))
@@ -249,7 +250,7 @@ def get_uri_items_from_pid_list_csv_files(**context):
     pid_list_csv_file_paths = context["ti"].xcom_pull(
         task_ids="get_pid_list_csv_file_paths_id",
         key="file_paths"
-    )
+    ) or []
 
     pids = set()
     for file_path in pid_list_csv_file_paths:
@@ -261,6 +262,9 @@ def get_uri_items_from_pid_list_csv_files(**context):
         pids = pids | _items
         total = len(pids)
         Logger.info("Partial total: %i pids", total)
+
+    total = len(pids)
+    Logger.info("Total: %i pids", total)
 
     if total:
         items = check_website_operations.get_uri_list_from_pid_dict(
@@ -310,9 +314,11 @@ def merge_uri_items_from_different_sources(**context):
     ) or []
 
     uri_items = set(uri_items_from_lst + uri_items_from_csv)
-    Logger.info("Total %i URIs", len(uri_items))
-    context["ti"].xcom_push("uri_items", sorted(uri_items))
-    return True
+    total = len(uri_items)
+    Logger.info("Total %i URIs", total)
+    if total:
+        context["ti"].xcom_push("uri_items", sorted(uri_items))
+    return total > 0
 
 
 def get_uri_items_grouped_by_script_name(**context):
@@ -647,28 +653,28 @@ def check_input_vs_processed_pids(**context):
     return present_in_both == pid_items
 
 
-get_uri_list_file_paths_task = ShortCircuitOperator(
+get_uri_list_file_paths_task = PythonOperator(
     task_id="get_uri_list_file_paths_id",
     provide_context=True,
     python_callable=get_uri_list_file_paths,
     dag=dag,
 )
 
-get_uri_items_from_uri_list_files_task = ShortCircuitOperator(
+get_uri_items_from_uri_list_files_task = PythonOperator(
     task_id="get_uri_items_from_uri_list_files_id",
     provide_context=True,
     python_callable=get_uri_items_from_uri_list_files,
     dag=dag,
 )
 
-get_pid_list_csv_file_paths_task = ShortCircuitOperator(
+get_pid_list_csv_file_paths_task = PythonOperator(
     task_id="get_pid_list_csv_file_paths_id",
     provide_context=True,
     python_callable=get_pid_list_csv_file_paths,
     dag=dag,
 )
 
-get_uri_items_from_pid_list_csv_files_task = ShortCircuitOperator(
+get_uri_items_from_pid_list_csv_files_task = PythonOperator(
     task_id="get_uri_items_from_pid_list_csv_files_id",
     provide_context=True,
     python_callable=get_uri_items_from_pid_list_csv_files,
@@ -682,7 +688,7 @@ group_uri_items_from_uri_lists_by_script_name_task = PythonOperator(
     dag=dag,
 )
 
-merge_uri_items_from_different_sources_task = PythonOperator(
+merge_uri_items_from_different_sources_task = ShortCircuitOperator(
     task_id="merge_uri_items_from_different_sources_id",
     provide_context=True,
     python_callable=merge_uri_items_from_different_sources,
