@@ -832,10 +832,12 @@ class TestCheckAnyUriItems(TestCase):
         result = check_any_uri_items(uri_items, "label", {"daginfo": ""})
         self.assertEqual(0, result)
 
+    @patch("check_website.check_website_operations.check_website_uri_list")
     @patch("check_website.check_website_operations.concat_website_url_and_uri_list_items")
     @patch("check_website.Variable.get")
     def test_check_any_uri_items_assert_called_once_concat_website_url_and_uri_list_items(
-            self, mock_get, mock_concat_website_url_and_uri_list_items):
+            self, mock_get, mock_concat_website_url_and_uri_list_items,
+            mock_check_website_uri_list):
         uri_items = [
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
@@ -845,6 +847,7 @@ class TestCheckAnyUriItems(TestCase):
             "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
             "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
         ]
+        mock_check_website_uri_list.return_value = MagicMock(), MagicMock()
         result = check_any_uri_items(uri_items, "label", {"daginfo": ""})
         self.assertEqual(2, result)
         mock_concat_website_url_and_uri_list_items.assert_called_once_with(
