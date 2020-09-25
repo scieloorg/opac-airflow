@@ -27,7 +27,7 @@ from check_website import (
     group_uri_items_from_uri_lists_by_script_name,
     merge_uri_items_from_different_sources,
     check_input_vs_processed_pids,
-
+    check_documents_deeply,
 )
 from .test_check_website_operations import (
     MockClientResponse,
@@ -118,7 +118,7 @@ class TestGetUriListFilePaths(TestCase):
 
     @patch("check_website.Variable.set")
     @patch("check_website.Variable.get")
-    def test_get_uri_list_file_paths_returns_the_two_files_copied_to_proc_dir_from_gate_dir(
+    def test_get_uri_list_file_paths_identifies_the_two_files_copied_to_proc_dir_from_gate_dir(
             self, mock_get, mock_set):
         expected = [
             str(pathlib.Path(self.proc_dir) / "test_run_id" / "uri_list_2020-01-01.lst"),
@@ -129,7 +129,7 @@ class TestGetUriListFilePaths(TestCase):
             self.gate_dir,
             self.proc_dir,
         ]
-        get_uri_list_file_paths(**self.kwargs)
+        result = get_uri_list_file_paths(**self.kwargs)
         self.assertListEqual(
             [
                 call('old_uri_list_file_paths', []),
@@ -138,10 +138,11 @@ class TestGetUriListFilePaths(TestCase):
             ],
             self.kwargs["ti"].xcom_push.call_args_list
         )
+        self.assertTrue(result)
 
     @patch("check_website.Variable.set")
     @patch("check_website.Variable.get")
-    def test_get_uri_list_file_paths_returns_all_files_found_in_proc_dir(
+    def test_get_uri_list_file_paths_identifies_all_files_found_in_proc_dir(
             self, mock_get, mock_set):
         for f in ("uri_list_2020-03-01.lst", "uri_list_2020-03-02.lst", "uri_list_2020-03-03.lst"):
             file_path = pathlib.Path(self.dag_proc_dir) / f
@@ -159,7 +160,7 @@ class TestGetUriListFilePaths(TestCase):
             self.gate_dir,
             self.proc_dir,
         ]
-        get_uri_list_file_paths(**self.kwargs)
+        result = get_uri_list_file_paths(**self.kwargs)
         self.assertListEqual(
             [
                 call('old_uri_list_file_paths', sorted(expected[:3])),
@@ -168,6 +169,24 @@ class TestGetUriListFilePaths(TestCase):
             ],
             self.kwargs["ti"].xcom_push.call_args_list
         )
+        self.assertTrue(result)
+
+    @patch("check_website.Variable.set")
+    @patch("check_website.Variable.get")
+    def test_get_uri_list_file_paths_returns_false_because_there_is_no_uri_list_files(
+            self, mock_get, mock_set):
+        for f in ("uri_list_2020-01-01.lst", "uri_list_2020-01-02.lst", "uri_list_2020-01-03.lst"):
+            file_path = pathlib.Path(self.gate_dir) / f
+            os.unlink(file_path)
+
+        mock_get.side_effect = [
+            [],
+            self.gate_dir,
+            self.proc_dir,
+        ]
+        result = get_uri_list_file_paths(**self.kwargs)
+        self.kwargs["ti"].xcom_push.assert_not_called()
+        self.assertFalse(result)
 
 
 class TestGetUriItemsFromUriListFiles(TestCase):
@@ -217,14 +236,14 @@ class TestGetUriItemsFromUriListFiles(TestCase):
     def tearDown(self):
         shutil.rmtree(self.proc_dir)
 
-    def test_get_uri_items_from_uri_list_files_gets_uri_items(self):
+    def test_get_uri_items_from_uri_list_files_gets_uri_items_returns_true(self):
         self.kwargs["ti"].xcom_pull.return_value = [
             pathlib.Path(self.proc_dir) / "uri_list_2020-01-01.lst",
             pathlib.Path(self.proc_dir) / "uri_list_2020-01-02.lst",
             pathlib.Path(self.proc_dir) / "uri_list_2020-01-03.lst",
 
         ]
-        get_uri_items_from_uri_list_files(**self.kwargs)
+        result = get_uri_items_from_uri_list_files(**self.kwargs)
         self.kwargs["ti"].xcom_push.assert_called_once_with(
             "uri_items",
             sorted([
@@ -246,6 +265,24 @@ class TestGetUriItemsFromUriListFiles(TestCase):
                 "/scielo.php?script=sci_arttext&pid=S1213-19982121111511111",
             ]),
         )
+        self.assertTrue(result)
+
+    @patch("check_website.check_website_operations.read_file")
+    def test_get_uri_items_from_uri_list_files_gets_uri_items_returns_false(
+            self, mock_read_file):
+        self.kwargs["ti"].xcom_pull.return_value = [
+            pathlib.Path(self.proc_dir) / "uri_list_2020-01-01.lst",
+            pathlib.Path(self.proc_dir) / "uri_list_2020-01-02.lst",
+            pathlib.Path(self.proc_dir) / "uri_list_2020-01-03.lst",
+        ]
+        mock_read_file.side_effect = [
+            "\n\n\n",
+            "\n\n\n",
+            "",
+        ]
+        result = get_uri_items_from_uri_list_files(**self.kwargs)
+        self.kwargs["ti"].xcom_push.assert_not_called()
+        self.assertFalse(result)
 
 
 class TestGetPidListCSVFilePaths(TestCase):
@@ -278,7 +315,7 @@ class TestGetPidListCSVFilePaths(TestCase):
         shutil.rmtree(self.proc_dir)
 
     @patch("check_website.Variable.get")
-    def test_get_pid_list_csv_file_paths_returns_the_two_files_copied_to_proc_dir_from_gate_dir(self, mock_get):
+    def test_get_pid_list_csv_file_paths_finds_the_two_files_copied_to_proc_dir_from_gate_dir(self, mock_get):
         expected = [
             str(pathlib.Path(self.proc_dir) / "test_run_id" / "pid_list_2020-01-01.csv"),
             str(pathlib.Path(self.proc_dir) / "test_run_id" / "pid_list_2020-01-03.csv"),
@@ -288,7 +325,7 @@ class TestGetPidListCSVFilePaths(TestCase):
             self.gate_dir,
             self.proc_dir,
         ]
-        get_pid_list_csv_file_paths(**self.kwargs)
+        result = get_pid_list_csv_file_paths(**self.kwargs)
         self.assertListEqual(
             [
                 call('old_file_paths', []),
@@ -297,9 +334,10 @@ class TestGetPidListCSVFilePaths(TestCase):
             ],
             self.kwargs["ti"].xcom_push.call_args_list
         )
+        self.assertTrue(result)
 
     @patch("check_website.Variable.get")
-    def test_get_pid_list_csv_file_paths_returns_all_files_found_in_proc_dir(self, mock_get):
+    def test_get_pid_list_csv_file_paths_finds_all_files_found_in_proc_dir(self, mock_get):
         for f in ("pid_list_2020-03-01.csv", "pid_list_2020-03-02.csv", "pid_list_2020-03-03.csv"):
             file_path = pathlib.Path(self.dag_proc_dir) / f
             with open(file_path, "w") as fp:
@@ -316,7 +354,7 @@ class TestGetPidListCSVFilePaths(TestCase):
             self.gate_dir,
             self.proc_dir,
         ]
-        get_pid_list_csv_file_paths(**self.kwargs)
+        result = get_pid_list_csv_file_paths(**self.kwargs)
         self.assertListEqual(
             [
                 call('old_file_paths', sorted(expected[:3])),
@@ -325,6 +363,21 @@ class TestGetPidListCSVFilePaths(TestCase):
             ],
             self.kwargs["ti"].xcom_push.call_args_list
         )
+        self.assertTrue(result)
+
+    @patch("check_website.Variable.get")
+    def test_get_pid_list_csv_file_paths_returns_false(self, mock_get):
+        for f in ("pid_list_2020-01-01.csv", "pid_list_2020-01-02.csv", "pid_list_2020-01-03.csv"):
+            file_path = pathlib.Path(self.gate_dir) / f
+            os.unlink(file_path)
+        mock_get.side_effect = [
+            [],
+            self.gate_dir,
+            self.proc_dir,
+        ]
+        result = get_pid_list_csv_file_paths(**self.kwargs)
+        self.kwargs["ti"].xcom_push.assert_not_called()
+        self.assertFalse(result)
 
 
 class TestGetUriItemsFromPidFiles(TestCase):
@@ -362,15 +415,15 @@ class TestGetUriItemsFromPidFiles(TestCase):
     def tearDown(self):
         shutil.rmtree(self.proc_dir)
 
-    def test_get_uri_items_from_pid_list_csv_files_gets_uri_items(self):
+    def test_get_uri_items_from_pid_list_csv_files_gets_uri_items_returns_true(self):
         self.kwargs["ti"].xcom_pull.return_value = [
             pathlib.Path(self.proc_dir) / "pid_2020-01-01.csv",
             pathlib.Path(self.proc_dir) / "pid_2020-01-02.csv",
             pathlib.Path(self.proc_dir) / "pid_2020-01-03.csv",
 
         ]
-        get_uri_items_from_pid_list_csv_files(**self.kwargs)
-
+        result = get_uri_items_from_pid_list_csv_files(**self.kwargs)
+        self.assertTrue(result)
         self.assertListEqual([
             call(
                 "pid_items",
@@ -409,6 +462,23 @@ class TestGetUriItemsFromPidFiles(TestCase):
             self.kwargs["ti"].xcom_push.call_args_list
         )
 
+    @patch("check_website.check_website_operations.get_pid_list_from_csv")
+    def test_get_uri_items_from_pid_list_csv_files_gets_uri_items_returns_false(
+            self, mock_get_pid_list_from_csv):
+        self.kwargs["ti"].xcom_pull.return_value = [
+            pathlib.Path(self.proc_dir) / "pid_2020-01-01.csv",
+            pathlib.Path(self.proc_dir) / "pid_2020-01-02.csv",
+            pathlib.Path(self.proc_dir) / "pid_2020-01-03.csv",
+        ]
+        mock_get_pid_list_from_csv.side_effect = [
+            "invalidpidlist",
+            "",
+            "invalidpidlist\ninvalidpid",
+        ]
+        result = get_uri_items_from_pid_list_csv_files(**self.kwargs)
+        self.assertFalse(result)
+        self.kwargs["ti"].xcom_push.assert_not_called()
+
 
 class TestGetUriItemsGroupedByScriptName(TestCase):
     def setUp(self):
@@ -419,7 +489,7 @@ class TestGetUriItemsGroupedByScriptName(TestCase):
         }
 
     @patch("check_website.Logger.info")
-    def test_get_uri_items_grouped_by_script_name(self, mock_info):
+    def test_get_uri_items_grouped_by_script_name_returns_true(self, mock_info):
         uri_list = [
             "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
@@ -449,7 +519,8 @@ class TestGetUriItemsGroupedByScriptName(TestCase):
             "/scielo.php?script=sci_serial&pid=1213-1998",
         ]
         self.kwargs["ti"].xcom_pull.return_value = uri_list
-        get_uri_items_grouped_by_script_name(**self.kwargs)
+        result = get_uri_items_grouped_by_script_name(**self.kwargs)
+        self.assertTrue(result)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="merge_uri_items_from_different_sources_id",
             key="uri_items"
@@ -524,6 +595,16 @@ class TestGetUriItemsGroupedByScriptName(TestCase):
             ),
             self.kwargs["ti"].xcom_push.call_args_list
         )
+
+    @patch("check_website.Logger.info")
+    def test_get_uri_items_grouped_by_script_name_returns_false(self, mock_info):
+        bad_uri_list = [
+            "/scielo.php?param1=sci_arttext&pid=S0001-30352020000501101",
+        ]
+        self.kwargs["ti"].xcom_pull.return_value = bad_uri_list
+        result = get_uri_items_grouped_by_script_name(**self.kwargs)
+        self.assertFalse(result)
+        self.kwargs["ti"].xcom_push.assert_not_called()
 
 
 class TestGetWebsiteURLlist(TestCase):
@@ -724,16 +805,51 @@ class TestCheckAnyUriItems(TestCase):
             "run_id": "test_run_id",
         }
 
+    @patch("check_website.Variable.get")
+    def test_check_any_uri_items_returns_0_because_flag_is_off(self, mock_get):
+        uri_items = [
+            "/scielo.php?script=sci_issues&pid=0001-3035",
+            "/scielo.php?script=sci_issues&pid=0001-3765",
+        ]
+        mock_get.return_value = False
+        result = check_any_uri_items(uri_items, "label", {"daginfo": ""})
+        self.assertEqual(0, result)
+
+    @patch("check_website.Variable.get")
+    def test_check_any_uri_items_raises_value_error(self, mock_get):
+        uri_items = [
+            "/scielo.php?script=sci_issues&pid=0001-3035",
+            "/scielo.php?script=sci_issues&pid=0001-3765",
+        ]
+        mock_get.return_value = None
+        with self.assertRaises(ValueError):
+            check_any_uri_items(uri_items, "label", {"daginfo": ""})
+
+    @patch("check_website.Variable.get")
+    def test_check_any_uri_items_returns_0_because_uri_items_is_None(self, mock_get):
+        uri_items = None
+        mock_get.return_value = ["https://www.scielo.br"]
+        result = check_any_uri_items(uri_items, "label", {"daginfo": ""})
+        self.assertEqual(0, result)
+
+    @patch("check_website.check_website_operations.check_website_uri_list")
     @patch("check_website.check_website_operations.concat_website_url_and_uri_list_items")
     @patch("check_website.Variable.get")
     def test_check_any_uri_items_assert_called_once_concat_website_url_and_uri_list_items(
-            self, mock_get, mock_concat_website_url_and_uri_list_items):
+            self, mock_get, mock_concat_website_url_and_uri_list_items,
+            mock_check_website_uri_list):
         uri_items = [
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
         mock_get.return_value = ["https://www.scielo.br"]
-        check_any_uri_items(uri_items, "label", {"daginfo": ""})
+        mock_concat_website_url_and_uri_list_items.return_value = [
+            "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
+            "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
+        ]
+        mock_check_website_uri_list.return_value = MagicMock(), MagicMock()
+        result = check_any_uri_items(uri_items, "label", {"daginfo": ""})
+        self.assertEqual(2, result)
         mock_concat_website_url_and_uri_list_items.assert_called_once_with(
             ["https://www.scielo.br"],
             [
@@ -752,7 +868,8 @@ class TestCheckAnyUriItems(TestCase):
         ]
         mock_get.return_value = ["https://www.scielo.br"]
         mock_check_website_uri_list.return_value = MagicMock(), MagicMock()
-        check_any_uri_items(uri_items, "label", self.kwargs)
+        result = check_any_uri_items(uri_items, "label", self.kwargs)
+        self.assertEqual(2, result)
         mock_check_website_uri_list.assert_called_once_with(
             [
                 "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
@@ -815,7 +932,8 @@ class TestCheckAnyUriItems(TestCase):
             failures,
         )
         dag_info = {"dag": "daginfo"}
-        check_any_uri_items(uri_items, "label", dag_info, )
+        result = check_any_uri_items(uri_items, "label", dag_info)
+        self.assertEqual(4, result)
 
         calls = [
             call(failures, dag_info),
@@ -933,7 +1051,8 @@ class TestCheckAnyUriItems(TestCase):
                 "pid_v2_doc": None,
             },
         ]
-        check_any_uri_items(uri_items, "label", dag_info)
+        result = check_any_uri_items(uri_items, "label", dag_info)
+        self.assertEqual(4, result)
         calls = [
             call("sci_pages_availability", expected[0]),
             call("sci_pages_availability", expected[1]),
@@ -1052,7 +1171,8 @@ class TestCheckAnyUriItems(TestCase):
                 "pid_v2_doc": None,
             },
         ]
-        check_any_uri_items(uri_items, "label", dag_info)
+        result = check_any_uri_items(uri_items, "label", dag_info)
+        self.assertEqual(4, result)
         calls = [
             call("sci_pages_availability", expected[0]),
             call("sci_pages_availability", expected[1]),
@@ -1161,7 +1281,8 @@ class TestCheckAnyUriItems(TestCase):
                 "pid_v2_doc": None,
             },
         ]
-        check_any_uri_items(uri_items, "label", dag_info)
+        result = check_any_uri_items(uri_items, "label", dag_info)
+        self.assertEqual(4, result)
         calls = [
             call("sci_pages_availability", expected[0]),
             call("sci_pages_availability", expected[1]),
@@ -1181,6 +1302,49 @@ class TestGetPIDv3List(TestCase):
             "run_id": "test_run_id",
         }
 
+    @patch("check_website.Variable.get")
+    def test_get_pid_v3_list_raises_value_error_because_website_url_list_is_not_set(
+            self, mock_variabel_get):
+        mock_variabel_get.return_value = None
+
+        with self.assertRaises(ValueError) as exc_info:
+            get_pid_v3_list(**self.kwargs)
+        self.assertIn(
+            "`Variable[\"WEBSITE_URL_LIST\"]` is required",
+            str(exc_info.exception)
+        )
+
+    @patch("check_website.check_website_operations.get_main_website_url")
+    @patch("check_website.Variable.get")
+    def test_get_pid_v3_list_raises_value_error_because_main_website_url_is_not_set(
+            self, mock_variabel_get, mock_get_main_website_url):
+        mock_variabel_get.return_value = ["https://www.scielo.br"]
+        mock_get_main_website_url.return_value = None
+
+        with self.assertRaises(ValueError) as exc_info:
+            get_pid_v3_list(**self.kwargs)
+        self.assertIn(
+            "Unable to identify which one is the (new) SciELO website "
+            "in this list: ['https://www.scielo.br']",
+            str(exc_info.exception)
+        )
+
+    @patch("check_website.check_website_operations.get_main_website_url")
+    @patch("check_website.Variable.get")
+    def test_get_pid_v3_list_raises_value_error_because_xcom_pull_with_sci_arttext_is_none(
+            self, mock_variabel_get, mock_get_main_website_url):
+        mock_variabel_get.return_value = ["https://www.scielo.br"]
+        mock_get_main_website_url.return_value = (
+            "https://www.scielo.br"
+        )
+        self.kwargs["ti"].xcom_pull.return_value = None
+        with self.assertRaises(ValueError) as exc_info:
+            get_pid_v3_list(**self.kwargs)
+        self.assertIn(
+            "Missing URI items to get PID v3",
+            str(exc_info.exception)
+        )
+
     @patch("check_website.get_website_url_list")
     @patch("check_website.check_website_operations.get_main_website_url")
     @patch("check_website.check_website_operations.get_pid_v3_list")
@@ -1196,7 +1360,12 @@ class TestGetPIDv3List(TestCase):
         mock_get_website_url_list.return_value = [
             "https://www.scielo.br"
         ]
-        get_pid_v3_list(**self.kwargs)
+        self.kwargs["ti"].xcom_pull.return_value = [
+            "/scielo.php?script=sci_arttext&pid=x",
+            "/scielo.php?script=sci_arttext&pid=y",
+        ]
+        result = get_pid_v3_list(**self.kwargs)
+        self.assertTrue(result)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="get_uri_items_grouped_by_script_name_id",
             key="sci_arttext"
@@ -1217,7 +1386,12 @@ class TestGetPIDv3List(TestCase):
         mock_get_website_url_list.return_value = [
             "https://www.scielo.br"
         ]
-        get_pid_v3_list(**self.kwargs)
+        self.kwargs["ti"].xcom_pull.return_value = [
+            "/scielo.php?script=sci_arttext&pid=x",
+            "/scielo.php?script=sci_arttext&pid=y",
+        ]
+        result = get_pid_v3_list(**self.kwargs)
+        self.assertTrue(result)
         self.assertListEqual(
             [
                 call("pid_v3_list", ["DOCID1", "DOCID2"]),
@@ -1225,6 +1399,27 @@ class TestGetPIDv3List(TestCase):
             ],
             self.kwargs["ti"].xcom_push.call_args_list
         )
+
+    @patch("check_website.get_website_url_list")
+    @patch("check_website.check_website_operations.get_main_website_url")
+    @patch("check_website.check_website_operations.get_pid_v3_list")
+    def test_get_pid_v3_list_returns_false(
+            self, mock_get, mock_get_main_website_url,
+            mock_get_website_url_list):
+        mock_get.return_value = None
+        mock_get_main_website_url.return_value = (
+            "https://www.scielo.br"
+        )
+        mock_get_website_url_list.return_value = [
+            "https://www.scielo.br"
+        ]
+        self.kwargs["ti"].xcom_pull.return_value = [
+            "/scielo.php?script=sci_arttext&pid=x",
+            "/scielo.php?script=sci_arttext&pid=y",
+        ]
+        result = get_pid_v3_list(**self.kwargs)
+        self.assertFalse(result)
+        self.kwargs["ti"].xcom_push.assert_not_called()
 
 
 class TestGroupUriItemsFromUriListsByScriptName(TestCase):
@@ -1236,14 +1431,14 @@ class TestGroupUriItemsFromUriListsByScriptName(TestCase):
             "run_id": "test_run_id",
         }
 
-    def test_group_uri_items_from_uri_lists_by_script_name(self):
+    def test_group_uri_items_from_uri_lists_by_script_name_returns_true(self):
         self.kwargs["ti"].xcom_pull.return_value = [
             "/scielo.php?script=sci_arttext&pid=0001-303520200005",
             "/scielo.php?script=sci_arttext&pid=0001-376520200005",
             "/scielo.php?script=sci_pdf&pid=0001-303520200005",
             "/scielo.php?script=sci_pdf&pid=0001-376520200005",
         ]
-        group_uri_items_from_uri_lists_by_script_name(**self.kwargs)
+        result = group_uri_items_from_uri_lists_by_script_name(**self.kwargs)
         self.kwargs["ti"].xcom_pull.assert_called_once_with(
             task_ids="get_uri_items_from_uri_list_files_id",
             key="uri_items"
@@ -1268,7 +1463,30 @@ class TestGroupUriItemsFromUriListsByScriptName(TestCase):
             ),
             self.kwargs["ti"].xcom_push.call_args_list
         )
+        self.assertTrue(result)
 
+    @patch("check_website.check_website_operations.group_items_by_script_name")
+    def test_group_uri_items_from_uri_lists_by_script_name_returns_false(self, mock_f):
+        self.kwargs["ti"].xcom_pull.return_value = [
+            "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+            "/scielo.php?script=sci_arttext&pid=0001-376520200005",
+            "/scielo.php?script=sci_pdf&pid=0001-303520200005",
+            "/scielo.php?script=sci_pdf&pid=0001-376520200005",
+        ]
+        mock_f.return_value = {}
+        result = group_uri_items_from_uri_lists_by_script_name(**self.kwargs)
+        self.assertFalse(result)
+        self.kwargs["ti"].xcom_push.assert_not_called()
+
+    def test_group_uri_items_from_uri_lists_by_script_name_returns_true_because_there_is_no_input(self):
+        self.kwargs["ti"].xcom_pull.return_value = None
+        result = group_uri_items_from_uri_lists_by_script_name(**self.kwargs)
+        self.kwargs["ti"].xcom_pull.assert_called_once_with(
+            task_ids="get_uri_items_from_uri_list_files_id",
+            key="uri_items"
+        )
+        self.assertTrue(result)
+        self.kwargs["ti"].xcom_push.assert_not_called()
 
 
 class TestMergeUriItemsFromDifferentSources(TestCase):
@@ -1280,7 +1498,7 @@ class TestMergeUriItemsFromDifferentSources(TestCase):
             "run_id": "test_run_id",
         }
 
-    def test_merge_uri_items_from_different_sources(self):
+    def test_merge_uri_items_from_different_sources_removes_repetition(self):
         self.kwargs["ti"].xcom_pull.side_effect = [
             [
                 "/scielo.php?script=sci_arttext&pid=0001-303520200005",
@@ -1292,7 +1510,8 @@ class TestMergeUriItemsFromDifferentSources(TestCase):
                 "/scielo.php?script=sci_arttext&pid=0001-303520200005",
             ],
         ]
-        merge_uri_items_from_different_sources(**self.kwargs)
+        result = merge_uri_items_from_different_sources(**self.kwargs)
+        self.assertTrue(result)
         self.assertListEqual([
             call(key="uri_items",
                  task_ids="get_uri_items_from_uri_list_files_id",),
@@ -1310,6 +1529,101 @@ class TestMergeUriItemsFromDifferentSources(TestCase):
                 "/scielo.php?script=sci_pdf&pid=0001-376520200005",
             ]
         )
+
+    def test_merge_uri_items_from_different_sources_pulls_three_uri_items_and_pushes_three_uri_items(self):
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            [
+                "/scielo.php?script=sci_pdf&pid=0001-303520200005",
+                "/scielo.php?script=sci_pdf&pid=0001-376520200005",
+            ],
+            [
+                "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+            ],
+        ]
+        result = merge_uri_items_from_different_sources(**self.kwargs)
+        self.assertTrue(result)
+        self.assertListEqual([
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_uri_list_files_id",),
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_pid_list_csv_files_id",)
+            ],
+            self.kwargs["ti"].xcom_pull.call_args_list
+        )
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            "uri_items",
+            [
+                "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+                "/scielo.php?script=sci_pdf&pid=0001-303520200005",
+                "/scielo.php?script=sci_pdf&pid=0001-376520200005",
+            ]
+        )
+
+    def test_merge_uri_items_from_different_sources_returns_true_only_from_csv(self):
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            None,
+            [
+                "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+            ],
+        ]
+        result = merge_uri_items_from_different_sources(**self.kwargs)
+        self.assertTrue(result)
+        self.assertListEqual([
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_uri_list_files_id",),
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_pid_list_csv_files_id",)
+            ],
+            self.kwargs["ti"].xcom_pull.call_args_list
+        )
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            "uri_items",
+            [
+                "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+            ]
+        )
+
+    def test_merge_uri_items_from_different_sources_returns_true_only_from_lst(self):
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            [
+                "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+            ],
+            None,
+        ]
+        result = merge_uri_items_from_different_sources(**self.kwargs)
+        self.assertTrue(result)
+        self.assertListEqual([
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_uri_list_files_id",),
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_pid_list_csv_files_id",)
+            ],
+            self.kwargs["ti"].xcom_pull.call_args_list
+        )
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            "uri_items",
+            [
+                "/scielo.php?script=sci_arttext&pid=0001-303520200005",
+            ]
+        )
+
+    def test_merge_uri_items_from_different_sources_returns_false(self):
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            None,
+            None,
+        ]
+        result = merge_uri_items_from_different_sources(**self.kwargs)
+        self.assertFalse(result)
+        self.assertListEqual([
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_uri_list_files_id",),
+            call(key="uri_items",
+                 task_ids="get_uri_items_from_pid_list_csv_files_id",)
+            ],
+            self.kwargs["ti"].xcom_pull.call_args_list
+        )
+        self.kwargs["ti"].xcom_push.assert_not_called()
+
 
 class TestCheckInputVsProcessedPids(TestCase):
 
@@ -1334,7 +1648,8 @@ class TestCheckInputVsProcessedPids(TestCase):
                 "0001-376520200005",
             ],
         ]
-        check_input_vs_processed_pids(**self.kwargs)
+        result = check_input_vs_processed_pids(**self.kwargs)
+        self.assertTrue(result)
 
         self.assertListEqual([
             call(key="sci_arttext",
@@ -1361,10 +1676,16 @@ class TestCheckInputVsProcessedPids(TestCase):
                 "0001-303520200005", "0001-376520200005",
             ]
         ]
-        check_input_vs_processed_pids(**self.kwargs)
+        result = check_input_vs_processed_pids(**self.kwargs)
+        self.assertTrue(result)
 
         self.assertListEqual([
-                call("Merge PID items from `uri_list_*.lst` and `*.csv`"),
+                call(
+                    "Check if all the PID items from `uri_list_*.lst` "
+                    "and `*.csv` were processed at the end"
+                ),
+                call("Total %i PIDs v2 from uri_list", 1),
+                call("Total %i PIDs v2 from csv", 1),
                 call("Total %i input PIDs", 2),
                 call("Total %i processed PIDs", 2),
                 call("All the PIDs were processed"),
@@ -1384,10 +1705,16 @@ class TestCheckInputVsProcessedPids(TestCase):
             ],
             []
         ]
-        check_input_vs_processed_pids(**self.kwargs)
+        result = check_input_vs_processed_pids(**self.kwargs)
+        self.assertFalse(result)
 
         self.assertListEqual([
-                call("Merge PID items from `uri_list_*.lst` and `*.csv`"),
+                call(
+                    "Check if all the PID items from `uri_list_*.lst` "
+                    "and `*.csv` were processed at the end"
+                ),
+                call("Total %i PIDs v2 from uri_list", 1),
+                call("Total %i PIDs v2 from csv", 1),
                 call("Total %i input PIDs", 2),
                 call("Total %i processed PIDs", 0),
             ],
@@ -1419,10 +1746,16 @@ class TestCheckInputVsProcessedPids(TestCase):
                 "0001-30352020XXX5",
             ]
         ]
-        check_input_vs_processed_pids(**self.kwargs)
+        result = check_input_vs_processed_pids(**self.kwargs)
+        self.assertTrue(result)
 
         self.assertListEqual([
-                call("Merge PID items from `uri_list_*.lst` and `*.csv`"),
+                call(
+                    "Check if all the PID items from `uri_list_*.lst` "
+                    "and `*.csv` were processed at the end"
+                ),
+                call("Total %i PIDs v2 from uri_list", 1),
+                call("Total %i PIDs v2 from csv", 1),
                 call("Total %i input PIDs", 2),
                 call("Total %i processed PIDs", 3),
                 call("All the PIDs were processed"),
@@ -1439,4 +1772,126 @@ class TestCheckInputVsProcessedPids(TestCase):
                 ),
             ],
             mock_logger.warning.call_args_list
+        )
+
+
+class TestCheckDocumentsDeeply(TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    @patch("check_website.Logger")
+    @patch("check_website.Variable.get")
+    def test_check_documents_deeply_return_false_because_all_flag_were_set_as_false(
+            self, mock_var_get, mock_logger):
+        mock_var_get.side_effect = [
+            False, False, False, False
+        ]
+        result = check_documents_deeply(**self.kwargs)
+        self.assertFalse(result)
+        mock_logger.warning.assert_called_once_with(
+            "'check_documents_deeply_id' was NOT executed because "
+            "all FLAGS are set to 'false'"
+        )
+
+    @patch("check_website.Logger")
+    @patch("check_website.Variable.get")
+    def test_check_documents_deeply_raises_value_error(
+            self, mock_var_get, mock_logger):
+        mock_var_get.side_effect = [
+            True, False, False, False
+        ]
+        self.kwargs["ti"].xcom_pull.return_value = None
+        with self.assertRaises(ValueError) as exc_info:
+            result = check_documents_deeply(**self.kwargs)
+        self.assertEqual(
+            str(exc_info.exception),
+            "Unable to execute this task because `website_url` is not set"
+        )
+
+    @patch("check_website.Logger")
+    @patch("check_website.Variable.get")
+    def test_check_documents_deeply_registers_no_pid_v3_to_checkup(
+            self, mock_var_get, mock_logger):
+        mock_var_get.side_effect = [
+            True, False, False, False,
+            "https://minio.scielo.br",
+        ]
+        pid_v3_items = None
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            "https://www.scielo.br",
+            pid_v3_items,
+        ]
+        result = check_documents_deeply(**self.kwargs)
+        self.assertFalse(result)
+        mock_logger.warning.assert_called_once_with(
+            "There is no PID v3 to check"
+        )
+
+    @patch("check_website.check_website_operations.check_website_uri_list_deeply")
+    @patch("check_website.Logger")
+    @patch("check_website.Variable.get")
+    def test_check_documents_deeply_registers_returns_true(
+            self, mock_var_get, mock_logger, mock_check_website_uri_list):
+        mock_var_get.side_effect = [
+            True, False, False, False,
+            "https://minio.scielo.br",
+        ]
+        pid_v3_items = ["DOCPIDV3"]
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            "https://www.scielo.br",
+            pid_v3_items,
+        ]
+        mock_check_website_uri_list.return_value = [
+            "PID_V2_1",
+            "PID_V2_2",
+        ]
+        result = check_documents_deeply(**self.kwargs)
+        self.assertTrue(result)
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            "processed_pid_v2_items",
+            [
+                "PID_V2_1",
+                "PID_V2_2",
+            ]
+        )
+        self.assertIn(
+            call("Checked %i documents", 1),
+            mock_logger.info.call_args_list
+        )
+        self.assertIn(
+            call("Checked %i PID v2 items", 2),
+            mock_logger.info.call_args_list
+        )
+
+    @patch("check_website.check_website_operations.check_website_uri_list_deeply")
+    @patch("check_website.Logger")
+    @patch("check_website.Variable.get")
+    def test_check_documents_deeply_registers_returns_false(
+            self, mock_var_get, mock_logger, mock_check_website_uri_list):
+        mock_var_get.side_effect = [
+            True, False, False, False,
+            "https://minio.scielo.br",
+        ]
+        pid_v3_items = ["DOCPIDV3"]
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            "https://www.scielo.br",
+            pid_v3_items,
+        ]
+        mock_check_website_uri_list.return_value = None
+        result = check_documents_deeply(**self.kwargs)
+        self.assertFalse(result)
+        self.kwargs["ti"].xcom_push.assert_not_called()
+
+        self.assertIn(
+            call("Checked %i documents", 1),
+            mock_logger.info.call_args_list
+        )
+        self.assertIn(
+            call("Checked %i PID v2 items", 0),
+            mock_logger.info.call_args_list
         )

@@ -144,12 +144,21 @@ def get_uri_list_file_paths(conf, **kwargs):
         if _uri_list_file_path not in file_paths:
             file_paths.append(_uri_list_file_path)
 
-    kwargs["ti"].xcom_push("old_uri_list_file_paths", sorted(old_file_paths))
-    kwargs["ti"].xcom_push("new_uri_list_file_paths", sorted(file_paths))
-    kwargs["ti"].xcom_push("uri_list_file_paths", sorted(old_file_paths + file_paths))
     Logger.info("Found: %s", file_paths)
+
     # atribui um str vazia para sinalizar que o valor foi usado
     Variable.set("GERAPADRAO_ID_FOR_URI_LIST", [], serialize_json=True)
+
+    if old_file_paths or file_paths:
+        kwargs["ti"].xcom_push(
+            "old_uri_list_file_paths", sorted(old_file_paths))
+        kwargs["ti"].xcom_push(
+            "new_uri_list_file_paths", sorted(file_paths))
+        kwargs["ti"].xcom_push(
+            "uri_list_file_paths", sorted(old_file_paths + file_paths))
+        return True
+    else:
+        return False
 
 
 def get_uri_items_from_uri_list_files(**context):
@@ -159,7 +168,7 @@ def get_uri_items_from_uri_list_files(**context):
     Logger.info("Get URI items from `url_list_*.lst`")
     uri_list_file_paths = context["ti"].xcom_pull(
         task_ids="get_uri_list_file_paths_id", key="uri_list_file_paths"
-    )
+    ) or []
 
     all_items = set()
     for file_path in uri_list_file_paths:
@@ -169,15 +178,22 @@ def get_uri_items_from_uri_list_files(**context):
         # /scielo.php?script=sci_issues&pid=0001-3765
         # /scielo.php?script=sci_issuetoc&pid=0001-376520200005
         # /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
-        partial = check_website_operations.read_file(file_path)
+        partial = [row
+                   for row in check_website_operations.read_file(file_path)
+                   if len(row.strip())]
 
         Logger.info("File %s: %i items", file_path, len(partial))
         all_items = all_items | set(partial)
 
-        Logger.info("Partial total: %i items", len(all_items))
+        total = len(all_items)
+        Logger.info("Partial total: %i items", total)
 
-    context["ti"].xcom_push("uri_items", sorted(all_items))
-    Logger.info("Total: %i URIs", len(all_items))
+    total = len(all_items)
+    Logger.info("Total: %i URIs", total)
+    if total:
+        context["ti"].xcom_push("uri_items", sorted(all_items))
+
+    return total > 0
 
 
 def get_pid_list_csv_file_paths(**kwargs):
@@ -211,10 +227,17 @@ def get_pid_list_csv_file_paths(**kwargs):
         if _pid_list_csv_file_path not in file_paths:
             file_paths.append(_pid_list_csv_file_path)
 
-    kwargs["ti"].xcom_push("old_file_paths", sorted(old_file_paths))
-    kwargs["ti"].xcom_push("new_file_paths", sorted(file_paths))
-    kwargs["ti"].xcom_push("file_paths", sorted(old_file_paths + file_paths))
     Logger.info("Found: %s", file_paths)
+    if old_file_paths or file_paths:
+        kwargs["ti"].xcom_push(
+            "old_file_paths", sorted(old_file_paths))
+        kwargs["ti"].xcom_push(
+            "new_file_paths", sorted(file_paths))
+        kwargs["ti"].xcom_push(
+            "file_paths", sorted(old_file_paths + file_paths))
+        return True
+    else:
+        return False
 
 
 def get_uri_items_from_pid_list_csv_files(**context):
@@ -227,20 +250,29 @@ def get_uri_items_from_pid_list_csv_files(**context):
     pid_list_csv_file_paths = context["ti"].xcom_pull(
         task_ids="get_pid_list_csv_file_paths_id",
         key="file_paths"
-    )
+    ) or []
 
     pids = set()
     for file_path in pid_list_csv_file_paths:
-        _items = check_website_operations.get_pid_list_from_csv(file_path)
+        _items = {item
+                  for item in check_website_operations.get_pid_list_from_csv(
+                    file_path)
+                  if item and len(item) == 23}
         Logger.info("File %s: %i pids", file_path, len(_items))
-        pids = pids | set(_items)
-        Logger.info("Partial total: %i pids", len(pids))
+        pids = pids | _items
+        total = len(pids)
+        Logger.info("Partial total: %i pids", total)
 
-    items = check_website_operations.get_uri_list_from_pid_dict(
-        group_pids(pids))
-    context["ti"].xcom_push("pid_items", sorted(pids))
-    context["ti"].xcom_push("uri_items", items)
-    Logger.info("Total: %i URIs", len(items))
+    total = len(pids)
+    Logger.info("Total: %i pids", total)
+
+    if total:
+        items = check_website_operations.get_uri_list_from_pid_dict(
+            group_pids(pids))
+        context["ti"].xcom_push("pid_items", sorted(pids))
+        context["ti"].xcom_push("uri_items", items)
+        Logger.info("Total: %i URIs", len(items))
+    return total > 0
 
 
 def group_uri_items_from_uri_lists_by_script_name(**context):
@@ -253,12 +285,17 @@ def group_uri_items_from_uri_lists_by_script_name(**context):
                 task_ids="get_uri_items_from_uri_list_files_id",
                 key="uri_items"
             )
-    Logger.info("Total %i URIs", len(uri_items))
+    total = len(uri_items or [])
+    Logger.info("Total %i URIs", total)
+    if total == 0:
+        return True
+
     items = check_website_operations.group_items_by_script_name(uri_items)
     for script_name, _items in items.items():
         Logger.info(
             "Total %i URIs for `%s`", len(_items), script_name)
         context["ti"].xcom_push(script_name, sorted(_items))
+    return len(items) > 0
 
 
 def merge_uri_items_from_different_sources(**context):
@@ -267,18 +304,21 @@ def merge_uri_items_from_different_sources(**context):
     removendo repetições
     """
     Logger.info("Merge URI items from `uri_list_*.lst` and `*.csv`")
-    uri_items = set(
-            context["ti"].xcom_pull(
-                task_ids="get_uri_items_from_uri_list_files_id",
-                key="uri_items"
-            ) +
-            context["ti"].xcom_pull(
-                task_ids="get_uri_items_from_pid_list_csv_files_id",
-                key="uri_items"
-            )
-    )
-    Logger.info("Total %i URIs", len(uri_items))
-    context["ti"].xcom_push("uri_items", sorted(uri_items))
+    uri_items_from_lst = context["ti"].xcom_pull(
+        task_ids="get_uri_items_from_uri_list_files_id",
+        key="uri_items"
+    ) or []
+    uri_items_from_csv = context["ti"].xcom_pull(
+        task_ids="get_uri_items_from_pid_list_csv_files_id",
+        key="uri_items"
+    ) or []
+
+    uri_items = set(uri_items_from_lst + uri_items_from_csv)
+    total = len(uri_items)
+    Logger.info("Total %i URIs", total)
+    if total:
+        context["ti"].xcom_push("uri_items", sorted(uri_items))
+    return total > 0
 
 
 def get_uri_items_grouped_by_script_name(**context):
@@ -295,6 +335,7 @@ def get_uri_items_grouped_by_script_name(**context):
         Logger.info(
             "Total %i URIs for `%s`", len(_items), script_name)
         context["ti"].xcom_push(script_name, sorted(_items))
+    return bool(items)
 
 
 def get_website_url_list():
@@ -333,11 +374,15 @@ def check_any_uri_items(uri_list_items, label, dag_info):
     flag_name = "CHECK_{}_PAGES".format(label.upper())
     flag = get_task_execution_flag(
         flag_name, "checking '%s' pages".format(label))
-
     if flag is False:
         return 0
 
     _website_url_list = get_website_url_list()
+
+    total = len(uri_list_items or [])
+    Logger.info("Total URI items: %i", total)
+    if total == 0:
+        return 0
 
     # concatena cada item de `_website_url_list` com
     # cada item de `uri_list_items`
@@ -471,11 +516,17 @@ def check_documents_deeply(**context):
                      "CHECK_WEB_PDF_PAGES",)
     }
     if not any(flags.values()):
-        return
+        Logger.warning(
+            "'check_documents_deeply_id' was NOT executed because "
+            "all FLAGS are set to 'false'")
+        return False
 
     website_url = context["ti"].xcom_pull(
         task_ids="get_pid_v3_list_id",
         key="website_url")
+    if website_url is None:
+        raise ValueError(
+            "Unable to execute this task because `website_url` is not set")
 
     object_store_url = Variable.get("OBJECT_STORE_URL", default_var="")
 
@@ -483,15 +534,26 @@ def check_documents_deeply(**context):
         task_ids="get_pid_v3_list_id",
         key="pid_v3_list")
 
+    total = len(pid_v3_list or [])
+    Logger.info("PID v3: %i items", total)
+    if total == 0:
+        Logger.warning("There is no PID v3 to check")
+        return False
+
     extra_data = context.copy()
     extra_data.update(flags)
 
     pid_v2_processed = check_website_operations.check_website_uri_list_deeply(
         pid_v3_list, website_url, object_store_url, extra_data)
+    total_processed_pid_v2 = len(pid_v2_processed or [])
 
-    context["ti"].xcom_push("processed_pid_v2_items", sorted(pid_v2_processed))
+    if total_processed_pid_v2 > 0:
+        context["ti"].xcom_push(
+            "processed_pid_v2_items", sorted(pid_v2_processed))
 
-    Logger.info("Checked %i documents", len(pid_v3_list))
+    Logger.info("Checked %i documents", total)
+    Logger.info("Checked %i PID v2 items", total_processed_pid_v2)
+    return total_processed_pid_v2 > 0
 
 
 def get_pid_v3_list(**context):
@@ -501,47 +563,62 @@ def get_pid_v3_list(**context):
     /scielo.php?script=sci_arttext&pid=S0001-37652020000501101
     """
     Logger.info("Get PID v3 from old pattern document URI")
-    _website_url_list = get_website_url_list()
 
-    uri_items = context["ti"].xcom_pull(
-        task_ids="get_uri_items_grouped_by_script_name_id",
-        key="sci_arttext")
+    _website_url_list = get_website_url_list()
     website_url = check_website_operations.get_main_website_url(
         _website_url_list)
     if website_url is None:
         raise ValueError(
-            "%s is unavailable or is an invalid value for the new SciELO site")
+            "Unable to identify which one is the (new) SciELO website "
+            "in this list: {}".format(_website_url_list)
+        )
+
+    uri_items = context["ti"].xcom_pull(
+        task_ids="get_uri_items_grouped_by_script_name_id",
+        key="sci_arttext")
+    if uri_items is None or len(uri_items) == 0:
+        raise ValueError("Missing URI items to get PID v3")
 
     pid_v3_list = check_website_operations.get_pid_v3_list(
         uri_items, website_url)
 
-    context["ti"].xcom_push("pid_v3_list", pid_v3_list)
-    context["ti"].xcom_push("website_url", website_url)
+    if pid_v3_list:
+        context["ti"].xcom_push("pid_v3_list", pid_v3_list)
+        context["ti"].xcom_push("website_url", website_url)
 
-    Logger.info("PID v3: %i items", len(pid_v3_list))
+    total = len(pid_v3_list or [])
+    Logger.info("PID v3: %i items", total)
+    return total > 0
 
 
 def check_input_vs_processed_pids(**context):
     """
     Une todos PID provenientes de `uri_list_*.lst` and `*.csv`,
     removendo repetições
+    E verifica se todos eles foram processados, comparando com o resultado
+    da tarefa `check_documents_deeply` 
     """
-    Logger.info("Merge PID items from `uri_list_*.lst` and `*.csv`")
-    pid_items = set(
-        (
-            context["ti"].xcom_pull(
-                task_ids="group_uri_items_from_uri_lists_by_script_name_id",
-                key="sci_arttext"
-            ) or []
-        ) +
-        context["ti"].xcom_pull(
-            task_ids="get_uri_items_from_pid_list_csv_files_id",
-            key="pid_items"
-        )
+    Logger.info(
+        "Check if all the PID items from `uri_list_*.lst` and `*.csv` "
+        "were processed at the end"
     )
+    pid_v2_items_from_lst = context["ti"].xcom_pull(
+        task_ids="group_uri_items_from_uri_lists_by_script_name_id",
+        key="sci_arttext"
+    ) or []
+    pid_v2_items_from_csv = context["ti"].xcom_pull(
+        task_ids="get_uri_items_from_pid_list_csv_files_id",
+        key="pid_items"
+    ) or []
+
+    Logger.info("Total %i PIDs v2 from uri_list", len(pid_v2_items_from_lst))
+    Logger.info("Total %i PIDs v2 from csv", len(pid_v2_items_from_csv))
+
+    pid_items = set(pid_v2_items_from_lst + pid_v2_items_from_csv)
     processed = set(context["ti"].xcom_pull(
         task_ids="check_documents_deeply_id",
         key="processed_pid_v2_items") or [])
+
     Logger.info("Total %i input PIDs", len(pid_items))
     Logger.info("Total %i processed PIDs", len(processed))
 
@@ -573,6 +650,7 @@ def check_input_vs_processed_pids(**context):
     context["ti"].xcom_push(
         "present_in_pid_items_but_not_in_processed",
         present_in_pid_items_but_not_in_processed)
+    return present_in_both == pid_items
 
 
 get_uri_list_file_paths_task = PythonOperator(
@@ -610,14 +688,14 @@ group_uri_items_from_uri_lists_by_script_name_task = PythonOperator(
     dag=dag,
 )
 
-merge_uri_items_from_different_sources_task = PythonOperator(
+merge_uri_items_from_different_sources_task = ShortCircuitOperator(
     task_id="merge_uri_items_from_different_sources_id",
     provide_context=True,
     python_callable=merge_uri_items_from_different_sources,
     dag=dag,
 )
 
-get_uri_items_grouped_by_script_name_task = PythonOperator(
+get_uri_items_grouped_by_script_name_task = ShortCircuitOperator(
     task_id="get_uri_items_grouped_by_script_name_id",
     provide_context=True,
     python_callable=get_uri_items_grouped_by_script_name,
@@ -659,7 +737,7 @@ check_sci_arttext_uri_items_task = PythonOperator(
     dag=dag,
 )
 
-get_pid_v3_list_task = PythonOperator(
+get_pid_v3_list_task = ShortCircuitOperator(
     task_id="get_pid_v3_list_id",
     provide_context=True,
     python_callable=get_pid_v3_list,
