@@ -3,6 +3,9 @@ import copy
 import tempfile
 import builtins
 import json
+import shutil
+import pathlib
+import zipfile
 from unittest import TestCase, main
 from unittest.mock import patch, Mock, MagicMock, ANY, mock_open, call
 from tempfile import mkdtemp, mkstemp
@@ -11,6 +14,7 @@ import requests
 from airflow import DAG
 
 from operations.sync_documents_to_kernel_operations import (
+    get_documents_from_packages,
     list_documents,
     delete_documents,
     optimize_sps_pkg_zip_file,
@@ -25,6 +29,89 @@ from operations.exceptions import (
     LinkDocumentToDocumentsBundleException,
     Pidv3Exception
 )
+
+
+def create_fake_sps_packages(sps_packages: dict):
+    """
+    Cria pacotes fake com base em dicionário contendo o nome do pacote e os arquivos que
+    devem estar contidos em cada um deles.
+    """
+    for package_path, package_files in sps_packages.items():
+        with zipfile.ZipFile(package_path, "w") as zip_file:
+            for package_file in package_files:
+                zip_file.writestr(package_file, package_file)
+
+
+class TestGetDocumentsFromPackages(TestCase):
+    def setUp(self):
+        self.sps_package = ["dir/destination/abc_v50.zip"]
+        self.proc_dir_path = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.proc_dir_path)
+
+    def test_raises_error_if_zipfile_not_found(self):
+        sps_packages_files = {
+            f"{self.proc_dir_path}/2020-01-01-00-01-09-090901_abc_v1n1.zip": [
+                "0123-4567-abc-50-1-8.xml",
+            ]
+        }
+        create_fake_sps_packages(sps_packages_files)
+
+        self.assertRaises(
+            FileNotFoundError, get_documents_from_packages, ["other_package.zip"]
+        )
+
+    def test_reads_all_xmls_from_zip(self):
+        sps_packages_files = {
+            f"{self.proc_dir_path}/2020-01-01-00-01-09-090901_abc_v1n1.zip": [
+                "0123-4567-abc-50-1-8.xml",
+                "v53n1a01.pdf",
+            ],
+            f"{self.proc_dir_path}/2020-01-01-00-01-09-090902_abc_v1n1.zip": [
+                "0123-4567-abc-50-1-8.xml",
+                "v53n1a01.pdf",
+                "0123-4567-abc-50-1-8-gpn1a01t1.htm",
+                "0123-4567-abc-50-1-8-gpn1a01g1.htm",
+            ],
+            f"{self.proc_dir_path}/2020-01-01-00-01-09-090903_abc_v1n1.zip": [
+                "0123-4567-abc-50-1-8.xml",
+                "v53n1a01.pdf",
+                "0123-4567-abc-50-1-8-gpn1a01t1.htm",
+                "0123-4567-abc-50-1-8-gpn1a01g1.htm",
+                "0123-4567-abc-50-9-18.xml",
+                "v53n1a02.pdf",
+            ],
+        }
+        create_fake_sps_packages(sps_packages_files)
+
+        xmls = get_documents_from_packages(list(sps_packages_files.keys()))
+
+        expected = {
+            package_path: [
+                package_file
+                for package_file in package_files
+                if package_file.endswith(".xml")
+            ]
+            for package_path, package_files in sps_packages_files.items()
+        }
+        self.assertEqual(xmls, expected)
+
+    def test_returns_empty_dict_if_no_xml_in_zip(self):
+        package_path = f"{self.proc_dir_path}/2020-01-01-00-01-09-090903_abc_v1n1.zip"
+        sps_packages_files = {
+            package_path: [
+                "v53n1a01.pdf",
+                "0123-4567-abc-50-1-8-gpn1a01t1.htm",
+                "0123-4567-abc-50-1-8-gpn1a01g1.htm",
+                "v53n1a02.pdf",
+            ],
+        }
+        create_fake_sps_packages(sps_packages_files)
+
+        xmls = get_documents_from_packages(list(sps_packages_files.keys()))
+
+        self.assertEqual(xmls, {})
 
 
 class TestListDocuments(TestCase):
