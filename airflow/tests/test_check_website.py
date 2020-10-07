@@ -866,7 +866,11 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
-        mock_get.return_value = ["https://www.scielo.br"]
+        mock_get.side_effect = [
+            {},
+            ["https://www.scielo.br"],
+            None
+        ]
         mock_check_website_uri_list.return_value = MagicMock(), MagicMock()
         result = check_any_uri_items(uri_items, "label", self.kwargs)
         self.assertEqual(2, result)
@@ -875,7 +879,8 @@ class TestCheckAnyUriItems(TestCase):
                 "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
                 "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
             ],
-            "label"
+            "label",
+            None
         )
 
     @patch("check_website.check_website_operations.register_sci_pages_availability_report")
@@ -1351,8 +1356,8 @@ class TestGetPIDv3List(TestCase):
     @patch("check_website.check_website_operations.get_pid_v3_list")
     def test_get_pid_v3_list_assert_called_xcom_pull_with_sci_arttext_value(
             self, mock_get, mock_get_main_website_url,
-            mock_get_website_url_list, mock_var_timeout):
-        mock_var_timeout.return_value = None
+            mock_get_website_url_list, mock_var):
+        mock_var.side_effect = [None]
         mock_get.return_value = (
             ["DOCID1", "DOCID2"]
         )
@@ -1846,6 +1851,7 @@ class TestCheckDocumentsDeeply(TestCase):
         mock_var_get.side_effect = [
             True, False, False, False,
             "https://minio.scielo.br",
+            None
         ]
         pid_v3_items = ["DOCPIDV3"]
         self.kwargs["ti"].xcom_pull.side_effect = [
@@ -1882,6 +1888,7 @@ class TestCheckDocumentsDeeply(TestCase):
         mock_var_get.side_effect = [
             True, False, False, False,
             "https://minio.scielo.br",
+            10
         ]
         pid_v3_items = ["DOCPIDV3"]
         self.kwargs["ti"].xcom_pull.side_effect = [

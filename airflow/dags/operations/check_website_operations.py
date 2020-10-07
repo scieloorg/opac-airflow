@@ -718,7 +718,7 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
     return report, summary
 
 
-def add_responses(doc_data_list, website_url=None, request=True):
+def add_responses(doc_data_list, website_url=None, request=True, timeout=None):
     """
     Dada uma lista de dicionários que contém uma chave `uri`,
     se aplicável, concatena valor de `uri` com valor de `website_url`,
@@ -740,7 +740,7 @@ def add_responses(doc_data_list, website_url=None, request=True):
 
     responses = {}
     if request:
-        responses = async_requests.parallel_requests(uri_items, body=body)
+        responses = async_requests.parallel_requests(uri_items, body=body, timeout=timeout)
         responses = {resp.uri: resp for resp in responses}
 
     for doc_data in doc_data_list:
@@ -896,7 +896,7 @@ def check_pdf_webpages_availability(doc_data_list):
     return report, summary
 
 
-def check_website_uri_list(uri_list_items, label=""):
+def check_website_uri_list(uri_list_items, label="", timeout=None):
     """
     Verifica a disponibilidade dos URI de `uri_list_items`
     Args:
@@ -919,7 +919,7 @@ def check_website_uri_list(uri_list_items, label=""):
 
     total = len(uri_list_items)
     Logger.info("Total %s URIs: %i", label, total)
-    success, failures = check_uri_items(uri_list_items)
+    success, failures = check_uri_items(uri_list_items, timeout)
 
     if failures:
         Logger.info(
@@ -1019,7 +1019,7 @@ def concat_website_url_and_uri_list_items(website_url_list, uri_list_items):
     return items
 
 
-def check_uri_items(uri_list_items, timeout=):
+def check_uri_items(uri_list_items, timeout=None):
     """Acessa uma lista de URI e retorna o resultado da verificação"""
 
     if not uri_list_items:
@@ -1027,7 +1027,7 @@ def check_uri_items(uri_list_items, timeout=):
 
     success = []
     failures = []
-    responses = async_requests.parallel_requests(uri_list_items)
+    responses = async_requests.parallel_requests(uri_list_items, timeout=timeout)
     for resp in responses:
         result = eval_response(resp)
         result.update({"uri": resp.uri})
@@ -1173,7 +1173,7 @@ def group_doc_data_by_webpage_type(document_webpages_data):
     return d
 
 
-def check_document_availability(doc_id, website_url, object_store_url, flags={}):
+def check_document_availability(doc_id, website_url, object_store_url, flags={}, timeout=None):
     """
     Verifica a disponibilidade do documento `doc_id`, verificando a
     disponibilidade de todas as _webpages_ (HTML/PDF/idiomas) e de todos os ativos
@@ -1191,16 +1191,20 @@ def check_document_availability(doc_id, website_url, object_store_url, flags={})
         document_webpages_data)
 
     add_responses(doc_data_grouped_by_webpage_type["web html"], website_url,
-                  flags.get("CHECK_WEB_HTML_PAGES", True))
+                  flags.get("CHECK_WEB_HTML_PAGES", True),
+                  timeout=timeout)
 
     add_responses(doc_data_grouped_by_webpage_type["web pdf"], website_url,
-                  flags.get("CHECK_WEB_PDF_PAGES", True))
+                  flags.get("CHECK_WEB_PDF_PAGES", True),
+                  timeout=timeout)
 
     assets_data, assets_data_grouped_by_id = get_document_assets_data(current_version)
     renditions_data = get_document_renditions_data(current_version)
 
-    add_responses(renditions_data, request=flags.get("CHECK_RENDITIONS", True))
-    add_responses(assets_data, request=flags.get("CHECK_ASSETS", True))
+    add_responses(renditions_data, request=flags.get("CHECK_RENDITIONS", True),
+                  timeout=timeout)
+    add_responses(assets_data, request=flags.get("CHECK_ASSETS", True),
+                  timeout=timeout)
 
     web_html_availability, web_html_numbers = check_html_webpages_availability(
                 doc_data_grouped_by_webpage_type["web html"],
@@ -1334,7 +1338,7 @@ def get_main_website_url(website_url_list, timeout=DO_REQ_TIMEOUT):
             return url
 
 
-def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url, dag_info):
+def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url, dag_info, timeout=None):
     """
     Executa a verificação da disponibilidade profundamente e
     faz o registro do resultado
@@ -1355,7 +1359,7 @@ def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url, da
         Logger.info(
             "Check document availability of %s (%i/%i)", doc_id, i, total)
         report = check_document_availability(
-            doc_id, website_url, object_store_url, dag_info)
+            doc_id, website_url, object_store_url, dag_info, timeout=timeout)
 
         Logger.info("Format table row data")
         row = format_document_availability_result_to_register(
