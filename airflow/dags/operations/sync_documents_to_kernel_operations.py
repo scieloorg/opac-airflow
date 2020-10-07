@@ -70,6 +70,26 @@ def list_documents(sps_package):
         return xmls_filenames
 
 
+def delete_documents_from_packages(bundle_xmls: dict) -> Dict[str, List[str]]:
+    """
+    Deleta documentos informados do Kernel
+
+    dict bundle_xmls: dict com os paths dos pacotes SPS e os respectivos nomes dos
+        arquivos XML.
+    """
+    bundle_xmls_to_preserve = {}
+    delete_executions = []
+    for sps_package, xmls_filenames in bundle_xmls.items():
+        Logger.info("Reading sps_package: %s" % sps_package)
+        xmls_to_preserve, executions = delete_documents(sps_package, xmls_filenames)
+        if xmls_to_preserve:
+            bundle_xmls_to_preserve[sps_package] = xmls_to_preserve
+        if executions:
+            delete_executions += executions
+
+    return bundle_xmls_to_preserve, delete_executions
+
+
 def delete_documents(
     sps_package: str, xmls_filenames: list
 ) -> Tuple[List[str], List[dict]]:
