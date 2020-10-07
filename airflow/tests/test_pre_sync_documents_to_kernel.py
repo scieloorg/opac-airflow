@@ -1,6 +1,7 @@
 import tempfile
 import shutil
 import pathlib
+from copy import deepcopy
 from unittest import TestCase, main
 from unittest.mock import patch, MagicMock, ANY
 
@@ -129,22 +130,26 @@ class TestStartSyncPackages(TestCase):
         self, mk_trigger_dag, mk_variable_get
     ):
         kwargs = {"ti": MagicMock(), "conf": None}
-        mk_sps_packages = [
-            "dir/destination/abc_v50.zip",
-            "dir/destination/rba_2018nahead.zip",
-            "dir/destination/rba_v53n1.zip",
-            "dir/destination/rsp_v10n2-3.zip",
-        ]
+        mk_sps_packages = {
+            "abc_v50": ["dir/destination/abc_v50.zip"],
+            "rba_2018nahead": ["dir/destination/rba_2018nahead.zip"],
+            "rba_v53n1": ["dir/destination/rba_v53n1.zip"],
+            "rsp_v10n2-3": ["dir/destination/rsp_v10n2-3.zip"],
+        }
         kwargs["ti"].xcom_pull.return_value = mk_sps_packages
         start_sync_packages(**kwargs)
-        for mk_sps_package in mk_sps_packages:
-            with self.subTest(mk_sps_package=mk_sps_package):
+        for bundle_label, sps_packages in mk_sps_packages.items():
+            with self.subTest(bundle_label=bundle_label, sps_packages=sps_packages):
                 mk_trigger_dag.assert_any_call(
                     dag_id="sync_documents_to_kernel",
                     run_id=ANY,
                     execution_date=ANY,
                     replace_microseconds=False,
-                    conf={"sps_package": mk_sps_package, "pre_syn_dag_run_id": ANY},
+                    conf={
+                        "bundle_label": bundle_label,
+                        "sps_package": sps_packages,
+                        "pre_syn_dag_run_id": ANY,
+                    },
                 )
 
 

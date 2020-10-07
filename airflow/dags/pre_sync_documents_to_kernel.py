@@ -102,16 +102,17 @@ def start_sync_packages(conf, **kwargs):
     um pacote SPS da lista armazenada pela tarefa anterior.
     """
     _sps_packages = kwargs["ti"].xcom_pull(key="sps_packages") or []
-    for sps_package in _sps_packages:
-        Logger.info("Triggering an external dag with package %s" % sps_package)
+    for bundle_label, bundle_packages in _sps_packages.items():
+        Logger.info("Triggering an external dag with package %s" % bundle_label)
         now = timezone.utcnow()
         trigger_dag(
             dag_id="sync_documents_to_kernel",
-            run_id="manual__%s_%s" % (os.path.basename(sps_package), now.isoformat()),
+            run_id="manual__%s_%s" % (os.path.basename(bundle_label), now.isoformat()),
             execution_date=now,
             replace_microseconds=False,
             conf={
-                "sps_package": sps_package,
+                "bundle_label": bundle_label,
+                "sps_package": bundle_packages,
                 "pre_syn_dag_run_id": kwargs.get("run_id"),
             },
         )
