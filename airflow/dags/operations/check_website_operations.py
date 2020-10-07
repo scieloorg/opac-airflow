@@ -156,16 +156,23 @@ def get_kernel_document_id_from_classic_document_uri(classic_website_document_ur
     ParseResult(scheme='https', netloc='new.scielo.br', path='/j/qn/a/RsJ6CyVbQP3q9cMWqBGyHjp/', params='', query='', fragment='')
     """
     resp = do_request(classic_website_document_uri, requests.head)
-    if is_valid_response(resp):
+    status_code = redirected_location = None
+    try:
+        status_code = resp.status_code
         redirected_location = resp.headers.get('Location')
-        if redirected_location:
-            parsed = urlparse(redirected_location)
-            if parsed.path:
-                #  path='/j/qn/a/RsJ6CyVbQP3q9cMWqBGyHjp/'
-                splitted = [item for item in parsed.path.split("/") if item]
-                if splitted and len(splitted) == 4 and len(splitted[-1]) == 23:
-                    # RsJ6CyVbQP3q9cMWqBGyHjp
-                    return splitted[-1]
+        if not redirected_location:
+            raise ValueError("Not found redirected location")
+    except (AttributeError, ValueError) as e:
+        Logger.error(
+            "%s (%s): %s", classic_website_document_uri, status_code, e)
+    else:
+        Logger.info(
+            "%s: %s", classic_website_document_uri, redirected_location)
+        parsed = urlparse(redirected_location)
+        splitted = [item for item in parsed.path.split("/") if item]
+        #  path='/j/qn/a/RsJ6CyVbQP3q9cMWqBGyHjp/'
+        if len(splitted[-1]) == 23:
+            return splitted[-1]
 
 
 def check_doc_webpage_uri_items_expected_in_webpage(existing_uri_items_in_html,

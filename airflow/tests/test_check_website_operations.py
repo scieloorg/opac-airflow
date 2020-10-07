@@ -2795,7 +2795,7 @@ class TestGetPIDv3List(TestCase):
     @patch("operations.check_website_operations.requests.head")
     def test_get_pid_v3_list_returns_pid_v3_list_for_two_of_three_items(self, mock_head):
         mock_head.side_effect = [
-            MockResponse(404, loc_doc_id="S1Y3X-5678198700010Y3X5"),
+            MockResponse(404),
             MockResponse(301, loc_doc_id="S123X-56k8198k0001023X5"),
             MockResponse(301, loc_doc_id="S1PLX-5678198700010PLX5"),
         ]
