@@ -20,6 +20,7 @@ from operations.docs_utils import (
 )
 
 Logger = logging.getLogger(__name__)
+DO_REQ_TIMEOUT = 10
 
 
 def time_diff(t1, t2):
@@ -79,7 +80,7 @@ class InvalidResponse:
         self.uri = uri
 
 
-def do_request(uri, function=None, secs_sequence=None):
+def do_request(uri, function=None, secs_sequence=None, timeout=DO_REQ_TIMEOUT):
     """
     Executa requisições (`requests.head` ou `requests.get`) com tentativas
     em tempos espaçados enquanto status_code retornado é um destes valores
@@ -103,7 +104,7 @@ def do_request(uri, function=None, secs_sequence=None):
         total_secs += t
         time.sleep(t)
 
-        response = requests_get(uri, function)
+        response = requests_get(uri, function, timeout=timeout)
         try:
             if response.status_code in (500, 502, 503, 504):
                 continue
@@ -148,14 +149,14 @@ def eval_response(response):
     }
 
 
-def get_kernel_document_id_from_classic_document_uri(classic_website_document_uri):
+def get_kernel_document_id_from_classic_document_uri(classic_website_document_uri, timeout=DO_REQ_TIMEOUT):
     """
     >>> resp = requests.head("https://new.scielo.br/scielo.php?script=sci_arttext&pid=S0100-40422020000700987")
     >>> parsed = urlparse(resp.headers.get('Location'))
     >>> parsed
     ParseResult(scheme='https', netloc='new.scielo.br', path='/j/qn/a/RsJ6CyVbQP3q9cMWqBGyHjp/', params='', query='', fragment='')
     """
-    resp = do_request(classic_website_document_uri, requests.head)
+    resp = do_request(classic_website_document_uri, requests.head, timeout=DO_REQ_TIMEOUT)
     status_code = redirected_location = None
     try:
         status_code = resp.status_code
@@ -1018,7 +1019,7 @@ def concat_website_url_and_uri_list_items(website_url_list, uri_list_items):
     return items
 
 
-def check_uri_items(uri_list_items):
+def check_uri_items(uri_list_items, timeout=):
     """Acessa uma lista de URI e retorna o resultado da verificação"""
 
     if not uri_list_items:
@@ -1037,10 +1038,10 @@ def check_uri_items(uri_list_items):
     return success, failures
 
 
-def requests_get(uri, function=None):
+def requests_get(uri, function=None, timeout=DO_REQ_TIMEOUT):
     try:
         function = function or requests.head
-        response = function(uri, timeout=10)
+        response = function(uri, timeout=timeout or DO_REQ_TIMEOUT)
     except (requests.exceptions.ConnectionError,
             MaxRetryError,
             NewConnectionError) as e:
@@ -1293,7 +1294,7 @@ def get_status(summary):
     return "partial"
 
 
-def get_pid_v3_list(uri_items, website_url):
+def get_pid_v3_list(uri_items, website_url, timeout=DO_REQ_TIMEOUT):
     """
     Retorna o PID v3 de cada um dos itens de `uri_items`,
     acessando o link do padrão:
@@ -1311,7 +1312,8 @@ def get_pid_v3_list(uri_items, website_url):
     pid_v3_list = []
     for uri in uri_items:
         doc_uri = "{}{}".format(website_url, uri)
-        doc_id = get_kernel_document_id_from_classic_document_uri(doc_uri)
+        doc_id = get_kernel_document_id_from_classic_document_uri(
+            doc_uri, timeout=timeout)
         if doc_id:
             pid_v3_list.append(doc_id)
         else:
@@ -1319,13 +1321,13 @@ def get_pid_v3_list(uri_items, website_url):
     return pid_v3_list
 
 
-def get_main_website_url(website_url_list):
+def get_main_website_url(website_url_list, timeout=DO_REQ_TIMEOUT):
     """
     Dentre a lista de URL de website SciELO para testar, verifica qual é a
     do site novo
     """
     for url in website_url_list:
-        resp = do_request("{}/about".format(url))
+        resp = do_request("{}/about".format(url), timeout=timeout)
         Logger.info(resp)
         Logger.info(eval_response(resp))
         if is_valid_response(resp):

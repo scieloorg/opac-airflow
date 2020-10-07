@@ -1345,12 +1345,14 @@ class TestGetPIDv3List(TestCase):
             str(exc_info.exception)
         )
 
+    @patch("check_website.Variable")
     @patch("check_website.get_website_url_list")
     @patch("check_website.check_website_operations.get_main_website_url")
     @patch("check_website.check_website_operations.get_pid_v3_list")
     def test_get_pid_v3_list_assert_called_xcom_pull_with_sci_arttext_value(
             self, mock_get, mock_get_main_website_url,
-            mock_get_website_url_list):
+            mock_get_website_url_list, mock_var_timeout):
+        mock_var_timeout.return_value = None
         mock_get.return_value = (
             ["DOCID1", "DOCID2"]
         )
@@ -1371,12 +1373,14 @@ class TestGetPIDv3List(TestCase):
             key="sci_arttext"
         )
 
+    @patch("check_website.Variable")
     @patch("check_website.get_website_url_list")
     @patch("check_website.check_website_operations.get_main_website_url")
     @patch("check_website.check_website_operations.get_pid_v3_list")
     def test_get_pid_v3_list_assert_called_xcom_push_with_pid_v3_list(
             self, mock_get, mock_get_main_website_url,
-            mock_get_website_url_list):
+            mock_get_website_url_list, mock_var_timeout):
+        mock_var_timeout.return_value = None
         mock_get.return_value = (
             ["DOCID1", "DOCID2"]
         )
@@ -1400,12 +1404,14 @@ class TestGetPIDv3List(TestCase):
             self.kwargs["ti"].xcom_push.call_args_list
         )
 
+    @patch("check_website.Variable")
     @patch("check_website.get_website_url_list")
     @patch("check_website.check_website_operations.get_main_website_url")
     @patch("check_website.check_website_operations.get_pid_v3_list")
     def test_get_pid_v3_list_returns_false(
             self, mock_get, mock_get_main_website_url,
-            mock_get_website_url_list):
+            mock_get_website_url_list, mock_var_timeout):
+        mock_var_timeout.return_value = None
         mock_get.return_value = None
         mock_get_main_website_url.return_value = (
             "https://www.scielo.br"

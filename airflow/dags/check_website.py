@@ -579,8 +579,9 @@ def get_pid_v3_list(**context):
     if uri_items is None or len(uri_items) == 0:
         raise ValueError("Missing URI items to get PID v3")
 
+    timeout = Variable.get("TIMEOUT_FOR_UNIQUE_REQ")
     pid_v3_list = check_website_operations.get_pid_v3_list(
-        uri_items, website_url)
+        uri_items, website_url, timeout)
 
     if pid_v3_list:
         context["ti"].xcom_push("pid_v3_list", pid_v3_list)

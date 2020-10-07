@@ -48,7 +48,7 @@ async def fetch(uri, session, body=False):
 
 async def fetch_many(uri_items, body=False, timeout=TIMEOUT_FOR_PAR_REQS):
     # https://docs.aiohttp.org/en/stable/client_quickstart.html#timeouts
-    client_timeout = aiohttp.ClientTimeout(total=timeout)
+    client_timeout = aiohttp.ClientTimeout(total=timeout or TIMEOUT_FOR_PAR_REQS)
     async with aiohttp.ClientSession(timeout=client_timeout) as session:
         responses = await asyncio.gather(*[
             fetch(url, session, body)
