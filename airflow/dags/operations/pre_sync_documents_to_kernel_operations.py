@@ -1,6 +1,7 @@
 import os
 import logging
 import shutil
+import json
 from pathlib import Path
 
 Logger = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
 
     xc_dir_path = Path(xc_dir_name)
     proc_dir_path = Path(proc_dir_name)
-    sps_packages_list = []
+    sps_packages_list = {}
 
     package_paths_list = proc_dir_path / "sps_packages.lst"
     if package_paths_list.is_file():
@@ -35,15 +36,17 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
             'Pre-sync already done. Returning packages from "%s" file',
             package_paths_list,
         )
-        return package_paths_list.read_text().split("\n")
+        with package_paths_list.open() as sps_list_file:
+            return json.load(sps_list_file)
 
     with open(scilista_file_path) as scilista:
         for scilista_item in scilista.readlines():
             acron_issue = scilista_item.strip().split()
             if len(acron_issue) != 2:
                 continue
+            bundle_label = "_".join(acron_issue)
             filename_pattern = "{}_{}.zip".format(
-                PREFIX_PATTERN, "_".join(acron_issue))
+                PREFIX_PATTERN, bundle_label)
             Logger.info("Reading ZIP files pattern: %s", filename_pattern)
 
             # verifica na origem
@@ -62,7 +65,7 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
                 acron_issue_list.append(str(proc_dir_path / item.name))
 
             if acron_issue_list:
-                sps_packages_list.extend(acron_issue_list)
+                sps_packages_list[bundle_label] = acron_issue_list
             else:
                 Logger.exception(
                     "Missing files which pattern is '%s' in %s and in %s",
@@ -70,7 +73,8 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
 
     if sps_packages_list:
         Logger.info('Saving SPS packages list in "%s" file', package_paths_list)
-        package_paths_list.write_text("\n".join(sps_packages_list))
+        with package_paths_list.open('w') as sps_list_file:
+            json.dump(sps_packages_list, sps_list_file)
 
     Logger.debug("get_sps_packages OUT")
     return sps_packages_list
