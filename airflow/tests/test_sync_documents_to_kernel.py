@@ -1,6 +1,6 @@
 import os
 from unittest import TestCase, main
-from unittest.mock import patch, MagicMock, ANY
+from unittest.mock import patch, MagicMock, ANY, call
 from tempfile import mkdtemp
 from copy import deepcopy
 
@@ -205,81 +205,115 @@ class TestDeleteDocuments(TestCase):
 
 
 class TestRegisterUpdateDocuments(TestCase):
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
-    def test_register_update_documents_gets_ti_xcom_info(self, mk_register_update_documents):
+    def setUp(self):
+        self.xmls_filenames = {
+            "optimized/package-1.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+            ],
+            "path_to_sps_package/package-2.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+                "1806-907X-rba-53-01-9-18.xml",
+            ],
+            "optimized/package-3.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+                "1806-907X-rba-53-01-9-18.xml",
+                "1806-907X-rba-53-01-19-25.xml",
+            ],
+        }
+
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.put_documents_in_kernel")
+    def test_gets_ti_xcom_info(self, mk_put_documents_in_kernel):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
-        mk_register_update_documents.return_value = [], []
+        mk_put_documents_in_kernel.return_value = {}, []
         register_update_documents(**kwargs)
         kwargs["ti"].xcom_pull.assert_any_call(
-            key="xmls_to_preserve", task_ids="delete_docs_task_id"
-        )
-        kwargs["ti"].xcom_pull.assert_any_call(
-            key="optimized_package", task_ids="optimize_package_task_id"
+            key="optimized_packages", task_ids="optimize_package_task_id"
         )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
-    def test_register_update_documents_empty_ti_xcom_info(self, mk_register_update_documents):
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.put_documents_in_kernel")
+    def test_empty_ti_xcom_info(self, mk_put_documents_in_kernel):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
         kwargs["ti"].xcom_pull.return_value = None
         register_update_documents(**kwargs)
-        mk_register_update_documents.assert_not_called()
+        mk_put_documents_in_kernel.assert_not_called()
         kwargs["ti"].xcom_push.assert_not_called()
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
-    def test_register_update_documents_calls_register_update_documents_operation(
-        self, mk_register_update_documents
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.put_documents_in_kernel")
+    def test_calls_put_documents_in_kernel_operation(
+        self, mk_put_documents_in_kernel
     ):
-        xmls_filenames = [
-            "1806-907X-rba-53-01-1-8.xml",
-            "1806-907X-rba-53-01-9-18.xml",
-            "1806-907X-rba-53-01-19-25.xml",
+        mk_dag_run = MagicMock()
+        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+        kwargs["ti"].xcom_pull.return_value = self.xmls_filenames
+        mk_put_documents_in_kernel.return_value = {}, []
+
+        register_update_documents(**kwargs)
+
+        mk_put_documents_in_kernel.assert_called_once_with(self.xmls_filenames)
+
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.put_documents_in_kernel")
+    def test_does_not_push_if_no_documents_into_kernel(self, mk_put_documents_in_kernel):
+        mk_dag_run = MagicMock()
+        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+        kwargs["ti"].xcom_pull.return_value = self.xmls_filenames
+        mk_put_documents_in_kernel.return_value = {}, []
+        register_update_documents(**kwargs)
+        kwargs["ti"].xcom_push.assert_not_called()
+
+    @patch("sync_documents_to_kernel.add_execution_in_database")
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.put_documents_in_kernel")
+    def test_adds_execution_in_database(
+        self, mk_put_documents_in_kernel, mk_add_execution_in_database
+    ):
+        documents = {
+            package: [
+                {f"scielo_id": "pid-v3-{i}", "xml_filename": xml}
+                for i, xml in enumerate(xmls, 1)
+            ]
+            for package, xmls in self.xmls_filenames.items()
+            if package != "optimized/package-1.zip"
+        }
+        executions = [
+            {
+                "package_name": "optimized/package-1.zip",
+                "file_name": "document.xml",
+                "failed": True,
+                "error": "Error"
+            }
         ]
         mk_dag_run = MagicMock()
-        mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
-        kwargs["ti"].xcom_pull.side_effect = [
-            xmls_filenames,
-            "path_to_optimized_package/package.zip"
-        ]
-        mk_register_update_documents.return_value = [], []
+        kwargs["ti"].xcom_pull.return_value = self.xmls_filenames
+        mk_put_documents_in_kernel.return_value = documents, executions
         register_update_documents(**kwargs)
-        mk_register_update_documents.assert_called_once_with(
-            "path_to_optimized_package/package.zip", xmls_filenames
+        mk_add_execution_in_database.assert_has_calls(
+            [call(table="xml_documents", data=execution) for execution in executions]
         )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
-    def test_register_update_documents_does_not_push_if_no_documents_into_kernel(self, mk_register_update_documents):
-        xmls_filenames = [
-            "1806-907X-rba-53-01-1-8.xml",
-            "1806-907X-rba-53-01-9-18.xml",
-            "1806-907X-rba-53-01-19-25.xml",
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.put_documents_in_kernel")
+    def test_pushes_documents(self, mk_put_documents_in_kernel):
+        documents = {
+            package: [
+                {f"scielo_id": "pid-v3-{i}", "xml_filename": xml}
+                for i, xml in enumerate(xmls, 1)
+            ]
+            for package, xmls in self.xmls_filenames.items()
+            if package != "optimized/package-1.zip"
+        }
+        executions = [
+            {
+                "package_name": "optimized/package-1.zip",
+                "file_name": "document.xml",
+                "failed": True,
+                "error": "Error"
+            }
         ]
         mk_dag_run = MagicMock()
-        mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
-        kwargs["ti"].xcom_pull.return_value = xmls_filenames
-        mk_register_update_documents.return_value = [], []
-        register_update_documents(**kwargs)
-        kwargs["ti"].xcom_push.assert_not_called()
-
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
-    def test_register_update_documents_pushes_documents(self, mk_register_update_documents):
-        xmls_filenames = [
-            "1806-907X-rba-53-01-1-8.xml",
-            "1806-907X-rba-53-01-9-18.xml",
-            "1806-907X-rba-53-01-19-25.xml",
-        ]
-        documents = [
-            "1806-907X-rba-53-01-9-18.xml",
-            "1806-907X-rba-53-01-19-25.xml",
-        ]
-        mk_dag_run = MagicMock()
-        mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
-        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
-        kwargs["ti"].xcom_pull.return_value = xmls_filenames
-        mk_register_update_documents.return_value = documents, []
+        kwargs["ti"].xcom_pull.return_value = self.xmls_filenames
+        mk_put_documents_in_kernel.return_value = documents, []
         register_update_documents(**kwargs)
         kwargs["ti"].xcom_push.assert_called_once_with(
             key="documents", value=documents
