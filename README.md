@@ -89,7 +89,7 @@ $ airflow webserver
 
 
 ## Variáveis opcionais:
-* `TIMEOUT_FOR_UNIQUE_REQ` (opcional): informa um valor inteiro em segundos para o _timeout_ de uma requisição. Valor padrão 10 segundos
+* `TIMEOUT_FOR_SINGLE_REQ` (opcional): informa um valor inteiro em segundos para o _timeout_ de uma requisição. Valor padrão 10 segundos
 * `TIMEOUT_FOR_MULT_REQ` (opcional): informa um valor inteiro em segundos para o _timeout_ total de requisições simultâneas. Valor padrão: 300 segundos
 * `PID_LIST_CSV_FILE_NAMES` (opcional): Lista de nomes de arquivos CSV que deverão estar presentes em `XC_SPS_PACKAGES_DIR` para que sejam copiados para `PROC_SPS_PACKAGES_DIR`/`DAG_RUN_ID`, e usados na DAG de verificação da disponibilidade dos documentos, ativos digitais e manifestações
 * `CHECK_SCI_SERIAL_PAGES` (opcional, valor padrão é `true`): com valor `false` inibe a execução da verificação das páginas `sci_serial`
