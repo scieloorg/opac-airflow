@@ -3,3 +3,4 @@ XC_SPS_PACKAGES=origem
 XC_KERNEL_GATE=destino
 OPAC_AIRFLOW=http://localhost:8080
 CISIS_DIR=cisis
+EMAIL_TO=DEVS@scielo.org

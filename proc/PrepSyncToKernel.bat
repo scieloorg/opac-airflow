@@ -147,6 +147,10 @@ then
         fi
     done < ${AIRFLOW_SCILISTA_PATH}
 
+    TOTAL_ERRORS=`grep ERROR ${ERRORFILE} | wc -l | xargs`
+    TOTAL_ITEMS=`cat ${AIRFLOW_SCILISTA_PATH} | wc -l | xargs`
+    echo "PrepSyncToKernel ${ID_PROC} Not found ${TOTAL_ERRORS}/${TOTAL_ITEMS}" > /tmp/subject-${ID_PROC}.txt
+
     echo "--------------------------------------------------------"
     echo "Number of items: "
     echo "`cat ${SCILISTA_PATH_TMP} | wc -l` in ${SCILISTA_PATH_TMP} (original)"
@@ -158,6 +162,8 @@ then
     grep ERROR $ERRORFILE
     echo "--------------------------------------------------------"
  
+
+
     echo
     echo "PrepSyncToKernel finalizado"
     echo
