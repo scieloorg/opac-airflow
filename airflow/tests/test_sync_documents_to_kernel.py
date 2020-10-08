@@ -485,27 +485,37 @@ class TestOptimizeDocuments(TestCase):
         new_sps_zip_dir = mkdtemp()
         mk_variable.get.return_value = new_sps_zip_dir
         optimize_package(**kwargs)
-        kwargs["ti"].xcom_push.assert_not_called()
+        kwargs["ti"].xcom_push.assert_called_once_with(
+            key="optimized_packages", value=self.xmls_to_preserve
+        )
 
     @patch("sync_documents_to_kernel.Variable")
     @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.optimize_sps_pkg_zip_file")
     def test_optimize_package_pushes_optimized_package(self, mk_optimize_package, mk_variable):
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
         kwargs["ti"].xcom_pull.return_value = self.xmls_to_preserve
-        mk_optimize_package.side_effect = [
-            os.path.join(
-                "path_to_otimized_package", os.path.basename(optimized_package)
-            )
-            for optimized_package in self.xmls_to_preserve.keys()
+        optimize_paths = [
+            "optimized/package-1.zip",
+            None,
+            "optimized/package-3.zip",
         ]
+        mk_optimize_package.side_effect = optimize_paths
         new_sps_zip_dir = mkdtemp()
         mk_variable.get.return_value = new_sps_zip_dir
+
         optimize_package(**kwargs)
+
         optimized_packages = {
-            os.path.join(
-                "path_to_otimized_package", os.path.basename(package_to_optimize)
-            ): package_xmls
-            for package_to_optimize, package_xmls in self.xmls_to_preserve.items()
+            "optimized/package-1.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+            ],
+            "path_to_sps_package/package-2.zip": [
+                "1806-907X-rba-53-01-9-18.xml",
+            ],
+            "optimized/package-3.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+                "1806-907X-rba-53-01-19-25.xml",
+            ],
         }
         kwargs["ti"].xcom_push.assert_called_once_with(
             key="optimized_packages", value=optimized_packages

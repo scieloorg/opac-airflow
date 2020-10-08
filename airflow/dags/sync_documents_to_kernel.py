@@ -92,6 +92,8 @@ def optimize_package(dag_run, **kwargs):
         )
         if _optimized_package:
             _optimized_packages[_optimized_package] = _package_xmls
+        else:
+            _optimized_packages[_sps_package] = _package_xmls
     if _optimized_packages:
         kwargs["ti"].xcom_push(
             key="optimized_packages", value=_optimized_packages)
