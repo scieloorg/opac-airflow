@@ -16,6 +16,7 @@ from airflow import DAG
 from operations.sync_documents_to_kernel_operations import (
     get_documents_from_packages,
     list_documents,
+    delete_documents_from_packages,
     delete_documents,
     optimize_sps_pkg_zip_file,
     register_update_documents,
@@ -159,6 +160,109 @@ class TestListDocuments(TestCase):
         )
         result = list_documents(self.sps_package)
         self.assertEqual(result, [])
+
+
+class TestDeleteDocumentsFromPackages(TestCase):
+    def setUp(self):
+        self.proc_dir_path = tempfile.mkdtemp()
+        self.kwargs = {
+            "bundle_xmls": {
+                f"{self.proc_dir_path}/2020-01-01-00-01-09-090901_abc_v1n1.zip": [
+                    "0123-4567-abc-50-1-8.xml",
+                ],
+                f"{self.proc_dir_path}/2020-01-01-00-01-09-090902_abc_v1n1.zip": [
+                    "0123-4567-abc-50-1-8.xml",
+                    "0123-4567-abc-50-1-18.xml",
+                ],
+                f"{self.proc_dir_path}/2020-01-01-00-01-09-090903_abc_v1n1.zip": [
+                    "0123-4567-abc-50-1-8.xml",
+                    "0123-4567-abc-50-1-18.xml",
+                    "0123-4567-abc-50-1-20.xml",
+                ],
+            },
+        }
+        self.are_docs_to_delete = [
+            (True, "FX6F3cbyYmmwvtGmMB7WCgr",),
+            (True, "FX6F3cbyYmmwvtGmMB7WCgr",),
+            (True, "GZ5K2cbyYmmwvtGmMB71243",),
+            (True, "FX6F3cbyYmmwvtGmMB7WCgr",),
+            (True, "GZ5K2cbyYmmwvtGmMB71243",),
+            (True, "KU890cbyYmmwvtGmMB7JUk4",),
+        ]
+        self.expected_pids_calls = [
+            ("FX6F3cbyYmmwvtGmMB7WCgr",),
+            (
+                "FX6F3cbyYmmwvtGmMB7WCgr", "GZ5K2cbyYmmwvtGmMB71243",
+            ),
+            (
+                "FX6F3cbyYmmwvtGmMB7WCgr",
+                "GZ5K2cbyYmmwvtGmMB71243",
+                "KU890cbyYmmwvtGmMB7JUk4",
+            ),
+        ]
+
+    def tearDown(self):
+        shutil.rmtree(self.proc_dir_path)
+
+    @patch("operations.sync_documents_to_kernel_operations.delete_documents")
+    def test_calls_delete_documents_for_each_package(self, mk_delete_documents):
+        mk_delete_documents.return_value = (None, None,)
+        delete_documents_from_packages(**self.kwargs)
+        for sps_package, xmls_filenames in self.kwargs["bundle_xmls"].items():
+            with self.subTest(sps_package=sps_package, xmls_filenames=xmls_filenames):
+                mk_delete_documents.assert_any_call(sps_package, xmls_filenames)
+
+    @patch("operations.sync_documents_to_kernel_operations.delete_documents")
+    def test_returns_no_xmls_to_preserve_nor_executions(self, mk_delete_documents):
+        mk_delete_documents.side_effect = [
+            ([], [],),
+            ([], [],),
+            ([], [],),
+        ]
+
+        result, executions = delete_documents_from_packages(**self.kwargs)
+        self.assertEqual(result, {})
+        self.assertEqual(executions, [])
+
+    @patch("operations.sync_documents_to_kernel_operations.delete_documents")
+    def test_returns_xmls_to_preserve(self, mk_delete_documents):
+        expected_to_preserve = {
+            f"{self.proc_dir_path}/2020-01-01-00-01-09-090901_abc_v1n1.zip": [
+                "0123-4567-abc-50-1-8.xml",
+            ],
+            f"{self.proc_dir_path}/2020-01-01-00-01-09-090902_abc_v1n1.zip": [
+                "0123-4567-abc-50-1-18.xml",
+            ],
+            f"{self.proc_dir_path}/2020-01-01-00-01-09-090903_abc_v1n1.zip": [
+                "0123-4567-abc-50-1-8.xml",
+                "0123-4567-abc-50-1-20.xml",
+            ]
+        }
+        expected_executions = [
+            {
+                "package_name": f"{self.proc_dir_path}/2020-01-01-00-01-09-090902_abc_v1n1.zip",
+                "file_name": "0123-4567-abc-50-1-8.xml",
+                "deletion": True,
+                "pid": "FX6F3cbyYmmwvtGmMB7WCgr",
+            },
+            {
+                "package_name": f"{self.proc_dir_path}/2020-01-01-00-01-09-090903_abc_v1n1.zip",
+                "file_name": "0123-4567-abc-50-1-18.xml",
+                "deletion": True,
+                "failed": True, "error": "SciELO PID V3 is None",
+            },
+        ]
+        xmls_lists = [xmls for xmls in expected_to_preserve.values()]
+        executions_returns = [[]] + [[execution] for execution in expected_executions]
+        deleted_documents_returns = [
+            (xmls_to_preserve, executions)
+            for xmls_to_preserve, executions in zip(xmls_lists, executions_returns)
+        ]
+        mk_delete_documents.side_effect = deleted_documents_returns
+
+        result, executions = delete_documents_from_packages(**self.kwargs)
+        self.assertEqual(result, expected_to_preserve)
+        self.assertEqual(executions, expected_executions)
 
 
 class TestDeleteDocuments(TestCase):
