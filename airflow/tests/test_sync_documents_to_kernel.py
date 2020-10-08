@@ -1,6 +1,7 @@
 from unittest import TestCase, main
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, ANY
 from tempfile import mkdtemp
+from copy import deepcopy
 
 from airflow import DAG
 
@@ -58,74 +59,148 @@ class TestListDocuments(TestCase):
 
 
 class TestDeleteDocuments(TestCase):
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
-    def test_delete_documents_gets_sps_package_from_dag_run_conf(
-        self, mk_delete_documents
-    ):
+    @patch(
+        "sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents_from_packages"
+    )
+    def test_gets_ti_xcom_info(self, mk_delete_documents):
         mk_dag_run = MagicMock()
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
-        mk_delete_documents.return_value = [], []
-        delete_documents(**kwargs)
-        mk_dag_run.conf.get.assert_called_once_with("sps_package")
+        mk_delete_documents.return_value = {}, []
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
-    def test_delete_documents_gets_ti_xcom_info(self, mk_delete_documents):
-        mk_dag_run = MagicMock()
-        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
-        mk_delete_documents.return_value = [], []
         delete_documents(**kwargs)
         kwargs["ti"].xcom_pull.assert_called_once_with(
             key="xmls_filenames", task_ids="list_docs_task_id"
         )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
-    def test_delete_documents_empty_ti_xcom_info(self, mk_delete_documents):
-        mk_dag_run = MagicMock()
-        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+    @patch(
+        "sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents_from_packages"
+    )
+    def test_empty_ti_xcom_info(self, mk_delete_documents):
+        kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
         kwargs["ti"].xcom_pull.return_value = None
-        delete_documents(**kwargs)
+
+        task_result = delete_documents(**kwargs)
         mk_delete_documents.assert_not_called()
         kwargs["ti"].xcom_push.assert_not_called()
+        self.assertFalse(task_result)
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
-    def test_delete_documents_calls_delete_documents_operation(
-        self, mk_delete_documents
-    ):
-        xmls_filenames = [
-            "1806-907X-rba-53-01-1-8.xml",
-            "1806-907X-rba-53-01-9-18.xml",
-            "1806-907X-rba-53-01-19-25.xml",
-        ]
-        mk_dag_run = MagicMock()
-        mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
-        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+    @patch(
+        "sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents_from_packages"
+    )
+    def test_calls_delete_documents_operation(self, mk_delete_documents):
+        xmls_filenames = {
+            "path_to_sps_package/package-1.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+            ],
+            "path_to_sps_package/package-2.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+                "1806-907X-rba-53-01-9-18.xml",
+            ],
+            "path_to_sps_package/package-3.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+                "1806-907X-rba-53-01-9-18.xml",
+                "1806-907X-rba-53-01-19-25.xml",
+            ],
+        }
+        kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
         kwargs["ti"].xcom_pull.return_value = xmls_filenames
         mk_delete_documents.return_value = xmls_filenames, []
-        delete_documents(**kwargs)
-        mk_delete_documents.assert_called_once_with(
-            "path_to_sps_package/package.zip", xmls_filenames
-        )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents")
-    def test_delete_documents_pushes_xmls_to_preserve(self, mk_delete_documents):
-        xmls_filenames = [
-            "1806-907X-rba-53-01-1-8.xml",
-            "1806-907X-rba-53-01-9-18.xml",
-            "1806-907X-rba-53-01-19-25.xml",
-        ]
-        xmls_to_preserve = [
-            "1806-907X-rba-53-01-9-18.xml",
-            "1806-907X-rba-53-01-19-25.xml",
-        ]
+        delete_documents(**kwargs)
+        mk_delete_documents.assert_called_once_with(xmls_filenames)
+
+    @patch("sync_documents_to_kernel.add_execution_in_database")
+    @patch(
+        "sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents_from_packages"
+    )
+    def test_adds_execution_in_database(
+        self, mk_delete_documents, mk_add_execution_in_database
+    ):
+        xmls_filenames = {
+            "path_to_sps_package/package-1.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+            ],
+            "path_to_sps_package/package-2.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+                "1806-907X-rba-53-01-9-18.xml",
+            ],
+            "path_to_sps_package/package-3.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+                "1806-907X-rba-53-01-9-18.xml",
+                "1806-907X-rba-53-01-19-25.xml",
+            ],
+        }
+        xmls_to_preserve = {
+            "path_to_sps_package/package-1.zip": [],
+            "path_to_sps_package/package-2.zip": [],
+            "path_to_sps_package/package-3.zip": [],
+        }
+        executions = []
+        for package, deleted_xmls in xmls_filenames.items():
+            for deleted_xml in deleted_xmls:
+                executions.append(
+                    {
+                        "package_name": package,
+                        "file_name": deleted_xml,
+                        "deletion": True,
+                        "pid": ANY
+                    }
+                )
+
         mk_dag_run = MagicMock()
-        mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
-        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+        mk_dag_run.conf.get.return_value = "pre_sync_dag_run_id"
+        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run, "run_id": "dag_run_id"}
+        kwargs["ti"].xcom_pull.return_value = xmls_filenames
+        mk_delete_documents.return_value = xmls_to_preserve, executions
+        expected_executions = deepcopy(executions)
+
+        task_result = delete_documents(**kwargs)
+        for execution in expected_executions:
+            execution["dag_run"] = "dag_run_id"
+            execution["pre_sync_dag_run"] = "pre_sync_dag_run_id"
+            mk_add_execution_in_database.assert_any_call(
+                table="xml_documents", data=execution
+            )
+
+    @patch(
+        "sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents_from_packages"
+    )
+    def test_pushes_xmls_to_preserve(self, mk_delete_documents):
+        xmls_filenames = {
+            "path_to_sps_package/package-1.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+            ],
+            "path_to_sps_package/package-2.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+                "1806-907X-rba-53-01-9-18.xml",
+            ],
+            "path_to_sps_package/package-3.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+                "1806-907X-rba-53-01-9-18.xml",
+                "1806-907X-rba-53-01-19-25.xml",
+            ],
+        }
+        xmls_to_preserve = {
+            "path_to_sps_package/package-1.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+            ],
+            "path_to_sps_package/package-2.zip": [
+                "1806-907X-rba-53-01-9-18.xml",
+            ],
+            "path_to_sps_package/package-3.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+                "1806-907X-rba-53-01-19-25.xml",
+            ],
+        }
+        kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
         kwargs["ti"].xcom_pull.return_value = xmls_filenames
         mk_delete_documents.return_value = xmls_to_preserve, []
-        delete_documents(**kwargs)
+
+        task_result = delete_documents(**kwargs)
         kwargs["ti"].xcom_push.assert_called_once_with(
             key="xmls_to_preserve", value=xmls_to_preserve
         )
+        self.assertTrue(task_result)
 
 
 class TestRegisterUpdateDocuments(TestCase):

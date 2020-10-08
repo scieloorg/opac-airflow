@@ -54,21 +54,20 @@ def list_documents(dag_run, **kwargs):
 
 
 def delete_documents(dag_run, **kwargs):
-    _sps_package = dag_run.conf.get("sps_package")
     _xmls_filenames = kwargs["ti"].xcom_pull(
         key="xmls_filenames", task_ids="list_docs_task_id"
     )
     if not _xmls_filenames:
         return False
 
-    _xmls_to_preserve, executions = sync_documents_to_kernel_operations.delete_documents(
-        _sps_package, _xmls_filenames
-    )
+    _xmls_to_preserve, executions = \
+        sync_documents_to_kernel_operations.delete_documents_from_packages(
+            _xmls_filenames
+        )
 
     for execution in executions:
         execution["dag_run"] = kwargs.get("run_id")
         execution["pre_sync_dag_run"] = dag_run.conf.get("pre_syn_dag_run_id")
-        execution["package_name"] = os.path.basename(_sps_package)
         add_execution_in_database(table="xml_documents", data=execution)
 
     if _xmls_to_preserve:
