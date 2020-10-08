@@ -821,14 +821,20 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
-        mock_get.return_value = None
+        mock_get.side_effect = [
+            True,
+            None,
+        ]
         with self.assertRaises(ValueError):
             check_any_uri_items(uri_items, "label", {"daginfo": ""})
 
     @patch("check_website.Variable.get")
     def test_check_any_uri_items_returns_0_because_uri_items_is_None(self, mock_get):
         uri_items = None
-        mock_get.return_value = ["https://www.scielo.br"]
+        mock_get.side_effect = (
+            True,
+            ["https://www.scielo.br"],
+        )
         result = check_any_uri_items(uri_items, "label", {"daginfo": ""})
         self.assertEqual(0, result)
 
@@ -842,7 +848,11 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
-        mock_get.return_value = ["https://www.scielo.br"]
+        mock_get.side_effect = [
+            True,
+            ["https://www.scielo.br"],
+            10
+        ]
         mock_concat_website_url_and_uri_list_items.return_value = [
             "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
             "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
@@ -867,7 +877,7 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
         mock_get.side_effect = [
-            {},
+            True,
             ["https://www.scielo.br"],
             None
         ]
@@ -894,7 +904,11 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
-        mock_get.return_value = ["https://new.scielo.br", "https://www.scielo.br"]
+        mock_get.side_effect = (
+            True,
+            ["https://new.scielo.br", "https://www.scielo.br"],
+            10
+        )
 
         success = [
                 {
@@ -959,7 +973,11 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
-        mock_get.return_value = ["https://new.scielo.br", "https://www.scielo.br"]
+        mock_get.side_effect = (
+            True,
+            ["https://new.scielo.br", "https://www.scielo.br"],
+            10
+        )
 
         success = [
                 {
@@ -1079,7 +1097,11 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
-        mock_get.return_value = ["https://new.scielo.br", "https://www.scielo.br"]
+        mock_get.side_effect = (
+            True,
+            ["https://new.scielo.br", "https://www.scielo.br"],
+            10
+        )
 
         success = [
                 {
@@ -1200,8 +1222,11 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
-        mock_get.return_value = [
-            "https://new.scielo.br", "https://www.scielo.br"]
+        mock_get.side_effect = (
+            True,
+            ["https://new.scielo.br", "https://www.scielo.br"],
+            3
+        )
         mock_request.return_value = [
             MockClientResponse(
                 404,
