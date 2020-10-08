@@ -19,6 +19,7 @@ from operations.sync_documents_to_kernel_operations import (
     delete_documents_from_packages,
     delete_documents,
     optimize_sps_pkg_zip_file,
+    put_documents_in_kernel,
     register_update_documents,
     link_documents_to_documentsbundle,
 )
@@ -410,6 +411,109 @@ class TestDeleteDocuments(TestCase):
                 set(self.kwargs["xmls_filenames"]) - set(self.kwargs["xmls_filenames"][:-1])
             )
         )
+
+
+class TestPutDocumentsInKernel(TestCase):
+    def setUp(self):
+        self.proc_dir_path = tempfile.mkdtemp()
+        self.kwargs = {
+            "bundle_xmls": {
+                f"{self.proc_dir_path}/2020-01-01-00-01-09-090901_abc_v1n1.zip": [
+                    "0123-4567-abc-50-1-8.xml",
+                ],
+                f"{self.proc_dir_path}/2020-01-01-00-01-09-090902_abc_v1n1.zip": [
+                    "0123-4567-abc-50-1-8.xml",
+                    "0123-4567-abc-50-1-18.xml",
+                ],
+                f"{self.proc_dir_path}/2020-01-01-00-01-09-090903_abc_v1n1.zip": [
+                    "0123-4567-abc-50-1-8.xml",
+                    "0123-4567-abc-50-1-18.xml",
+                    "0123-4567-abc-50-1-20.xml",
+                ],
+            },
+        }
+
+    @patch("operations.sync_documents_to_kernel_operations.register_update_documents")
+    def test_calls_register_update_documents_for_each_package(
+        self, mk_register_update_documents
+    ):
+        mk_register_update_documents.return_value = ({}, [])
+
+        put_documents_in_kernel(**self.kwargs)
+        for sps_package, xmls_to_preserve in self.kwargs["bundle_xmls"].items():
+            with self.subTest(
+                sps_package=sps_package, xmls_to_preserve=xmls_to_preserve
+            ):
+                mk_register_update_documents.assert_any_call(
+                    sps_package, xmls_to_preserve
+                )
+
+    @patch("operations.sync_documents_to_kernel_operations.register_update_documents")
+    def test_returns_executions_from_register_update_documents(
+        self, mk_register_update_documents
+    ):
+        expected_executions = [
+            {"failed": True, "error": "Erro PIDv3"},
+            {"failed": True, "error": "Erro Obj Store"},
+            {"pid": "nhaNDdoijdadoi2", "failed": True, "error": "Erro Kernel"},
+        ]
+        mk_register_update_documents.side_effect = [
+            (
+                [],
+                [
+                    {"failed": True, "error": "Erro PIDv3"},
+                ]
+            ),
+            ([{}],[]),
+            (
+                [{}],
+                [
+                    {"failed": True, "error": "Erro Obj Store"},
+                    {"pid": "nhaNDdoijdadoi2", "failed": True, "error": "Erro Kernel"},
+                ]
+            ),
+        ]
+
+        __, executions = put_documents_in_kernel(**self.kwargs)
+        self.assertEqual(executions, expected_executions)
+
+    @patch("operations.sync_documents_to_kernel_operations.register_update_documents")
+    def test_returns_docs_metadata_from_register_update_documents(
+        self, mk_register_update_documents
+    ):
+        expected_docs_data = {
+            f"{self.proc_dir_path}/2020-01-01-00-01-09-090902_abc_v1n1.zip": [
+                {"scielo_id": "pid-v3-2", "xml": "0123-4567-abc-50-1-18.xml"}
+            ],
+            f"{self.proc_dir_path}/2020-01-01-00-01-09-090903_abc_v1n1.zip": [
+                {"scielo_id": "pid-v3-3", "xml": "0123-4567-abc-50-1-8.xml"}
+            ],
+        }
+        expected_executions = [
+            {"failed": True, "error": "Erro PIDv3"},
+            {"failed": True, "error": "Erro Obj Store"},
+            {"pid": "nhaNDdoijdadoi2", "failed": True, "error": "Erro Kernel"},
+        ]
+        mk_register_update_documents.side_effect = [
+            (
+                [],
+                [
+                    {"failed": True, "error": "Erro PIDv3"},
+                ]
+            ),
+            ([{"scielo_id": "pid-v3-2", "xml": "0123-4567-abc-50-1-18.xml"}], []),
+            (
+                [{"scielo_id": "pid-v3-3", "xml": "0123-4567-abc-50-1-8.xml"}],
+                [
+                    {"failed": True, "error": "Erro Obj Store"},
+                    {"pid": "nhaNDdoijdadoi2", "failed": True, "error": "Erro Kernel"},
+                ]
+            ),
+        ]
+
+        sync_data, executions = put_documents_in_kernel(**self.kwargs)
+        self.assertEqual(sync_data, expected_docs_data)
+        self.assertEqual(executions, expected_executions)
 
 
 class TestRegisterUpdateDocuments(TestCase):

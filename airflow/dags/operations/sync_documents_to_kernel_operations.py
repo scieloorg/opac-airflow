@@ -70,7 +70,9 @@ def list_documents(sps_package):
         return xmls_filenames
 
 
-def delete_documents_from_packages(bundle_xmls: dict) -> Dict[str, List[str]]:
+def delete_documents_from_packages(
+    bundle_xmls: dict
+) -> (Dict[str, List[str]], List[Dict]):
     """
     Deleta documentos informados do Kernel
 
@@ -80,7 +82,6 @@ def delete_documents_from_packages(bundle_xmls: dict) -> Dict[str, List[str]]:
     bundle_xmls_to_preserve = {}
     delete_executions = []
     for sps_package, xmls_filenames in bundle_xmls.items():
-        Logger.info("Reading sps_package: %s" % sps_package)
         xmls_to_preserve, executions = delete_documents(sps_package, xmls_filenames)
         if xmls_to_preserve:
             bundle_xmls_to_preserve[sps_package] = xmls_to_preserve
@@ -178,6 +179,20 @@ def optimize_sps_pkg_zip_file(sps_pkg_zip_file, new_sps_zip_dir):
         return new_sps_pkg_zip_file
 
     Logger.debug("optimize_sps_pkg_zip_file OUT")
+
+
+def put_documents_in_kernel(bundle_xmls: dict) -> (Dict[str, List[str]], List[Dict]):
+    bundle_docs_metadata = {}
+    put_executions = []
+
+    for sps_package, xmls_to_preserve in bundle_xmls.items():
+        docs_metadata, executions = register_update_documents(sps_package, xmls_to_preserve)
+        if docs_metadata:
+            bundle_docs_metadata[sps_package] = docs_metadata
+        if executions:
+            put_executions += executions
+
+    return bundle_docs_metadata, put_executions
 
 
 def register_update_documents(sps_package, xmls_to_preserve):
