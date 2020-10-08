@@ -114,7 +114,9 @@ def delete_documents(
                 i,
                 len(xmls_filenames),
             )
-            execution = {"file_name": sps_xml_file, "deletion": True}
+            execution = {
+                "package_name": sps_package, "file_name": sps_xml_file, "deletion": True
+            }
             try:
                 is_doc_to_delete, doc_id = is_document_to_delete(zipfile, sps_xml_file)
             except DocumentToDeleteException as exc:
@@ -218,7 +220,7 @@ def register_update_documents(sps_package, xmls_to_preserve):
                 len(xmls_to_preserve),
             )
 
-            execution = {"file_name": xml_filename}
+            execution = {"package_name": sps_package, "file_name": xml_filename}
 
             try:
                 xml_data = put_xml_into_object_store(zipfile, xml_filename)
