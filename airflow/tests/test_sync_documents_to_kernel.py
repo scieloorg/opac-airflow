@@ -321,19 +321,10 @@ class TestRegisterUpdateDocuments(TestCase):
 
 
 @patch(
-    "sync_documents_to_kernel.sync_documents_to_kernel_operations.link_documents_to_documentsbundle"
+    "sync_documents_to_kernel.sync_documents_to_kernel_operations.link_docs_from_packages_to_bundle"
 )
 class TestLinkDocumentsToDocumentsbundle(TestCase):
-    def test_link_documents_to_documentsbundle_gets_sps_package_from_dag_run_conf(
-        self, mk_link_documents
-    ):
-        mk_dag_run = MagicMock()
-        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
-        mk_link_documents.return_value = [], []
-        link_documents_to_documentsbundle(**kwargs)
-        mk_dag_run.conf.get.assert_called_once_with("sps_package")
-
-    def test_link_documents_to_documentsbundle_gets_ti_xcom_documents(self, mk_link_documents):
+    def test_gets_ti_xcom_documents(self, mk_link_documents):
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
 
@@ -344,7 +335,7 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
             key="documents", task_ids="register_update_docs_id"
         )
 
-    def test_link_documents_to_documentsbundle_gets_ti_xcom_title_json_path(self, mk_link_documents):
+    def test_gets_ti_xcom_title_json_path(self, mk_link_documents):
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
         mk_link_documents.return_value = [], []
@@ -357,7 +348,7 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
             include_prior_dates=True
         )
 
-    def test_link_documents_to_documentsbundle_empty_ti_xcom_documents(self, mk_link_documents):
+    def test_empty_ti_xcom_documents(self, mk_link_documents):
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
 
@@ -369,32 +360,32 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
 
         kwargs["ti"].xcom_push.assert_not_called()
 
-    def test_link_documents_to_documentsbundle_calls_link_documents_to_documentsbundle_operation(
+    def test_calls_link_documents_to_documentsbundle_operation(
         self, mk_link_documents
     ):
 
-        documents = [
-                        {
-                            'scielo_id': 'JV5Lb3v3HBYmPPdG6QD9jGQ',
-                            'issn': '1806-907X',
-                            'year': '2003',
-                            'order': '00001',
-                            'xml_package_name': '1806-907X-rba-53-01-1-8',
-                            'assets': [],
-                            'pdfs': [
-                                {
-                                    'lang': 'pt',
-                                    'filename': '1806-907X-rba-53-01-1-8.pdf',
-                                    'mimetype': 'application/pdf'
-                                }],
-                            'volume': '53',
-                            'number': '01',
-                            'xml_url': 'http://192.168.169.185:9000/documentstore/1806-907X/JV5Lb3v3HBYmPPdG6QD9jGQ/e8a6df175375a6f922cf8a3bf2ef4a0ce2b09c93.xml'
-                        }
-                    ]
+        documents = {
+            "optimized/package-1.zip": [
+                {
+                    "scielo_id": "JV5Lb3v3HBYmPPdG",
+                    "xml_package_name": "1806-907X-rba-53-01-1-8",
+                }
+            ],
+            "path_to_sps_package/package-2.zip": [
+                {
+                    "scielo_id": "JV5Lb3v3HBYmPPdG",
+                    "xml_package_name": "1806-907X-rba-53-01-1-8",
+                }
+            ],
+            "optimized/package-3.zip": [
+                {
+                    "scielo_id": "oi90qK3EcpOw0krk",
+                    "xml_package_name": "1806-907X-rba-53-01-1-18",
+                }
+            ],
+        }
 
         mk_dag_run = MagicMock()
-        mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
 
         kwargs["ti"].xcom_pull.side_effect = [documents, "/json/title.json"]
@@ -403,10 +394,10 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
         link_documents_to_documentsbundle(**kwargs)
 
         mk_link_documents.assert_called_once_with(
-            "path_to_sps_package/package.zip", documents, "/json/title.json"
+            documents, "/json/title.json"
         )
 
-    def test_link_documents_to_documentsbundle_does_not_push_if_no_documents(self, mk_link_documents):
+    def test_does_not_push_if_no_documents(self, mk_link_documents):
         documents = []
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
@@ -419,42 +410,102 @@ class TestLinkDocumentsToDocumentsbundle(TestCase):
 
         kwargs["ti"].xcom_push.assert_not_called()
 
-    def test_link_documents_to_documentsbundle_pushes_documents(self, mk_link_documents):
+    @patch("sync_documents_to_kernel.add_execution_in_database")
+    def test_calls_add_execution_in_database(
+        self, mk_add_execution_in_database, mk_link_documents
+    ):
+        documents = {
+            "optimized/package-1.zip": [
+                {
+                    "scielo_id": "JV5Lb3v3HBYmPPdG",
+                    "xml_package_name": "1806-907X-rba-53-01-1-8",
+                }
+            ],
+            "path_to_sps_package/package-2.zip": [
+                {
+                    "scielo_id": "JV5Lb3v3HBYmPPdG",
+                    "xml_package_name": "1806-907X-rba-53-01-1-8",
+                }
+            ],
+            "optimized/package-3.zip": [
+                {
+                    "scielo_id": "oi90qK3EcpOw0krk",
+                    "xml_package_name": "1806-907X-rba-53-01-1-18",
+                }
+            ],
+        }
+        link_executions = [
+            {
+                "package_name": "optimized/package-1.zip",
+                "scielo_id": "JV5Lb3v3HBYmPPdG",
+                "xml_package_name": "1806-907X-rba-53-01-1-8",
+            },
+            {
+                "package_name": "path_to_sps_package/package-2.zip",
+                "scielo_id": "JV5Lb3v3HBYmPPdG",
+                "xml_package_name": "1806-907X-rba-53-01-1-8",
+            }
+        ]
+        kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
+        kwargs["ti"].xcom_pull.return_value = documents
+        mk_link_documents.return_value = {}, link_executions
 
-        documents = [
-                        {
-                            'scielo_id': 'JV5Lb3v3HBYmPPdG6QD9jGQ',
-                            'issn': '1806-907X',
-                            'year': '2003',
-                            'order': '00001',
-                            'xml_package_name': '1806-907X-rba-53-01-1-8',
-                            'assets': [],
-                            'pdfs': [
-                                {
-                                    'lang': 'pt',
-                                    'filename': '1806-907X-rba-53-01-1-8.pdf',
-                                    'mimetype': 'application/pdf'
-                                }],
-                            'volume': '53',
-                            'number': '01',
-                            'xml_url': 'http://192.168.169.185:9000/documentstore/1806-907X/JV5Lb3v3HBYmPPdG6QD9jGQ/e8a6df175375a6f922cf8a3bf2ef4a0ce2b09c93.xml'
-                        }
-                    ]
+        link_documents_to_documentsbundle(**kwargs)
+        mk_add_execution_in_database.assert_has_calls(
+            [
+                call(table="xml_documentsbundle", data=link_execution)
+                for link_execution in link_executions
+            ]
+        )
 
-        pushed_documents = [{'1806-907X-2003-v53-n1': 204}]
+    def test_pushes_documents(self, mk_link_documents):
+
+        documents = {
+            "optimized/package-1.zip": [
+                {
+                    "scielo_id": "JV5Lb3v3HBYmPPdG",
+                    "xml_package_name": "1806-907X-rba-53-01-1-8",
+                }
+            ],
+            "path_to_sps_package/package-2.zip": [
+                {
+                    "scielo_id": "JV5Lb3v3HBYmPPdG",
+                    "xml_package_name": "1806-907X-rba-53-01-1-8",
+                }
+            ],
+            "optimized/package-3.zip": [
+                {
+                    "scielo_id": "oi90qK3EcpOw0krk",
+                    "xml_package_name": "1806-907X-rba-53-01-1-18",
+                }
+            ],
+        }
+
+        pushed_documents = {"optimized/package-3.zip": [{"1806-907X-2003-v53-n1": 204}]}
+        link_executions = [
+            {
+                "package_name": "optimized/package-1.zip",
+                "scielo_id": "JV5Lb3v3HBYmPPdG",
+                "xml_package_name": "1806-907X-rba-53-01-1-8",
+            },
+            {
+                "package_name": "path_to_sps_package/package-2.zip",
+                "scielo_id": "JV5Lb3v3HBYmPPdG",
+                "xml_package_name": "1806-907X-rba-53-01-1-8",
+            }
+        ]
 
         kwargs = {"ti": MagicMock(), "dag_run": MagicMock()}
 
         kwargs["ti"].xcom_pull.return_value = documents
 
-        mk_link_documents.return_value = pushed_documents, []
+        mk_link_documents.return_value = pushed_documents, link_executions
 
         link_documents_to_documentsbundle(**kwargs)
 
         kwargs["ti"].xcom_push.assert_called_once_with(
             key="linked_bundle", value=pushed_documents
         )
-
 
 
 class TestOptimizeDocuments(TestCase):
