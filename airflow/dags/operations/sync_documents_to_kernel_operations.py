@@ -39,6 +39,8 @@ def get_documents_from_packages(sps_packages: List[str]) -> Dict[str, list]:
     chaves são os paths dos pacotes e a lista de documentos XML são os valores.
 
     list sps_packages: lista com os paths dos pacotes SPS
+
+    Retorna dicionário com a lista dos XMLs por pacote
     """
     packages_xmls = {}
     for sps_package in sps_packages:
@@ -74,10 +76,14 @@ def delete_documents_from_packages(
     bundle_xmls: dict
 ) -> (Dict[str, List[str]], List[Dict]):
     """
-    Deleta documentos informados do Kernel
+    Executa a deleção para cada pacote de bundle_xmls, informando todos os arquivos XML
+    contidos nele.
 
     dict bundle_xmls: dict com os paths dos pacotes SPS e os respectivos nomes dos
-        arquivos XML.
+        arquivos XML presentes.
+
+    Retorna dicionário com a lista dos XMLs a preservar por pacote e lista das execuções
+     de deleção
     """
     bundle_xmls_to_preserve = {}
     delete_executions = []
@@ -184,6 +190,16 @@ def optimize_sps_pkg_zip_file(sps_pkg_zip_file, new_sps_zip_dir):
 
 
 def put_documents_in_kernel(bundle_xmls: dict) -> (Dict[str, List[str]], List[Dict]):
+    """
+    Executa registro/atualização para cada pacote de bundle_xmls, informando todos os 
+    arquivos XML a preservar contidos nele.
+
+    dict bundle_xmls: dict com os paths dos pacotes SPS e os respectivos nomes dos
+        arquivos XML presentes a preservar.
+
+    Retorna dicionário com a lista de metadados dos documentos registrados/atualizados 
+    por pacote e lista das execuções realizadas.
+    """
     bundle_docs_metadata = {}
     put_executions = []
 
@@ -269,6 +285,18 @@ def register_update_documents(sps_package, xmls_to_preserve):
 def link_docs_from_packages_to_bundle(
     bundle_xmls: dict, issn_index_json_path: str
 ) -> (Dict[str, List[str]], List[Dict]):
+    """
+    Executa link de documentos com o bundle para cada pacote em bundle_xmls, informando 
+    todos os metadados de documentos registrados contidos nele.
+
+    dict bundle_xmls: dict com os paths dos pacotes SPS e os respectivos nomes dos
+        arquivos XML presentes a preservar.
+    str issn_index_json_path: path para arquivo JSON gerado no espelhamento de 
+        periódicos, contendo índice de ISSNs de periódicos
+
+    Retorna dicionário com o resultado das atualizações nos bundles do Kernel por pacote
+    e lista das execuções dos links dos documentos com o bundle.
+    """
     linked_bundle_result = {}
     link_executions = []
     for sps_package, documents in bundle_xmls.items():
