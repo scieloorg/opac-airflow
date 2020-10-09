@@ -265,6 +265,24 @@ def register_update_documents(sps_package, xmls_to_preserve):
 
     return (synchronized_docs_metadata, executions)
 
+
+def link_docs_from_packages_to_bundle(
+    bundle_xmls: dict, issn_index_json_path: str
+) -> (Dict[str, List[str]], List[Dict]):
+    linked_bundle_result = {}
+    link_executions = []
+    for sps_package, documents in bundle_xmls.items():
+        linked_bundle_info, executions = link_documents_to_documentsbundle(
+            sps_package, documents, issn_index_json_path
+        )
+        if linked_bundle_info:
+            linked_bundle_result[sps_package] = linked_bundle_info
+        if executions:
+            link_executions += executions
+
+    return linked_bundle_result, link_executions
+
+
 def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_path):
     """
         Relaciona documentos com seu fascículos(DocumentsBundle).
@@ -339,6 +357,7 @@ def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_pa
                 )
                 executions.append(
                     {
+                        "package_name": sps_package,
                         "pid": doc.get("scielo_id"),
                         "bundle_id": None,
                         "error": 'Could not get journal ISSN ID: ISSN id "%s" not found'
@@ -386,6 +405,7 @@ def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_pa
                 for new_item_relationship in new_items:
                     executions.append(
                         {
+                            "package_name": sps_package,
                             "pid": new_item_relationship.get("id"),
                             "bundle_id": bundle_id,
                             "failed": True,
@@ -407,6 +427,7 @@ def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_pa
                     for new_item_relationship in new_items:
                         executions.append(
                             {
+                                "package_name": sps_package,
                                 "pid": new_item_relationship.get("id"),
                                 "bundle_id": bundle_id,
                             }

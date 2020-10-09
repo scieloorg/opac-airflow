@@ -21,6 +21,7 @@ from operations.sync_documents_to_kernel_operations import (
     optimize_sps_pkg_zip_file,
     put_documents_in_kernel,
     register_update_documents,
+    link_docs_from_packages_to_bundle,
     link_documents_to_documentsbundle,
 )
 from operations.exceptions import (
@@ -882,6 +883,97 @@ class TestRegisterUpdateDocuments(TestCase):
             'Could not put document "%s" in object store: %s',
             self.kwargs["xmls_to_preserve"][1],
             "Could not get scielo id v3",
+        )
+
+
+@patch(
+    "operations.sync_documents_to_kernel_operations.link_documents_to_documentsbundle"
+)
+class TestLinkDocsFromPackagesTobundle(TestCase):
+    def setUp(self):
+        self.documents = {
+            "path_to_package/package-1.zip": [
+                {"scielo_id": "S0034-8910.2014048004923"},
+            ],
+            "path_to_package/package-2.zip": [
+                {"scielo_id": "S0034-8910.2014048004924"},
+            ],
+            "path_to_package/package-3.zip": [
+                {"scielo_id": "S0034-8910.20140078954641"},
+                {"scielo_id": "S0034-8910.20140078954642"},
+            ],
+        }
+
+    def test_calls_link_documents_to_documentsbundle(
+        self, mk_link_documents_to_documentsbundle
+    ):
+        mk_link_documents_to_documentsbundle.side_effect = [
+            ([], []), ([], []), ([], []),
+        ]
+
+        link_docs_from_packages_to_bundle(self.documents, "issn_index.json")
+        mk_link_documents_to_documentsbundle.assert_has_calls([
+            call(package, documents, "issn_index.json")
+            for package, documents in self.documents.items()
+        ])
+
+    def test_returns_executions_from_link_documents_to_documentsbundle(
+        self, mk_link_documents_to_documentsbundle
+    ):
+        expected_executions = [
+            {"pid": "scielo-pid-v3-1", "bundle_id": None, "error": "Error",},
+            {
+                "pid": "scielo-pid-v3-2",
+                "bundle_id": "1518-8787-v1-n1",
+                "failed": True,
+                "error": "Error",
+            },
+            {"pid": "scielo-pid-v3-3", "bundle_id": "1518-8787-v1-n1",},
+            {"pid": "scielo-pid-v3-4", "bundle_id": "1518-8787-v1-n1",},
+        ]
+        mk_link_documents_to_documentsbundle.side_effect = [
+            ([], [expected_executions[0]]),
+            ([], [expected_executions[1]]),
+            ([], expected_executions[2:]),
+        ]
+        __, executions = link_docs_from_packages_to_bundle(
+            self.documents, "issn_index.json"
+        )
+        self.assertEqual(executions, expected_executions)
+
+    def test_returns_linked_bundle_from_link_documents_to_documentsbundle(
+        self, mk_link_documents_to_documentsbundle
+    ):
+        expected_executions = [
+            {"pid": "scielo-pid-v3-1", "bundle_id": None, "error": "Error",},
+            {
+                "pid": "scielo-pid-v3-2",
+                "bundle_id": "1518-8787-v1-n1",
+                "failed": True,
+                "error": "Error",
+            },
+            {"pid": "scielo-pid-v3-3", "bundle_id": "1518-8787-v1-n1",},
+            {"pid": "scielo-pid-v3-4", "bundle_id": "1518-8787-v1-n1",},
+        ]
+        link_docs_return = [
+            {"id": "1518-8787-v1-n1", "status": 404},
+            {"id": "1518-8787-v1-n1", "status": 204},
+            {"id": "1518-8787-v1-n1", "status": 204},
+        ]
+        mk_link_documents_to_documentsbundle.side_effect = [
+            ([], [expected_executions[0]]),
+            ([link_docs_return[0]], [expected_executions[1]]),
+            (link_docs_return[1:], expected_executions[2:]),
+        ]
+        linked_result, executions = link_docs_from_packages_to_bundle(
+            self.documents, "issn_index.json"
+        )
+        self.assertEqual(
+            linked_result,
+            {
+                "path_to_package/package-2.zip": [link_docs_return[0]],
+                "path_to_package/package-3.zip": link_docs_return[1:],
+            }
         )
 
 
