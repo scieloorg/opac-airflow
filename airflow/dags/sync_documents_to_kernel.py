@@ -44,8 +44,11 @@ dag = DAG(dag_id="sync_documents_to_kernel", default_args=default_args, schedule
 
 
 def list_documents(dag_run, **kwargs):
-    _sps_package = dag_run.conf.get("sps_package")
-    _xmls_filenames = sync_documents_to_kernel_operations.list_documents(_sps_package)
+    _bundle_label = dag_run.conf.get("bundle_label")
+    _sps_packages = dag_run.conf.get("sps_package")
+    if not _bundle_label and type(_sps_packages) == str:
+        _sps_packages = [_sps_packages]
+    _xmls_filenames = sync_documents_to_kernel_operations.get_documents_from_packages(_sps_packages)
     if _xmls_filenames:
         kwargs["ti"].xcom_push(key="xmls_filenames", value=_xmls_filenames)
         return True

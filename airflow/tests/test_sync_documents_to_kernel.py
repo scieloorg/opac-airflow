@@ -15,47 +15,84 @@ from sync_documents_to_kernel import (
 )
 
 
+@patch(
+    "sync_documents_to_kernel.sync_documents_to_kernel_operations.get_documents_from_packages"
+)
 class TestListDocuments(TestCase):
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.list_documents")
-    def test_list_document_gets_sps_package_from_dag_run_conf(self, mk_list_documents):
+    def test_calls_get_documents_from_packages(
+        self, mk_get_documents_from_packages
+    ):
         mk_dag_run = MagicMock()
+        mk_dag_run.conf.get.side_effect = [None, "path_to_sps_package/package.zip"]
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
         list_documents(**kwargs)
-        mk_dag_run.conf.get.assert_called_once_with("sps_package")
+        mk_get_documents_from_packages.assert_called_once_with(
+            ["path_to_sps_package/package.zip"]
+        )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.list_documents")
-    def test_list_document_calls_list_documents_operation(self, mk_list_documents):
+    def test_pushes_xmls_from_one_package(
+        self, mk_get_documents_from_packages
+    ):
+        expected = {
+            "path_to_sps_package/package.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+                "1806-907X-rba-53-01-9-18.xml",
+                "1806-907X-rba-53-01-19-25.xml",
+            ]
+        }
         mk_dag_run = MagicMock()
-        mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
+        mk_dag_run.conf.get.side_effect = [None, "path_to_sps_package/package.zip"]
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
-        list_documents(**kwargs)
-        mk_list_documents.assert_called_once_with("path_to_sps_package/package.zip")
-
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.list_documents")
-    def test_list_document_pushes_xmls_from_packages(self, mk_list_documents):
-        expected = [
-            "1806-907X-rba-53-01-1-8.xml",
-            "1806-907X-rba-53-01-9-18.xml",
-            "1806-907X-rba-53-01-19-25.xml",
-        ]
-        mk_dag_run = MagicMock()
-        mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
-        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
-        mk_list_documents.return_value = expected
-        list_documents(**kwargs)
+        mk_get_documents_from_packages.return_value = expected
+        result = list_documents(**kwargs)
+        self.assertTrue(result)
         kwargs["ti"].xcom_push.assert_called_once_with(
             key="xmls_filenames", value=expected
         )
 
-    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.list_documents")
-    def test_list_document_doesnt_call_ti_xcom_push_if_no_xml_files(
-        self, mk_list_documents
+    def test_pushes_xmls_from_many_packages(
+        self, mk_get_documents_from_packages
+    ):
+        sps_packages = {
+            "path_to_sps_package/package-1.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+            ],
+            "path_to_sps_package/package-2.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+                "1806-907X-rba-53-01-9-18.xml",
+            ],
+            "path_to_sps_package/package-3.zip": [
+                "1806-907X-rba-53-01-1-8.xml",
+                "1806-907X-rba-53-01-9-18.xml",
+                "1806-907X-rba-53-01-19-25.xml",
+            ],
+        }
+        mk_dag_run = MagicMock()
+        mk_dag_run.conf.get.side_effect = [
+            "rba_v53n1",
+            [
+                "path_to_sps_package/package-1.zip",
+                "path_to_sps_package/package-2.zip",
+                "path_to_sps_package/package-3.zip",
+            ]
+        ]
+        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+        mk_get_documents_from_packages.return_value = sps_packages
+        result = list_documents(**kwargs)
+        self.assertTrue(result)
+        kwargs["ti"].xcom_push.assert_called_once_with(
+            key="xmls_filenames", value=sps_packages
+        )
+
+    def test_does_not_call_ti_xcom_push_if_no_xml_files_in_one_package(
+        self, mk_get_documents_from_packages
     ):
         mk_dag_run = MagicMock()
-        mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
+        mk_dag_run.conf.get.return_value = [None, "path_to_sps_package/package.zip"]
         kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
-        mk_list_documents.return_value = []
-        list_documents(**kwargs)
+        mk_get_documents_from_packages.return_value = {}
+        result = list_documents(**kwargs)
+        self.assertFalse(result)
         kwargs["ti"].xcom_push.assert_not_called()
 
 
