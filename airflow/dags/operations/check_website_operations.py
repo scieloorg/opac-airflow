@@ -20,6 +20,7 @@ from operations.docs_utils import (
 )
 
 Logger = logging.getLogger(__name__)
+DO_REQ_TIMEOUT = 10
 
 
 def time_diff(t1, t2):
@@ -79,7 +80,7 @@ class InvalidResponse:
         self.uri = uri
 
 
-def do_request(uri, function=None, secs_sequence=None):
+def do_request(uri, function=None, secs_sequence=None, timeout=DO_REQ_TIMEOUT):
     """
     Executa requisições (`requests.head` ou `requests.get`) com tentativas
     em tempos espaçados enquanto status_code retornado é um destes valores
@@ -103,7 +104,7 @@ def do_request(uri, function=None, secs_sequence=None):
         total_secs += t
         time.sleep(t)
 
-        response = requests_get(uri, function)
+        response = requests_get(uri, function, timeout=timeout)
         try:
             if response.status_code in (500, 502, 503, 504):
                 continue
@@ -148,24 +149,31 @@ def eval_response(response):
     }
 
 
-def get_kernel_document_id_from_classic_document_uri(classic_website_document_uri):
+def get_kernel_document_id_from_classic_document_uri(classic_website_document_uri, timeout=DO_REQ_TIMEOUT):
     """
     >>> resp = requests.head("https://new.scielo.br/scielo.php?script=sci_arttext&pid=S0100-40422020000700987")
     >>> parsed = urlparse(resp.headers.get('Location'))
     >>> parsed
     ParseResult(scheme='https', netloc='new.scielo.br', path='/j/qn/a/RsJ6CyVbQP3q9cMWqBGyHjp/', params='', query='', fragment='')
     """
-    resp = do_request(classic_website_document_uri, requests.head)
-    if is_valid_response(resp):
+    resp = do_request(classic_website_document_uri, requests.head, timeout=DO_REQ_TIMEOUT)
+    status_code = redirected_location = None
+    try:
+        status_code = resp.status_code
         redirected_location = resp.headers.get('Location')
-        if redirected_location:
-            parsed = urlparse(redirected_location)
-            if parsed.path:
-                #  path='/j/qn/a/RsJ6CyVbQP3q9cMWqBGyHjp/'
-                splitted = [item for item in parsed.path.split("/") if item]
-                if splitted and len(splitted) == 4 and len(splitted[-1]) == 23:
-                    # RsJ6CyVbQP3q9cMWqBGyHjp
-                    return splitted[-1]
+        if not redirected_location:
+            raise ValueError("Not found redirected location")
+    except (AttributeError, ValueError) as e:
+        Logger.error(
+            "%s (%s): %s", classic_website_document_uri, status_code, e)
+    else:
+        Logger.info(
+            "%s: %s", classic_website_document_uri, redirected_location)
+        parsed = urlparse(redirected_location)
+        splitted = [item for item in parsed.path.split("/") if item]
+        #  path='/j/qn/a/RsJ6CyVbQP3q9cMWqBGyHjp/'
+        if len(splitted[-1]) == 23:
+            return splitted[-1]
 
 
 def check_doc_webpage_uri_items_expected_in_webpage(existing_uri_items_in_html,
@@ -710,7 +718,7 @@ def check_document_webpages_availability(website_url, doc_data_list, assets_data
     return report, summary
 
 
-def add_responses(doc_data_list, website_url=None, request=True):
+def add_responses(doc_data_list, website_url=None, request=True, timeout=None):
     """
     Dada uma lista de dicionários que contém uma chave `uri`,
     se aplicável, concatena valor de `uri` com valor de `website_url`,
@@ -732,7 +740,7 @@ def add_responses(doc_data_list, website_url=None, request=True):
 
     responses = {}
     if request:
-        responses = async_requests.parallel_requests(uri_items, body=body)
+        responses = async_requests.parallel_requests(uri_items, body=body, timeout=timeout)
         responses = {resp.uri: resp for resp in responses}
 
     for doc_data in doc_data_list:
@@ -888,7 +896,7 @@ def check_pdf_webpages_availability(doc_data_list):
     return report, summary
 
 
-def check_website_uri_list(uri_list_items, label=""):
+def check_website_uri_list(uri_list_items, label="", timeout=None):
     """
     Verifica a disponibilidade dos URI de `uri_list_items`
     Args:
@@ -911,7 +919,7 @@ def check_website_uri_list(uri_list_items, label=""):
 
     total = len(uri_list_items)
     Logger.info("Total %s URIs: %i", label, total)
-    success, failures = check_uri_items(uri_list_items)
+    success, failures = check_uri_items(uri_list_items, timeout)
 
     if failures:
         Logger.info(
@@ -1011,7 +1019,7 @@ def concat_website_url_and_uri_list_items(website_url_list, uri_list_items):
     return items
 
 
-def check_uri_items(uri_list_items):
+def check_uri_items(uri_list_items, timeout=None):
     """Acessa uma lista de URI e retorna o resultado da verificação"""
 
     if not uri_list_items:
@@ -1019,7 +1027,7 @@ def check_uri_items(uri_list_items):
 
     success = []
     failures = []
-    responses = async_requests.parallel_requests(uri_list_items)
+    responses = async_requests.parallel_requests(uri_list_items, timeout=timeout)
     for resp in responses:
         result = eval_response(resp)
         result.update({"uri": resp.uri})
@@ -1030,10 +1038,10 @@ def check_uri_items(uri_list_items):
     return success, failures
 
 
-def requests_get(uri, function=None):
+def requests_get(uri, function=None, timeout=DO_REQ_TIMEOUT):
     try:
         function = function or requests.head
-        response = function(uri, timeout=10)
+        response = function(uri, timeout=timeout or DO_REQ_TIMEOUT)
     except (requests.exceptions.ConnectionError,
             MaxRetryError,
             NewConnectionError) as e:
@@ -1165,7 +1173,7 @@ def group_doc_data_by_webpage_type(document_webpages_data):
     return d
 
 
-def check_document_availability(doc_id, website_url, object_store_url, flags={}):
+def check_document_availability(doc_id, website_url, object_store_url, flags={}, timeout=None):
     """
     Verifica a disponibilidade do documento `doc_id`, verificando a
     disponibilidade de todas as _webpages_ (HTML/PDF/idiomas) e de todos os ativos
@@ -1183,16 +1191,20 @@ def check_document_availability(doc_id, website_url, object_store_url, flags={})
         document_webpages_data)
 
     add_responses(doc_data_grouped_by_webpage_type["web html"], website_url,
-                  flags.get("CHECK_WEB_HTML_PAGES", True))
+                  flags.get("CHECK_WEB_HTML_PAGES", True),
+                  timeout=timeout)
 
     add_responses(doc_data_grouped_by_webpage_type["web pdf"], website_url,
-                  flags.get("CHECK_WEB_PDF_PAGES", True))
+                  flags.get("CHECK_WEB_PDF_PAGES", True),
+                  timeout=timeout)
 
     assets_data, assets_data_grouped_by_id = get_document_assets_data(current_version)
     renditions_data = get_document_renditions_data(current_version)
 
-    add_responses(renditions_data, request=flags.get("CHECK_RENDITIONS", True))
-    add_responses(assets_data, request=flags.get("CHECK_ASSETS", True))
+    add_responses(renditions_data, request=flags.get("CHECK_RENDITIONS", True),
+                  timeout=timeout)
+    add_responses(assets_data, request=flags.get("CHECK_ASSETS", True),
+                  timeout=timeout)
 
     web_html_availability, web_html_numbers = check_html_webpages_availability(
                 doc_data_grouped_by_webpage_type["web html"],
@@ -1286,7 +1298,7 @@ def get_status(summary):
     return "partial"
 
 
-def get_pid_v3_list(uri_items, website_url):
+def get_pid_v3_list(uri_items, website_url, timeout=DO_REQ_TIMEOUT):
     """
     Retorna o PID v3 de cada um dos itens de `uri_items`,
     acessando o link do padrão:
@@ -1304,7 +1316,8 @@ def get_pid_v3_list(uri_items, website_url):
     pid_v3_list = []
     for uri in uri_items:
         doc_uri = "{}{}".format(website_url, uri)
-        doc_id = get_kernel_document_id_from_classic_document_uri(doc_uri)
+        doc_id = get_kernel_document_id_from_classic_document_uri(
+            doc_uri, timeout=timeout)
         if doc_id:
             pid_v3_list.append(doc_id)
         else:
@@ -1312,20 +1325,20 @@ def get_pid_v3_list(uri_items, website_url):
     return pid_v3_list
 
 
-def get_main_website_url(website_url_list):
+def get_main_website_url(website_url_list, timeout=DO_REQ_TIMEOUT):
     """
     Dentre a lista de URL de website SciELO para testar, verifica qual é a
     do site novo
     """
     for url in website_url_list:
-        resp = do_request("{}/about".format(url))
+        resp = do_request("{}/about".format(url), timeout=timeout)
         Logger.info(resp)
         Logger.info(eval_response(resp))
         if is_valid_response(resp):
             return url
 
 
-def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url, dag_info):
+def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url, dag_info, timeout=None):
     """
     Executa a verificação da disponibilidade profundamente e
     faz o registro do resultado
@@ -1346,7 +1359,7 @@ def check_website_uri_list_deeply(doc_id_list, website_url, object_store_url, da
         Logger.info(
             "Check document availability of %s (%i/%i)", doc_id, i, total)
         report = check_document_availability(
-            doc_id, website_url, object_store_url, dag_info)
+            doc_id, website_url, object_store_url, dag_info, timeout=timeout)
 
         Logger.info("Format table row data")
         row = format_document_availability_result_to_register(

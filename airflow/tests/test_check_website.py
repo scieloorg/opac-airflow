@@ -821,14 +821,20 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
-        mock_get.return_value = None
+        mock_get.side_effect = [
+            True,
+            None,
+        ]
         with self.assertRaises(ValueError):
             check_any_uri_items(uri_items, "label", {"daginfo": ""})
 
     @patch("check_website.Variable.get")
     def test_check_any_uri_items_returns_0_because_uri_items_is_None(self, mock_get):
         uri_items = None
-        mock_get.return_value = ["https://www.scielo.br"]
+        mock_get.side_effect = (
+            True,
+            ["https://www.scielo.br"],
+        )
         result = check_any_uri_items(uri_items, "label", {"daginfo": ""})
         self.assertEqual(0, result)
 
@@ -842,7 +848,11 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
-        mock_get.return_value = ["https://www.scielo.br"]
+        mock_get.side_effect = [
+            True,
+            ["https://www.scielo.br"],
+            10
+        ]
         mock_concat_website_url_and_uri_list_items.return_value = [
             "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
             "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
@@ -866,7 +876,11 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
-        mock_get.return_value = ["https://www.scielo.br"]
+        mock_get.side_effect = [
+            True,
+            ["https://www.scielo.br"],
+            None
+        ]
         mock_check_website_uri_list.return_value = MagicMock(), MagicMock()
         result = check_any_uri_items(uri_items, "label", self.kwargs)
         self.assertEqual(2, result)
@@ -875,7 +889,8 @@ class TestCheckAnyUriItems(TestCase):
                 "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3035",
                 "https://www.scielo.br/scielo.php?script=sci_issues&pid=0001-3765",
             ],
-            "label"
+            "label",
+            None
         )
 
     @patch("check_website.check_website_operations.register_sci_pages_availability_report")
@@ -889,7 +904,11 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
-        mock_get.return_value = ["https://new.scielo.br", "https://www.scielo.br"]
+        mock_get.side_effect = (
+            True,
+            ["https://new.scielo.br", "https://www.scielo.br"],
+            10
+        )
 
         success = [
                 {
@@ -954,7 +973,11 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
-        mock_get.return_value = ["https://new.scielo.br", "https://www.scielo.br"]
+        mock_get.side_effect = (
+            True,
+            ["https://new.scielo.br", "https://www.scielo.br"],
+            10
+        )
 
         success = [
                 {
@@ -1074,7 +1097,11 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
-        mock_get.return_value = ["https://new.scielo.br", "https://www.scielo.br"]
+        mock_get.side_effect = (
+            True,
+            ["https://new.scielo.br", "https://www.scielo.br"],
+            10
+        )
 
         success = [
                 {
@@ -1195,8 +1222,11 @@ class TestCheckAnyUriItems(TestCase):
             "/scielo.php?script=sci_issues&pid=0001-3035",
             "/scielo.php?script=sci_issues&pid=0001-3765",
         ]
-        mock_get.return_value = [
-            "https://new.scielo.br", "https://www.scielo.br"]
+        mock_get.side_effect = (
+            True,
+            ["https://new.scielo.br", "https://www.scielo.br"],
+            3
+        )
         mock_request.return_value = [
             MockClientResponse(
                 404,
@@ -1345,12 +1375,14 @@ class TestGetPIDv3List(TestCase):
             str(exc_info.exception)
         )
 
+    @patch("check_website.Variable")
     @patch("check_website.get_website_url_list")
     @patch("check_website.check_website_operations.get_main_website_url")
     @patch("check_website.check_website_operations.get_pid_v3_list")
     def test_get_pid_v3_list_assert_called_xcom_pull_with_sci_arttext_value(
             self, mock_get, mock_get_main_website_url,
-            mock_get_website_url_list):
+            mock_get_website_url_list, mock_var):
+        mock_var.side_effect = [None]
         mock_get.return_value = (
             ["DOCID1", "DOCID2"]
         )
@@ -1371,12 +1403,14 @@ class TestGetPIDv3List(TestCase):
             key="sci_arttext"
         )
 
+    @patch("check_website.Variable")
     @patch("check_website.get_website_url_list")
     @patch("check_website.check_website_operations.get_main_website_url")
     @patch("check_website.check_website_operations.get_pid_v3_list")
     def test_get_pid_v3_list_assert_called_xcom_push_with_pid_v3_list(
             self, mock_get, mock_get_main_website_url,
-            mock_get_website_url_list):
+            mock_get_website_url_list, mock_var_timeout):
+        mock_var_timeout.return_value = None
         mock_get.return_value = (
             ["DOCID1", "DOCID2"]
         )
@@ -1400,12 +1434,14 @@ class TestGetPIDv3List(TestCase):
             self.kwargs["ti"].xcom_push.call_args_list
         )
 
+    @patch("check_website.Variable")
     @patch("check_website.get_website_url_list")
     @patch("check_website.check_website_operations.get_main_website_url")
     @patch("check_website.check_website_operations.get_pid_v3_list")
     def test_get_pid_v3_list_returns_false(
             self, mock_get, mock_get_main_website_url,
-            mock_get_website_url_list):
+            mock_get_website_url_list, mock_var_timeout):
+        mock_var_timeout.return_value = None
         mock_get.return_value = None
         mock_get_main_website_url.return_value = (
             "https://www.scielo.br"
@@ -1840,6 +1876,7 @@ class TestCheckDocumentsDeeply(TestCase):
         mock_var_get.side_effect = [
             True, False, False, False,
             "https://minio.scielo.br",
+            None
         ]
         pid_v3_items = ["DOCPIDV3"]
         self.kwargs["ti"].xcom_pull.side_effect = [
@@ -1876,6 +1913,7 @@ class TestCheckDocumentsDeeply(TestCase):
         mock_var_get.side_effect = [
             True, False, False, False,
             "https://minio.scielo.br",
+            10
         ]
         pid_v3_items = ["DOCPIDV3"]
         self.kwargs["ti"].xcom_pull.side_effect = [

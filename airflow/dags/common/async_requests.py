@@ -7,6 +7,8 @@ import requests
 import certifi
 
 
+TIMEOUT_FOR_PAR_REQS = 60*5
+TIMEOUT_FOR_SEQ_REQS = 60
 Logger = logging.getLogger(__name__)
 
 
@@ -44,8 +46,10 @@ async def fetch(uri, session, body=False):
         return response
 
 
-async def fetch_many(uri_items, body=False):
-    async with aiohttp.ClientSession() as session:
+async def fetch_many(uri_items, body=False, timeout=TIMEOUT_FOR_PAR_REQS):
+    # https://docs.aiohttp.org/en/stable/client_quickstart.html#timeouts
+    client_timeout = aiohttp.ClientTimeout(total=timeout or TIMEOUT_FOR_PAR_REQS)
+    async with aiohttp.ClientSession(timeout=client_timeout) as session:
         responses = await asyncio.gather(*[
             fetch(url, session, body)
             for url in uri_items
@@ -53,21 +57,21 @@ async def fetch_many(uri_items, body=False):
         return responses
 
 
-def parallel_requests(uri_items, body=False):
+def parallel_requests(uri_items, body=False, timeout=TIMEOUT_FOR_PAR_REQS):
     """
     performs parallel requests
     """
-    return asyncio.run(fetch_many(uri_items, body))
+    return asyncio.run(fetch_many(uri_items, body, timeout=timeout))
 
 
-def seq_requests(uri_items, body=False):
+def seq_requests(uri_items, body=False, timeout=TIMEOUT_FOR_SEQ_REQS):
     """
     performs sequential requests
     """
     do_request = requests.head if body is False else requests.get
     resps = []
     for u in uri_items:
-        resp = do_request(u)
+        resp = do_request(u, timeout=timeout)
         resps.append(resp)
     return resps
 

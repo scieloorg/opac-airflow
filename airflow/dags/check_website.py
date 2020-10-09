@@ -389,9 +389,11 @@ def check_any_uri_items(uri_list_items, label, dag_info):
     website_uri_list = check_website_operations.concat_website_url_and_uri_list_items(
         _website_url_list, uri_list_items)
 
+    timeout = Variable.get("TIMEOUT_FOR_MULT_REQ")
+
     # verifica a lista de URI
     success, failures = check_website_operations.check_website_uri_list(
-        website_uri_list, label)
+        website_uri_list, label, timeout)
 
     Logger.info(
         "Checked total %i: %i failures and %i success",
@@ -543,8 +545,9 @@ def check_documents_deeply(**context):
     extra_data = context.copy()
     extra_data.update(flags)
 
+    timeout = Variable.get("TIMEOUT_FOR_MULT_REQ")
     pid_v2_processed = check_website_operations.check_website_uri_list_deeply(
-        pid_v3_list, website_url, object_store_url, extra_data)
+        pid_v3_list, website_url, object_store_url, extra_data, timeout)
     total_processed_pid_v2 = len(pid_v2_processed or [])
 
     if total_processed_pid_v2 > 0:
@@ -579,8 +582,9 @@ def get_pid_v3_list(**context):
     if uri_items is None or len(uri_items) == 0:
         raise ValueError("Missing URI items to get PID v3")
 
+    timeout = Variable.get("TIMEOUT_FOR_SINGLE_REQ")
     pid_v3_list = check_website_operations.get_pid_v3_list(
-        uri_items, website_url)
+        uri_items, website_url, timeout)
 
     if pid_v3_list:
         context["ti"].xcom_push("pid_v3_list", pid_v3_list)
