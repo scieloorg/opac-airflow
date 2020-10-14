@@ -91,12 +91,16 @@ class TestGetDocumentsFromPackages(TestCase):
         xmls = get_documents_from_packages(list(sps_packages_files.keys()))
 
         expected = {
-            package_path: [
-                package_file
-                for package_file in package_files
-                if package_file.endswith(".xml")
-            ]
-            for package_path, package_files in sps_packages_files.items()
+            f"{self.proc_dir_path}/2020-01-01-00-01-09-090901_abc_v1n1.zip": [
+                "0123-4567-abc-50-1-8.xml",
+            ],
+            f"{self.proc_dir_path}/2020-01-01-00-01-09-090902_abc_v1n1.zip": [
+                "0123-4567-abc-50-1-8.xml",
+            ],
+            f"{self.proc_dir_path}/2020-01-01-00-01-09-090903_abc_v1n1.zip": [
+                "0123-4567-abc-50-1-8.xml",
+                "0123-4567-abc-50-9-18.xml",
+            ],
         }
         self.assertEqual(xmls, expected)
 

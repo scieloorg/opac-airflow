@@ -193,12 +193,75 @@ class TestDeleteDocuments(TestCase):
         expected_executions = deepcopy(executions)
 
         task_result = delete_documents(**kwargs)
-        for execution in expected_executions:
-            execution["dag_run"] = "dag_run_id"
-            execution["pre_sync_dag_run"] = "pre_sync_dag_run_id"
-            mk_add_execution_in_database.assert_any_call(
-                table="xml_documents", data=execution
-            )
+        expected_calls = [
+            call(
+                table="xml_documents",
+                data={
+                    "package_name": "path_to_sps_package/package-1.zip",
+                    "file_name": "1806-907X-rba-53-01-1-8.xml",
+                    "deletion": True,
+                    "pid": ANY,
+                    "dag_run": "dag_run_id",
+                    "pre_sync_dag_run": "pre_sync_dag_run_id",
+                },
+            ),
+            call(
+                table="xml_documents",
+                data={
+                    "package_name": "path_to_sps_package/package-2.zip",
+                    "file_name": "1806-907X-rba-53-01-1-8.xml",
+                    "deletion": True,
+                    "pid": ANY,
+                    "dag_run": "dag_run_id",
+                    "pre_sync_dag_run": "pre_sync_dag_run_id",
+                },
+            ),
+            call(
+                table="xml_documents",
+                data={
+                    "package_name": "path_to_sps_package/package-2.zip",
+                    "file_name": "1806-907X-rba-53-01-9-18.xml",
+                    "deletion": True,
+                    "pid": ANY,
+                    "dag_run": "dag_run_id",
+                    "pre_sync_dag_run": "pre_sync_dag_run_id",
+                },
+            ),
+            call(
+                table="xml_documents",
+                data={
+                    "package_name": "path_to_sps_package/package-3.zip",
+                    "file_name": "1806-907X-rba-53-01-1-8.xml",
+                    "deletion": True,
+                    "pid": ANY,
+                    "dag_run": "dag_run_id",
+                    "pre_sync_dag_run": "pre_sync_dag_run_id",
+                },
+            ),
+            call(
+                table="xml_documents",
+                data={
+                    "package_name": "path_to_sps_package/package-3.zip",
+                    "file_name": "1806-907X-rba-53-01-9-18.xml",
+                    "deletion": True,
+                    "pid": ANY,
+                    "dag_run": "dag_run_id",
+                    "pre_sync_dag_run": "pre_sync_dag_run_id",
+                },
+            ),
+            call(
+                table="xml_documents",
+                data={
+                    "package_name": "path_to_sps_package/package-3.zip",
+                    "file_name": "1806-907X-rba-53-01-19-25.xml",
+                    "deletion": True,
+                    "pid": ANY,
+                    "dag_run": "dag_run_id",
+                    "pre_sync_dag_run": "pre_sync_dag_run_id",
+                },
+            ),
+        ]
+        mk_add_execution_in_database.assert_has_calls(expected_calls)
 
     @patch(
         "sync_documents_to_kernel.sync_documents_to_kernel_operations.delete_documents_from_packages"
