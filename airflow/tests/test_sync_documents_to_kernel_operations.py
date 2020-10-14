@@ -246,13 +246,13 @@ class TestDeleteDocumentsFromPackages(TestCase):
         }
         expected_executions = [
             {
-                "package_name": f"{self.proc_dir_path}/2020-01-01-00-01-09-090902_abc_v1n1.zip",
+                "package_name": "2020-01-01-00-01-09-090902_abc_v1n1.zip",
                 "file_name": "0123-4567-abc-50-1-8.xml",
                 "deletion": True,
                 "pid": "FX6F3cbyYmmwvtGmMB7WCgr",
             },
             {
-                "package_name": f"{self.proc_dir_path}/2020-01-01-00-01-09-090903_abc_v1n1.zip",
+                "package_name": "2020-01-01-00-01-09-090903_abc_v1n1.zip",
                 "file_name": "0123-4567-abc-50-1-18.xml",
                 "deletion": True,
                 "failed": True, "error": "SciELO PID V3 is None",

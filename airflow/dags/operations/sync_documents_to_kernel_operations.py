@@ -121,7 +121,9 @@ def delete_documents(
                 len(xmls_filenames),
             )
             execution = {
-                "package_name": sps_package, "file_name": sps_xml_file, "deletion": True
+                "package_name": os.path.basename(sps_package),
+                "file_name": sps_xml_file,
+                "deletion": True,
             }
             try:
                 is_doc_to_delete, doc_id = is_document_to_delete(zipfile, sps_xml_file)
@@ -236,7 +238,9 @@ def register_update_documents(sps_package, xmls_to_preserve):
                 len(xmls_to_preserve),
             )
 
-            execution = {"package_name": sps_package, "file_name": xml_filename}
+            execution = {
+                "package_name": os.path.basename(sps_package), "file_name": xml_filename
+            }
 
             try:
                 xml_data = put_xml_into_object_store(zipfile, xml_filename)
@@ -385,7 +389,7 @@ def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_pa
                 )
                 executions.append(
                     {
-                        "package_name": sps_package,
+                        "package_name": os.path.basename(sps_package),
                         "pid": doc.get("scielo_id"),
                         "bundle_id": None,
                         "error": 'Could not get journal ISSN ID: ISSN id "%s" not found'
