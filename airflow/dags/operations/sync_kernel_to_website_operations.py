@@ -242,8 +242,10 @@ def ArticleFactory(
     article.issue = issue
     article.journal = issue.journal
 
-    if document_order:
+    try:
         article.order = int(document_order)
+    except (ValueError, TypeError):
+        article.order = 0
 
     article.xml = document_xml_url
 
