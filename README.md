@@ -113,6 +113,7 @@ $ airflow webserver
 * `AIRFLOW__SMTP__SMTP_MAIL_FROM`: Endereço de e-mail do remetente
 * `AIRFLOW__SMTP__SMTP_SSL`: ```True``` ou ```False``` para indicar o uso de criptografia no servidor de e-mail
 * `AIRFLOW__SMTP__SMTP_PORT`: Porta do servidor de e-mail
+* `AIRFLOW__SENTRY__SENTRY_DSN`: DSN do projeto cadastrado no Sentry para logar tracebacks registrados nas execuções
 * `POSTGRES_USER`: Usuário para conexão com o Postgres
 * `POSTGRES_PASSWORD`: Senha para conexão com o Postgres
 * `POSTGRES_HOST`: Endereço do Postgres
