@@ -19,10 +19,11 @@ RUN apk add --no-cache --virtual .build-deps \
     && apk --purge del .build-deps
 
 COPY ./entrypoint.sh /entrypoint.sh
-COPY ./start_airflow.sh /start_airflow.sh
+COPY ./scripts /scripts
 
 RUN chmod +x /entrypoint.sh
-RUN chmod +x /start_airflow.sh
+RUN chmod +x /scripts/start_webserver.sh
+RUN chmod +x /scripts/start_scheduler_autorestart.sh
 
 USER airflow
 
