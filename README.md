@@ -119,7 +119,7 @@ $ airflow webserver
 * `POSTGRES_HOST`: Endereço do Postgres
 * `POSTGRES_PORT`: Porta de rede para conexão com o Postgres
 * `POSTGRES_DB`: Nome do banco de dados do Opac-airflow para conexão com Postgres
-
+* `AIRFLOW_SCHEDULER_MAX_RUNS` - `(default: 5)`: Define a quantidade de vezes que o _scheduler_ executará antes de ser reiniciado.
 
 ## Testes Automatizados
 
