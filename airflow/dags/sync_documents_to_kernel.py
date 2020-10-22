@@ -21,7 +21,7 @@
 """
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from tempfile import mkdtemp
 
 from airflow import DAG
@@ -38,6 +38,8 @@ default_args = {
     "owner": "airflow",
     "depends_on_past": False,
     "start_date": datetime(2019, 7, 21),
+    "retries": 5,
+    "retry_delay": timedelta(minutes=5),
 }
 
 dag = DAG(dag_id="sync_documents_to_kernel", default_args=default_args, schedule_interval=None)
