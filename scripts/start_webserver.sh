@@ -1,4 +1,4 @@
 #!/bin/sh
 
-airflow initdb
+airflow upgradedb
 airflow webserver
