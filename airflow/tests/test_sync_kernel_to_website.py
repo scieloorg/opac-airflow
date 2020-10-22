@@ -217,7 +217,7 @@ class ArticleFactoryTests(unittest.TestCase):
             "kernel-document-front-s1518-8787.2019053000621.json"
         )
         self.document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", "1", ""
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
         )
 
     def tearDown(self):
@@ -303,7 +303,7 @@ class ArticleFactoryTests(unittest.TestCase):
 
     def test_has_order_attribute(self):
         self.assertTrue(hasattr(self.document, "order"))
-        self.assertEqual(1, self.document.order)
+        self.assertEqual(621, self.document.order)
 
     def test_has_xml_attribute(self):
         self.assertTrue(hasattr(self.document, "xml"))
@@ -322,35 +322,57 @@ class ArticleFactoryTests(unittest.TestCase):
         self.assertTrue(hasattr(self.document, "updated"))
         self.assertIsNotNone(self.document.updated)
 
-    def test_order_attribute_is_fixed_if_alnum(self):
+    def test_order_attribute_returns_last_five_digits_of_pid_v2_always(self):
+        for order in ("1bla", None, "1234"):
+            with self.subTest(order=order):
+                article = ArticleFactory(
+                    document_id="67TH7T7CyPPmgtVrGXhWXVs",
+                    data=self.document_front,
+                    issue_id="issue-1",
+                    document_order=order,
+                    document_xml_url=""
+                )
+                self.assertEqual(621, article.order)
+
+    def test_order_attribute_returns_zero_because_pid_v2_is_None_and_order_is_alnum(self):
+        front = load_json_fixture(
+            "kernel-document-front-s1518-8787.2019053000621_sem_pid_v2.json"
+        )
         article = ArticleFactory(
-            document_id=MagicMock(),
-            data=MagicMock(),
-            issue_id=MagicMock(),
-            document_order="1bla",
-            document_xml_url=MagicMock()
+            document_id="67TH7T7CyPPmgtVrGXhWXVs",
+            data=front,
+            issue_id="issue-1",
+            document_order="bla",
+            document_xml_url=""
         )
         self.assertEqual(0, article.order)
 
-    def test_order_attribute_is_fixed_if_None(self):
+    def test_order_attribute_returns_zero_because_pid_v2_is_None_and_order_is_None(self):
+        front = load_json_fixture(
+            "kernel-document-front-s1518-8787.2019053000621_sem_pid_v2.json"
+        )
         article = ArticleFactory(
             document_id=MagicMock(),
-            data=MagicMock(),
+            data=front,
             issue_id=MagicMock(),
             document_order=None,
             document_xml_url=MagicMock()
         )
         self.assertEqual(0, article.order)
 
-    def test_order_attribute_is_kept_if_number(self):
+    def test_order_attribute_returns_order(self):
+        front = load_json_fixture(
+            "kernel-document-front-s1518-8787.2019053000621_sem_pid_v2.json"
+        )
         article = ArticleFactory(
             document_id=MagicMock(),
-            data=MagicMock(),
+            data=front,
             issue_id=MagicMock(),
             document_order="1234",
             document_xml_url=MagicMock()
         )
         self.assertEqual(1234, article.order)
+
 
 @patch("operations.sync_kernel_to_website_operations.models.Article.objects")
 @patch("operations.sync_kernel_to_website_operations.models.Issue.objects")

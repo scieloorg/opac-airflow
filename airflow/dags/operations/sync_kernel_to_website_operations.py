@@ -243,7 +243,8 @@ def ArticleFactory(
     article.journal = issue.journal
 
     try:
-        article.order = int(document_order)
+        _order = article.scielo_pids.get("v2") or document_order
+        article.order = int(_order[-5:])
     except (ValueError, TypeError):
         article.order = 0
 
