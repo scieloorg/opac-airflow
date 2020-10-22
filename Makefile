@@ -30,11 +30,11 @@ dev_compose_ps:  ## See all containers using $(COMPOSE_FILE_DEV)
 dev_compose_rm:  ## Remove all containers using $(COMPOSE_FILE_DEV)
 	@docker-compose -f $(COMPOSE_FILE_DEV) rm -f
 
-dev_compose_bash:  ## Open python terminal from opac-airflow $(COMPOSE_FILE_DEV)
-	@docker-compose -f $(COMPOSE_FILE_DEV) run --rm opac-airflow bash
+dev_compose_bash:  ## Open python terminal from webserver $(COMPOSE_FILE_DEV)
+	@docker-compose -f $(COMPOSE_FILE_DEV) run --rm webserver bash
 
 dev_compose_add_opac_conn:  ## Add default opac_conn
-	@docker-compose -f $(COMPOSE_FILE_DEV) run --rm opac-airflow airflow connections \
+	@docker-compose -f $(COMPOSE_FILE_DEV) run --rm webserver airflow connections \
 	-a --conn_type=Mongo \
 	--conn_id=opac_conn \
 	--conn_host=localhost \
@@ -43,22 +43,22 @@ dev_compose_add_opac_conn:  ## Add default opac_conn
 	--conn_extra='{"authentication_source": "admin"}'
 
 dev_compose_add_kernel_conn:  ## Add default kernel_conn
-	@docker-compose -f $(COMPOSE_FILE_DEV) run --rm opac-airflow airflow connections \
+	@docker-compose -f $(COMPOSE_FILE_DEV) run --rm webserver airflow connections \
 	    -a --conn_type=HTTP \
 	    --conn_id=kernel_conn \
 	    --conn_host=http://0.0.0.0 \
 	    --conn_port=6543
 
 dev_compose_add_postgres_report_conn:
-	@docker-compose -f $(COMPOSE_FILE_DEV) run --rm opac-airflow airflow connections \
+	@docker-compose -f $(COMPOSE_FILE_DEV) run --rm webserver airflow connections \
 	-a --conn_type=Postgres \
 	--conn_id=postgres_report_connection
 
 dev_compose_rm_db:  ## Remove database
-	@docker-compose -f $(COMPOSE_FILE_DEV) run --rm opac-airflow rm airflow.db
+	@docker-compose -f $(COMPOSE_FILE_DEV) run --rm webserver rm airflow.db
 
 dev_compose_initdb:  ## Initialize airflow database
-	@docker-compose -f $(COMPOSE_FILE_DEV) run --rm opac-airflow airflow initdb
+	@docker-compose -f $(COMPOSE_FILE_DEV) run --rm webserver airflow initdb
 
 ############################################
 ## atalhos docker-compose produção        ##
@@ -83,10 +83,10 @@ compose_rm:  ## Remove all containers using $(COMPOSE_FILE_PROD)
 	@docker-compose -f $(COMPOSE_FILE_PROD) rm -f
 
 compose_bash:  ## Open python terminal from portal $(COMPOSE_FILE_PROD)
-	@docker-compose -f $(COMPOSE_FILE_PROD) run --rm opac-airflow bash
+	@docker-compose -f $(COMPOSE_FILE_PROD) run --rm webserver bash
 
 compose_add_opac_conn:  ## Add default opac_conn
-	@docker-compose -f $(COMPOSE_FILE_PROD) run --rm opac-airflow airflow connections \
+	@docker-compose -f $(COMPOSE_FILE_PROD) run --rm webserver airflow connections \
 	-a --conn_type=Mongo \
 	--conn_id=opac_conn \
 	--conn_host=localhost \
@@ -95,22 +95,22 @@ compose_add_opac_conn:  ## Add default opac_conn
 	--conn_extra='{"authentication_source": "admin"}'
 
 compose_add_postgres_report_conn:
-	@docker-compose -f $(COMPOSE_FILE_PROD) run --rm opac-airflow airflow connections \
+	@docker-compose -f $(COMPOSE_FILE_PROD) run --rm webserver airflow connections \
 	-a --conn_type=Postgres \
 	--conn_id=postgres_report_connection
 
 compose_add_kernel_conn:  ## Add default kernel_conn
-	@docker-compose -f $(COMPOSE_FILE_PROD) run --rm opac-airflow airflow connections \
+	@docker-compose -f $(COMPOSE_FILE_PROD) run --rm webserver airflow connections \
 	    -a --conn_type=HTTP \
 	    --conn_id=kernel_conn \
 	    --conn_host=http://0.0.0.0 \
 	    --conn_port=6543
 
 compose_rm_db:  ## Remove database
-	@docker-compose -f $(COMPOSE_FILE_PROD) run --rm opac-airflow rm airflow.db
+	@docker-compose -f $(COMPOSE_FILE_PROD) run --rm webserver rm airflow.db
 
 compose_initdb:  ## Initialize airflow database
-	@docker-compose -f $(COMPOSE_FILE_PROD) run --rm opac-airflow airflow initdb
+	@docker-compose -f $(COMPOSE_FILE_PROD) run --rm webserver airflow initdb
 
 #####################################################
 ## atalhos docker-compose build e testes no travis ##
@@ -121,7 +121,7 @@ travis_compose_build:
 	@docker-compose -f $(COMPOSE_FILE_PROD) build
 
 travis_compose_up:
-	@docker-compose -f $(COMPOSE_FILE_PROD) up -d
+	@docker-compose -f $(COMPOSE_FILE_PROD) up -d webserver
 
 travis_compose_make_test:
-	@docker-compose -f $(COMPOSE_FILE_PROD) exec opac-airflow python -m unittest -v
+	@docker-compose -f $(COMPOSE_FILE_PROD) exec webserver python -m unittest -v
