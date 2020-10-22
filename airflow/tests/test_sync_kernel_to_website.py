@@ -322,6 +322,35 @@ class ArticleFactoryTests(unittest.TestCase):
         self.assertTrue(hasattr(self.document, "updated"))
         self.assertIsNotNone(self.document.updated)
 
+    def test_order_attribute_is_fixed_if_alnum(self):
+        article = ArticleFactory(
+            document_id=MagicMock(),
+            data=MagicMock(),
+            issue_id=MagicMock(),
+            document_order="1bla",
+            document_xml_url=MagicMock()
+        )
+        self.assertEqual(0, article.order)
+
+    def test_order_attribute_is_fixed_if_None(self):
+        article = ArticleFactory(
+            document_id=MagicMock(),
+            data=MagicMock(),
+            issue_id=MagicMock(),
+            document_order=None,
+            document_xml_url=MagicMock()
+        )
+        self.assertEqual(0, article.order)
+
+    def test_order_attribute_is_kept_if_number(self):
+        article = ArticleFactory(
+            document_id=MagicMock(),
+            data=MagicMock(),
+            issue_id=MagicMock(),
+            document_order="1234",
+            document_xml_url=MagicMock()
+        )
+        self.assertEqual(1234, article.order)
 
 @patch("operations.sync_kernel_to_website_operations.models.Article.objects")
 @patch("operations.sync_kernel_to_website_operations.models.Issue.objects")
