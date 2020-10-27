@@ -41,6 +41,53 @@ dag = DAG(
 )
 
 
+def create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2(dag):
+    """
+    Cria uma subdag para executar check_documents_deeply em lotes menores
+    para facilitar a reexecução
+    """
+    Logger.info("Create check_documents_deeply subdag")
+
+    _website_url_list = get_website_url_list()
+    website_url = check_website_operations.get_main_website_url(
+        _website_url_list)
+    if website_url is None:
+        raise ValueError(
+            "Unable to identify which one is the (new) SciELO website "
+            "in this list: {}".format(_website_url_list)
+        )
+    uri_items = Variable.get(
+        "_sci_arttext", default_var=[], deserialize_json=True)
+    if uri_items is None or len(uri_items) == 0:
+        raise ValueError("Missing URI items to get PID v3")
+
+    dag_subdag = DAG(
+        dag_id='check_website.check_documents_deeply_id',
+        default_args=default_args,
+        schedule_interval=None,
+    )
+    groups = {}
+    for uri in uri_items:
+        k = uri[:-5]
+        groups[k] = groups.get(k, [])
+        groups[k].append(uri)
+
+    with dag_subdag:
+        for i, uri_items in enumerate(groups.values()):
+            id = i + 1
+            t = PythonOperator(
+                task_id='check_documents_deeply_grouped_by_issue_pid_v2_id_{}'.format(id),
+                python_callable=check_documents_deeply_grouped_by_issue_pid_v2,
+                op_args=(id, uri_items, website_url),
+                dag=dag_subdag,
+            )
+    return dag_subdag
+
+
+def check_documents_deeply_grouped_by_issue_pid_v2(id, uri_items, website_url):
+    pass
+
+
 def get_file_path_in_proc_dir(
     xc_sps_packages_dir: Path, proc_sps_packages_dir: Path, filename: str
 ) -> str:
@@ -335,6 +382,8 @@ def get_uri_items_grouped_by_script_name(**context):
         Logger.info(
             "Total %i URIs for `%s`", len(_items), script_name)
         context["ti"].xcom_push(script_name, sorted(_items))
+    Variable.set(
+        "_sci_arttext", items.get("sci_arttext") or [], serialize_json=True)
     return bool(items)
 
 

@@ -28,6 +28,8 @@ from check_website import (
     merge_uri_items_from_different_sources,
     check_input_vs_processed_pids,
     check_documents_deeply,
+    create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2,
+    check_documents_deeply_grouped_by_issue_pid_v2,
 )
 from .test_check_website_operations import (
     MockClientResponse,
@@ -1933,3 +1935,45 @@ class TestCheckDocumentsDeeply(TestCase):
             call("Checked %i PID v2 items", 0),
             mock_logger.info.call_args_list
         )
+
+
+class TestCreateSubdagToCheckDocumentsDeeplyGroupedByIssuePidV2(TestCase):
+
+    @patch("check_website.check_website_operations.get_main_website_url")
+    @patch("check_website.DAG")
+    @patch("check_website.Variable.get")
+    @patch("check_website.PythonOperator")
+    def test_create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2_(
+            self, mock_python_op, mock_get, mock_dag, mock_main_url):
+        dag = MagicMock(spec=DAG)
+        mock_main_url.return_value = "https://new.scielo.br"
+        mock_dag.return_value = MagicMock(spec=DAG)
+        mock_get.side_effect = [
+            ["https://new.scielo.br"],
+            [
+                "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
+                "/scielo.php?script=sci_arttext&pid=S0203-19982020000501101",
+                "/scielo.php?script=sci_arttext&pid=S0203-19982020000511111",
+            ]
+        ]
+
+        create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2(dag)
+        calls = [
+            call(task_id='check_documents_deeply_grouped_by_issue_pid_v2_id_1',
+                 python_callable=check_documents_deeply_grouped_by_issue_pid_v2,
+                 op_args=(
+                    1,
+                    ["/scielo.php?script=sci_arttext&pid=S0001-30352020000501101"],
+                    "https://new.scielo.br"),
+                 dag=mock_dag()),
+            call(task_id='check_documents_deeply_grouped_by_issue_pid_v2_id_2',
+                 python_callable=check_documents_deeply_grouped_by_issue_pid_v2,
+                 op_args=(
+                    2,
+                    ["/scielo.php?script=sci_arttext&pid=S0203-19982020000501101",
+                     "/scielo.php?script=sci_arttext&pid=S0203-19982020000511111",],
+                    "https://new.scielo.br"),
+                 dag=mock_dag()),
+        ]
+        self.assertListEqual(calls, mock_python_op.call_args_list)
+
