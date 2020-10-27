@@ -18,6 +18,7 @@ from airflow.hooks.http_hook import HttpHook
 from airflow.hooks.base_hook import BaseHook
 from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
+from airflow.operators.subdag_operator import SubDagOperator
 
 import requests
 
@@ -62,17 +63,19 @@ def create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2(dag):
         raise ValueError("Missing URI items to get PID v3")
 
     dag_subdag = DAG(
-        dag_id='check_website.check_documents_deeply_id',
+        dag_id='check_website.check_documents_deeply_grouped_by_issue_pid_v2_id',
         default_args=default_args,
         schedule_interval=None,
     )
     groups = {}
     for uri in uri_items:
-        k = uri[:-5]
-        groups[k] = groups.get(k, [])
-        groups[k].append(uri)
+        pid_j, pid_i, pid_d = check_website_operations.get_journal_issue_doc_pids(uri)
+
+        groups[pid_i] = groups.get(pid_i, [])
+        groups[pid_i].append(uri)
 
     # FIXME
+    Logger.info(groups)
     dag_run_data = {}
     with dag_subdag:
         for i, uri_items in enumerate(groups.values()):
@@ -86,11 +89,11 @@ def create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2(dag):
     return dag_subdag
 
 
-def check_documents_deeply_grouped_by_issue_pid_v2(uri_items, website_url, dag_run_data={}):
+def check_documents_deeply_grouped_by_issue_pid_v2(uri_items, website_url, dag_run_data={}, **context):
     """
     Verifica a disponibilidade dos documentos de forma profunda
     """
-    extra_data = context.copy()
+    extra_data = dag_run_data.copy()
     object_store_url = Variable.get("OBJECT_STORE_URL", default_var="")
     timeout_s = Variable.get(
         "TIMEOUT_FOR_SINGLE_REQ", default_var=None, deserialize_json=True)
@@ -100,6 +103,8 @@ def check_documents_deeply_grouped_by_issue_pid_v2(uri_items, website_url, dag_r
     checked_pids = []
     total = len(uri_items)
     for i, uri in enumerate(uri_items):
+        Logger.info("%i/%i", i, total)
+
         doc_uri = "{}{}".format(website_url, uri)
 
         # obtém pid v3
@@ -131,9 +136,9 @@ def check_documents_deeply_grouped_by_issue_pid_v2(uri_items, website_url, dag_r
             "doc_deep_checkup", row)
 
     if len(checked_pids) > 0:
-        items = Variable.get("_done", [], deserialize_json=True)
+        items = Variable.get("DEEPLY_CHECKED", [], deserialize_json=True)
         items.extend(checked_pids)
-        Variable.set("_done", items, serialize_json=True)
+        Variable.set("DEEPLY_CHECKED", items, serialize_json=True)
     return True
 
 
@@ -145,6 +150,7 @@ def get_file_path_in_proc_dir(
     o diretório de PROC.
     """
     file_path = proc_sps_packages_dir / filename
+    Logger.info("Find %s", file_path)
     if not file_path.is_file():
         _originfile_path = xc_sps_packages_dir / filename
         Logger.info(
@@ -704,10 +710,17 @@ def check_input_vs_processed_pids(**context):
         "Check if all the PID items from `uri_list_*.lst` and `*.csv` "
         "were processed at the end"
     )
-    pid_v2_items_from_lst = context["ti"].xcom_pull(
+    uri_items_from_lst = context["ti"].xcom_pull(
         task_ids="group_uri_items_from_uri_lists_by_script_name_id",
         key="sci_arttext"
     ) or []
+
+    pid_v2_items_from_lst = []
+    for _uri in uri_items_from_lst:
+        pid_j, pid_i, pid_d = check_website_operations.get_journal_issue_doc_pids(_uri)
+        if pid_d:
+            pid_v2_items_from_lst.append(pid_d)
+
     pid_v2_items_from_csv = context["ti"].xcom_pull(
         task_ids="get_uri_items_from_pid_list_csv_files_id",
         key="pid_items"
@@ -717,9 +730,10 @@ def check_input_vs_processed_pids(**context):
     Logger.info("Total %i PIDs v2 from csv", len(pid_v2_items_from_csv))
 
     pid_items = set(pid_v2_items_from_lst + pid_v2_items_from_csv)
-    processed = set(context["ti"].xcom_pull(
-        task_ids="check_documents_deeply_id",
-        key="processed_pid_v2_items") or [])
+    deeply_checked = Variable.get("DEEPLY_CHECKED", [], deserialize_json=True)
+    Variable.set("_DEEPLY_CHECKED", deeply_checked, serialize_json=True)
+
+    processed = set(deeply_checked or [])
 
     Logger.info("Total %i input PIDs", len(pid_items))
     Logger.info("Total %i processed PIDs", len(processed))
@@ -752,6 +766,7 @@ def check_input_vs_processed_pids(**context):
     context["ti"].xcom_push(
         "present_in_pid_items_but_not_in_processed",
         present_in_pid_items_but_not_in_processed)
+
     return present_in_both == pid_items
 
 
@@ -839,17 +854,10 @@ check_sci_arttext_uri_items_task = PythonOperator(
     dag=dag,
 )
 
-get_pid_v3_list_task = ShortCircuitOperator(
-    task_id="get_pid_v3_list_id",
-    provide_context=True,
-    python_callable=get_pid_v3_list,
-    dag=dag,
-)
 
-check_documents_deeply_task = PythonOperator(
-    task_id="check_documents_deeply_id",
-    provide_context=True,
-    python_callable=check_documents_deeply,
+check_documents_deeply_grouped_by_issue_pid_v2_subdag = SubDagOperator(
+    task_id='check_documents_deeply_grouped_by_issue_pid_v2_id',
+    subdag=create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2(dag),
     dag=dag,
 )
 
@@ -957,11 +965,5 @@ get_uri_items_grouped_by_script_name_task >> check_sci_pdf_uri_items_task
 # valida os URI de sci_arttext (HTML dos documentos)
 get_uri_items_grouped_by_script_name_task >> check_sci_arttext_uri_items_task
 
-# obtém a lista de pid v3
-get_uri_items_grouped_by_script_name_task >> get_pid_v3_list_task
-
-# valida os documentos no nível mais profundo
-get_pid_v3_list_task >> check_documents_deeply_task
-
-# verifica os PID v2 de entrada vs os PID v2 processados
-check_documents_deeply_task >> check_input_vs_processed_pids_task
+get_uri_items_grouped_by_script_name_task >> check_documents_deeply_grouped_by_issue_pid_v2_subdag
+check_documents_deeply_grouped_by_issue_pid_v2_subdag >> check_input_vs_processed_pids_task
