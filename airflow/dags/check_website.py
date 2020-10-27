@@ -72,20 +72,69 @@ def create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2(dag):
         groups[k] = groups.get(k, [])
         groups[k].append(uri)
 
+    # FIXME
+    dag_run_data = {}
     with dag_subdag:
         for i, uri_items in enumerate(groups.values()):
             id = i + 1
             t = PythonOperator(
                 task_id='check_documents_deeply_grouped_by_issue_pid_v2_id_{}'.format(id),
                 python_callable=check_documents_deeply_grouped_by_issue_pid_v2,
-                op_args=(id, uri_items, website_url),
+                op_args=(uri_items, website_url, dag_run_data),
                 dag=dag_subdag,
             )
     return dag_subdag
 
 
-def check_documents_deeply_grouped_by_issue_pid_v2(id, uri_items, website_url):
-    pass
+def check_documents_deeply_grouped_by_issue_pid_v2(uri_items, website_url, dag_run_data={}):
+    """
+    Verifica a disponibilidade dos documentos de forma profunda
+    """
+    extra_data = context.copy()
+    object_store_url = Variable.get("OBJECT_STORE_URL", default_var="")
+    timeout_s = Variable.get(
+        "TIMEOUT_FOR_SINGLE_REQ", default_var=None, deserialize_json=True)
+    timeout_m = Variable.get(
+        "TIMEOUT_FOR_MULT_REQ", default_var=None, deserialize_json=True)
+
+    checked_pids = []
+    total = len(uri_items)
+    for i, uri in enumerate(uri_items):
+        doc_uri = "{}{}".format(website_url, uri)
+
+        # obtém pid v3
+        Logger.info("Get PID v3 for %s", doc_uri)
+        pid_v3 = check_website_operations.get_kernel_document_id_from_classic_document_uri(
+                doc_uri, timeout=timeout_s)
+        if not pid_v3:
+            Logger.error("%s does not return PID v3", doc_uri)
+            continue
+
+        # verifica a disponibilidade de documento
+        Logger.info(
+            "Check document availability of %s (%i/%i)", pid_v3, i, total)
+        report = check_website_operations.check_document_availability(
+            pid_v3, website_url, object_store_url, extra_data, timeout=timeout_m)
+
+        Logger.info("Format table row data")
+        row = check_website_operations.format_document_availability_result_to_register(
+            pid_v3, report, extra_data)
+
+        # identifica os PIDs processados
+        for name in ("pid_v2_doc", "previous_pid_v2_doc"):
+            if row.get(name):
+                checked_pids.append(row[name])
+
+        # grava relatório na base de dados
+        Logger.info("Register document availability checking result")
+        check_website_operations.add_execution_in_database(
+            "doc_deep_checkup", row)
+
+    if len(checked_pids) > 0:
+        items = Variable.get("_done", [], deserialize_json=True)
+        items.extend(checked_pids)
+        Variable.set("_done", items, serialize_json=True)
+    return True
 
 
 def get_file_path_in_proc_dir(

@@ -30,6 +30,7 @@ from check_website import (
     check_documents_deeply,
     create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2,
     check_documents_deeply_grouped_by_issue_pid_v2,
+
 )
 from .test_check_website_operations import (
     MockClientResponse,
@@ -1962,14 +1963,12 @@ class TestCreateSubdagToCheckDocumentsDeeplyGroupedByIssuePidV2(TestCase):
             call(task_id='check_documents_deeply_grouped_by_issue_pid_v2_id_1',
                  python_callable=check_documents_deeply_grouped_by_issue_pid_v2,
                  op_args=(
-                    1,
                     ["/scielo.php?script=sci_arttext&pid=S0001-30352020000501101"],
                     "https://new.scielo.br"),
                  dag=mock_dag()),
             call(task_id='check_documents_deeply_grouped_by_issue_pid_v2_id_2',
                  python_callable=check_documents_deeply_grouped_by_issue_pid_v2,
                  op_args=(
-                    2,
                     ["/scielo.php?script=sci_arttext&pid=S0203-19982020000501101",
                      "/scielo.php?script=sci_arttext&pid=S0203-19982020000511111",],
                     "https://new.scielo.br"),
@@ -1977,3 +1976,114 @@ class TestCreateSubdagToCheckDocumentsDeeplyGroupedByIssuePidV2(TestCase):
         ]
         self.assertListEqual(calls, mock_python_op.call_args_list)
 
+
+class TestCheckDocumentsDeeplyGroupedByIssuePidV2(TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    @patch("check_website.Variable.set")
+    @patch("check_website.Variable.get")
+    @patch("check_website.check_website_operations.get_kernel_document_id_from_classic_document_uri")
+    def test_check_documents_deeply_grouped_by_issue_pid_v2_calls_get_kernel_document_id(
+            self, mock_get_kernel_document_id, mock_get, mock_set):
+        mock_get.side_effect = [
+            "https://minio.br",
+            10,
+            20,
+            []
+        ]
+        mock_get_kernel_document_id.side_effect = [None] * 3
+        check_documents_deeply_grouped_by_issue_pid_v2(
+            ["/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501102",
+             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501103"],
+            "https://www.scielo.br")
+        calls = [
+            call("https://www.scielo.br/scielo.php?script=sci_arttext&pid="
+                 "S0001-37652020000501101", timeout=10),
+            call("https://www.scielo.br/scielo.php?script=sci_arttext&pid="
+                 "S0001-37652020000501102", timeout=10),
+            call("https://www.scielo.br/scielo.php?script=sci_arttext&pid="
+                 "S0001-37652020000501103", timeout=10),
+        ]
+        self.assertListEqual(
+            calls, mock_get_kernel_document_id.call_args_list
+        )
+
+    @patch("check_website.check_website_operations.add_execution_in_database")
+    @patch("check_website.check_website_operations.format_document_availability_result_to_register")
+    @patch("check_website.check_website_operations.check_document_availability")
+    @patch("check_website.Variable.get")
+    @patch("check_website.Variable.set")
+    @patch("check_website.check_website_operations.get_kernel_document_id_from_classic_document_uri")
+    def test_check_documents_deeply_grouped_by_issue_pid_v2_functions_interfaces(
+            self, mock_get_kernel_document_id, mock_set, mock_get, mock_check,
+            mock_format, mock_add):
+        # mock para Variable.get
+        mock_get.side_effect = [
+            "https://minio.br",
+            10,
+            20,
+            [],
+        ]
+        # mock para retorno de get_kernel_document_id_from_classic_document_uri
+        mock_get_kernel_document_id.side_effect = [
+            "ID1", "ID2", "ID3",
+        ]
+        # mock para retorno de check_document_availability
+        relatorio1 = MagicMock("relatorio 1")
+        relatorio2 = MagicMock("relatorio 2")
+        relatorio3 = MagicMock("relatorio 3")
+        mock_check.side_effect = [relatorio1, relatorio2, relatorio3]
+
+        # mock para retorno de format_document_availability_result_to_register
+        fake_data_1 = {
+            "registro": "dados 1", "pid_v2_doc": "S0001-37652020000501101",
+            "previous_pid_v2_doc": "S0001-37652019000501109"}
+        fake_data_2 = {
+            "registro": "dados 2", "pid_v2_doc": "S0001-37652020000501102",
+            "previous_pid_v2_doc": "S0001-37652019000501102"}
+        fake_data_3 = {
+            "registro": "dados 3", "pid_v2_doc": "S0001-37652020000501103"}
+
+        mock_format.side_effect = [fake_data_1, fake_data_2, fake_data_3]
+
+        # executa check_documents_deeply_grouped_by_issue_pid_v2
+        check_documents_deeply_grouped_by_issue_pid_v2(
+            ["/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501102",
+             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501103"],
+            "https://www.scielo.br",
+            {"extra": "data"})
+
+        # compara as chamadas a check_document_availability()
+        calls = [
+            call("ID1", "https://www.scielo.br", "https://minio.br",
+                 {"extra": "data"}, timeout=20),
+            call("ID2", "https://www.scielo.br", "https://minio.br",
+                 {"extra": "data"}, timeout=20),
+            call("ID3", "https://www.scielo.br", "https://minio.br",
+                 {"extra": "data"}, timeout=20),
+        ]
+        self.assertListEqual(calls, mock_check.call_args_list)
+
+        # compara as chamadas a format_document_availability_result_to_register()
+        calls = [
+            call("ID1", relatorio1, {"extra": "data"}),
+            call("ID2", relatorio2, {"extra": "data"}),
+            call("ID3", relatorio3, {"extra": "data"}),
+        ]
+        self.assertListEqual(calls, mock_format.call_args_list)
+
+        # compara as chamadas a add_execution_in_database()
+        calls = [
+            call("doc_deep_checkup", fake_data_1),
+            call("doc_deep_checkup", fake_data_2),
+            call("doc_deep_checkup", fake_data_3),
+        ]
+        self.assertListEqual(calls, mock_add.call_args_list)
