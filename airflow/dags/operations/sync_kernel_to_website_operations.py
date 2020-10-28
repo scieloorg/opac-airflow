@@ -6,6 +6,7 @@ import requests
 from opac_schema.v1 import models
 
 import common.hooks as hooks
+from operations.exceptions import InvalidOrderValueError
 
 
 def ArticleFactory(
@@ -207,6 +208,23 @@ def ArticleFactory(
 
         return keywords
 
+    def _get_order(document_order, pid_v2):
+        try:
+            return int(document_order)
+        except (ValueError, TypeError):
+            order_err_msg = (
+                "'{}' is not a valid value for "
+                "'article.order'".format(document_order)
+            )
+            try:
+                document_order = int(pid_v2[-5:])
+                logging.exception(
+                    "{}. It was set '{} (the last 5 digits of PID v2)' to "
+                    "'article.order'".format(order_err_msg, document_order))
+                return document_order
+            except (ValueError, TypeError):
+                raise InvalidOrderValueError(order_err_msg)
+
     article.authors = list(_get_article_authors(data))
     article.languages = list(_get_languages(data))
     article.translated_titles = list(_get_translated_titles(data))
@@ -241,13 +259,7 @@ def ArticleFactory(
     issue = models.Issue.objects.get(_id=issue_id)
     article.issue = issue
     article.journal = issue.journal
-
-    try:
-        _order = article.scielo_pids.get("v2") or document_order
-        article.order = int(_order[-5:])
-    except (ValueError, TypeError):
-        article.order = 0
-
+    article.order = _get_order(document_order, article.scielo_pids.get("v2"))
     article.xml = document_xml_url
 
     # Campo de compatibilidade do OPAC
@@ -310,6 +322,13 @@ def try_register_documents(
                 document_xml_url,
             )
             document.save()
+        except InvalidOrderValueError as e:
+            logging.error(
+                "Could not register document %s. "
+                "%s",
+                document_id,
+                str(e),
+            )
         except models.Issue.DoesNotExist:
             orphans.append(document_id)
             logging.error(

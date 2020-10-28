@@ -13,6 +13,7 @@ from operations.sync_kernel_to_website_operations import (
     try_register_documents_renditions,
 )
 from opac_schema.v1 import models
+from operations.exceptions import InvalidOrderValueError
 
 
 FIXTURES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
@@ -322,8 +323,8 @@ class ArticleFactoryTests(unittest.TestCase):
         self.assertTrue(hasattr(self.document, "updated"))
         self.assertIsNotNone(self.document.updated)
 
-    def test_order_attribute_returns_last_five_digits_of_pid_v2_always(self):
-        for order in ("1bla", None, "1234"):
+    def test_order_attribute_returns_last_five_digits_of_pid_v2_if_document_order_is_invalid(self):
+        for order in ("1bla", None):
             with self.subTest(order=order):
                 article = ArticleFactory(
                     document_id="67TH7T7CyPPmgtVrGXhWXVs",
@@ -334,31 +335,31 @@ class ArticleFactoryTests(unittest.TestCase):
                 )
                 self.assertEqual(621, article.order)
 
-    def test_order_attribute_returns_zero_because_pid_v2_is_None_and_order_is_alnum(self):
+    def test_order_attribute_raise_invalid_order_value_error_because_pid_v2_is_None_and_order_is_alnum(self):
         front = load_json_fixture(
             "kernel-document-front-s1518-8787.2019053000621_sem_pid_v2.json"
         )
-        article = ArticleFactory(
-            document_id="67TH7T7CyPPmgtVrGXhWXVs",
-            data=front,
-            issue_id="issue-1",
-            document_order="bla",
-            document_xml_url=""
-        )
-        self.assertEqual(0, article.order)
+        with self.assertRaises(InvalidOrderValueError):
+            ArticleFactory(
+                document_id="67TH7T7CyPPmgtVrGXhWXVs",
+                data=front,
+                issue_id="issue-1",
+                document_order="bla",
+                document_xml_url=""
+            )
 
     def test_order_attribute_returns_zero_because_pid_v2_is_None_and_order_is_None(self):
         front = load_json_fixture(
             "kernel-document-front-s1518-8787.2019053000621_sem_pid_v2.json"
         )
-        article = ArticleFactory(
-            document_id=MagicMock(),
-            data=front,
-            issue_id=MagicMock(),
-            document_order=None,
-            document_xml_url=MagicMock()
-        )
-        self.assertEqual(0, article.order)
+        with self.assertRaises(InvalidOrderValueError):
+            ArticleFactory(
+                document_id="67TH7T7CyPPmgtVrGXhWXVs",
+                data=front,
+                issue_id="issue-1",
+                document_order=None,
+                document_xml_url=""
+            )
 
     def test_order_attribute_returns_order(self):
         front = load_json_fixture(
