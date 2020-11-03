@@ -736,7 +736,7 @@ def add_responses(doc_data_list, website_url=None, request=True, timeout=None):
         for doc_data in doc_data_list:
             doc_data["uri"] = website_url + doc_data["uri"]
             body = doc_data.get("format") == "html"
-    uri_items = (doc_data["uri"] for doc_data in doc_data_list)
+    uri_items = (doc_data["uri"] for doc_data in doc_data_list if doc_data["uri"])
 
     responses = {}
     if request:
