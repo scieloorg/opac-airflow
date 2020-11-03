@@ -12,12 +12,19 @@ import tenacity
 from tenacity import retry
 
 import airflow
+from subdags.check_website_subdags import (
+    create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2,
+    _group_documents_by_issue_pid_v2,
+)
 from airflow import DAG
 from airflow.sensors.http_sensor import HttpSensor
 from airflow.hooks.http_hook import HttpHook
 from airflow.hooks.base_hook import BaseHook
 from airflow.models import Variable
-from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
+from airflow.operators.python_operator import (
+    PythonOperator,
+    ShortCircuitOperator,
+)
 from airflow.operators.subdag_operator import SubDagOperator
 
 import requests
@@ -40,45 +47,6 @@ dag = DAG(
     default_args=default_args,
     schedule_interval=None,
 )
-
-
-def create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2(dag):
-    """
-    Cria uma subdag para executar check_documents_deeply em lotes menores
-    para facilitar a reexecução
-    """
-    Logger.info("Create check_documents_deeply subdag")
-
-    uri_items = Variable.get(
-        "_sci_arttext", default_var=[], deserialize_json=True)
-    if uri_items is None or len(uri_items) == 0:
-        raise ValueError("Missing URI items to get PID v3")
-
-    dag_subdag = DAG(
-        dag_id='check_website.check_documents_deeply_grouped_by_issue_pid_v2_id',
-        default_args=default_args,
-        schedule_interval=None,
-    )
-    groups = {}
-    for uri in uri_items:
-        pid_j, pid_i, pid_d = check_website_operations.get_journal_issue_doc_pids(uri)
-
-        groups[pid_i] = groups.get(pid_i, [])
-        groups[pid_i].append(uri)
-
-    # FIXME
-    Logger.info(groups)
-    dag_run_data = {}
-    with dag_subdag:
-        for i, uri_items in enumerate(groups.values()):
-            id = i + 1
-            t = PythonOperator(
-                task_id='check_documents_deeply_grouped_by_issue_pid_v2_id_{}'.format(id),
-                python_callable=check_documents_deeply_grouped_by_issue_pid_v2,
-                op_args=(uri_items, dag_run_data),
-                dag=dag_subdag,
-            )
-    return dag_subdag
 
 
 def check_documents_deeply_grouped_by_issue_pid_v2(uri_items, dag_run_data={}, **context):
@@ -439,6 +407,7 @@ def get_uri_items_grouped_by_script_name(**context):
         context["ti"].xcom_push(script_name, sorted(_items))
     Variable.set(
         "_sci_arttext", items.get("sci_arttext") or [], serialize_json=True)
+    default_args.update({'_sci_arttext': items.get("sci_arttext") or []})
     return bool(items)
 
 
@@ -858,7 +827,11 @@ check_sci_arttext_uri_items_task = PythonOperator(
 
 check_documents_deeply_grouped_by_issue_pid_v2_subdag = SubDagOperator(
     task_id='check_documents_deeply_grouped_by_issue_pid_v2_id',
-    subdag=create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2(dag),
+    subdag=create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2(
+        dag,
+        check_documents_deeply_grouped_by_issue_pid_v2,
+        _group_documents_by_issue_pid_v2,
+        default_args),
     dag=dag,
 )
 
