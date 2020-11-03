@@ -30,8 +30,8 @@ from check_website import (
     check_documents_deeply,
     create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2,
     check_documents_deeply_grouped_by_issue_pid_v2,
-
 )
+
 from .test_check_website_operations import (
     MockClientResponse,
     START_TIME,
@@ -1664,6 +1664,8 @@ class TestMergeUriItemsFromDifferentSources(TestCase):
         self.kwargs["ti"].xcom_push.assert_not_called()
 
 
+@patch("check_website.Variable.set")
+@patch("check_website.Variable.get")
 class TestCheckInputVsProcessedPids(TestCase):
 
     def setUp(self):
@@ -1673,7 +1675,7 @@ class TestCheckInputVsProcessedPids(TestCase):
             "run_id": "test_run_id",
         }
 
-    def test_check_input_vs_processed_pids_gets_merge_pids_from_different_tasks(self):
+    def test_check_input_vs_processed_pids_gets_merge_pids_from_different_tasks(self, mock_get, mock_set):
         self.kwargs["ti"].xcom_pull.side_effect = [
             [
                 "0001-376520200005",
@@ -1682,10 +1684,10 @@ class TestCheckInputVsProcessedPids(TestCase):
                 "0001-303520200005",
                 "0001-376520200005",
             ],
-            [
-                "0001-303520200005",
-                "0001-376520200005",
-            ],
+        ]
+        mock_get.return_value = [
+            "0001-303520200005",
+            "0001-376520200005",
         ]
         result = check_input_vs_processed_pids(**self.kwargs)
         self.assertTrue(result)
@@ -1695,25 +1697,23 @@ class TestCheckInputVsProcessedPids(TestCase):
                  task_ids="group_uri_items_from_uri_lists_by_script_name_id",),
             call(key="pid_items",
                  task_ids="get_uri_items_from_pid_list_csv_files_id",),
-            call(key="processed_pid_v2_items",
-                 task_ids="check_documents_deeply_id",),
             ],
             self.kwargs["ti"].xcom_pull.call_args_list
         )
 
     @patch("check_website.Logger")
     def test_check_input_vs_processed_pids_registers_success(
-            self, mock_logger):
+            self, mock_logger, mock_get, mock_set):
         self.kwargs["ti"].xcom_pull.side_effect = [
             [
-                "0001-303520200005",
+                "/scielo.php?script=sci_arttext&pid=S0001-30352020000501234",
             ],
             [
-                "0001-376520200005",
+                "S0001-37652020000598765",
             ],
-            [
-                "0001-303520200005", "0001-376520200005",
-            ]
+        ]
+        mock_get.return_value = [
+            "S0001-30352020000501234", "S0001-37652020000598765",
         ]
         result = check_input_vs_processed_pids(**self.kwargs)
         self.assertTrue(result)
@@ -1734,16 +1734,16 @@ class TestCheckInputVsProcessedPids(TestCase):
 
     @patch("check_website.Logger")
     def test_check_input_vs_processed_pids_registers_error(
-            self, mock_logger):
+            self, mock_logger, mock_get, mock_set):
         self.kwargs["ti"].xcom_pull.side_effect = [
             [
-                "0001-303520200005",
+                "/scielo.php?script=sci_arttext&pid=S0001-30352020000501234",
             ],
             [
-                "0001-376520200005",
+                "S0001-37652020000598765",
             ],
-            []
         ]
+        mock_get.return_value = []
         result = check_input_vs_processed_pids(**self.kwargs)
         self.assertFalse(result)
 
@@ -1763,7 +1763,7 @@ class TestCheckInputVsProcessedPids(TestCase):
                 call(
                     "There are %i PIDs which are in input lists, "
                     "but were not processed:\n%s",
-                    2, "0001-303520200005\n0001-376520200005"
+                    2, "S0001-30352020000501234\nS0001-37652020000598765"
                 ),
             ],
             mock_logger.error.call_args_list
@@ -1771,20 +1771,21 @@ class TestCheckInputVsProcessedPids(TestCase):
 
     @patch("check_website.Logger")
     def test_check_input_vs_processed_pids_registers_warning(
-            self, mock_logger):
+            self, mock_logger, mock_get, mock_set):
         self.kwargs["ti"].xcom_pull.side_effect = [
             [
-                "0001-303520200005",
+                "/scielo.php?script=sci_arttext&pid=S0001-30352020000501234",
             ],
             [
-                "0001-376520200005",
+                "S0001-37652020000598765",
             ],
-            [
-                "0001-303520200005",
-                "0001-376520200005",
-                "0001-30352020XXX5",
-            ]
         ]
+        mock_get.return_value = [
+            "S0001-30352020000501234",
+            "S0001-37652020000598765",
+            "0001-30352020XXX5",
+        ]
+
         result = check_input_vs_processed_pids(**self.kwargs)
         self.assertTrue(result)
 
