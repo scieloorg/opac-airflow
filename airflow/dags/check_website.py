@@ -49,14 +49,6 @@ def create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2(dag):
     """
     Logger.info("Create check_documents_deeply subdag")
 
-    _website_url_list = get_website_url_list()
-    website_url = check_website_operations.get_main_website_url(
-        _website_url_list)
-    if website_url is None:
-        raise ValueError(
-            "Unable to identify which one is the (new) SciELO website "
-            "in this list: {}".format(_website_url_list)
-        )
     uri_items = Variable.get(
         "_sci_arttext", default_var=[], deserialize_json=True)
     if uri_items is None or len(uri_items) == 0:
@@ -83,16 +75,24 @@ def create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2(dag):
             t = PythonOperator(
                 task_id='check_documents_deeply_grouped_by_issue_pid_v2_id_{}'.format(id),
                 python_callable=check_documents_deeply_grouped_by_issue_pid_v2,
-                op_args=(uri_items, website_url, dag_run_data),
+                op_args=(uri_items, dag_run_data),
                 dag=dag_subdag,
             )
     return dag_subdag
 
 
-def check_documents_deeply_grouped_by_issue_pid_v2(uri_items, website_url, dag_run_data={}, **context):
+def check_documents_deeply_grouped_by_issue_pid_v2(uri_items, dag_run_data={}, **context):
     """
     Verifica a disponibilidade dos documentos de forma profunda
     """
+    _website_url_list = get_website_url_list()
+    website_url = check_website_operations.get_main_website_url(
+        _website_url_list)
+    if website_url is None:
+        raise ValueError(
+            "Unable to identify which one is the (new) SciELO website "
+            "in this list: {}".format(_website_url_list)
+        )
     extra_data = dag_run_data.copy()
     object_store_url = Variable.get("OBJECT_STORE_URL", default_var="")
     timeout_s = Variable.get(
@@ -732,6 +732,7 @@ def check_input_vs_processed_pids(**context):
     pid_items = set(pid_v2_items_from_lst + pid_v2_items_from_csv)
     deeply_checked = Variable.get("DEEPLY_CHECKED", [], deserialize_json=True)
     Variable.set("_DEEPLY_CHECKED", deeply_checked, serialize_json=True)
+    Variable.set("DEEPLY_CHECKED", [], serialize_json=True)
 
     processed = set(deeply_checked or [])
 

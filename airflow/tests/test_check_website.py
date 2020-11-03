@@ -1941,17 +1941,14 @@ class TestCheckDocumentsDeeply(TestCase):
 
 class TestCreateSubdagToCheckDocumentsDeeplyGroupedByIssuePidV2(TestCase):
 
-    @patch("check_website.check_website_operations.get_main_website_url")
     @patch("check_website.DAG")
     @patch("check_website.Variable.get")
     @patch("check_website.PythonOperator")
     def test_create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2_(
-            self, mock_python_op, mock_get, mock_dag, mock_main_url):
+            self, mock_python_op, mock_get, mock_dag):
         dag = MagicMock(spec=DAG)
-        mock_main_url.return_value = "https://new.scielo.br"
         mock_dag.return_value = MagicMock(spec=DAG)
         mock_get.side_effect = [
-            ["https://new.scielo.br"],
             [
                 "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
                 "/scielo.php?script=sci_arttext&pid=S0203-19982020000501101",
@@ -1965,19 +1962,27 @@ class TestCreateSubdagToCheckDocumentsDeeplyGroupedByIssuePidV2(TestCase):
                  python_callable=check_documents_deeply_grouped_by_issue_pid_v2,
                  op_args=(
                     ["/scielo.php?script=sci_arttext&pid=S0001-30352020000501101"],
-                    "https://new.scielo.br"),
+                    {}
+                 ),
                  dag=mock_dag()),
             call(task_id='check_documents_deeply_grouped_by_issue_pid_v2_id_2',
                  python_callable=check_documents_deeply_grouped_by_issue_pid_v2,
                  op_args=(
                     ["/scielo.php?script=sci_arttext&pid=S0203-19982020000501101",
                      "/scielo.php?script=sci_arttext&pid=S0203-19982020000511111",],
-                    "https://new.scielo.br"),
+                    {}
+                    ),
                  dag=mock_dag()),
         ]
         self.assertListEqual(calls, mock_python_op.call_args_list)
 
 
+
+@patch("check_website.check_website_operations.add_execution_in_database")
+@patch("check_website.check_website_operations.get_main_website_url")
+@patch("check_website.Variable.set")
+@patch("check_website.Variable.get")
+@patch("check_website.check_website_operations.get_kernel_document_id_from_classic_document_uri")
 class TestCheckDocumentsDeeplyGroupedByIssuePidV2(TestCase):
 
     def setUp(self):
@@ -1987,12 +1992,12 @@ class TestCheckDocumentsDeeplyGroupedByIssuePidV2(TestCase):
             "run_id": "test_run_id",
         }
 
-    @patch("check_website.Variable.set")
-    @patch("check_website.Variable.get")
-    @patch("check_website.check_website_operations.get_kernel_document_id_from_classic_document_uri")
     def test_check_documents_deeply_grouped_by_issue_pid_v2_calls_get_kernel_document_id(
-            self, mock_get_kernel_document_id, mock_get, mock_set):
+            self, mock_get_kernel_document_id, mock_get, mock_set,
+            mock_get_main_url, mock_add):
+        mock_get_main_url.return_value = "https://www.scielo.br"
         mock_get.side_effect = [
+            ["https://www.scielo.br"],
             "https://minio.br",
             10,
             20,
@@ -2002,8 +2007,8 @@ class TestCheckDocumentsDeeplyGroupedByIssuePidV2(TestCase):
         check_documents_deeply_grouped_by_issue_pid_v2(
             ["/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
              "/scielo.php?script=sci_arttext&pid=S0001-37652020000501102",
-             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501103"],
-            "https://www.scielo.br")
+             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501103"]
+        )
         calls = [
             call("https://www.scielo.br/scielo.php?script=sci_arttext&pid="
                  "S0001-37652020000501101", timeout=10),
@@ -2016,17 +2021,17 @@ class TestCheckDocumentsDeeplyGroupedByIssuePidV2(TestCase):
             calls, mock_get_kernel_document_id.call_args_list
         )
 
-    @patch("check_website.check_website_operations.add_execution_in_database")
     @patch("check_website.check_website_operations.format_document_availability_result_to_register")
     @patch("check_website.check_website_operations.check_document_availability")
-    @patch("check_website.Variable.get")
-    @patch("check_website.Variable.set")
-    @patch("check_website.check_website_operations.get_kernel_document_id_from_classic_document_uri")
     def test_check_documents_deeply_grouped_by_issue_pid_v2_functions_interfaces(
-            self, mock_get_kernel_document_id, mock_set, mock_get, mock_check,
-            mock_format, mock_add):
+            self, mock_check,
+            mock_format,
+            mock_get_kernel_document_id, mock_get, mock_set,
+            mock_get_main_url, mock_add):
+        mock_get_main_url.return_value = "https://www.scielo.br"
         # mock para Variable.get
         mock_get.side_effect = [
+            ["https://www.scielo.br"],
             "https://minio.br",
             10,
             20,
@@ -2059,7 +2064,6 @@ class TestCheckDocumentsDeeplyGroupedByIssuePidV2(TestCase):
             ["/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
              "/scielo.php?script=sci_arttext&pid=S0001-37652020000501102",
              "/scielo.php?script=sci_arttext&pid=S0001-37652020000501103"],
-            "https://www.scielo.br",
             {"extra": "data"})
 
         # compara as chamadas a check_document_availability()
