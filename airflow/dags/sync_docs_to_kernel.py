@@ -49,6 +49,30 @@ def apply_document_change(dag_run, run_id, **kwargs):
         return False
 
 
+def update_document_in_bundle(dag_run, run_id, **kwargs):
+    document_data = kwargs["ti"].xcom_pull(
+        key="document_data", task_ids="apply_document_change_task"
+    )
+    issn_index_json_path = kwargs["ti"].xcom_pull(
+        task_ids="process_journals_task",
+        dag_id="sync_isis_to_kernel",
+        key="issn_index_json_path",
+        include_prior_dates=True
+    )
+
+    result, executions = sync_documents_to_kernel_operations.update_document_in_bundle(
+        document_data, issn_index_json_path
+    )
+
+    for execution in executions:
+        execution["dag_run"] = run_id
+        execution["pre_sync_dag_run"] = dag_run.conf.get("pre_syn_dag_run_id")
+        add_execution_in_database(table="xml_documentsbundle", data=execution)
+
+    if result:
+        kwargs["ti"].xcom_push(key="result", value=result)
+
+
 with DAG(
     dag_id="sync_docs_to_kernel", default_args=default_args, schedule_interval=None
 ) as dag:
@@ -58,3 +82,12 @@ with DAG(
         python_callable=apply_document_change,
         dag=dag,
     )
+
+    update_document_in_bundle_task = PythonOperator(
+        task_id="update_document_in_bundle_task",
+        provide_context=True,
+        python_callable=update_document_in_bundle,
+        dag=dag,
+    )
+
+    apply_document_change_task >> update_document_in_bundle_task
