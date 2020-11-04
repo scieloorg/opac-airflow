@@ -21,6 +21,7 @@ from operations.sync_documents_to_kernel_operations import (
     link_documents_to_documentsbundle,
     get_document_data,
     extract_package_data,
+    put_document_in_kernel,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -1322,11 +1323,146 @@ class TestExtractPackageData(TestCase):
         self.assertEqual(resp["0123-4567-abc-50-13-15.xml"]["pid"], "pid-v3")
         self.assertEqual(fields_filter, ["file_name", "package_path"])
 
+
+@patch("operations.sync_documents_to_kernel_operations.register_update_doc_into_kernel")
+@patch("operations.sync_documents_to_kernel_operations.put_assets_and_pdfs_in_object_store")
+@patch("operations.sync_documents_to_kernel_operations.put_object_in_object_store")
+class TestPutDocumentInKernel(TestCase):
+    def setUp(self):
+        self.proc_dir_path = tempfile.mkdtemp()
+        self.sps_package = f"{self.proc_dir_path}/2020-01-01-00-01-09-090901_abc_v1n1.zip"
+        self.article_meta_xml = """<volume>1</volume>
+        <issue>1</issue>
+        <fpage>1</fpage>
+        <lpage>8</lpage>"""
+
+        self._create_fake_package_with_xml()
+
+    def tearDown(self):
+        shutil.rmtree(self.proc_dir_path)
+
+    def _create_fake_package_with_xml(self):
+        article_ids = """
+        <article-id pub-id-type="publisher-id" specific-use="scielo-v3">cdmqrXxyd3DRjr88hpGQPLx</article-id>
+        <article-id pub-id-type="other">00006</article-id>
+        """
+        fake_xml = create_fake_xml_content(
+            self.article_meta_xml, article_ids=article_ids,
+        )
+        sps_packages_files = {
+            self.sps_package: {
+                "0123-4567-abc-50-1-8.xml": fake_xml,
+            },
+        }
+        create_fake_sps_packages(sps_packages_files)
+
+    def test_calls_put_object_in_object_store_to_put_xml_file(
         self,
-        mock_isfile,
-        MockSPPackage,
-        MockLogger,
-        MockZipFile,
+        mk_put_object_in_object_store,
+        mk_put_assets_and_pdfs_in_object_store,
+        mk_register_update_doc_into_kernel,
+    ):
+        data = {
+            "pid": "pid-v3-1",
+            "file_name": "0123-4567-abc-50-1-8.xml",
+            "package_path": self.sps_package,
+            "payload": {"issn": "1234-1234", "scielo_id": "pid-v3-1"},
+        }
+        put_document_in_kernel(data)
+
+        with zipfile.ZipFile(self.sps_package) as zf:
+            mk_put_object_in_object_store.assert_called_once_with(
+                zf.read(data["file_name"]),
+                data["payload"]["issn"],
+                data["payload"]["scielo_id"],
+                data["file_name"],
+            )
+
+    def test_calls_put_assets_and_pdfs_in_object_store(
+        self,
+        mk_put_object_in_object_store,
+        mk_put_assets_and_pdfs_in_object_store,
+        mk_register_update_doc_into_kernel,
+    ):
+        data = {
+            "pid": "pid-v3-1",
+            "file_name": "0123-4567-abc-50-1-8.xml",
+            "package_path": self.sps_package,
+            "payload": {"issn": "1234-1234", "scielo_id": "pid-v3-1"},
+        }
+        xml_data = copy.deepcopy(data["payload"])
+        xml_data["xml_url"] = mk_put_object_in_object_store.return_value
+        put_document_in_kernel(data)
+
+        mk_put_assets_and_pdfs_in_object_store.assert_called_once_with(
+            ANY, xml_data,
+        )
+
+    def test_calls_register_update_doc_into_kernel(
+        self,
+        mk_put_object_in_object_store,
+        mk_put_assets_and_pdfs_in_object_store,
+        mk_register_update_doc_into_kernel,
+    ):
+        fake_assets_and_pdfs = {
+            "assets": [{"asset_id": "fig1.gif", "asset_url": "http://objs/fig1.gif"}],
+            "pdfs": [
+                {
+                    "size_bytes": 1234,
+                    "filename": "a01-lang.pdf",
+                    "lang": "lang",
+                    "data_url": "http://objs/a01-lang",
+                }
+            ],
+        }
+        mk_put_assets_and_pdfs_in_object_store.return_value = fake_assets_and_pdfs
+        data = {
+            "pid": "pid-v3-1",
+            "file_name": "0123-4567-abc-50-1-8.xml",
+            "package_path": self.sps_package,
+            "payload": {"issn": "1234-1234", "scielo_id": "pid-v3-1"},
+        }
+        put_document_in_kernel(data)
+
+        expected = copy.deepcopy(data["payload"])
+        expected["xml_url"] = mk_put_object_in_object_store.return_value
+        expected.update(fake_assets_and_pdfs)
+        mk_register_update_doc_into_kernel.assert_called_once_with(expected)
+
+    def test_returns_updated_xml_data_and_executions(
+        self,
+        mk_put_object_in_object_store,
+        mk_put_assets_and_pdfs_in_object_store,
+        mk_register_update_doc_into_kernel,
+    ):
+        fake_assets_and_pdfs = {
+            "assets": [{"asset_id": "fig1.gif", "asset_url": "http://objs/fig1.gif"}],
+            "pdfs": [
+                {
+                    "size_bytes": 1234,
+                    "filename": "a01-lang.pdf",
+                    "lang": "lang",
+                    "data_url": "http://objs/a01-lang",
+                }
+            ],
+        }
+        mk_put_assets_and_pdfs_in_object_store.return_value = fake_assets_and_pdfs
+        data = {
+            "pid": "pid-v3-1",
+            "file_name": "0123-4567-abc-50-1-8.xml",
+            "package_path": self.sps_package,
+            "payload": {"issn": "1234-1234", "scielo_id": "pid-v3-1"},
+        }
+        ret, execution = put_document_in_kernel(data)
+
+        expected = copy.deepcopy(data["payload"])
+        expected["xml_url"] = mk_put_object_in_object_store.return_value
+        expected.update(fake_assets_and_pdfs)
+        self.assertEqual(ret, expected)
+        self.assertEqual(execution["payload"], expected)
+        self.assertFalse(execution["failed"])
+        self.assertNotIn("error", execution)
+
     ):
         mock_isfile.return_value = True
         MockZipFile = mock_open

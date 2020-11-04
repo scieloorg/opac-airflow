@@ -29,6 +29,7 @@ from operations.docs_utils import (
     update_aop_bundle_items,
     get_or_create_bundle,
     get_xml_data,
+    put_object_in_object_store,
 )
 
 Logger = logging.getLogger(__name__)
@@ -459,3 +460,32 @@ def extract_package_data(sps_package: str) -> Dict[str, dict]:
             document_data.update({"package_path": sps_package})
             documents_info[xml_filename] = document_data
     return documents_info, ["file_name", "package_path"]
+
+
+def put_document_in_kernel(data: dict) -> dict:
+    """
+    Registra/atualiza documento no Object Store e no Kernel a partir do conteúdo de 
+    ``data``.
+
+    :param data: Dados extraídos a partir do XML no pacote SPS.
+
+    :return: Dict com o resultado da execução. Se houver falha, conterá o erro. Caso 
+    contrário, o payload com os dados para o relacionamento do documento com o bundle
+    """
+    xml_data = deepcopy(data["payload"])
+    Logger.info('Putting XML file "%s" to Object Store', data["file_name"])
+    with ZipFile(data["package_path"]) as zip_file:
+        xml_data["xml_url"] = put_object_in_object_store(
+            zip_file.read(data["file_name"]),
+            xml_data["issn"],
+            xml_data["scielo_id"],
+            data["file_name"],
+        )
+        assets_and_pdfs_data = put_assets_and_pdfs_in_object_store(
+            zip_file, xml_data
+        )
+
+    xml_data.update(assets_and_pdfs_data)
+    register_update_doc_into_kernel(xml_data)
+    execution = {"failed": False, "payload": xml_data}
+    return xml_data, execution
