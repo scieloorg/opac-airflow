@@ -11,6 +11,7 @@ from airflow.hooks.http_hook import HttpHook
 from airflow.hooks.S3_hook import S3Hook
 from airflow.hooks.base_hook import BaseHook
 from airflow.hooks.postgres_hook import PostgresHook
+from airflow.contrib.hooks.mongo_hook import MongoHook
 from airflow.exceptions import AirflowException
 from airflow.models import Variable, DagRun, clear_task_instances
 from airflow.utils.db import provide_session
@@ -103,6 +104,21 @@ def mongo_connect():
     )
 
     connect(host=uri, **conn.extra_dejson)
+
+
+def save_document_in_database(
+    collection: str,
+    filter: dict,
+    document: list,
+    connection_id: str = "mongo_default",
+):
+    """Registra documentos em coleção MongoDB."""
+    with MongoHook(conn_id=connection_id) as hook: 
+        try:
+            Logger.info('Registering %s into "%s" collection.', document, collection)
+            hook.update_one(collection, filter, {"$set": document}, upsert=True)
+        except (AirflowException, ProgrammingError) as exc:
+            Logger.error(exc)
 
 
 def add_execution_in_database(
