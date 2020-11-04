@@ -3,6 +3,9 @@ import copy
 import tempfile
 import builtins
 import json
+import shutil
+import pathlib
+import zipfile
 from unittest import TestCase, main
 from unittest.mock import patch, Mock, MagicMock, ANY, mock_open, call
 from tempfile import mkdtemp, mkstemp
@@ -25,6 +28,58 @@ from operations.exceptions import (
     LinkDocumentToDocumentsBundleException,
     Pidv3Exception
 )
+
+
+def create_fake_sps_packages(sps_packages: dict):
+    """
+    Cria pacotes fake com base em dicionário contendo o nome do pacote e os arquivos que
+    devem estar contidos em cada um deles.
+    """
+    for package_path, package_files in sps_packages.items():
+        with zipfile.ZipFile(package_path, "w") as zip_file:
+            for package_file, content in package_files.items():
+                if content:
+                    zip_file.writestr(package_file, content)
+                else:
+                    zip_file.writestr(package_file, package_file)
+
+
+def create_fake_xml_content(
+    article_meta_children_xml, journal_meta="", article_ids="", pub_date=""
+):
+    default_journal_meta = """
+        <journal-id journal-id-type="publisher-id">acron</journal-id>
+                <issn pub-type="epub">1234-5678</issn>
+                <issn pub-type="ppub">0123-4567</issn>
+        """
+    default_article_ids = """
+        <article-id pub-id-type="publisher-id" specific-use="scielo-v3">cdmqrXxyd3DRjr88hpGQPLx</article-id>
+        <article-id pub-id-type="other">00006</article-id>
+    """
+    default_pubdate = """
+        <pub-date date-type="collection">
+                <year>2010</year>
+            </pub-date>
+    """
+    return """
+    <article xmlns:xlink="http://www.w3.org/1999/xlink" specific-use="1.9">
+    <front>
+    <journal-meta>
+        {journal_meta}
+    </journal-meta>
+    <article-meta>
+        {article_ids}
+        {article_meta_children_xml}
+        {pub_date}
+    </article-meta>
+    </front>
+    </article>
+    """.format(
+        article_meta_children_xml=article_meta_children_xml,
+        article_ids=article_ids or default_article_ids,
+        journal_meta=journal_meta or default_journal_meta,
+        pub_date=pub_date or default_pubdate,
+    )
 
 
 class TestListDocuments(TestCase):
@@ -1011,12 +1066,44 @@ class TestLinkDocumentToDocumentsbundleAOPs(TestCase):
 
 
 class TestOptimizeSPPackage(TestCase):
+    def setUp(self):
+        self.proc_dir_path = tempfile.mkdtemp()
+        self.sps_packages_path = f"{self.proc_dir_path}/2020-01-01-00-01-09-090901_abc_v1n1.zip"
+        self.article_meta_xml = """<volume>1</volume>
+        <issue>1</issue>
+        <fpage>1</fpage>
+        <lpage>8</lpage>"""
+        fake_xml = create_fake_xml_content(self.article_meta_xml)
+        sps_packages_files = {
+            self.sps_packages_path: {
+                "0123-4567-abc-50-1-8.xml": fake_xml,
+            },
+        }
+        create_fake_sps_packages(sps_packages_files)
 
-    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
-    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    def tearDown(self):
+        shutil.rmtree(self.proc_dir_path)
+
+    @patch.object(os, "unlink")
     @patch("operations.sync_documents_to_kernel_operations.SPPackage")
-    @patch("operations.sync_documents_to_kernel_operations.os.path.isfile")
-    def test_optimize_sps_pkg_zip_file_write_log_messages_in_and_out(
+    def test_deletes_optimized_package_if_it_already_exists(
+        self, MockSPPackage, mk_os_unlink
+    ):
+        with tempfile.TemporaryDirectory() as new_sps_zip_dir:
+            shutil.copy(self.sps_packages_path, new_sps_zip_dir)
+
+            optimize_sps_pkg_zip_file(self.sps_packages_path, new_sps_zip_dir)
+            optmized = f"{new_sps_zip_dir}/2020-01-01-00-01-09-090901_abc_v1n1.zip"
+            mk_os_unlink.assert_called_once_with(optmized)
+            pathlib.Path(optmized).unlink()
+
+    def test_optimizes_package(self):
+        with tempfile.TemporaryDirectory() as new_sps_zip_dir:
+            ret = optimize_sps_pkg_zip_file(self.sps_packages_path, new_sps_zip_dir)
+            expected = pathlib.Path(new_sps_zip_dir) / "2020-01-01-00-01-09-090901_abc_v1n1.zip"
+            self.assertEqual(ret, str(expected))
+            self.assertTrue(expected.is_file())
+
         self,
         mock_isfile,
         MockSPPackage,

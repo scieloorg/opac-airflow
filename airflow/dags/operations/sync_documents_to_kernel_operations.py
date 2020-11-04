@@ -126,21 +126,20 @@ def optimize_sps_pkg_zip_file(sps_pkg_zip_file, new_sps_zip_dir):
     Recebe um zip `sps_pkg_zip_file` e
     Retorna seu zip otimizado `new_sps_pkg_zip_file`
     """
-    Logger.debug("optimize_sps_pkg_zip_file IN")
     basename = os.path.basename(sps_pkg_zip_file)
     new_sps_pkg_zip_file = os.path.join(new_sps_zip_dir, basename)
 
-    package = SPPackage.from_file(sps_pkg_zip_file, mkdtemp())
-    package.optimise(
-        new_package_file_path=new_sps_pkg_zip_file,
-        preserve_files=False
-    )
+    # Apaga arquivo se já existe antes de otimizar
+    if os.path.isfile(new_sps_pkg_zip_file):
+        os.unlink(new_sps_pkg_zip_file)
+
+    with ZipFile(sps_pkg_zip_file) as zip_file:
+        package = SPPackage(zip_file, new_sps_zip_dir)
+        package.optimise(new_package_file_path=new_sps_pkg_zip_file, preserve_files=False)
 
     if os.path.isfile(new_sps_pkg_zip_file):
         Logger.debug("optimize_sps_pkg_zip_file OUT")
         return new_sps_pkg_zip_file
-
-    Logger.debug("optimize_sps_pkg_zip_file OUT")
 
 
 def register_update_documents(sps_package, xmls_to_preserve):
@@ -210,6 +209,7 @@ def register_update_documents(sps_package, xmls_to_preserve):
     Logger.debug("register_update_documents OUT")
 
     return (synchronized_docs_metadata, executions)
+
 
 def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_path):
     """
