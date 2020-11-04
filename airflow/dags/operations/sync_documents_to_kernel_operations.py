@@ -549,3 +549,80 @@ def sync_document(document_records: List[dict]) -> (dict, List[dict]):
         executions.append(execution)
 
     return last_sync_document_result, executions
+
+
+def update_document_in_bundle(document_data: dict, issn_index_json_path: str) -> dict:
+    ret = None
+    executions = []
+
+    Logger.info('Reading ISSN index file %s', issn_index_json_path)
+    with open(issn_index_json_path) as issn_index_file:
+        issn_index_json = issn_index_file.read()
+        issn_index = json.loads(issn_index_json)
+
+    try:
+        issn_id = issn_index[document_data["issn"]]
+    except KeyError as exc:
+        raise LinkDocumentToDocumentsBundleException(
+            'Could not get journal ISSN ID: ISSN id "%s" not found' % document_data["issn"]
+        ) from None
+    else:
+        def _update_items_list(
+            new_item: dict, current_items: list, deletion: bool
+        ) -> list:
+            """Atualiza a lista de items atuais com o novo item."""
+            items = deepcopy(current_items)
+            for index, current_item in enumerate(items):
+                if new_item["id"] == current_item["id"]:
+                    if deletion:
+                        del items[index]
+                    else:
+                        items[index] = new_item
+                    break
+            else:
+                if not deletion:
+                    items.append(new_item)
+            return items
+
+        bundle_id = get_bundle_id(
+            issn_id=issn_id,
+            year=document_data.get("year"),
+            volume=document_data.get("volume"),
+            number=document_data.get("number"),
+            supplement=document_data.get("supplement")
+        )
+
+        # Obtém a lista de documentos relacionados ao bundle
+        is_aop_bundle = bundle_id.endswith("-aop")
+        conn_response = get_or_create_bundle(bundle_id, is_aop=is_aop_bundle)
+        current_items = conn_response.json()["items"]
+
+        # Cria lista atualizada de acordo com a sincronização do documento
+        new_item = {
+            "id": document_data.get("scielo_id"),
+            "order": document_data.get("order"),
+        }
+        payload = _update_items_list(new_item, current_items, document_data["deletion"])
+        Logger.info("Updating bundle_id %s with %s", bundle_id, payload)
+
+        # Atualiza o bundle somente se houver diferenças para a lista de documentos original
+        if DeepDiff(current_items, payload, ignore_order=True):
+            response = update_documents_in_bundle(bundle_id, payload)
+            ret = {"id": bundle_id, "status": response.status_code}
+            Logger.info("The bundle %s items list has been updated.", bundle_id)
+
+            executions.append({
+                "package_name": document_data.get("package_name"),
+                "pid": document_data.get("scielo_id"),
+                "bundle_id": bundle_id,
+            })
+        else:
+            logging.info("The bundle %s items does not need to be updated.", bundle_id)
+
+        # Se não é uma deleção e o documento não é AOP, verifica se trata-se de um
+        # ex-AOP para atualizar o bundle AOP
+        if not document_data["deletion"] and not is_aop_bundle:
+            articles_removed_from_aop = update_aop_bundle_items(issn_id, payload)
+            executions.extend(articles_removed_from_aop)
+
+    return ret, executions

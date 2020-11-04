@@ -23,6 +23,7 @@ from operations.sync_documents_to_kernel_operations import (
     extract_package_data,
     put_document_in_kernel,
     sync_document,
+    update_document_in_bundle,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -1600,18 +1601,329 @@ class TestSyncDocument(TestCase):
             call(document_record) for document_record in document_records
         ])
 
-    ):
-        mock_isfile.return_value = True
-        MockZipFile = mock_open
-        mock_optimise = Mock("optimise")
-        mock_optimise.return_value = None
-        mock_package = Mock("package")
-        mock_package.optimise = mock_optimise
-        MockSPPackage.from_file.return_value = mock_package
-        new_sps_zip_dir = mkdtemp()
 
-        ret = optimize_sps_pkg_zip_file("dir/destination/rba_v53n1.zip", new_sps_zip_dir)
-        self.assertEqual(ret, os.path.join(new_sps_zip_dir, "rba_v53n1.zip"))
+@patch("operations.sync_documents_to_kernel_operations.update_aop_bundle_items")
+@patch("operations.sync_documents_to_kernel_operations.update_documents_in_bundle")
+@patch("operations.sync_documents_to_kernel_operations.get_or_create_bundle")
+class TestUpdateDocumentInBundle(TestCase):
+
+    def setUp(self):
+        json_temp_file = tempfile.mkstemp(suffix=".json")
+        self.issn_index_json_path = pathlib.Path(json_temp_file[-1])
+        with self.issn_index_json_path.open('w') as json_file:
+            fake_issn_index = {
+                "0101-0101": "0101-0101",
+                "1234-1234": "1234-1234",
+                "1234-2X40": "1234-1234",
+                "9999-9999": "9999-9999",
+            }
+            json.dump(fake_issn_index, json_file)
+
+    def tearDown(self):
+        self.issn_index_json_path.unlink()
+
+    def test_raises_error_if_no_issn_found(
+        self,
+        mk_get_or_create_bundle,
+        mk_update_documents_in_bundle,
+        mk_update_aop_bundle_items,
+    ):
+        document_data = {
+            "scielo_id": "pid-v3-1",
+            "issn": "0202-0202",
+            "package_name": "2020-01-01-00-01-09-090901_abc_v1n1.zip",
+            "deletion": True,
+        }
+        with self.assertRaises(LinkDocumentToDocumentsBundleException) as exc_info:
+            update_document_in_bundle(
+                document_data, str(self.issn_index_json_path)
+            )
+        self.assertEqual(
+            str(exc_info.exception),
+            'Could not get journal ISSN ID: ISSN id "0202-0202" not found',
+        )
+
+    def test_calls_get_or_create_bundle_with_aop_bundle_id(
+        self,
+        mk_get_or_create_bundle,
+        mk_update_documents_in_bundle,
+        mk_update_aop_bundle_items,
+    ):
+        document_data = {
+            "scielo_id": "pid-v3-1",
+            "issn": "1234-1234",
+            "package_name": "2020-01-01-00-01-09-090901_abc_v1n1.zip",
+            "deletion": True,
+        }
+        update_document_in_bundle(document_data, str(self.issn_index_json_path))
+        mk_get_or_create_bundle.assert_called_once_with("1234-1234-aop", is_aop=True)
+
+    def test_calls_get_or_create_bundle_with_bundle_id(
+        self,
+        mk_get_or_create_bundle,
+        mk_update_documents_in_bundle,
+        mk_update_aop_bundle_items,
+    ):
+        document_data = {
+            "scielo_id": "pid-v3-1",
+            "issn": "1234-1234",
+            "year": "2020",
+            "order": "00709",
+            "volume": "1",
+            "number": "1",
+            "package_name": "2020-01-01-00-01-09-090901_abc_v1n1.zip",
+            "deletion": True,
+        }
+        update_document_in_bundle(document_data, str(self.issn_index_json_path))
+        mk_get_or_create_bundle.assert_called_once_with(
+            "1234-1234-2020-v1-n1", is_aop=False
+        )
+
+    def test_updates_items_from_bundle_on_delete(
+        self,
+        mk_get_or_create_bundle,
+        mk_update_documents_in_bundle,
+        mk_update_aop_bundle_items,
+    ):
+        fakes_bundle_items = (
+            {"items": [{"id": "pid-v3-1", "order": "00709"}]},
+            {"items": [
+                {"id": "pid-v3-1", "order": "00709"}, {"id": "pid-v3-2", "order": "00710"}
+            ]},
+            {"items": [
+                {"id": "pid-v3-1", "order": "00711"}, {"id": "pid-v3-2", "order": "00712"}
+            ]},
+        )
+        expected_items = (
+            [],
+            [{"id": "pid-v3-2", "order": "00710"}],
+            [{"id": "pid-v3-2", "order": "00712"}],
+        )
+        document_data = {
+            "scielo_id": "pid-v3-1",
+            "issn": "1234-1234",
+            "year": "2020",
+            "order": "00709",
+            "volume": "1",
+            "number": "1",
+            "package_name": "2020-01-01-00-01-09-090901_abc_v1n1.zip",
+            "deletion": True,
+        }
+        for fake_bundle_items, expected in zip(fakes_bundle_items, expected_items):
+            with self.subTest(fake_bundle_items=fake_bundle_items, expected=expected):
+                mk_get_or_create_bundle.return_value.json.return_value = \
+                    fake_bundle_items
+                update_document_in_bundle(document_data, str(self.issn_index_json_path))
+                mk_update_documents_in_bundle.assert_called_with(
+                    "1234-1234-2020-v1-n1", expected
+                )
+
+    def test_updates_items_from_bundle_on_adding(
+        self,
+        mk_get_or_create_bundle,
+        mk_update_documents_in_bundle,
+        mk_update_aop_bundle_items,
+    ):
+        fakes_bundle_items = (
+            {"items": []},
+            {"items": [{"id": "pid-v3-2", "order": "00710"}]},
+            {"items": [
+                {"id": "pid-v3-1", "order": "00711"},
+                {"id": "pid-v3-2", "order": "00712"},
+            ]},
+        )
+        expected_items = (
+            [{"id": "pid-v3-1", "order": "00709"}],
+            [{"id": "pid-v3-2", "order": "00710"}, {"id": "pid-v3-1", "order": "00709"}],
+            [{"id": "pid-v3-1", "order": "00709"}, {"id": "pid-v3-2", "order": "00712"}],
+        )
+        document_data = {
+            "scielo_id": "pid-v3-1",
+            "issn": "1234-1234",
+            "year": "2020",
+            "order": "00709",
+            "volume": "1",
+            "number": "1",
+            "package_name": "2020-01-01-00-01-09-090901_abc_v1n1.zip",
+            "deletion": False,
+        }
+        for fake_bundle_items, expected in zip(fakes_bundle_items, expected_items):
+            with self.subTest(fake_bundle_items=fake_bundle_items, expected=expected):
+                mk_get_or_create_bundle.return_value.json.return_value = \
+                    fake_bundle_items
+                update_document_in_bundle(document_data, str(self.issn_index_json_path))
+                mk_update_documents_in_bundle.assert_called_with(
+                    "1234-1234-2020-v1-n1", expected
+                )
+
+    def test_does_not_update_items_if_no_changes_on_delete(
+        self,
+        mk_get_or_create_bundle,
+        mk_update_documents_in_bundle,
+        mk_update_aop_bundle_items,
+    ):
+        fakes_bundle_items = (
+            {"items": []},
+            {"items": [{"id": "pid-v3-2", "order": "00710"}]},
+        )
+        document_data = {
+            "scielo_id": "pid-v3-1",
+            "issn": "1234-1234",
+            "year": "2020",
+            "order": "00709",
+            "volume": "1",
+            "number": "1",
+            "package_name": "2020-01-01-00-01-09-090901_abc_v1n1.zip",
+            "deletion": True,
+        }
+        for fake_bundle_items in fakes_bundle_items:
+            with self.subTest(fake_bundle_items=fake_bundle_items):
+                mk_get_or_create_bundle.return_value.json.return_value = \
+                    fake_bundle_items
+                update_document_in_bundle(document_data, str(self.issn_index_json_path))
+                mk_update_documents_in_bundle.assert_not_called()
+
+    def test_does_not_update_items_if_no_changes_on_adding(
+        self,
+        mk_get_or_create_bundle,
+        mk_update_documents_in_bundle,
+        mk_update_aop_bundle_items,
+    ):
+        fakes_bundle_items = (
+            {"items": [{"id": "pid-v3-1", "order": "00709"}]},
+            {"items": [
+                {"id": "pid-v3-1", "order": "00709"},
+                {"id": "pid-v3-2", "order": "00710"},
+            ]},
+        )
+        document_data = {
+            "scielo_id": "pid-v3-1",
+            "issn": "1234-1234",
+            "year": "2020",
+            "order": "00709",
+            "volume": "1",
+            "number": "1",
+            "package_name": "2020-01-01-00-01-09-090901_abc_v1n1.zip",
+            "deletion": False,
+        }
+        for fake_bundle_items in fakes_bundle_items:
+            with self.subTest(fake_bundle_items=fake_bundle_items):
+                mk_get_or_create_bundle.return_value.json.return_value = \
+                    fake_bundle_items
+                update_document_in_bundle(document_data, str(self.issn_index_json_path))
+                mk_update_documents_in_bundle.assert_not_called()
+
+    def test_returns_executions(
+        self,
+        mk_get_or_create_bundle,
+        mk_update_documents_in_bundle,
+        mk_update_aop_bundle_items,
+    ):
+        document_data = {
+            "scielo_id": "pid-v3-1",
+            "issn": "1234-1234",
+            "year": "2020",
+            "order": "00709",
+            "volume": "1",
+            "number": "1",
+            "package_name": "2020-01-01-00-01-09-090901_abc_v1n1.zip",
+            "deletion": True,
+        }
+        ret, executions = update_document_in_bundle(
+            document_data, str(self.issn_index_json_path)
+        )
+        self.assertEqual(
+            ret,
+            {
+                "id": "1234-1234-2020-v1-n1",
+                "status": mk_update_documents_in_bundle.return_value.status_code,
+            }
+        )
+        self.assertEqual(
+            executions,
+            [{
+                "package_name": document_data.get("package_name"),
+                "pid": document_data.get("scielo_id"),
+                "bundle_id": "1234-1234-2020-v1-n1",
+            }],
+        )
+
+    def test_does_not_update_aop_bundle_items_if_deletion_or_aop(
+        self,
+        mk_get_or_create_bundle,
+        mk_update_documents_in_bundle,
+        mk_update_aop_bundle_items,
+    ):
+        documents_data = [
+            {
+                "scielo_id": "pid-v3-1",
+                "issn": "1234-1234",
+                "year": "2020",
+                "order": "00709",
+                "volume": "1",
+                "number": "1",
+                "package_name": "2020-01-01-00-01-09-090901_abc_v1n1.zip",
+                "deletion": True,
+            },
+            {
+                "scielo_id": "pid-v3-1",
+                "issn": "1234-1234",
+                "year": "2020",
+                "order": "00709",
+                "package_name": "2020-01-01-00-01-09-090901_abc_v1n1.zip",
+                "deletion": False,
+            },
+        ]
+        for document_data in documents_data:
+            with self.subTest(document_data=document_data):
+                update_document_in_bundle(
+                    document_data, str(self.issn_index_json_path)
+                )
+                mk_update_aop_bundle_items.assert_not_called()
+
+    def test_returns_move_aop_execution(
+        self,
+        mk_get_or_create_bundle,
+        mk_update_documents_in_bundle,
+        mk_update_aop_bundle_items,
+    ):
+        document_data = {
+            "scielo_id": "pid-v3-1",
+            "issn": "1234-1234",
+            "year": "2020",
+            "order": "00709",
+            "volume": "1",
+            "number": "1",
+            "package_name": "2020-01-01-00-01-09-090901_abc_v1n1.zip",
+            "deletion": False,
+        }
+        move_aop_executions = [
+            {
+                "pid": "pid-v3-1",
+                "bundle_id": "1234-1234-aop",
+                "ex_ahead": True,
+                "removed": True,
+            },
+        ]
+        mk_update_aop_bundle_items.return_value = move_aop_executions
+        ret, executions = update_document_in_bundle(
+            document_data, str(self.issn_index_json_path)
+        )
+        self.assertEqual(
+            ret,
+            {
+                "id": "1234-1234-2020-v1-n1",
+                "status": mk_update_documents_in_bundle.return_value.status_code,
+            }
+        )
+        self.assertEqual(
+            executions,
+            [{
+                "package_name": document_data.get("package_name"),
+                "pid": document_data.get("scielo_id"),
+                "bundle_id": "1234-1234-2020-v1-n1",
+            }] + move_aop_executions,
+        )
 
 
 if __name__ == "__main__":
