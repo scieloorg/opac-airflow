@@ -20,6 +20,7 @@ from operations.sync_documents_to_kernel_operations import (
     register_update_documents,
     link_documents_to_documentsbundle,
     get_document_data,
+    extract_package_data,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -1219,6 +1220,107 @@ class TestGetDocumentData(TestCase):
             self.assertEqual(ret["file_name"], "0123-4567-abc-50-1-8.xml")
             self.assertEqual(ret["pid"], "cdmqrXxyd3DRjr88hpGQPLx")
             self.assertTrue(ret["deletion"])
+
+
+class TestExtractPackageData(TestCase):
+    def setUp(self):
+        self.proc_dir_path = tempfile.mkdtemp()
+        self.sps_packages_path = self.proc_dir_path
+        self.article_meta_xml = """<volume>1</volume>
+        <issue>1</issue>
+        <fpage>1</fpage>
+        <lpage>8</lpage>"""
+
+    def tearDown(self):
+        shutil.rmtree(self.proc_dir_path)
+
+    def _get_fake_article_ids(self, pid_v3, to_delete, other):
+        delete_attr = 'specific-use="delete"' if to_delete else ""
+        return f"""
+        <article-id pub-id-type="publisher-id" specific-use="scielo-v3">{pid_v3}</article-id>
+        <article-id pub-id-type="other" {delete_attr}>{other}</article-id>
+        """
+
+    def test_raises_error_if_zipfile_not_found(self):
+        sps_package = f"{self.proc_dir_path}/2020-01-01-00-01-09-090901_abc_v1n1.zip"
+        self.assertRaises(FileNotFoundError, extract_package_data, sps_package)
+
+    def test_returns_no_documents_data_if_no_xmls(self):
+        sps_package = f"{self.proc_dir_path}/2020-01-01-00-01-09-090901_abc_v1n1.zip"
+        sps_packages_files = {
+            sps_package: {
+                "v1n1a01.pdf": None,
+                "v1n1a02.pdf": None,
+                "0123-4567-abc-50-9-12-gpn1a01t1.htm": None,
+                "0123-4567-abc-50-9-12-gpn1a01g1.htm": None,
+                "v1n1a03.pdf": None,
+                "0123-4567-abc-50-13-15-gpn1a01t1.htm": None,
+                "0123-4567-abc-50-13-15-gpn1a01g1.htm": None,
+            },
+        }
+        create_fake_sps_packages(sps_packages_files)
+
+        resp, __ = extract_package_data(sps_package)
+        self.assertEqual(resp, {})
+
+    def test_returns_documents_data(self):
+        sps_package = f"{self.proc_dir_path}/2020-01-01-00-01-09-090901_abc_v1n1.zip"
+        sps_packages_files = {
+            sps_package: {
+                "0123-4567-abc-50-1-8.xml": create_fake_xml_content(
+                    self.article_meta_xml,
+                    article_ids=self._get_fake_article_ids("pid-v1", False, "00001"),
+                ),
+                "v1n1a01.pdf": None,
+                "0123-4567-abc-50-9-12.xml": create_fake_xml_content(
+                    self.article_meta_xml,
+                    article_ids=self._get_fake_article_ids("pid-v2", True, "00002"),
+                ),
+                "v1n1a02.pdf": None,
+                "0123-4567-abc-50-9-12-gpn1a01t1.htm": None,
+                "0123-4567-abc-50-9-12-gpn1a01g1.htm": None,
+                "0123-4567-abc-50-13-15.xml": create_fake_xml_content(
+                    self.article_meta_xml,
+                    article_ids=self._get_fake_article_ids("pid-v3", True, "00003"),
+                ),
+                "v1n1a03.pdf": None,
+                "0123-4567-abc-50-13-15-gpn1a01t1.htm": None,
+                "0123-4567-abc-50-13-15-gpn1a01g1.htm": None,
+            },
+        }
+        create_fake_sps_packages(sps_packages_files)
+
+        resp, fields_filter = extract_package_data(sps_package)
+
+        self.assertEqual(
+            resp["0123-4567-abc-50-1-8.xml"]["file_name"], "0123-4567-abc-50-1-8.xml"
+        )
+        self.assertEqual(
+            resp["0123-4567-abc-50-1-8.xml"]["package_path"],
+            f"{self.proc_dir_path}/2020-01-01-00-01-09-090901_abc_v1n1.zip"
+        )
+        self.assertFalse(resp["0123-4567-abc-50-1-8.xml"]["deletion"])
+        self.assertEqual(resp["0123-4567-abc-50-1-8.xml"]["pid"], "pid-v1")
+        self.assertEqual(resp["0123-4567-abc-50-1-8.xml"]["payload"]["order"], "00001")
+        self.assertEqual(
+            resp["0123-4567-abc-50-9-12.xml"]["file_name"], "0123-4567-abc-50-9-12.xml"
+        )
+        self.assertEqual(
+            resp["0123-4567-abc-50-9-12.xml"]["package_path"],
+            f"{self.proc_dir_path}/2020-01-01-00-01-09-090901_abc_v1n1.zip"
+        )
+        self.assertTrue(resp["0123-4567-abc-50-9-12.xml"]["deletion"])
+        self.assertEqual(resp["0123-4567-abc-50-9-12.xml"]["pid"], "pid-v2")
+        self.assertEqual(
+            resp["0123-4567-abc-50-13-15.xml"]["file_name"], "0123-4567-abc-50-13-15.xml"
+        )
+        self.assertEqual(
+            resp["0123-4567-abc-50-13-15.xml"]["package_path"],
+            f"{self.proc_dir_path}/2020-01-01-00-01-09-090901_abc_v1n1.zip"
+        )
+        self.assertTrue(resp["0123-4567-abc-50-13-15.xml"]["deletion"])
+        self.assertEqual(resp["0123-4567-abc-50-13-15.xml"]["pid"], "pid-v3")
+        self.assertEqual(fields_filter, ["file_name", "package_path"])
 
         self,
         mock_isfile,

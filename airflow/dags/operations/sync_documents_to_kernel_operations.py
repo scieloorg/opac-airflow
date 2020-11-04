@@ -408,3 +408,54 @@ def get_document_data(zip_file: ZipFile, xml_filename: str) -> Dict[str, Any]:
             document_data.update({"failed": True, "error": error})
 
     return document_data
+
+
+def extract_package_data(sps_package: str) -> Dict[str, dict]:
+    """
+    Lê todos os documentos XML do ``sps_package`` informado e extrai as informações 
+    contidas em cada um deles.
+
+    :param zip_file: Instância ZipFile de SPS Package
+
+    :return: Dict com os dados extraídos por arquivo XML presente no pacote SPS.
+    :return: List com os campos de identificação para cada versão do documento
+    Ex.:
+    {
+        "pidv3-0001.xml": {
+            "file_name": "pidv3-0001.xml",
+            "package_path": "acron-v1n1-1",
+            "bundle_id": "0001-0002-2020-v1-n1",
+            "deletion": "true",
+        },
+        "pidv3-0002.xml": {
+            "file_name": "pidv3-0002.xml",
+            "package_path": "acron-v1n1-2",
+            "bundle_id": "0001-0002-2020-v1-n1",
+            "deletion": "false",
+            "payload": {"field": "data"}
+        },
+        "pidv3-0002.xml": {
+            "file_name": "pidv3-000n.xml",
+            "package_path": "acron-v1n1-3",
+            "bundle_id": "0001-0002-2020-v1-n1",
+            "deletion": "false",
+            "payload": {"field": "data"}
+        },
+    }
+    """
+    documents_info = {}
+    with ZipFile(sps_package) as zip_file:
+        xmls_filenames = [
+            xml_filename
+            for xml_filename in zip_file.namelist()
+            if os.path.splitext(xml_filename)[-1] == ".xml"
+        ]
+        for i, xml_filename in enumerate(xmls_filenames, 1):
+            Logger.info(
+                'Reading document "%s" from "%s" [%d/%d]',
+                xml_filename, sps_package, i, len(xmls_filenames)
+            )
+            document_data = get_document_data(zip_file, xml_filename)
+            document_data.update({"package_path": sps_package})
+            documents_info[xml_filename] = document_data
+    return documents_info, ["file_name", "package_path"]
