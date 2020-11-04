@@ -22,6 +22,7 @@ from operations.sync_documents_to_kernel_operations import (
     get_document_data,
     extract_package_data,
     put_document_in_kernel,
+    sync_document,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -1462,6 +1463,142 @@ class TestPutDocumentInKernel(TestCase):
         self.assertEqual(execution["payload"], expected)
         self.assertFalse(execution["failed"])
         self.assertNotIn("error", execution)
+
+
+class TestSyncDocument(TestCase):
+    def test_no_document_records(self):
+        last_sync_document_result, executions = sync_document([])
+
+        self.assertEqual(last_sync_document_result, {})
+        self.assertEqual(executions, [])
+
+    def test_document_records_with_failed_extracted_data(self):
+        document_records = [
+            {
+                "package_path": "/proc/2020-01-01/2020-01-01-00-01-09-090901_abc_v1n1.zip",
+                "file_name": "0123-4567-abc-50-1-8.xml",
+                "deletion": True,
+                "failed": True,
+                "error": "Error reading package",
+            },
+            {
+                "package_path": "/proc/2020-01-01/2020-01-01-00-01-09-090901_abc_v1n1.zip",
+                "file_name": "0123-4567-abc-50-1-8.xml",
+                "deletion": False,
+                "pid": "pid-v3-1",
+                "failed": True,
+                "error": "Error reading XML",
+            },
+        ]
+
+        last_sync_document_result, executions = sync_document(document_records)
+
+        self.assertEqual(last_sync_document_result, {})
+        expected = []
+        for document_record in document_records:
+            expect_exec = copy.deepcopy(document_record)
+            expect_exec["package_name"] = pathlib.Path(document_record["package_path"]).name
+            del expect_exec["package_path"]
+            expected.append(expect_exec)
+        self.assertEqual(executions, expected)
+
+    @patch("operations.sync_documents_to_kernel_operations.delete_doc_from_kernel")
+    def test_document_records_to_delete(self, mk_delete_doc_from_kernel):
+        document_records = [
+            {
+                "package_path": "/proc/2020-01-01/2020-01-01-00-01-09-090901_abc_v1n1.zip",
+                "file_name": "0123-4567-abc-50-1-8.xml",
+                "deletion": True,
+                "failed": False,
+                "pid": "pid-v3-1",
+                "payload": {"scielo_id": "pid-v3-1", "issn": "1234-1234"},
+
+            },
+            {
+                "package_path": "/proc/2020-01-01/2020-01-01-00-01-09-090901_abc_v1n1.zip",
+                "file_name": "0123-4567-abc-50-1-8.xml",
+                "deletion": True,
+                "failed": False,
+                "pid": "pid-v3-1",
+                "payload": {"scielo_id": "pid-v3-1", "issn": "1234-1234"},
+
+            },
+        ]
+
+        last_sync_document_result, executions = sync_document(document_records)
+
+        self.assertEqual(
+            last_sync_document_result,
+            {
+                "scielo_id": "pid-v3-1",
+                "issn": "1234-1234",
+                "package_name": "2020-01-01-00-01-09-090901_abc_v1n1.zip",
+                "deletion": True,
+            }
+        )
+        expected = []
+        for document_record in document_records:
+            expect_exec = copy.deepcopy(document_record)
+            expect_exec.update({
+                "package_name": pathlib.Path(document_record["package_path"]).name,
+            })
+            del expect_exec["package_path"]
+            del expect_exec["payload"]
+            expected.append(expect_exec)
+        self.assertEqual(executions, expected)
+        mk_delete_doc_from_kernel.assert_has_calls([
+            call(document_record["pid"]) for document_record in document_records
+        ])
+
+    @patch("operations.sync_documents_to_kernel_operations.put_document_in_kernel")
+    def test_put_document_in_kernel(self, mk_put_document_in_kernel):
+        document_records = [
+            {
+                "package_path": "/proc/2020-01-01/2020-01-01-00-01-09-090901_abc_v1n1.zip",
+                "file_name": "0123-4567-abc-50-1-8.xml",
+                "deletion": False,
+                "failed": False,
+                "pid": "pid-v3-1",
+                "payload": {"scielo_id": "pid-v3-1", "issn": "1234-1234"},
+            },
+            {
+                "package_path": "/proc/2020-01-01/2020-01-01-00-01-09-090901_abc_v1n1.zip",
+                "file_name": "0123-4567-abc-50-1-8.xml",
+                "deletion": False,
+                "failed": False,
+                "pid": "pid-v3-1",
+                "payload": {"scielo_id": "pid-v3-1", "issn": "1234-1234"},
+            },
+        ]
+        xml_data_1 = {"assets": ["fig1.gif"], "pdfs": ["a1.pdf"]}
+        xml_data_2 = {"assets": ["fig1.tif"], "pdfs": ["a1-es.pdf"]}
+        mk_put_document_in_kernel.side_effect = (
+            (xml_data_1, {"failed": False, "payload": xml_data_1}),
+            (xml_data_2, {"failed": False, "payload": xml_data_2}),
+        )
+
+        last_sync_document_result, executions = sync_document(document_records)
+
+        self.assertEqual(
+            last_sync_document_result,
+            {
+                "assets": ["fig1.tif"],
+                "pdfs": ["a1-es.pdf"],
+                "package_name": "2020-01-01-00-01-09-090901_abc_v1n1.zip",
+                "deletion": False,
+            },
+        )
+        expected = []
+        for document_record, payload in zip(document_records, (xml_data_1, xml_data_2)):
+            expect_exec = copy.deepcopy(document_record)
+            expect_exec["package_name"] = pathlib.Path(document_record["package_path"]).name
+            del expect_exec["package_path"]
+            expect_exec["payload"] = payload
+            expected.append(expect_exec)
+        self.assertEqual(executions, expected)
+        mk_put_document_in_kernel.assert_has_calls([
+            call(document_record) for document_record in document_records
+        ])
 
     ):
         mock_isfile.return_value = True

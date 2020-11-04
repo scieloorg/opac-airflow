@@ -489,3 +489,63 @@ def put_document_in_kernel(data: dict) -> dict:
     register_update_doc_into_kernel(xml_data)
     execution = {"failed": False, "payload": xml_data}
     return xml_data, execution
+
+
+def sync_document(document_records: List[dict]) -> (dict, List[dict]):
+    """
+    Dada a lista de registros de documentos, executa a deleção ou o registro/atualização
+    do documento conforme os dados de cada item.
+
+    :param data: Dados extraídos a partir do XML no pacote SPS.
+
+    :return: Dados da última operação feita com o documento para o relacionamento com o 
+        bundle
+    :return: Dict com o resultado da execução. Se houver falha, conterá o erro. Caso 
+        contrário, o payload com os dados para o relacionamento do documento com o 
+        bundle
+    """
+    executions = []
+    last_sync_document_result = {}
+    for i, document_record in enumerate(document_records, 1):
+        # Atribui os dados iniciais da execução da operação de sincronização
+        package_name = os.path.basename(document_record["package_path"])
+        Logger.info(
+            'Synchronizing document record [%d/%d] from "%s"',
+            i, len(document_records), package_name
+        )
+        execution = {
+            "package_name": package_name,
+            "file_name": document_record["file_name"],
+            "deletion": document_record["deletion"],
+        }
+        if document_record.get("pid"):
+            execution["pid"] = document_record["pid"]
+
+        if document_record.get("failed"):
+            # Com falha registrado nos dados extraídos, não efetua a sincronização
+            Logger.error(
+                'Not synchronizing document due to error: %s', document_record["error"]
+            )
+            execution["failed"] = document_record["failed"]
+            execution["error"] = document_record["error"]
+        else:
+            Logger.info('Synchronizing document %s', execution)
+            execution["failed"] = False
+            if document_record.get("deletion"):
+                # Deleção do documento no Kernel
+                delete_doc_from_kernel(document_record["pid"])
+                Logger.info(
+                    'Document scielo_id: "%s" deleted from kernel',
+                    document_record["pid"],
+                )
+                last_sync_document_result = deepcopy(document_record.get("payload"))
+            else:
+                # Registro/atualização do documento no Kernel e no Object Store
+                updated_data, put_execution = put_document_in_kernel(document_record)
+                last_sync_document_result = updated_data
+                execution.update(put_execution)
+            last_sync_document_result["package_name"] = package_name
+            last_sync_document_result["deletion"] = document_record["deletion"]
+        executions.append(execution)
+
+    return last_sync_document_result, executions
