@@ -19,6 +19,7 @@ from operations.sync_documents_to_kernel_operations import (
     optimize_sps_pkg_zip_file,
     register_update_documents,
     link_documents_to_documentsbundle,
+    get_document_data,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -1103,6 +1104,121 @@ class TestOptimizeSPPackage(TestCase):
             expected = pathlib.Path(new_sps_zip_dir) / "2020-01-01-00-01-09-090901_abc_v1n1.zip"
             self.assertEqual(ret, str(expected))
             self.assertTrue(expected.is_file())
+
+
+class TestGetDocumentData(TestCase):
+    def setUp(self):
+        self.proc_dir_path = tempfile.mkdtemp()
+        self.sps_packages_path = f"{self.proc_dir_path}/2020-01-01-00-01-09-090901_abc_v1n1.zip"
+        self.article_meta_xml = """<volume>1</volume>
+        <issue>1</issue>
+        <fpage>1</fpage>
+        <lpage>8</lpage>"""
+
+    def tearDown(self):
+        shutil.rmtree(self.proc_dir_path)
+
+    def test_returns_error_if_no_xml_file_in_zip(self):
+        sps_packages_files = {
+            self.sps_packages_path: {
+                "0123-4567-abc-50-1-8.xml": None,
+            },
+        }
+        create_fake_sps_packages(sps_packages_files)
+
+        with zipfile.ZipFile(self.sps_packages_path) as zip_file:
+            ret = get_document_data(zip_file, "document-not-in-package.xml")
+
+            self.assertEqual(ret["file_name"], "document-not-in-package.xml")
+            self.assertIsNone(ret.get("pid"))
+            self.assertTrue(ret["failed"])
+            self.assertIn("document-not-in-package.xml", ret["error"])
+
+    def test_returns_error_if_invalid_xml(self):
+        article_ids = """
+        <article-id pub-id-type="publisher-id">S0074-02761962000200006
+        """
+        fake_xml = create_fake_xml_content(self.article_meta_xml, article_ids=article_ids)
+        sps_packages_files = {
+            self.sps_packages_path: {
+                "0123-4567-abc-50-1-8.xml": fake_xml,
+            },
+        }
+        create_fake_sps_packages(sps_packages_files)
+
+        with zipfile.ZipFile(self.sps_packages_path) as zip_file:
+            ret = get_document_data(zip_file, "0123-4567-abc-50-1-8.xml")
+
+            self.assertEqual(ret["file_name"], "0123-4567-abc-50-1-8.xml")
+            self.assertIsNone(ret.get("pid"))
+            self.assertTrue(ret["failed"])
+            self.assertIn("article-id", ret["error"])
+
+    def test_returns_error_if_no_pid_v3(self):
+        article_ids = """
+        <article-id pub-id-type="publisher-id">S0074-02761962000200006</article-id>
+        <article-id pub-id-type="other">00006</article-id>
+        """
+        fake_xml = create_fake_xml_content(self.article_meta_xml, article_ids=article_ids)
+        sps_packages_files = {
+            self.sps_packages_path: {
+                "0123-4567-abc-50-1-8.xml": fake_xml,
+            },
+        }
+        create_fake_sps_packages(sps_packages_files)
+
+        with zipfile.ZipFile(self.sps_packages_path) as zip_file:
+            ret = get_document_data(zip_file, "0123-4567-abc-50-1-8.xml")
+
+            self.assertEqual(ret["file_name"], "0123-4567-abc-50-1-8.xml")
+            self.assertIsNone(ret.get("pid"))
+            self.assertFalse(ret["deletion"])
+            self.assertTrue(ret["failed"])
+            self.assertEqual(
+                ret["error"],
+                'Could not get scielo id v3 in document "0123-4567-abc-50-1-8.xml"',
+            )
+
+    def test_returns_xml_to_preserve(self):
+        fake_xml = create_fake_xml_content(self.article_meta_xml)
+        sps_packages_files = {
+            self.sps_packages_path: {
+                "0123-4567-abc-50-1-8.xml": fake_xml,
+            },
+        }
+        create_fake_sps_packages(sps_packages_files)
+
+        with zipfile.ZipFile(self.sps_packages_path) as zip_file:
+            ret = get_document_data(zip_file, "0123-4567-abc-50-1-8.xml")
+
+            self.assertEqual(ret["file_name"], "0123-4567-abc-50-1-8.xml")
+            self.assertEqual(ret["pid"], "cdmqrXxyd3DRjr88hpGQPLx")
+            self.assertFalse(ret["deletion"])
+            self.assertEqual(ret["payload"]["scielo_id"], "cdmqrXxyd3DRjr88hpGQPLx")
+            self.assertEqual(ret["payload"]["issn"], "1234-5678")
+            self.assertEqual(ret["payload"]["year"], "2010")
+            self.assertEqual(ret["payload"]["volume"], "1")
+            self.assertEqual(ret["payload"]["number"], "1")
+
+    def test_returns_xml_to_delete(self):
+        article_ids = """
+        <article-id pub-id-type="publisher-id" specific-use="scielo-v3">cdmqrXxyd3DRjr88hpGQPLx</article-id>
+        <article-id pub-id-type="other" specific-use="delete">00006</article-id>
+        """
+        fake_xml = create_fake_xml_content(self.article_meta_xml, article_ids=article_ids)
+        sps_packages_files = {
+            self.sps_packages_path: {
+                "0123-4567-abc-50-1-8.xml": fake_xml,
+            },
+        }
+        create_fake_sps_packages(sps_packages_files)
+
+        with zipfile.ZipFile(self.sps_packages_path) as zip_file:
+            ret = get_document_data(zip_file, "0123-4567-abc-50-1-8.xml")
+
+            self.assertEqual(ret["file_name"], "0123-4567-abc-50-1-8.xml")
+            self.assertEqual(ret["pid"], "cdmqrXxyd3DRjr88hpGQPLx")
+            self.assertTrue(ret["deletion"])
 
         self,
         mock_isfile,

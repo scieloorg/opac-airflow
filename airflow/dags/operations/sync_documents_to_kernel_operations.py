@@ -5,7 +5,7 @@ from tempfile import mkdtemp
 from packtools import SPPackage
 from zipfile import ZipFile
 from copy import deepcopy
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 
 from deepdiff import DeepDiff
 
@@ -28,6 +28,7 @@ from operations.docs_utils import (
     update_documents_in_bundle,
     update_aop_bundle_items,
     get_or_create_bundle,
+    get_xml_data,
 )
 
 Logger = logging.getLogger(__name__)
@@ -374,3 +375,36 @@ def link_documents_to_documentsbundle(sps_package, documents, issn_index_json_pa
         return (ret, executions)
 
     Logger.info("link_documents_to_documentsbundle OUT")
+
+
+def get_document_data(zip_file: ZipFile, xml_filename: str) -> Dict[str, Any]:
+    """
+    Lê arquivo XML informado de ``zip_file`` e obtém os metadados para sincronização.
+
+    :param zip_file: Instância ZipFile de SPS Package
+    :param xml_filename: Nome de arquivo XML no ``zip_file``
+
+    :return: Dict com os dados extraídos do arquivo XML. Em caso de erros, também são
+        atribuídos como tal no dicionário.
+    """
+    document_data = {"file_name": xml_filename}
+    try:
+        is_doc_to_delete, doc_id = is_document_to_delete(zip_file, xml_filename)
+    except DocumentToDeleteException as exc:
+        Logger.error('Error reading document "%s": %s', xml_filename, exc)
+        document_data.update({"failed": True, "error": str(exc)})
+    else:
+        document_data["deletion"] = is_doc_to_delete
+        xml_data = get_xml_data(
+            zip_file.read(xml_filename), os.path.splitext(xml_filename)[-2]
+        )
+        if xml_data.get("scielo_id"):
+            document_data.update(
+                {"pid": xml_data.get("scielo_id"), "payload": xml_data}
+            )
+        else:
+            error = f'Could not get scielo id v3 in document "{xml_filename}"'
+            Logger.error(error)
+            document_data.update({"failed": True, "error": error})
+
+    return document_data
