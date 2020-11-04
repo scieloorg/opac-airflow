@@ -121,6 +121,27 @@ def save_document_in_database(
             Logger.error(exc)
 
 
+def get_documents_in_database(
+    collection: str,
+    filter: dict,
+    order_by: list,
+    connection_id: str = "mongo_default",
+):
+    """Retorna documentos em coleção MongoDB."""
+    with MongoHook(conn_id=connection_id) as hook: 
+        try:
+            Logger.info(
+                'Getting document filter %s from "%s" collection, ordered by %s',
+                filter, collection, order_by
+            )
+            cursor = hook.find(collection, filter, sort=order_by)
+        except (AirflowException, ProgrammingError) as exc:
+            Logger.error(exc)
+        else:
+            documents = [document for document in cursor]
+            return documents
+
+
 def add_execution_in_database(
     table, data={}, connection_id="postgres_report_connection"
 ):
