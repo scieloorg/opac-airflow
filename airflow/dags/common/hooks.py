@@ -12,7 +12,8 @@ from airflow.hooks.S3_hook import S3Hook
 from airflow.hooks.base_hook import BaseHook
 from airflow.hooks.postgres_hook import PostgresHook
 from airflow.exceptions import AirflowException
-from airflow.models import Variable
+from airflow.models import Variable, DagRun, clear_task_instances
+from airflow.utils.db import provide_session
 from psycopg2 import ProgrammingError
 
 from mongoengine import connect
@@ -137,3 +138,18 @@ def add_execution_in_database(
         logging.error(exc)
     else:
         logging.info("Registering `%s` into '%s' table.", data, table)
+
+
+@provide_session
+def clear_existing_dag_run(dag_id, run_id, session=None):
+    """Verifica se existe DagRun com ``dag_id`` e ``run_id`` informados e, caso já
+    exista, executa um clear em todas as instâncias de tarefas executadas anteriormente.
+    Caso contrário, retorna False.
+    """
+    dag_run = DagRun.find(dag_id=dag_id, run_id=run_id)
+    if not dag_run:
+        return False
+
+    tis = dag_run[0].get_task_instances()
+    clear_task_instances(tis=tis, session=session)
+    return True
