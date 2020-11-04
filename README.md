@@ -75,12 +75,20 @@ $ airflow webserver
 * Login: login do Object Store
 * Extra: `{"host": "<endereço do host:porta>"}`
 
+## Conexão com MongoDB:
+
+* Conn Id: `mongo_default`
+* Conn Type: `MongoDB`
+* Host: endereço do host MongoDB
+* Schema: `airflow-data`
+* Port: porta do host MongoDB
+* Extra: `{"authentication_source": "admin"}`
+
 ## Variáveis:
 
 * `BASE_TITLE_FOLDER_PATH`: Diretório de origem da base ISIS title
 * `BASE_ISSUE_FOLDER_PATH`: Diretório de origem da base ISIS issue
 * `WORK_FOLDER_PATH`: Diretório para a cópia das bases ISIS
-* `SCILISTA_FILE_PATH`: Caminho onde o arquivo `scilista` deverá ser lido
 * `XC_SPS_PACKAGES_DIR`: Diretório de origem dos pacotes SPS a serem sincronizados
 * `PROC_SPS_PACKAGES_DIR`: Diretório de destino dos pacotes SPS a serem sincronizados
 * `NEW_SPS_ZIP_DIR`: Diretório de destino dos pacotes SPS otimizados
@@ -107,6 +115,9 @@ $ airflow webserver
 
 * `AIRFLOW_HOME`: Diretório de instalação da aplicação 
 * `EMIAL_ON_FAILURE_RECIPIENTS`: Conta de e-mail para envio de falha, padrão: infra@scielo.org
+* `AIRFLOW__CORE__EXECUTOR`: Executor padrão para as tarefas do Airflow, padrão: LocalExecutor
+* `AIRFLOW__CORE__PARALLELISM`: Número máximo de tarefas executadas simultaneamente, a depender do número de workers/executors
+* `AIRFLOW__WEBSERVER__WORKERS`: Número de workers a rodar no Webserver Gunicorn, padrão: 1
 * `AIRFLOW__SMTP__SMTP_HOST`: Endereço do servidor de e-mail
 * `AIRFLOW__SMTP__SMTP_USER`: Endereço de e-mail responsável pelo envio de e-mails
 * `AIRFLOW__SMTP__SMTP_PASSWORD`: Endereço de e-mail responsável pelo envio de e-mails
