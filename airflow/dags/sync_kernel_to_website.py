@@ -115,7 +115,14 @@ def fetch_data(endpoint):
     """
     Obtém o JSON do endpoint do Kernel
     """
-    return kernel_connect(endpoint=endpoint, method="GET").json()
+    kwargs = {
+        "endpoint": endpoint,
+        "method": "GET",
+    }
+    kernel_timeout = Variable.get("KERNEL_FETCH_DATA_TIMEOUT", default_var=None)
+    if kernel_timeout:
+        kwargs["timeout"] = int(kernel_timeout)
+    return kernel_connect(**kwargs).json()
 
 
 def fetch_changes(since):
