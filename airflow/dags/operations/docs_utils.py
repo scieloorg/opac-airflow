@@ -122,9 +122,15 @@ def get_document_assets_data(current_version):
         prefix, ext = os.path.splitext(asset_id)
         prefix = prefix.replace(".thumbnail", "")
         assets_by_prefix[prefix] = assets_by_prefix.get(prefix) or []
+
+        try:
+            _uri = asset[LAST_VERSION][1]
+        except IndexError:
+            _uri = None
+
         uri = {
                 "asset_id": asset_id,
-                "uri": asset[LAST_VERSION][1],
+                "uri": _uri,
             }
         assets_by_prefix[prefix].append(uri)
         assets_data.append(uri)
@@ -138,6 +144,7 @@ def get_document_assets_data(current_version):
                 "uri_alternatives": [
                     alternative["uri"]
                     for alternative in asset_alternatives
+                    if alternative["uri"]
                 ],
                 "asset_alternatives": asset_alternatives,
             }

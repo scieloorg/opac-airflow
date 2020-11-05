@@ -270,6 +270,7 @@ def check_asset_uri_items_expected_in_webpage(existing_uri_items_in_html,
              for a in assets_data]),
         "total alternatives present in html": 0,
     }
+    incorrects = []
     for asset_data in assets_data:
         # {"prefix": prefix, "uri_alternatives": [],}
         uri_result = {}
@@ -282,13 +283,16 @@ def check_asset_uri_items_expected_in_webpage(existing_uri_items_in_html,
                 uri_result["present_in_html"].append(uri)
             else:
                 uri_result["absent_in_html"].append(uri)
+        if not uri_result["present_in_html"] and not uri_result["absent_in_html"]:
+            incorrects += [asset_data["prefix"]]
+            uri_result["incorrect"] = True
         results.append(uri_result)
-
         if not uri_result["present_in_html"]:
             summary["total missing"] += 1
         summary["total alternatives present in html"] += len(
             uri_result["present_in_html"])
-
+    if incorrects:
+        summary["total incorrect assets"] = len(incorrects)
     return results, summary
 
 
@@ -736,7 +740,7 @@ def add_responses(doc_data_list, website_url=None, request=True, timeout=None):
         for doc_data in doc_data_list:
             doc_data["uri"] = website_url + doc_data["uri"]
             body = doc_data.get("format") == "html"
-    uri_items = (doc_data["uri"] for doc_data in doc_data_list)
+    uri_items = (doc_data["uri"] for doc_data in doc_data_list if doc_data["uri"])
 
     responses = {}
     if request:
