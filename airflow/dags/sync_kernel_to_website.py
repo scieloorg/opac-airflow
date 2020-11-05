@@ -609,7 +609,7 @@ register_issues_task = PythonOperator(
 )
 
 
-def _get_known_documents(**kwargs) -> Dict[str, List[str]]:
+def _get_known_documents(known_documents, tasks) -> Dict[str, List[str]]:
     """Recupera a lista de todos os documentos que estão relacionados com
     um `DocumentsBundle`.
 
@@ -631,20 +631,21 @@ def _get_known_documents(**kwargs) -> Dict[str, List[str]]:
     conhecidos a partir da lista de eventos de `get` de `bundles`.
     """
 
-    known_documents = kwargs["ti"].xcom_pull(
-        key="i_documents", task_ids="register_issues_task"
-    )
+    # known_documents = kwargs["ti"].xcom_pull(
+    #     key="i_documents", task_ids="register_issues_task"
+    # )
 
     issues_recently_updated = [
         get_id(task["id"]) for task in filter_changes(tasks, "bundles", "get")
         if known_documents.get(get_id(task["id"])) is None
     ]
-
+    logging.info(issues_recently_updated)
     for issue_id in issues_recently_updated:
         known_documents.setdefault(issue_id, [])
         known_documents[issue_id] = list(
             itertools.chain(
-                known_documents[issue_id], fetch_bundles(issue_id).get("items", [])
+                known_documents[issue_id],
+                fetch_bundles(issue_id).get("items", [])
             )
         )
     return known_documents
