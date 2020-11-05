@@ -635,11 +635,15 @@ def _get_known_documents(known_documents, tasks) -> Dict[str, List[str]]:
     #     key="i_documents", task_ids="register_issues_task"
     # )
 
+    # obtém os issues mais recentes
     issues_recently_updated = [
         get_id(task["id"]) for task in filter_changes(tasks, "bundles", "get")
         if known_documents.get(get_id(task["id"])) is None
     ]
+
     logging.info(issues_recently_updated)
+    # percorre os issues mais recentes e atualiza `known_documents[issue_id]`
+    # com os documentos retornados por `fetch_bundles`
     for issue_id in issues_recently_updated:
         known_documents.setdefault(issue_id, [])
         known_documents[issue_id] = list(

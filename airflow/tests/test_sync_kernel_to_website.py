@@ -586,7 +586,7 @@ class RegisterDocumentRenditionsTest(unittest.TestCase):
 @patch("sync_kernel_to_website.fetch_bundles")
 class TestGetKnownDocuments(unittest.TestCase):
 
-    def test__get_known_documents_(
+    def test__get_known_documents_adds_and_returns_new_issue_and_its_documents_in_input_dict(
             self, mock_fetch_bundles, mock_filter_changes):
         mock_issue = {
             "_id": "0001-3714-1999-v60-n2",
@@ -630,3 +630,81 @@ class TestGetKnownDocuments(unittest.TestCase):
 
         result = _get_known_documents(known_documents, tasks)
         self.assertDictEqual(expected, result)
+        self.assertIs(known_documents, result)
+
+    def test__get_known_documents_adds_and_returns_new_issue_and_no_documents_in_input_dict(
+            self, mock_fetch_bundles, mock_filter_changes):
+        mock_issue = {}
+        mock_fetch_bundles.side_effect = [mock_issue]
+        mock_filter_changes.return_value = [
+            {
+                "id": "/bundles/0001-3714-1999-v60-n2",
+                "timestamp": "2020-11-05T16:54:12.236462Z",
+                "change_id": "5fa42e34c1e393cec121d6b5"
+
+            },
+        ]
+        tasks = MagicMock()
+        known_documents = {
+            "0001-3714-1998-v29-n3": [],
+        }
+        expected = {
+            "0001-3714-1998-v29-n3": [],
+            "0001-3714-1999-v60-n2": [],
+        }
+
+        result = _get_known_documents(known_documents, tasks)
+        self.assertDictEqual(expected, result)
+
+    def test__get_known_documents_returns_unchanged_input_dict(
+            self, mock_fetch_bundles, mock_filter_changes):
+        mock_filter_changes.return_value = []
+        tasks = MagicMock()
+        known_documents = {
+            "0001-3714-1998-v29-n3": [],
+        }
+        expected = known_documents.copy()
+
+        result = _get_known_documents(known_documents, tasks)
+        self.assertDictEqual(expected, result)
+
+    def test__get_known_documents_do_nothing_because_input_dict_has_already_documents(
+            self, mock_fetch_bundles, mock_filter_changes):
+        mock_issue = {
+            "_id": "0001-3714-1999-v60-n2",
+            "id": "0001-3714-1999-v60-n2",
+            "created": "2020-10-06T15:15:04.310621Z",
+            "updated": "2020-10-06T15:15:04.311271Z",
+            "items": [
+                {"id": "9CgFRVMHSKmp6Msj5CPBZRb", "order": "00502"},
+                {"id": "c4H4TjsZS7YzjTjyYD5f5Ct", "order": "00501"},
+                {"id": "QXJwLFnG565Prww5YdqqpTq", "order": "00504"},
+            ],
+            "metadata": {
+                "publication_months": {"range": [9, 10]},
+                "publication_year": "2020",
+                "volume": "67",
+                "number": "5",
+                "pid": "0034-737X20200005"
+            }
+        }
+        mock_fetch_bundles.side_effect = [mock_issue]
+        mock_filter_changes.return_value = [
+            {
+                "id": "/bundles/0001-3714-1999-v60-n2",
+                "timestamp": "2020-11-05T16:54:12.236462Z",
+                "change_id": "5fa42e34c1e393cec121d6b5"
+
+            },
+        ]
+        tasks = MagicMock()
+        known_documents = {
+            "0001-3714-1999-v60-n2": [
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ],
+        }
+        expected = known_documents.copy()
+
+        result = _get_known_documents(known_documents, tasks)
+        self.assertDictEqual(expected, result)
+        self.assertIs(known_documents, result)
