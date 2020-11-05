@@ -51,7 +51,7 @@ def http_hook_run(api_hook, method, endpoint, data=None, headers=DEFAULT_HEADER,
     return response
 
 
-def kernel_connect(endpoint, method, data=None, headers=DEFAULT_HEADER, timeout=10):
+def kernel_connect(endpoint, method, data=None, headers=DEFAULT_HEADER, timeout=13):
     api_hook = HttpHook(http_conn_id="kernel_conn", method=method)
     response = http_hook_run(
         api_hook=api_hook,
