@@ -631,10 +631,10 @@ def register_documents(**kwargs):
         :param document_id: Identificador único de um documento
         """
 
-        for issue_id, items in known_documents.items():
-            for item in items:
-                if document_id == item["id"]:
-                    return (issue_id, item)
+        for issue_id, docs in known_documents.items():
+            for doc in docs:
+                if document_id == docs["id"]:
+                    return (issue_id, doc)
 
         return (None, {})
 
