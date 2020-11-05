@@ -1235,6 +1235,39 @@ class TestGetDocumentAssetsData(TestCase):
         self.assertIs(assets_data[2], grouped_by_id[1]["asset_alternatives"][0])
         self.assertIs(assets_data[3], grouped_by_id[1]["asset_alternatives"][1])
 
+    def test_get_document_assets_data_returns_empty_list_of_alternatives(self):
+        data = {}
+        data["assets"] = {
+            "a01": [
+            ],
+            "a02.jpg": [
+                ["2020-08-10T11:38:46.759859Z", "https://vrsao2/a02.jpg"],
+            ],
+        }
+        expected = [
+            {
+                "prefix": "a01",
+                "uri_alternatives": [],
+                "asset_alternatives": [
+                    {"asset_id": "a01", "uri": None},
+                ],
+            },
+            {
+                "prefix": "a02",
+                "uri_alternatives": ["https://vrsao2/a02.jpg"],
+                "asset_alternatives": [
+                    {"asset_id": "a02.jpg", "uri": "https://vrsao2/a02.jpg"},
+                ],
+            },
+        ]
+        expected_assets_data = [
+            {"asset_id": "a01", "uri": None},
+            {"asset_id": "a02.jpg", "uri": "https://vrsao2/a02.jpg"},
+        ]
+        assets_data, grouped_by_id = get_document_assets_data(data)
+        self.assertEqual(expected, grouped_by_id)
+        self.assertEqual(expected_assets_data, assets_data)
+
 
 class Testget_document_renditions_data(TestCase):
 

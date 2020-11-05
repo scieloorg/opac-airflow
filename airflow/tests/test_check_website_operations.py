@@ -3396,6 +3396,53 @@ class TestCheckAssetUriItemsExpectedInWebpage(TestCase):
         self.assertEqual(expected, result)
         self.assertEqual(expected_summary, summary)
 
+    def test_check_asset_uri_items_expected_in_webpage_returns_incorrect_assets(self):
+        uri_items_in_html = [
+            "asset_uri_1.jpg",
+            "asset_uri_2.jpg",
+            "/j/xyz/a/lokiujyht?format=html&lang=en",
+            "/j/xyz/a/lokiujyht?format=pdf&lang=es",
+            "/j/xyz/a/lokiujyht?format=pdf&lang=en",
+        ]
+        assets_data = [
+            {
+                "prefix": "asset_uri_1",
+                "uri_alternatives": []
+            },
+            {
+                "prefix": "asset_uri_2",
+                "uri_alternatives": []
+            }
+        ]
+        expected = [
+            {
+                "type": "asset",
+                "id": "asset_uri_1",
+                "present_in_html": [],
+                "absent_in_html": [],
+                "incorrect": True,
+            },
+            {
+                "type": "asset",
+                "id": "asset_uri_2",
+                "present_in_html": [],
+                "absent_in_html": [],
+                "incorrect": True,
+            },
+        ]
+        expected_summary = {
+            "total expected": 2,
+            "total missing": 2,
+            "total alternatives": 0,
+            "total alternatives present in html": 0,
+            "total incorrect assets": 2,
+        }
+        result, summary = check_asset_uri_items_expected_in_webpage(
+                    uri_items_in_html,
+                    assets_data)
+        self.assertEqual(expected, result)
+        self.assertEqual(expected_summary, summary)
+
 
 class TestCalculateMissingAndTotalItems(TestCase):
     def test_calculate_missing_and_total_returns_no_missing(self):

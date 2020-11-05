@@ -144,6 +144,7 @@ def get_document_assets_data(current_version):
                 "uri_alternatives": [
                     alternative["uri"]
                     for alternative in asset_alternatives
+                    if alternative["uri"]
                 ],
                 "asset_alternatives": asset_alternatives,
             }
