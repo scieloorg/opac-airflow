@@ -6,6 +6,7 @@ from airflow.utils.dates import days_ago
 
 from subdags.check_website_subdags import (
     create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2,
+    _group_documents_by_issue_pid_v2,
 )
 
 
@@ -68,3 +69,64 @@ class TestCreateSubdagToCheckDocumentsDeeplyGroupedByIssuePidV2(TestCase):
         ]
         self.assertListEqual(calls, mock_python_op.call_args_list)
 
+
+class Test_group_documents_by_issue_pid_v2(TestCase):
+
+    @patch("subdags.check_website_subdags.Variable.get")
+    def test__group_documents_by_issue_pid_v2_returns_groups_from_variable(
+            self, mock_get):
+        mock_get.return_value = [
+            "/scielo.php?script=sci_arttext"
+            "&pid=S0001-30352020000501101",
+            "/scielo.php?script=sci_arttext"
+            "&pid=S0203-19982020000501101",
+            "/scielo.php?script=sci_arttext"
+            "&pid=S0203-19982020000511111",
+            "/scielo.php?script=sci_arttext"
+            "&pid=S0203-19982020000588888",
+        ]
+        expected = {
+            "0001-303520200005": [
+                "/scielo.php?script=sci_arttext"
+                "&pid=S0001-30352020000501101",
+            ],
+            "0203-199820200005": [
+                "/scielo.php?script=sci_arttext"
+                "&pid=S0203-19982020000501101",
+                "/scielo.php?script=sci_arttext"
+                "&pid=S0203-19982020000511111",
+                "/scielo.php?script=sci_arttext"
+                "&pid=S0203-19982020000588888",
+            ],
+        }
+        result = _group_documents_by_issue_pid_v2({})
+        self.assertDictEqual(expected, result)
+
+    @patch("subdags.check_website_subdags.Variable.get")
+    def test__group_documents_by_issue_pid_v2_returns_groups_from_args(
+            self, mock_get):
+        mock_get.side_effect = Exception("")
+        args = {
+            "_sci_arttext":
+            ["/scielo.php?script=sci_arttext"
+             "&pid=S0001-30352020000501101",
+             "/scielo.php?script=sci_arttext"
+             "&pid=S0203-19982020000501101",
+             "/scielo.php?script=sci_arttext"
+             "&pid=S0203-19982020000511111",
+             ]
+        }
+        expected = {
+            "0001-303520200005": [
+                "/scielo.php?script=sci_arttext"
+                "&pid=S0001-30352020000501101",
+            ],
+            "0203-199820200005": [
+                "/scielo.php?script=sci_arttext"
+                "&pid=S0203-19982020000501101",
+                "/scielo.php?script=sci_arttext"
+                "&pid=S0203-19982020000511111",
+            ],
+        }
+        result = _group_documents_by_issue_pid_v2(args)
+        self.assertDictEqual(expected, result)

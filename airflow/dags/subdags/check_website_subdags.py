@@ -19,9 +19,11 @@ def _group_documents_by_issue_pid_v2(args, default_uri_items=None):
             "_sci_arttext", default_var=[], deserialize_json=True)
         Logger.info("Variable: %s", uri_items)
     except Exception:
+        # sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) 
+        # could not connect to server: Connection refused
         uri_items = args.get("_sci_arttext") or []
         Logger.info("args: %s", uri_items)
-    uri_items = uri_items or default_uri_items
+    uri_items = uri_items or default_uri_items or []
     Logger.info("create_subdag for %i", len(uri_items))
     return group_documents_by_issue_pid_v2(uri_items)
 
