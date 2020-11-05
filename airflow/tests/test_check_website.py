@@ -482,6 +482,7 @@ class TestGetUriItemsFromPidFiles(TestCase):
         self.kwargs["ti"].xcom_push.assert_not_called()
 
 
+@patch("check_website.Variable.set")
 class TestGetUriItemsGroupedByScriptName(TestCase):
     def setUp(self):
         self.kwargs = {
@@ -491,7 +492,7 @@ class TestGetUriItemsGroupedByScriptName(TestCase):
         }
 
     @patch("check_website.Logger.info")
-    def test_get_uri_items_grouped_by_script_name_returns_true(self, mock_info):
+    def test_get_uri_items_grouped_by_script_name_returns_true(self, mock_info, mock_set):
         uri_list = [
             "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
@@ -599,7 +600,7 @@ class TestGetUriItemsGroupedByScriptName(TestCase):
         )
 
     @patch("check_website.Logger.info")
-    def test_get_uri_items_grouped_by_script_name_returns_false(self, mock_info):
+    def test_get_uri_items_grouped_by_script_name_returns_false(self, mock_info, mock_set):
         bad_uri_list = [
             "/scielo.php?param1=sci_arttext&pid=S0001-30352020000501101",
         ]
