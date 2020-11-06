@@ -631,22 +631,10 @@ def _get_known_documents(known_documents, tasks) -> Dict[str, List[str]]:
     conhecidos a partir da lista de eventos de `get` de `bundles`.
     """
 
-    # known_documents = kwargs["ti"].xcom_pull(
-    #     key="i_documents", task_ids="register_issues_task"
-    # )
-
-    # obtém os issues mais recentes
-    issues_recently_updated = []
     for task in filter_changes(tasks, "bundles", "get"):
         issue_id = get_id(task["id"])
         if known_documents.get(issue_id) is None:
-            issues_recently_updated.append(issue_id)
-
-    logging.info(issues_recently_updated)
-    # percorre os issues mais recentes e atualiza `known_documents[issue_id]`
-    # com os documentos retornados por `fetch_bundles`
-    for issue_id in issues_recently_updated:
-        known_documents[issue_id] = fetch_bundles(issue_id).get("items", [])
+            known_documents[issue_id] = fetch_bundles(issue_id).get("items", [])
     return known_documents
 
 
