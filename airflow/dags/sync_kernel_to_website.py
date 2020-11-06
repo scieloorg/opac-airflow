@@ -645,13 +645,7 @@ def _get_known_documents(known_documents, tasks) -> Dict[str, List[str]]:
     # percorre os issues mais recentes e atualiza `known_documents[issue_id]`
     # com os documentos retornados por `fetch_bundles`
     for issue_id in issues_recently_updated:
-        known_documents.setdefault(issue_id, [])
-        known_documents[issue_id] = list(
-            itertools.chain(
-                known_documents[issue_id],
-                fetch_bundles(issue_id).get("items", [])
-            )
-        )
+        known_documents[issue_id] = fetch_bundles(issue_id).get("items", [])
     return known_documents
 
 
