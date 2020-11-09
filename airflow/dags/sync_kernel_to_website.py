@@ -783,6 +783,9 @@ def register_documents_alt(**kwargs):
             )
         return known_documents
 
+    known_documents = kwargs["ti"].xcom_pull(
+            key="i_documents", task_ids="register_issues_task"
+        )
     known_documents = _get_known_documents(**kwargs)
 
     # TODO: Em caso de um update no document é preciso atualizar o registro
