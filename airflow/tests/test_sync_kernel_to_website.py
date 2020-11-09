@@ -12,6 +12,7 @@ from sync_kernel_to_website import (
     _get_relation_data,
     _remodel_known_documents,
     _get_relation_data_new,
+    _get_relation_data_old,
 )
 from operations.sync_kernel_to_website_operations import (
     ArticleFactory,
@@ -955,6 +956,52 @@ class TestGetRelationDataNew(unittest.TestCase):
         result = _get_relation_data_new(known_documents, document_id)
         self.assertEqual(expected, result)
         mock_isinstance.assert_called_once()
+
+
+class TestGetRelationDataOld(unittest.TestCase):
+
+    def test__get_relation_data_old_returns_bundle_and_document(self):
+        known_documents = {
+            "issue_id": [
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ],
+            "issue_id_2": [
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ]
+        }
+        document_id = "HJgFV9MHSKmp6Msj5CPBZRb"
+        expected = (
+            "issue_id",
+            {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"}
+        )
+        result = _get_relation_data_old(known_documents, document_id)
+        self.assertEqual(expected, result)
+
+    def test__get_relation_data_old_returns_none_and_no_docs(self):
+        known_documents = {
+            "issue_id": [
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ],
+            "issue_id_2": [
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ]
+        }
+        document_id = "AAAAAAMHSKmp6Msj5CPBZRb"
+        expected = (None, {})
+        result = _get_relation_data_old(known_documents, document_id)
+        self.assertEqual(expected, result)
 
 
 class TestRemodelKnownDocuments(unittest.TestCase):
