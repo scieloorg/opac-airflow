@@ -649,6 +649,53 @@ def _remodel_known_documents(known_documents):
     return remodeled_known_documents
 
 
+def _get_relation_data_old(known_documents, document_id: str) -> Tuple[str, Dict]:
+    """Recupera informações sobre o relacionamento entre o
+    DocumentsBundle e o Document.
+
+    Retorna uma tupla contendo o identificador da issue onde o
+    documento está relacionado e o item do relacionamento.
+
+    >> _get_relation_data("67TH7T7CyPPmgtVrGXhWXVs")
+    ('0034-8910-2019-v53', {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+
+    :param known_documents: Dicionário cujas chaves são `issue_id` e
+        valores são lista de dicionários no padrão 
+            `{'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'}`
+    :param document_id: Identificador único de um documento
+    """
+    for issue_id, docs in known_documents.items():
+        for doc in docs:
+            if document_id == doc["id"]:
+                return (issue_id, doc)
+
+    return (None, {})
+
+
+def _get_relation_data_new(known_documents, document_id: str) -> Tuple[str, Dict]:
+    """Recupera informações sobre o relacionamento entre o
+    DocumentsBundle e o Document.
+
+    Retorna uma tupla contendo o identificador da issue onde o
+    documento está relacionado e o item do relacionamento.
+
+    >> _get_relation_data("67TH7T7CyPPmgtVrGXhWXVs")
+    ('0034-8910-2019-v53', {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+
+    :param known_documents: Dicionário cujas chaves são `document_id` e
+        valores é `{'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'}`
+    :param document_id: Identificador único de um documento
+    """
+    data = known_documents.get(document_id)
+    if data:
+        return data
+    for value in known_documents.values():
+        if not isinstance(value, tuple):
+            return None
+        break
+    return (None, {})
+
+
 def _get_relation_data(known_documents, document_id: str) -> Tuple[str, Dict]:
     """Recupera informações sobre o relacionamento entre o
     DocumentsBundle e o Document.
@@ -664,13 +711,9 @@ def _get_relation_data(known_documents, document_id: str) -> Tuple[str, Dict]:
             `{'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'}`
     :param document_id: Identificador único de um documento
     """
-
-    for issue_id, docs in known_documents.items():
-        for doc in docs:
-            if document_id == doc["id"]:
-                return (issue_id, doc)
-
-    return (None, {})
+    return (
+        _get_relation_data_new(known_documents, document_id) or
+        _get_relation_data_old(known_documents, document_id))
 
 
 def register_documents_alt(**kwargs):

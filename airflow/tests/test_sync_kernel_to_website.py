@@ -757,6 +757,89 @@ class TestGetRelationData(unittest.TestCase):
         result = _get_relation_data(known_documents, document_id)
         self.assertEqual(expected, result)
 
+    def test__get_relation_data_uses_remodeled_known_documents_and_returns_bundle_and_document(self):
+        known_documents = {
+            "RCgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ),
+            "CGgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LLgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
+            "RC13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ),
+            "CG13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJ13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LL13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
+        }
+        document_id = "HJgFV9MHSKmp6Msj5CPBZRb"
+        expected = (
+            "issue_id",
+            {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"}
+        )
+        result = _get_relation_data(known_documents, document_id)
+        self.assertEqual(expected, result)
+
+    def test__get_relation_data_uses_remodeled_known_documents_and_returns_none_and_no_docs(self):
+        known_documents = {
+            "RCgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ),
+            "CGgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LLgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
+            "RC13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ),
+            "CG13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJ13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LL13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
+        }
+        document_id = "AAAAAAMHSKmp6Msj5CPBZRb"
+        expected = (None, {})
+        result = _get_relation_data(known_documents, document_id)
+        self.assertEqual(expected, result)
+
 
 class TestRemodelKnownDocuments(unittest.TestCase):
 
