@@ -743,50 +743,10 @@ def register_documents_alt(**kwargs):
 
         return (None, {})
 
-    def _get_known_documents(**kwargs) -> Dict[str, List[str]]:
-        """Recupera a lista de todos os documentos que estão relacionados com
-        um `DocumentsBundle`.
-
-        Levando em consideração que a DAG que detecta mudanças na API do Kernel
-        roda de forma assíncrona em relação a DAG de espelhamento/sincronização.
-
-        É possível que algumas situações especiais ocorram onde em uma rodada
-        **anterior** o **evento de registro** de um `Document` foi capturado mas a
-        atualização de seu `DocumentsBundle` não ocorreu (elas ocorrem em transações
-        distintas e possuem timestamps também distintos). O documento será
-        registrado como **órfão** e sua `task` não será processada na próxima
-        execução.
-
-        Na próxima execução a task `register_issue_task` entenderá que o
-        `bundle` é órfão e não conhecerá os seus documentos (known_documents)
-        e consequentemente o documento continuará órfão.
-
-        Uma solução para este problema é atualizar a lista de documentos
-        conhecidos a partir da lista de eventos de `get` de `bundles`.
-        """
-
-        known_documents = kwargs["ti"].xcom_pull(
-            key="i_documents", task_ids="register_issues_task"
-        )
-
-        issues_recently_updated = [
-            get_id(task["id"]) for task in filter_changes(tasks, "bundles", "get")
-            if known_documents.get(get_id(task["id"])) is None
-        ]
-
-        for issue_id in issues_recently_updated:
-            known_documents.setdefault(issue_id, [])
-            known_documents[issue_id] = list(
-                itertools.chain(
-                    known_documents[issue_id], fetch_bundles(issue_id).get("items", [])
-                )
-            )
-        return known_documents
-
     known_documents = kwargs["ti"].xcom_pull(
             key="i_documents", task_ids="register_issues_task"
         )
-    known_documents = _get_known_documents(**kwargs)
+    known_documents = _get_known_documents(known_documents, task)
 
     # TODO: Em caso de um update no document é preciso atualizar o registro
     # Precisamos de uma nova task?
