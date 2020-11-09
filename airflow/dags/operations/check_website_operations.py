@@ -1406,7 +1406,7 @@ def format_document_availability_result_to_register(
                 doc_checkup_result["detail"].get("web pdf"))[0]
 
     pid_v2 = doc_data.get("pid_v2", "").strip()
-    previous_pid_v2 = doc_data.get("pid_v2", "").strip()
+    previous_pid_v2 = doc_data.get("previous_pid_v2", "").strip()
 
     data = {}
     data["dag_run"] = dag_info.get("run_id")
