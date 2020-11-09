@@ -1057,4 +1057,3 @@ class TestRemodelKnownDocuments(unittest.TestCase):
         }
         result = _remodel_known_documents(known_documents)
         self.assertEqual(expected, result)
-
