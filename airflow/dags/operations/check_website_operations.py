@@ -1447,3 +1447,12 @@ def format_document_availability_data_to_register(
                 webpages_availability[0],
                 rendition_availability, extra_data):
             add_execution_in_database("availability", row)
+
+
+def group_documents_by_issue_pid_v2(uri_items):
+    groups = {}
+    for uri in uri_items:
+        pid_j, pid_i, pid_d = get_journal_issue_doc_pids(uri)
+        groups[pid_i] = groups.get(pid_i, [])
+        groups[pid_i].append(uri)
+    return groups

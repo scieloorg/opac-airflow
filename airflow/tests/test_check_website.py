@@ -28,7 +28,9 @@ from check_website import (
     merge_uri_items_from_different_sources,
     check_input_vs_processed_pids,
     check_documents_deeply,
+    check_documents_deeply_grouped_by_issue_pid_v2,
 )
+
 from .test_check_website_operations import (
     MockClientResponse,
     START_TIME,
@@ -480,6 +482,7 @@ class TestGetUriItemsFromPidFiles(TestCase):
         self.kwargs["ti"].xcom_push.assert_not_called()
 
 
+@patch("check_website.Variable.set")
 class TestGetUriItemsGroupedByScriptName(TestCase):
     def setUp(self):
         self.kwargs = {
@@ -489,7 +492,7 @@ class TestGetUriItemsGroupedByScriptName(TestCase):
         }
 
     @patch("check_website.Logger.info")
-    def test_get_uri_items_grouped_by_script_name_returns_true(self, mock_info):
+    def test_get_uri_items_grouped_by_script_name_returns_true(self, mock_info, mock_set):
         uri_list = [
             "/scielo.php?script=sci_arttext&pid=S0001-30352020000501101",
             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
@@ -597,7 +600,7 @@ class TestGetUriItemsGroupedByScriptName(TestCase):
         )
 
     @patch("check_website.Logger.info")
-    def test_get_uri_items_grouped_by_script_name_returns_false(self, mock_info):
+    def test_get_uri_items_grouped_by_script_name_returns_false(self, mock_info, mock_set):
         bad_uri_list = [
             "/scielo.php?param1=sci_arttext&pid=S0001-30352020000501101",
         ]
@@ -1661,6 +1664,8 @@ class TestMergeUriItemsFromDifferentSources(TestCase):
         self.kwargs["ti"].xcom_push.assert_not_called()
 
 
+@patch("check_website.Variable.set")
+@patch("check_website.Variable.get")
 class TestCheckInputVsProcessedPids(TestCase):
 
     def setUp(self):
@@ -1670,7 +1675,7 @@ class TestCheckInputVsProcessedPids(TestCase):
             "run_id": "test_run_id",
         }
 
-    def test_check_input_vs_processed_pids_gets_merge_pids_from_different_tasks(self):
+    def test_check_input_vs_processed_pids_gets_merge_pids_from_different_tasks(self, mock_get, mock_set):
         self.kwargs["ti"].xcom_pull.side_effect = [
             [
                 "0001-376520200005",
@@ -1679,10 +1684,10 @@ class TestCheckInputVsProcessedPids(TestCase):
                 "0001-303520200005",
                 "0001-376520200005",
             ],
-            [
-                "0001-303520200005",
-                "0001-376520200005",
-            ],
+        ]
+        mock_get.return_value = [
+            "0001-303520200005",
+            "0001-376520200005",
         ]
         result = check_input_vs_processed_pids(**self.kwargs)
         self.assertTrue(result)
@@ -1692,25 +1697,23 @@ class TestCheckInputVsProcessedPids(TestCase):
                  task_ids="group_uri_items_from_uri_lists_by_script_name_id",),
             call(key="pid_items",
                  task_ids="get_uri_items_from_pid_list_csv_files_id",),
-            call(key="processed_pid_v2_items",
-                 task_ids="check_documents_deeply_id",),
             ],
             self.kwargs["ti"].xcom_pull.call_args_list
         )
 
     @patch("check_website.Logger")
     def test_check_input_vs_processed_pids_registers_success(
-            self, mock_logger):
+            self, mock_logger, mock_get, mock_set):
         self.kwargs["ti"].xcom_pull.side_effect = [
             [
-                "0001-303520200005",
+                "/scielo.php?script=sci_arttext&pid=S0001-30352020000501234",
             ],
             [
-                "0001-376520200005",
+                "S0001-37652020000598765",
             ],
-            [
-                "0001-303520200005", "0001-376520200005",
-            ]
+        ]
+        mock_get.return_value = [
+            "S0001-30352020000501234", "S0001-37652020000598765",
         ]
         result = check_input_vs_processed_pids(**self.kwargs)
         self.assertTrue(result)
@@ -1731,16 +1734,16 @@ class TestCheckInputVsProcessedPids(TestCase):
 
     @patch("check_website.Logger")
     def test_check_input_vs_processed_pids_registers_error(
-            self, mock_logger):
+            self, mock_logger, mock_get, mock_set):
         self.kwargs["ti"].xcom_pull.side_effect = [
             [
-                "0001-303520200005",
+                "/scielo.php?script=sci_arttext&pid=S0001-30352020000501234",
             ],
             [
-                "0001-376520200005",
+                "S0001-37652020000598765",
             ],
-            []
         ]
+        mock_get.return_value = []
         result = check_input_vs_processed_pids(**self.kwargs)
         self.assertFalse(result)
 
@@ -1760,7 +1763,7 @@ class TestCheckInputVsProcessedPids(TestCase):
                 call(
                     "There are %i PIDs which are in input lists, "
                     "but were not processed:\n%s",
-                    2, "0001-303520200005\n0001-376520200005"
+                    2, "S0001-30352020000501234\nS0001-37652020000598765"
                 ),
             ],
             mock_logger.error.call_args_list
@@ -1768,20 +1771,21 @@ class TestCheckInputVsProcessedPids(TestCase):
 
     @patch("check_website.Logger")
     def test_check_input_vs_processed_pids_registers_warning(
-            self, mock_logger):
+            self, mock_logger, mock_get, mock_set):
         self.kwargs["ti"].xcom_pull.side_effect = [
             [
-                "0001-303520200005",
+                "/scielo.php?script=sci_arttext&pid=S0001-30352020000501234",
             ],
             [
-                "0001-376520200005",
+                "S0001-37652020000598765",
             ],
-            [
-                "0001-303520200005",
-                "0001-376520200005",
-                "0001-30352020XXX5",
-            ]
         ]
+        mock_get.return_value = [
+            "S0001-30352020000501234",
+            "S0001-37652020000598765",
+            "0001-30352020XXX5",
+        ]
+
         result = check_input_vs_processed_pids(**self.kwargs)
         self.assertTrue(result)
 
@@ -1933,3 +1937,119 @@ class TestCheckDocumentsDeeply(TestCase):
             call("Checked %i PID v2 items", 0),
             mock_logger.info.call_args_list
         )
+
+
+@patch("check_website.check_website_operations.add_execution_in_database")
+@patch("check_website.check_website_operations.get_main_website_url")
+@patch("check_website.Variable.set")
+@patch("check_website.Variable.get")
+@patch("check_website.check_website_operations.get_kernel_document_id_from_classic_document_uri")
+class TestCheckDocumentsDeeplyGroupedByIssuePidV2(TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    def test_check_documents_deeply_grouped_by_issue_pid_v2_calls_get_kernel_document_id(
+            self, mock_get_kernel_document_id, mock_get, mock_set,
+            mock_get_main_url, mock_add):
+        mock_get_main_url.return_value = "https://www.scielo.br"
+        mock_get.side_effect = [
+            ["https://www.scielo.br"],
+            "https://minio.br",
+            10,
+            20,
+            []
+        ]
+        mock_get_kernel_document_id.side_effect = [None] * 3
+        check_documents_deeply_grouped_by_issue_pid_v2(
+            ["/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501102",
+             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501103"]
+        )
+        calls = [
+            call("https://www.scielo.br/scielo.php?script=sci_arttext&pid="
+                 "S0001-37652020000501101", timeout=10),
+            call("https://www.scielo.br/scielo.php?script=sci_arttext&pid="
+                 "S0001-37652020000501102", timeout=10),
+            call("https://www.scielo.br/scielo.php?script=sci_arttext&pid="
+                 "S0001-37652020000501103", timeout=10),
+        ]
+        self.assertListEqual(
+            calls, mock_get_kernel_document_id.call_args_list
+        )
+
+    @patch("check_website.check_website_operations.format_document_availability_result_to_register")
+    @patch("check_website.check_website_operations.check_document_availability")
+    def test_check_documents_deeply_grouped_by_issue_pid_v2_functions_interfaces(
+            self, mock_check,
+            mock_format,
+            mock_get_kernel_document_id, mock_get, mock_set,
+            mock_get_main_url, mock_add):
+        mock_get_main_url.return_value = "https://www.scielo.br"
+        # mock para Variable.get
+        mock_get.side_effect = [
+            ["https://www.scielo.br"],
+            "https://minio.br",
+            10,
+            20,
+            [],
+        ]
+        # mock para retorno de get_kernel_document_id_from_classic_document_uri
+        mock_get_kernel_document_id.side_effect = [
+            "ID1", "ID2", "ID3",
+        ]
+        # mock para retorno de check_document_availability
+        relatorio1 = MagicMock("relatorio 1")
+        relatorio2 = MagicMock("relatorio 2")
+        relatorio3 = MagicMock("relatorio 3")
+        mock_check.side_effect = [relatorio1, relatorio2, relatorio3]
+
+        # mock para retorno de format_document_availability_result_to_register
+        fake_data_1 = {
+            "registro": "dados 1", "pid_v2_doc": "S0001-37652020000501101",
+            "previous_pid_v2_doc": "S0001-37652019000501109"}
+        fake_data_2 = {
+            "registro": "dados 2", "pid_v2_doc": "S0001-37652020000501102",
+            "previous_pid_v2_doc": "S0001-37652019000501102"}
+        fake_data_3 = {
+            "registro": "dados 3", "pid_v2_doc": "S0001-37652020000501103"}
+
+        mock_format.side_effect = [fake_data_1, fake_data_2, fake_data_3]
+
+        # executa check_documents_deeply_grouped_by_issue_pid_v2
+        check_documents_deeply_grouped_by_issue_pid_v2(
+            ["/scielo.php?script=sci_arttext&pid=S0001-37652020000501101",
+             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501102",
+             "/scielo.php?script=sci_arttext&pid=S0001-37652020000501103"],
+            {"extra": "data"})
+
+        # compara as chamadas a check_document_availability()
+        calls = [
+            call("ID1", "https://www.scielo.br", "https://minio.br",
+                 {"extra": "data"}, timeout=20),
+            call("ID2", "https://www.scielo.br", "https://minio.br",
+                 {"extra": "data"}, timeout=20),
+            call("ID3", "https://www.scielo.br", "https://minio.br",
+                 {"extra": "data"}, timeout=20),
+        ]
+        self.assertListEqual(calls, mock_check.call_args_list)
+
+        # compara as chamadas a format_document_availability_result_to_register()
+        calls = [
+            call("ID1", relatorio1, {"extra": "data"}),
+            call("ID2", relatorio2, {"extra": "data"}),
+            call("ID3", relatorio3, {"extra": "data"}),
+        ]
+        self.assertListEqual(calls, mock_format.call_args_list)
+
+        # compara as chamadas a add_execution_in_database()
+        calls = [
+            call("doc_deep_checkup", fake_data_1),
+            call("doc_deep_checkup", fake_data_2),
+            call("doc_deep_checkup", fake_data_3),
+        ]
+        self.assertListEqual(calls, mock_add.call_args_list)
