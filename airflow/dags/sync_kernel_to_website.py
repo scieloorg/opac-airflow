@@ -736,17 +736,13 @@ def register_documents_alt(**kwargs):
         :param document_id: Identificador único de um documento
         """
 
-        for issue_id, docs in known_documents.items():
-            for doc in docs:
-                if document_id == doc["id"]:
-                    return (issue_id, doc)
-
-        return (None, {})
+        return _get_relation_data_new(remodeled_known_documents, document_id)
 
     known_documents = kwargs["ti"].xcom_pull(
             key="i_documents", task_ids="register_issues_task"
         )
     known_documents = _get_known_documents(known_documents, task)
+    remodeled_known_documents = _remodel_known_documents(known_documents)
 
     # TODO: Em caso de um update no document é preciso atualizar o registro
     # Precisamos de uma nova task?
