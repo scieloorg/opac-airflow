@@ -10,6 +10,7 @@ from sync_kernel_to_website import (
     IssueFactory,
     _get_known_documents,
     _get_relation_data,
+    _remodel_known_documents,
 )
 from operations.sync_kernel_to_website_operations import (
     ArticleFactory,
@@ -755,3 +756,59 @@ class TestGetRelationData(unittest.TestCase):
         expected = (None, {})
         result = _get_relation_data(known_documents, document_id)
         self.assertEqual(expected, result)
+
+
+class TestRemodelKnownDocuments(unittest.TestCase):
+
+    def test__remodel_known_documents(self):
+        known_documents = {
+            "issue_id": [
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ],
+            "issue_id_2": [
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ]
+        }
+        expected = {
+            "RCgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ),
+            "CGgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LLgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
+            "RC13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ),
+            "CG13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJ13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LL13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
+        }
+        result = _remodel_known_documents(known_documents)
+        self.assertEqual(expected, result)
+

@@ -638,6 +638,16 @@ def _get_known_documents(known_documents, tasks) -> Dict[str, List[str]]:
     return known_documents
 
 
+def _remodel_known_documents(known_documents):
+    """Remodela `known_documents` para que a recuperação seja mais eficiente.
+    (`_get_relation_data`)
+    """
+    remodeled_known_documents = {}
+    for issue_id, issue_docs in known_documents.items():
+        for issue_doc in issue_docs:
+            remodeled_known_documents[issue_doc["id"]] = (issue_id, issue_doc)
+    return remodeled_known_documents
+
 
 def _get_relation_data(known_documents, document_id: str) -> Tuple[str, Dict]:
     """Recupera informações sobre o relacionamento entre o
