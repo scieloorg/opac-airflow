@@ -1326,7 +1326,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
         self.assertDictEqual(
             {
                 "web html": {"total": 1, "total unavailable": 0, "total incomplete": 0},
-                "web pdf": {"total": 1, "total unavailable": 1},  
+                "web pdf": {"total": 1, "total unavailable": 1},
             },
             summary
         )
@@ -1439,7 +1439,7 @@ class TestCheckDocumentUriItemsAvailability(TestCase):
             website_url, doc_data_list, assets_data, object_store_url)
         self.assertDictEqual({
                 "web html": {"total": 1, "total unavailable": 0, "total incomplete": 1},
-                "web pdf": {"total": 1, "total unavailable": 0},  
+                "web pdf": {"total": 1, "total unavailable": 0},
             },
             summary
         )
@@ -1898,7 +1898,7 @@ class TestCheckDocumentHtml(TestCase):
             "total missing components": 0,
             "total expected components": 2,
             "html": {"total": 1, "missing": 0},
-            
+
             "assets": {
                 "total expected": 1,
                 "total missing": 0,
@@ -3031,7 +3031,7 @@ class TestCheckDocWebpageUriItemsExpectedInWebpage(TestCase):
             "/j/xyz/a/lokiujyht?format=pdf&lang=es",
             "/j/xyz/a/lokiujyht?format=pdf&lang=en",
         ]
-        
+
         other_webpages_uri_data = [
             {
                 "lang": "en",
@@ -3314,7 +3314,7 @@ class TestCheckAssetUriItemsExpectedInWebpage(TestCase):
                     "asset_uri_2.tiff", "asset_uri_2.jpg", "asset_uri_2.png"]
             }
         ]
-        
+
         expected = [
             {
                 "type": "asset",
@@ -3502,31 +3502,6 @@ class TestFixesForJSON(TestCase):
         j = {"date": dt, "s": "bla", "number": 9, "float": 8.5}
         r = json.dumps(j, default=fixes_for_json)
         self.assertEqual(expected, r)
-
-
-class TestFormatDocumentAvailabilityResultToRegister(TestCase):
-
-    def test_format_document_availability_result_to_register_executed_with_success(self):
-        dt = datetime.utcnow()
-        dt_iso = dt.isoformat() + "Z"
-        doc_id = "1234"
-        doc_checkup_result = {
-            "date": dt, "s": "bla", "number": 9, "float": 8.5
-        }
-        dag_info = {"run_id": "988", "input_file_name": "filename.csv"}
-        expected = {
-            "dag_run": "988",
-            "input_file_name": "filename.csv",
-            "pid_v3": "1234",
-            "status": "missing",
-            "detail": (
-                '{"date": "%s", "s": "bla", "number": 9, "float": 8.5}' %
-                dt_iso),
-        }
-
-        result = format_document_availability_result_to_register(
-            doc_id, doc_checkup_result, dag_info)
-        self.assertEqual(expected, result)
 
 
 class TestGetStatus(TestCase):
@@ -4453,7 +4428,7 @@ class TestCheckHtmlWebpagesAvailability(TestCase):
         doc_data_list = html_data_list.copy()
         assets_data = [
         ]
-        
+
         expected = [
             {
                 "lang": "en",

@@ -1,8 +1,8 @@
-import logging
-import requests
+import csv
 import time
 import json
-import csv
+import logging
+import requests
 from urllib3.exceptions import MaxRetryError, NewConnectionError
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime, date
@@ -1404,8 +1404,9 @@ def format_document_availability_result_to_register(
     """
     doc_data = (doc_checkup_result["detail"].get("web html") or
                 doc_checkup_result["detail"].get("web pdf"))[0]
-    pid_v2 = doc_data["pid_v2"]
-    previous_pid_v2 = doc_data.get("previous_pid_v2")
+
+    pid_v2 = doc_data.get("pid_v2", "").strip()
+    previous_pid_v2 = doc_data.get("previous_pid_v2").strip() if doc_data.get("previous_pid_v2") else None
 
     data = {}
     data["dag_run"] = dag_info.get("run_id")
