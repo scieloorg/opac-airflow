@@ -716,6 +716,25 @@ def _get_relation_data(known_documents, document_id: str) -> Tuple[str, Dict]:
         _get_relation_data_old(known_documents, document_id))
 
 
+def pre_register_documents(**kwargs):
+    """Agrupa documentos em lotes menores para serem registrados no Kernel"""
+
+    logging.info("pre_register_documents - IN")
+    tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
+    Variable.set(
+        "read_changes_task__tasks", tasks, serialize_json=True)
+    logging.info("Tasks Total: %i", len(tasks or []))
+
+    known_documents = kwargs["ti"].xcom_pull(
+        key="i_documents", task_ids="register_issues_task"
+    )
+    Variable.set(
+        "register_issues_task__i_documents",
+        known_documents, serialize_json=True)
+    logging.info("Tasks Total: %i", len(known_documents or {}))
+    logging.info("pre_register_documents - OUT")
+
+
 def register_documents_alt(**kwargs):
     """Agrupa documentos em lotes menores para serem registrados no Kernel"""
 
