@@ -32,6 +32,7 @@ def create_subdag_to_register_documents_grouped_by_bundle(
     que falharam
     """
     CHILD_DAG_NAME = 'register_documents_groups_id'
+    renditions_documents_id = set(renditions_documents_id)
 
     Logger.info("Create register_documents_grouped_by_bundle subdag")
 
@@ -56,6 +57,23 @@ def create_subdag_to_register_documents_grouped_by_bundle(
                 op_args=(doc_ids, _get_relation_data),
                 dag=dag_subdag,
             )
+
+            # register documents renditions
+            _renditions_documents_id = set(doc_ids) & renditions_documents_id
+            Logger.info(
+                "Total renditions documents (%s): %i",
+                bundle_id, len(_renditions_documents_id))
+            if _renditions_documents_id:
+                task_id = f'{CHILD_DAG_NAME}_{bundle_id}_renditions'
+
+                t2 = PythonOperator(
+                    task_id=task_id,
+                    python_callable=register_renditions_callable,
+                    op_kwargs={'renditions_to_get': _renditions_documents_id},
+                    dag=dag_subdag,
+                )
+                t1 >> t2
+
         if not groups:
             Logger.info("Do nothing")
             task_id = f'{CHILD_DAG_NAME}_do_nothing'

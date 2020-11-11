@@ -2,7 +2,6 @@ import unittest
 from unittest.mock import MagicMock, patch, call, ANY
 
 from airflow import DAG
-#from airflow.utils.dates import days_ago
 
 from subdags.sync_kernel_to_website_subdag import (
     _group_documents_by_bundle,
@@ -187,4 +186,76 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
                 dag=mock_subdag,
             ),
         ]
-        self.assertEqual(calls, mock_python_op.call_args_list)
+        self.assertListEqual(calls, mock_python_op.call_args_list)
+
+    def test_create_subdag_to_register_documents_grouped_by_bundle_creates_subdag_with_two_tasks_to_register_docs_and_other_two_to_register_renditions(self,
+            mock_python_op, MockSubDAG,
+            ):
+        # mock de DAG
+        MockDAG = MagicMock(spec=DAG)
+
+        # instancia mock de DAG
+        mock_subdag = MockDAG(spec=DAG)
+
+        # mockSubDAG é mock da DAG que está em uso em
+        # `create_subdag_to_register_documents_grouped_by_bundle`
+        MockSubDAG.return_value = mock_subdag
+
+        document_ids = [
+            "LL13V9MHSKmp6Msj5CPBZRb",
+            "HJgFV9MHSKmp6Msj5CPBZRb",
+            "CGgFV9MHSKmp6Msj5CPBZRb"
+        ]
+        renditions_documents_id = [
+            "LL13V9MHSKmp6Msj5CPBZRb",
+            "HJgFV9MHSKmp6Msj5CPBZRb",
+        ]
+        create_subdag_to_register_documents_grouped_by_bundle(
+            self.mock_dag, self.mock_register_docs_callable,
+            document_ids, self.mock_get_relation_data,
+            self.mock_register_renditions_callable, renditions_documents_id,
+            self.mock_args,
+            )
+
+        calls = [
+            call(
+                task_id='register_documents_groups_id_issue_id_2_docs',
+                python_callable=self.mock_register_docs_callable,
+                op_args=(
+                    ["LL13V9MHSKmp6Msj5CPBZRb"],
+                    self.mock_get_relation_data
+                ),
+                dag=mock_subdag,
+            ),
+            call(
+                task_id='register_documents_groups_id_issue_id_2_renditions',
+                python_callable=self.mock_register_renditions_callable,
+                op_kwargs=(
+                    {"renditions_to_get": {"LL13V9MHSKmp6Msj5CPBZRb"}}
+                ),
+                dag=mock_subdag,
+            ),
+
+            call(
+                task_id='register_documents_groups_id_issue_id_docs',
+                python_callable=self.mock_register_docs_callable,
+                op_args=(
+                    ["HJgFV9MHSKmp6Msj5CPBZRb", "CGgFV9MHSKmp6Msj5CPBZRb"],
+                    self.mock_get_relation_data
+                ),
+                dag=mock_subdag,
+            ),
+            call(
+                task_id='register_documents_groups_id_issue_id_renditions',
+                python_callable=self.mock_register_renditions_callable,
+                op_kwargs=(
+                    {
+                        "renditions_to_get": {
+                            "HJgFV9MHSKmp6Msj5CPBZRb",
+                        }
+                    }
+                ),
+                dag=mock_subdag,
+            ),
+        ]
+        self.assertListEqual(calls, mock_python_op.call_args_list)
