@@ -206,6 +206,7 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
             "HJgFV9MHSKmp6Msj5CPBZRb",
             "CGgFV9MHSKmp6Msj5CPBZRb"
         ]
+        # nem todos os documents_id estão em ambas listas
         renditions_documents_id = [
             "LL13V9MHSKmp6Msj5CPBZRb",
             "HJgFV9MHSKmp6Msj5CPBZRb",
@@ -251,6 +252,50 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
                 op_kwargs=(
                     {
                         "renditions_to_get": {
+                            "HJgFV9MHSKmp6Msj5CPBZRb",
+                        }
+                    }
+                ),
+                dag=mock_subdag,
+            ),
+        ]
+        self.assertListEqual(calls, mock_python_op.call_args_list)
+
+
+    def test_create_subdag_to_register_documents_grouped_by_bundle_creates_subdag_with_task_to_register_renditions(self,
+            mock_python_op, MockSubDAG,
+            ):
+        # mock de DAG
+        MockDAG = MagicMock(spec=DAG)
+
+        # instancia mock de DAG
+        mock_subdag = MockDAG(spec=DAG)
+
+        # mockSubDAG é mock da DAG que está em uso em
+        # `create_subdag_to_register_documents_grouped_by_bundle`
+        MockSubDAG.return_value = mock_subdag
+
+        # nem todos os documents_id estão em ambas listas
+        document_ids = []
+        renditions_documents_id = [
+            "LL13V9MHSKmp6Msj5CPBZRb",
+            "HJgFV9MHSKmp6Msj5CPBZRb",
+        ]
+        create_subdag_to_register_documents_grouped_by_bundle(
+            self.mock_dag, self.mock_register_docs_callable,
+            document_ids, self.mock_get_relation_data,
+            self.mock_register_renditions_callable, renditions_documents_id,
+            self.mock_args,
+            )
+
+        calls = [
+            call(
+                task_id='register_documents_groups_id_renditions',
+                python_callable=self.mock_register_renditions_callable,
+                op_kwargs=(
+                    {
+                        "renditions_to_get": {
+                            "LL13V9MHSKmp6Msj5CPBZRb",
                             "HJgFV9MHSKmp6Msj5CPBZRb",
                         }
                     }

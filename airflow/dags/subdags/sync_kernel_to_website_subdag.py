@@ -74,7 +74,23 @@ def create_subdag_to_register_documents_grouped_by_bundle(
                 )
                 t1 >> t2
 
-        if not groups:
+        _renditions_documents_id = renditions_documents_id - set(document_ids)
+        Logger.info(
+                "Total renditions documents: %i",
+                len(_renditions_documents_id))
+        if _renditions_documents_id:
+            # registra `renditions` de ID de documentos que não estão em
+            # `documents_to_get`
+            task_id = f'{CHILD_DAG_NAME}_renditions'
+
+            t3 = PythonOperator(
+                task_id=task_id,
+                python_callable=register_renditions_callable,
+                op_kwargs={'renditions_to_get': _renditions_documents_id},
+                dag=dag_subdag,
+            )
+
+        elif not groups:
             Logger.info("Do nothing")
             task_id = f'{CHILD_DAG_NAME}_do_nothing'
             PythonOperator(
