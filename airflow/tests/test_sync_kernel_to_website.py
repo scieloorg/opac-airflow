@@ -14,6 +14,7 @@ from sync_kernel_to_website import (
     _get_relation_data_new,
     _get_relation_data_old,
     pre_register_documents,
+    _register_documents,
 )
 from operations.sync_kernel_to_website_operations import (
     ArticleFactory,
@@ -1101,3 +1102,45 @@ class TestPreRegisterDocuments(unittest.TestCase):
                  mock_i_docs, serialize_json=True),
         ]
         self.assertListEqual(calls, mock_set.call_args_list)
+
+
+@patch("sync_kernel_to_website.fetch_documents_front")
+@patch("sync_kernel_to_website.Variable.set")
+@patch("sync_kernel_to_website.Variable.get")
+@patch("sync_kernel_to_website.try_register_documents")
+@patch("sync_kernel_to_website.mongo_connect")
+class TestRegisterDocuments(unittest.TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    def test__register_documents(self, mock_mongo, mock_try_reg, mock_get,
+            mock_set, mock_fetch):
+        documents_to_get = [
+            "QTsr9VQHDd4DL5zqWqkwyjk", "LL13V9MHSKmp6Msj5CPBZRb"]
+        _get_relation_data = MagicMock(spec=callable)
+        
+        mock_try_reg.return_value = ["LL13V9MHSKmp6Msj5CPBZRb"]
+        mock_get.return_value = ["6Msj5CPBZRbLL13V9MHSKmp"]
+
+        _register_documents(
+            documents_to_get, _get_relation_data, **self.kwargs)
+
+        print("")
+        print(mock_try_reg.call_args_list)
+        mock_try_reg.assert_called_once_with(
+            documents_to_get, _get_relation_data,
+            mock_fetch, ArticleFactory
+        )
+        mock_get.assert_called_once_with(
+            "orphan_documents", [], deserialize_json=True
+        )
+        mock_set.assert_called_once_with(
+            "orphan_documents",
+            ["6Msj5CPBZRbLL13V9MHSKmp", "LL13V9MHSKmp6Msj5CPBZRb"],
+            serialize_json=True
+        )

@@ -735,6 +735,27 @@ def pre_register_documents(**kwargs):
     logging.info("pre_register_documents - OUT")
 
 
+def _register_documents(documents_to_get, _get_relation_data, **kwargs):
+    """
+    Registra os documentos da sequencia `documents_to_get` no Kernel
+    Armazena em Variable "orphan_documents", os documentos que não
+    vinculados a um `bundle`.
+    :param documents_to_get: sequência de PID v3 de documentos
+    :param _get_relation_data: callable, que dado um doc id,
+        retorna (issue_id, dados do documento), por exemplo,
+        ('0034-8910-2019-v53', {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+    """
+    mongo_connect()
+
+    orphans = try_register_documents(
+        documents_to_get, _get_relation_data, fetch_documents_front, ArticleFactory
+    )
+
+    _orphans = Variable.get("orphan_documents", [], deserialize_json=True)
+    Variable.set("orphan_documents", _orphans + orphans, serialize_json=True)
+    return True
+
+
 def register_documents_alt(**kwargs):
     """Agrupa documentos em lotes menores para serem registrados no Kernel"""
 
