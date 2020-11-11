@@ -756,6 +756,20 @@ def _register_documents(documents_to_get, _get_relation_data, **kwargs):
     return True
 
 
+def _register_documents_renditions(renditions_to_get, **kwargs):
+    """
+    """
+    mongo_connect()
+
+    orphans = try_register_documents_renditions(
+        renditions_to_get, fetch_documents_renditions, ArticleRenditionFactory
+    )
+
+    _orphans = Variable.get("orphan_renditions", [], deserialize_json=True)
+    Variable.set("orphan_renditions", _orphans + orphans, serialize_json=True)
+    return True
+
+
 def register_documents_alt(**kwargs):
     """Agrupa documentos em lotes menores para serem registrados no Kernel"""
 

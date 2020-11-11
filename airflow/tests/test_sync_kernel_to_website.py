@@ -15,6 +15,7 @@ from sync_kernel_to_website import (
     _get_relation_data_old,
     pre_register_documents,
     _register_documents,
+    _register_documents_renditions,
 )
 from operations.sync_kernel_to_website_operations import (
     ArticleFactory,
@@ -1123,15 +1124,13 @@ class TestRegisterDocuments(unittest.TestCase):
         documents_to_get = [
             "QTsr9VQHDd4DL5zqWqkwyjk", "LL13V9MHSKmp6Msj5CPBZRb"]
         _get_relation_data = MagicMock(spec=callable)
-        
+
         mock_try_reg.return_value = ["LL13V9MHSKmp6Msj5CPBZRb"]
         mock_get.return_value = ["6Msj5CPBZRbLL13V9MHSKmp"]
 
         _register_documents(
             documents_to_get, _get_relation_data, **self.kwargs)
 
-        print("")
-        print(mock_try_reg.call_args_list)
         mock_try_reg.assert_called_once_with(
             documents_to_get, _get_relation_data,
             mock_fetch, ArticleFactory
@@ -1141,6 +1140,47 @@ class TestRegisterDocuments(unittest.TestCase):
         )
         mock_set.assert_called_once_with(
             "orphan_documents",
+            ["6Msj5CPBZRbLL13V9MHSKmp", "LL13V9MHSKmp6Msj5CPBZRb"],
+            serialize_json=True
+        )
+
+
+@patch("sync_kernel_to_website.fetch_documents_renditions")
+@patch("sync_kernel_to_website.Variable.set")
+@patch("sync_kernel_to_website.Variable.get")
+@patch("sync_kernel_to_website.try_register_documents_renditions")
+@patch("sync_kernel_to_website.mongo_connect")
+class TestRegisterDocumentsRenditions(unittest.TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    def test__register_documents_renditions(self, mock_mongo, mock_try_reg,
+            mock_get,
+            mock_set, mock_fetch):
+        documents_to_get = [
+            "QTsr9VQHDd4DL5zqWqkwyjk", "LL13V9MHSKmp6Msj5CPBZRb"]
+        _get_relation_data = MagicMock(spec=callable)
+
+        mock_try_reg.return_value = ["LL13V9MHSKmp6Msj5CPBZRb"]
+        mock_get.return_value = ["6Msj5CPBZRbLL13V9MHSKmp"]
+
+        _register_documents_renditions(
+            documents_to_get, **self.kwargs)
+
+        mock_try_reg.assert_called_once_with(
+            documents_to_get,
+            mock_fetch, ArticleRenditionFactory
+        )
+        mock_get.assert_called_once_with(
+            "orphan_renditions", [], deserialize_json=True
+        )
+        mock_set.assert_called_once_with(
+            "orphan_renditions",
             ["6Msj5CPBZRbLL13V9MHSKmp", "LL13V9MHSKmp6Msj5CPBZRb"],
             serialize_json=True
         )
