@@ -31,6 +31,9 @@ from operations.sync_kernel_to_website_operations import (
     ArticleRenditionFactory,
     try_register_documents_renditions,
 )
+from subdags.sync_kernel_to_website_subdag import (
+    create_subdag_to_register_documents_grouped_by_bundle,
+)
 from common.hooks import mongo_connect, kernel_connect
 
 failure_recipients = os.environ.get("EMIAL_ON_FAILURE_RECIPIENTS", None)
@@ -770,7 +773,7 @@ def _register_documents_renditions(renditions_to_get, **kwargs):
     return True
 
 
-def register_documents_alt(**kwargs):
+def register_documents_subdag(dag, args, **kwargs):
     """Agrupa documentos em lotes menores para serem registrados no Kernel"""
 
     mongo_connect()
@@ -780,6 +783,8 @@ def register_documents_alt(**kwargs):
     known_documents = Variable.get(
         "register_issues_task__i_documents",
         default_var={}, deserialize_json=True)
+    args.update(default_args)
+    args.update(kwargs)
 
     def _get_relation_data(document_id: str) -> Tuple[str, Dict]:
         """Recupera informações sobre o relacionamento entre o
@@ -799,18 +804,29 @@ def register_documents_alt(**kwargs):
     known_documents = _get_known_documents(known_documents, tasks)
     remodeled_known_documents = _remodel_known_documents(known_documents)
 
-    # TODO: Em caso de um update no document é preciso atualizar o registro
-    # Precisamos de uma nova task?
-
+    # sequencia de PID v3 de documentos
     documents_to_get = itertools.chain(
         Variable.get("orphan_documents", default_var=[], deserialize_json=True),
         (get_id(task["id"]) for task in filter_changes(tasks, "documents", "get")),
     )
-    orphans = try_register_documents(
-        documents_to_get, _get_relation_data, fetch_documents_front, ArticleFactory
+
+    # sequencia de PID v3 de documentos com renditions
+    renditions_to_get = itertools.chain(
+        Variable.get("orphan_renditions", default_var=[], deserialize_json=True),
+        (get_id(task["id"]) for task in filter_changes(tasks, "renditions", "get")),
     )
 
-    Variable.set("orphan_documents", orphans, serialize_json=True)
+    # converte gerador para sequencia
+    documents_to_get = set(documents_to_get)
+
+    # cria SubDag para registrar grupos de documentos e renditions
+    subdag = create_subdag_to_register_documents_grouped_by_bundle(
+        dag, _register_documents,
+        documents_to_get, _get_relation_data,
+        _register_documents_renditions, set(renditions_to_get),
+        args,
+        )
+    return subdag
 
 
 def register_documents(**kwargs):

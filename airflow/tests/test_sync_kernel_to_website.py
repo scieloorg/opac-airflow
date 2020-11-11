@@ -1,6 +1,6 @@
 import os
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock, call, ANY
 import json
 
 from airflow import DAG
@@ -16,6 +16,7 @@ from sync_kernel_to_website import (
     pre_register_documents,
     _register_documents,
     _register_documents_renditions,
+    register_documents_subdag,
 )
 from operations.sync_kernel_to_website_operations import (
     ArticleFactory,
@@ -1183,4 +1184,99 @@ class TestRegisterDocumentsRenditions(unittest.TestCase):
             "orphan_renditions",
             ["6Msj5CPBZRbLL13V9MHSKmp", "LL13V9MHSKmp6Msj5CPBZRb"],
             serialize_json=True
+        )
+
+
+@patch("sync_kernel_to_website.default_args")
+@patch("sync_kernel_to_website.create_subdag_to_register_documents_grouped_by_bundle")
+@patch("sync_kernel_to_website.Variable.get")
+@patch("sync_kernel_to_website.mongo_connect")
+class TestRegisterDocumentsSubDag(unittest.TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    def test_register_documents_subdag_(self,
+            mock_mongo,
+            mock_get,
+            mock_create_subdag,
+            mock_default_args,
+            ):
+        MockDAG = MagicMock(spec=DAG)
+        mock_default_args.return_value = {}
+
+        # dados de entrada
+        tasks = [
+            {"id": "/documents/QTsr9VQHDd4DL5zqWqkwyjk",
+             "task": "get"},
+            {"id": "/documents/QTsr9VQHDd4DL5zqWqkwyjk/renditions",
+             "task": "get"},
+            {"id": "/bundles/2236-9996-2020-v22-n47",
+             "task": "get"},
+            {"id": "/documents/S0104-42302020000500589",
+             "task": "get"},
+            {"id": "/documents/S0104-42302020000500589/renditions",
+             "task": "get"},
+            {"id": "/documents/5zyjkqWqkwsr9VQHDdQTL4D/renditions",
+             "task": "get"},
+        ]
+        # dados de entrada
+        i_docs = {
+            "2236-9996-2020-v22-n47":
+                [{"id": "QTsr9VQHDd4DL5zqWqkwyjk", "order": "00017"}],
+            "0034-8910-1974-v8-s0": [],
+            "0034-8910-1976-v10-s1": [],
+        }
+        # dados de entrada
+        orphan_docs = [
+            "QTL5zyjkqWqkwsr9VQHDd4D", "S0104-42302020000500589",
+        ]
+        # dados de entrada
+        orphan_rends = [
+            "kwsr9VQHDd4DQTL5zyjkqWq", "S0104-42302020000500589",
+        ]
+        # dados de entrada resultantes de Variable.get
+        mock_get.side_effect = [
+            tasks,
+            i_docs,
+            orphan_docs,
+            orphan_rends,
+        ]
+        mock_dag = MockDAG(ANY)
+        args = mock_default_args
+        args.update(self.kwargs)
+        # closure
+        ANY_get_relation_data = ANY
+        actual_register_documents = _register_documents
+        actual_register_documents_renditions = _register_documents_renditions
+
+        # obtido dependendo dos dados de entrada fornecidos por Variable.get
+        documents_to_get = {
+            "QTL5zyjkqWqkwsr9VQHDd4D",
+            "QTsr9VQHDd4DL5zqWqkwyjk",
+            "S0104-42302020000500589",
+        }
+
+        # obtido dependendo dos dados de entrada fornecidos por Variable.get
+        renditions_to_get = {
+            "kwsr9VQHDd4DQTL5zyjkqWq",
+            "S0104-42302020000500589",
+            "QTsr9VQHDd4DL5zqWqkwyjk",
+            "5zyjkqWqkwsr9VQHDdQTL4D",
+        }
+
+        register_documents_subdag(mock_dag, args, **self.kwargs)
+
+        mock_create_subdag.assert_called_once_with(
+            mock_dag,
+            actual_register_documents,
+            documents_to_get,
+            ANY_get_relation_data,
+            actual_register_documents_renditions,
+            renditions_to_get,
+            args
         )
