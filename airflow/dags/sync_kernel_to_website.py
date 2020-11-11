@@ -775,7 +775,11 @@ def register_documents_alt(**kwargs):
 
     mongo_connect()
 
-    tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
+    tasks = Variable.get(
+        "read_changes_task__tasks", default_var=[], deserialize_json=True)
+    known_documents = Variable.get(
+        "register_issues_task__i_documents",
+        default_var={}, deserialize_json=True)
 
     def _get_relation_data(document_id: str) -> Tuple[str, Dict]:
         """Recupera informações sobre o relacionamento entre o
@@ -792,9 +796,6 @@ def register_documents_alt(**kwargs):
 
         return _get_relation_data_new(remodeled_known_documents, document_id)
 
-    known_documents = kwargs["ti"].xcom_pull(
-            key="i_documents", task_ids="register_issues_task"
-        )
     known_documents = _get_known_documents(known_documents, task)
     remodeled_known_documents = _remodel_known_documents(known_documents)
 
