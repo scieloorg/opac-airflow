@@ -796,7 +796,7 @@ def register_documents_alt(**kwargs):
 
         return _get_relation_data_new(remodeled_known_documents, document_id)
 
-    known_documents = _get_known_documents(known_documents, task)
+    known_documents = _get_known_documents(known_documents, tasks)
     remodeled_known_documents = _remodel_known_documents(known_documents)
 
     # TODO: Em caso de um update no document é preciso atualizar o registro
