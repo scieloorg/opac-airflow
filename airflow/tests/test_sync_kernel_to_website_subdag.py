@@ -81,11 +81,22 @@ class TestGroupDocumentsByBundle(unittest.TestCase):
 @patch("subdags.sync_kernel_to_website_subdag.PythonOperator")
 class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
 
-    def mock_get_relation_data_which_returns_groups(self, doc_id):
-        return {
-            "issue_id_2": ["LL13V9MHSKmp6Msj5CPBZRb"],
-            "issue_id": ["HJgFV9MHSKmp6Msj5CPBZRb", "CGgFV9MHSKmp6Msj5CPBZRb"],
+    def mock_get_relation_data(self, doc_id):
+        data = {
+            "CGgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LL13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
         }
+        return data.get(doc_id)
 
     def mock_get_relation_data_which_returns_none(self, doc_id):
         return (None, {})
@@ -125,6 +136,54 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
             call(
                 task_id="register_documents_groups_id_do_nothing",
                 python_callable=ANY,
+                dag=mock_subdag,
+            ),
+        ]
+        self.assertEqual(calls, mock_python_op.call_args_list)
+
+    def test_create_subdag_to_register_documents_grouped_by_bundle_creates_subdag_with_two_tasks(self,
+            mock_python_op, MockSubDAG,
+            ):
+        # mock de DAG
+        MockDAG = MagicMock(spec=DAG)
+
+        # instancia mock de DAG
+        mock_subdag = MockDAG(spec=DAG)
+
+        # mockSubDAG é mock da DAG que está em uso em
+        # `create_subdag_to_register_documents_grouped_by_bundle`
+        MockSubDAG.return_value = mock_subdag
+
+        document_ids = [
+            "LL13V9MHSKmp6Msj5CPBZRb",
+            "HJgFV9MHSKmp6Msj5CPBZRb",
+            "CGgFV9MHSKmp6Msj5CPBZRb"
+        ]
+        renditions_documents_id = []
+        create_subdag_to_register_documents_grouped_by_bundle(
+            self.mock_dag, self.mock_register_docs_callable,
+            document_ids, self.mock_get_relation_data,
+            self.mock_register_renditions_callable, renditions_documents_id,
+            self.mock_args,
+            )
+
+        calls = [
+            call(
+                task_id='register_documents_groups_id_issue_id_2_docs',
+                python_callable=self.mock_register_docs_callable,
+                op_args=(
+                    ["LL13V9MHSKmp6Msj5CPBZRb"],
+                    self.mock_get_relation_data
+                ),
+                dag=mock_subdag,
+            ),
+            call(
+                task_id='register_documents_groups_id_issue_id_docs',
+                python_callable=self.mock_register_docs_callable,
+                op_args=(
+                    ["HJgFV9MHSKmp6Msj5CPBZRb", "CGgFV9MHSKmp6Msj5CPBZRb"],
+                    self.mock_get_relation_data
+                ),
                 dag=mock_subdag,
             ),
         ]

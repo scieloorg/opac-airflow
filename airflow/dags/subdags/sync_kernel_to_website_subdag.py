@@ -44,6 +44,18 @@ def create_subdag_to_register_documents_grouped_by_bundle(
         schedule_interval=None,
     )
     with dag_subdag:
+        for bundle_id, doc_ids in groups.items():
+            task_id = f'{CHILD_DAG_NAME}_{bundle_id}_docs'
+
+            Logger.info("%s", bundle_id)
+            Logger.info("Total: %i", len(doc_ids))
+
+            t1 = PythonOperator(
+                task_id=task_id,
+                python_callable=register_docs_callable,
+                op_args=(doc_ids, _get_relation_data),
+                dag=dag_subdag,
+            )
         if not groups:
             Logger.info("Do nothing")
             task_id = f'{CHILD_DAG_NAME}_do_nothing'
