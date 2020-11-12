@@ -1273,7 +1273,7 @@ class TestRegisterDocumentsSubDag(unittest.TestCase):
         }
 
         # chamada para a função que está sob teste
-        register_documents_subdag(mock_dag, args, **self.kwargs)
+        register_documents_subdag(mock_dag, args)
 
         # testa se `create_subdag_to_register_documents_grouped_by_bundle` foi
         # chamada com os parâmetros esperados
@@ -1348,7 +1348,7 @@ class TestRegisterDocumentsSubDag(unittest.TestCase):
         renditions_to_get = set()
 
         # chamada para a função que está sob teste
-        register_documents_subdag(mock_dag, args, **self.kwargs)
+        register_documents_subdag(mock_dag, args)
 
         # testa se `create_subdag_to_register_documents_grouped_by_bundle` foi
         # chamada com os parâmetros esperados
@@ -1426,7 +1426,7 @@ class TestRegisterDocumentsSubDag(unittest.TestCase):
         }
 
         # chamada para a função que está sob teste
-        register_documents_subdag(mock_dag, args, **self.kwargs)
+        register_documents_subdag(mock_dag, args)
 
         # testa se `create_subdag_to_register_documents_grouped_by_bundle` foi
         # chamada com os parâmetros esperados
@@ -1492,7 +1492,7 @@ class TestRegisterDocumentsSubDag(unittest.TestCase):
         renditions_to_get = set()
 
         # chamada para a função que está sob teste
-        register_documents_subdag(mock_dag, args, **self.kwargs)
+        register_documents_subdag(mock_dag, args)
 
         # testa se `create_subdag_to_register_documents_grouped_by_bundle` foi
         # chamada com os parâmetros esperados

@@ -17,7 +17,7 @@ from airflow.hooks.base_hook import BaseHook
 from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
 from airflow.operators.dagrun_operator import TriggerDagRunOperator
-
+from airflow.operators.subdag_operator import SubDagOperator
 
 import requests
 
@@ -738,6 +738,14 @@ def pre_register_documents(**kwargs):
     logging.info("pre_register_documents - OUT")
 
 
+pre_register_documents_task = PythonOperator(
+    task_id="pre_register_documents_task",
+    provide_context=True,
+    python_callable=pre_register_documents,
+    dag=dag,
+)
+
+
 def _register_documents(documents_to_get, _get_relation_data, **kwargs):
     """
     Registra os documentos da sequencia `documents_to_get` no Kernel
@@ -773,7 +781,7 @@ def _register_documents_renditions(renditions_to_get, **kwargs):
     return True
 
 
-def register_documents_subdag(dag, args, **kwargs):
+def register_documents_subdag(dag, args):
     """Agrupa documentos em lotes menores para serem registrados no Kernel"""
 
     mongo_connect()
@@ -783,8 +791,6 @@ def register_documents_subdag(dag, args, **kwargs):
     known_documents = Variable.get(
         "register_issues_task__i_documents",
         default_var={}, deserialize_json=True)
-    args.update(default_args)
-    args.update(kwargs)
 
     def _get_relation_data(document_id: str) -> Tuple[str, Dict]:
         """Recupera informações sobre o relacionamento entre o
@@ -818,7 +824,7 @@ def register_documents_subdag(dag, args, **kwargs):
 
     # converte gerador para sequencia
     documents_to_get = set(documents_to_get)
-
+    logging.info(documents_to_get)
     # cria SubDag para registrar grupos de documentos e renditions
     subdag = create_subdag_to_register_documents_grouped_by_bundle(
         dag, _register_documents,
@@ -829,124 +835,10 @@ def register_documents_subdag(dag, args, **kwargs):
     return subdag
 
 
-def register_documents(**kwargs):
-    """Registra documentos na base de dados do OPAC a partir de
-    informações vindas da API do `Kernel`. Armazena como órfãos nas variáveis
-    do Airflow os documentos que não puderam ser salvos."""
-
-    mongo_connect()
-
-    tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
-
-    def _get_relation_data(document_id: str) -> Tuple[str, Dict]:
-        """Recupera informações sobre o relacionamento entre o
-        DocumentsBundle e o Document.
-
-        Retorna uma tupla contendo o identificador da issue onde o
-        documento está relacionado e o item do relacionamento.
-
-        >> _get_relation_data("67TH7T7CyPPmgtVrGXhWXVs")
-        ('0034-8910-2019-v53', {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
-
-        :param document_id: Identificador único de um documento
-        """
-
-        for issue_id, docs in known_documents.items():
-            for doc in docs:
-                if document_id == doc["id"]:
-                    return (issue_id, doc)
-
-        return (None, {})
-
-    def _get_known_documents(**kwargs) -> Dict[str, List[str]]:
-        """Recupera a lista de todos os documentos que estão relacionados com
-        um `DocumentsBundle`.
-
-        Levando em consideração que a DAG que detecta mudanças na API do Kernel
-        roda de forma assíncrona em relação a DAG de espelhamento/sincronização.
-
-        É possível que algumas situações especiais ocorram onde em uma rodada
-        **anterior** o **evento de registro** de um `Document` foi capturado mas a
-        atualização de seu `DocumentsBundle` não ocorreu (elas ocorrem em transações
-        distintas e possuem timestamps também distintos). O documento será
-        registrado como **órfão** e sua `task` não será processada na próxima
-        execução.
-
-        Na próxima execução a task `register_issue_task` entenderá que o
-        `bundle` é órfão e não conhecerá os seus documentos (known_documents)
-        e consequentemente o documento continuará órfão.
-
-        Uma solução para este problema é atualizar a lista de documentos
-        conhecidos a partir da lista de eventos de `get` de `bundles`.
-        """
-
-        known_documents = kwargs["ti"].xcom_pull(
-            key="i_documents", task_ids="register_issues_task"
-        )
-
-        issues_recently_updated = [
-            get_id(task["id"]) for task in filter_changes(tasks, "bundles", "get")
-            if known_documents.get(get_id(task["id"])) is None
-        ]
-
-        for issue_id in issues_recently_updated:
-            known_documents.setdefault(issue_id, [])
-            known_documents[issue_id] = list(
-                itertools.chain(
-                    known_documents[issue_id], fetch_bundles(issue_id).get("items", [])
-                )
-            )
-        return known_documents
-
-    known_documents = _get_known_documents(**kwargs)
-
-    # TODO: Em caso de um update no document é preciso atualizar o registro
-    # Precisamos de uma nova task?
-
-    documents_to_get = itertools.chain(
-        Variable.get("orphan_documents", default_var=[], deserialize_json=True),
-        (get_id(task["id"]) for task in filter_changes(tasks, "documents", "get")),
-    )
-
-    orphans = try_register_documents(
-        documents_to_get, _get_relation_data, fetch_documents_front, ArticleFactory
-    )
-
-    Variable.set("orphan_documents", orphans, serialize_json=True)
-
-
-register_documents_task = PythonOperator(
-    task_id="register_documents_task",
-    provide_context=True,
-    python_callable=register_documents,
-    dag=dag,
-)
-
-
-def register_documents_renditions(**kwargs):
-    """Registra as manifestações de documentos processados na base de dados
-    do OPAC"""
-
-    mongo_connect()
-
-    tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
-
-    renditions_to_get = itertools.chain(
-        Variable.get("orphan_renditions", default_var=[], deserialize_json=True),
-        (get_id(task["id"]) for task in filter_changes(tasks, "renditions", "get")),
-    )
-
-    orphans = try_register_documents_renditions(
-        renditions_to_get, fetch_documents_renditions, ArticleRenditionFactory
-    )
-
-    Variable.set("orphan_renditions", orphans, serialize_json=True)
-
-
-register_documents_renditions_task = PythonOperator(
-    task_id="register_documents_renditions_task",
-    provide_context=True,
-    python_callable=register_documents_renditions,
+register_documents_subdag_task = SubDagOperator(
+    task_id='register_documents_groups_id',
+    subdag=register_documents_subdag(dag, default_args),
+    default_args=default_args,
     dag=dag,
 )
 
@@ -1097,11 +989,9 @@ register_journals_task << read_changes_task
 
 register_issues_task << register_journals_task
 
-register_documents_task << register_issues_task
-
-register_documents_renditions_task << register_documents_task
-
-delete_journals_task << register_documents_renditions_task
+register_issues_task >> pre_register_documents_task
+pre_register_documents_task >> register_documents_subdag_task
+register_documents_subdag_task >> delete_journals_task
 
 delete_issues_task << delete_journals_task
 
