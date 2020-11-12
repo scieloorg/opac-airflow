@@ -822,14 +822,20 @@ def register_documents_subdag(dag, args):
         (get_id(task["id"]) for task in filter_changes(tasks, "renditions", "get")),
     )
 
-    # converte gerador para sequencia
+    # converte geradores para sequencias
     documents_to_get = set(documents_to_get)
+    renditions_to_get = set(renditions_to_get)
+
+    # reseta os órfãos
+    Variable.set("orphan_renditions", [], serialize_json=True)
+    Variable.set("orphan_documents", [], serialize_json=True)
+
     logging.info(documents_to_get)
     # cria SubDag para registrar grupos de documentos e renditions
     subdag = create_subdag_to_register_documents_grouped_by_bundle(
         dag, _register_documents,
         documents_to_get, _get_relation_data,
-        _register_documents_renditions, set(renditions_to_get),
+        _register_documents_renditions, renditions_to_get,
         args,
         )
     return subdag
