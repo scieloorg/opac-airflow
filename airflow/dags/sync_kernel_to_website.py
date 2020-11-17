@@ -18,6 +18,9 @@ from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
 from airflow.operators.dagrun_operator import TriggerDagRunOperator
 from airflow.operators.subdag_operator import SubDagOperator
+from operations.exceptions import (
+    OldFormatKnownDocsError,
+)
 
 import requests
 
@@ -682,20 +685,28 @@ def _get_relation_data_new(known_documents, document_id: str) -> Tuple[str, Dict
     Retorna uma tupla contendo o identificador da issue onde o
     documento está relacionado e o item do relacionamento.
 
-    >> _get_relation_data("67TH7T7CyPPmgtVrGXhWXVs")
+    >> _get_relation_data_new("67TH7T7CyPPmgtVrGXhWXVs")
     ('0034-8910-2019-v53', {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
 
     :param known_documents: Dicionário cujas chaves são `document_id` e
-        valores é `{'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'}`
+        valores são
+        ```
+        ('0034-8910-2019-v53',
+         {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+        ```
+
     :param document_id: Identificador único de um documento
     """
     data = known_documents.get(document_id)
     if data:
         return data
     for value in known_documents.values():
-        if not isinstance(value, tuple):
-            return None
-        break
+        if isinstance(value, list):
+            # old format of known_documents
+            # `_get_relation_data_old`
+            raise OldFormatKnownDocsError("Formato antigo de known_documents")
+        else:
+            return (None, {})
     return (None, {})
 
 
@@ -709,14 +720,22 @@ def _get_relation_data(known_documents, document_id: str) -> Tuple[str, Dict]:
     >> _get_relation_data("67TH7T7CyPPmgtVrGXhWXVs")
     ('0034-8910-2019-v53', {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
 
-    :param known_documents: Dicionário cujas chaves são `issue_id` e
-        valores são lista de dicionários no padrão 
+    :param known_documents: dois formatos de dicionário:
+        chaves são `document_id` e
+        valores são tuplas no padrão
+            ```
+            ('0034-8910-2019-v53',
+             {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+            ```
+        chaves são `issue_id` e
+        valores são lista de dicionários no padrão
             `{'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'}`
     :param document_id: Identificador único de um documento
     """
-    return (
-        _get_relation_data_new(known_documents, document_id) or
-        _get_relation_data_old(known_documents, document_id))
+    try:
+        return _get_relation_data_new(known_documents, document_id)
+    except OldFormatKnownDocsError:
+        return _get_relation_data_old(known_documents, document_id)
 
 
 def pre_register_documents(**kwargs):

@@ -25,7 +25,10 @@ from operations.sync_kernel_to_website_operations import (
     try_register_documents_renditions,
 )
 from opac_schema.v1 import models
-from operations.exceptions import InvalidOrderValueError
+from operations.exceptions import (
+    InvalidOrderValueError,
+    OldFormatKnownDocsError,
+)
 
 
 FIXTURES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
@@ -849,7 +852,7 @@ class TestGetRelationData(unittest.TestCase):
 
 class TestGetRelationDataNew(unittest.TestCase):
 
-    def test__get_relation_data_new_returns_None(self):
+    def test__get_relation_data_new_raise_OldFormatKnownDocsError(self):
         known_documents = {
             "issue_id": [
                 {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
@@ -865,9 +868,8 @@ class TestGetRelationDataNew(unittest.TestCase):
             ]
         }
         document_id = "HJgFV9MHSKmp6Msj5CPBZRb"
-        expected = None
-        result = _get_relation_data_new(known_documents, document_id)
-        self.assertEqual(expected, result)
+        with self.assertRaises(OldFormatKnownDocsError):
+            _get_relation_data_new(known_documents, document_id)
 
     def test__get_relation_data_new_returns_none_and_no_docs(self):
         known_documents = {}
@@ -919,8 +921,7 @@ class TestGetRelationDataNew(unittest.TestCase):
         result = _get_relation_data_new(known_documents, document_id)
         self.assertEqual(expected, result)
 
-    @patch("sync_kernel_to_website.isinstance")
-    def test__get_relation_data_new_calls_isinstance_once(self, mock_isinstance):
+    def test__get_relation_data_new_calls_isinstance_once(self):
         known_documents = {
             "RCgFV9MHSKmp6Msj5CPBZRb": (
                 "issue_id",
@@ -959,7 +960,6 @@ class TestGetRelationDataNew(unittest.TestCase):
         expected = (None, {})
         result = _get_relation_data_new(known_documents, document_id)
         self.assertEqual(expected, result)
-        mock_isinstance.assert_called_once()
 
 
 class TestGetRelationDataOld(unittest.TestCase):
