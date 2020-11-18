@@ -743,18 +743,58 @@ def pre_register_documents(**kwargs):
 
     logging.info("pre_register_documents - IN")
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
-    Variable.set(
-        "read_changes_task__tasks", tasks, serialize_json=True)
     logging.info("Tasks Total: %i", len(tasks or []))
 
     known_documents = kwargs["ti"].xcom_pull(
         key="i_documents", task_ids="register_issues_task"
     )
-    Variable.set(
-        "register_issues_task__i_documents",
-        known_documents, serialize_json=True)
     logging.info("Tasks Total: %i", len(known_documents or {}))
+
+    logging.info("mongo_connect")
+    mongo_connect()
+
+    logging.info("known_documents")
+    known_documents = _get_known_documents(known_documents, tasks)
+    logging.info("_remodel_known_documents")
+    remodeled_known_documents = _remodel_known_documents(known_documents)
+
+    # sequencia de PID v3 de documentos
+    documents_to_get = itertools.chain(
+        Variable.get("orphan_documents", default_var=[], deserialize_json=True),
+        (get_id(task["id"]) for task in filter_changes(tasks, "documents", "get")),
+    )
+    logging.info("documents_to_get")
+
+    # sequencia de PID v3 de documentos com renditions
+    renditions_to_get = itertools.chain(
+        Variable.get("orphan_renditions", default_var=[], deserialize_json=True),
+        (get_id(task["id"]) for task in filter_changes(tasks, "renditions", "get")),
+    )
+    logging.info("renditions_to_get")
+
+    # converte geradores para sequencias
+    documents_to_get = list(documents_to_get)
+    logging.info("%i", len(documents_to_get))
+    renditions_to_get = list(renditions_to_get)
+    logging.info("%i", len(renditions_to_get))
+
+    try:
+        logging.info("Variable.set()")
+        Variable.set("orphan_renditions", [], serialize_json=True)
+        Variable.set("orphan_documents", [], serialize_json=True)
+        Variable.set("documents_to_get", documents_to_get, serialize_json=True)
+        Variable.set("renditions_to_get", renditions_to_get, serialize_json=True)
+        Variable.set("remodeled_known_documents", remodeled_known_documents, serialize_json=True)
+
+        logging.info("%s", (documents_to_get))
+        logging.info("%s", (renditions_to_get))
+        logging.info("%s", (remodeled_known_documents))
+
+    except Exception as e:
+        # tenta contornar possivel erro que acontece no travis
+        logging.info("Excecao em pre_register_documents: %s", e)
     logging.info("pre_register_documents - OUT")
+    return True
 
 
 pre_register_documents_task = PythonOperator(
@@ -800,16 +840,8 @@ def _register_documents_renditions(renditions_to_get, **kwargs):
     return True
 
 
-def register_documents_subdag(dag, args):
+def register_documents_subdag_params(dag, args):
     """Agrupa documentos em lotes menores para serem registrados no Kernel"""
-
-    mongo_connect()
-
-    tasks = Variable.get(
-        "read_changes_task__tasks", default_var=[], deserialize_json=True)
-    known_documents = Variable.get(
-        "register_issues_task__i_documents",
-        default_var={}, deserialize_json=True)
 
     def _get_relation_data(document_id: str) -> Tuple[str, Dict]:
         """Recupera informações sobre o relacionamento entre o
@@ -826,47 +858,33 @@ def register_documents_subdag(dag, args):
 
         return _get_relation_data_new(remodeled_known_documents, document_id)
 
-    known_documents = _get_known_documents(known_documents, tasks)
-    remodeled_known_documents = _remodel_known_documents(known_documents)
-
-    # sequencia de PID v3 de documentos
-    documents_to_get = itertools.chain(
-        Variable.get("orphan_documents", default_var=[], deserialize_json=True),
-        (get_id(task["id"]) for task in filter_changes(tasks, "documents", "get")),
-    )
-
-    # sequencia de PID v3 de documentos com renditions
-    renditions_to_get = itertools.chain(
-        Variable.get("orphan_renditions", default_var=[], deserialize_json=True),
-        (get_id(task["id"]) for task in filter_changes(tasks, "renditions", "get")),
-    )
-
-    # converte geradores para sequencias
-    documents_to_get = set(documents_to_get)
-    renditions_to_get = set(renditions_to_get)
-
-    # reseta os órfãos
+    logging.info("register_documents_subdag_params")
     try:
-        Variable.set("orphan_renditions", [], serialize_json=True)
-        Variable.set("orphan_documents", [], serialize_json=True)
+        logging.info("Variable.get()")
+        documents_to_get = Variable.get(
+            "documents_to_get", [], deserialize_json=True)
+        renditions_to_get = Variable.get(
+            "renditions_to_get", [], deserialize_json=True)
+        remodeled_known_documents = Variable.get(
+            "remodeled_known_documents", {}, deserialize_json=True)
+
     except Exception as e:
         # tenta contornar possivel erro que acontece no travis
         logging.info("Excecao em register_documents_subdag: %s", e)
+        documents_to_get = []
+        renditions_to_get = []
+        remodeled_known_documents = {}
 
-    logging.info(documents_to_get)
-    # cria SubDag para registrar grupos de documentos e renditions
-    subdag = create_subdag_to_register_documents_grouped_by_bundle(
-        dag, _register_documents,
-        documents_to_get, _get_relation_data,
-        _register_documents_renditions, renditions_to_get,
-        args,
-        )
-    return subdag
+    return documents_to_get, renditions_to_get, _get_relation_data
 
 
 register_documents_subdag_task = SubDagOperator(
     task_id='register_documents_groups_id',
-    subdag=register_documents_subdag(dag, default_args),
+    subdag=create_subdag_to_register_documents_grouped_by_bundle(
+        dag, _register_documents, _register_documents_renditions,
+        register_documents_subdag_params,
+        default_args,
+        ),
     default_args=default_args,
     dag=dag,
 )

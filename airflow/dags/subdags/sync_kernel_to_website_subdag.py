@@ -11,19 +11,20 @@ PARENT_DAG_NAME = 'sync_kernel_to_website'
 def _group_documents_by_bundle(document_ids, _get_relation_data):
     """Agrupa `document_ids` em grupos
     """
+    Logger.info("_group_documents_by_bundle")
     groups = {}
     for doc_id in document_ids:
         bundle_id, doc = _get_relation_data(doc_id)
         if bundle_id:
             groups[bundle_id] = groups.get(bundle_id) or []
             groups[bundle_id].append(doc_id)
+    Logger.info("_group_documents_by_bundle: %i", len(groups))
     return groups
 
 
 def create_subdag_to_register_documents_grouped_by_bundle(
-        dag, register_docs_callable,
-        document_ids, _get_relation_data,
-        register_renditions_callable, renditions_documents_id,
+        dag, register_docs_callable, register_renditions_callable,
+        register_documents_subdag_params,
         args,
         ):
     """
@@ -31,11 +32,17 @@ def create_subdag_to_register_documents_grouped_by_bundle(
     para que se houver falha, será necessário reexecutar apenas os grupos
     que falharam
     """
-    CHILD_DAG_NAME = 'register_documents_groups_id'
-    renditions_documents_id = set(renditions_documents_id)
-
     Logger.info("Create register_documents_grouped_by_bundle subdag")
 
+    CHILD_DAG_NAME = 'register_documents_groups_id'
+
+    Logger.info("Call register_documents_subdag_params")
+    data = register_documents_subdag_params(dag, args)
+    document_ids, renditions_documents_id, _get_relation_data = data
+
+    renditions_documents_id = set(renditions_documents_id)
+
+    Logger.info("Call _group_documents_by_bundle")
     groups = _group_documents_by_bundle(document_ids, _get_relation_data)
     Logger.info("Total groups: %i", len(groups))
 

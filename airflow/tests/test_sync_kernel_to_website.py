@@ -16,7 +16,7 @@ from sync_kernel_to_website import (
     pre_register_documents,
     _register_documents,
     _register_documents_renditions,
-    register_documents_subdag,
+    register_documents_subdag_params,
 )
 from operations.sync_kernel_to_website_operations import (
     ArticleFactory,
@@ -1063,49 +1063,6 @@ class TestRemodelKnownDocuments(unittest.TestCase):
         self.assertEqual(expected, result)
 
 
-@patch("sync_kernel_to_website.Variable.set")
-class TestPreRegisterDocuments(unittest.TestCase):
-
-    def setUp(self):
-        self.kwargs = {
-            "ti": MagicMock(),
-            "conf": None,
-            "run_id": "test_run_id",
-        }
-
-    def test_pre_register_documents_gets_data_from_xcom_and_set_vars(
-            self, mock_set):
-        mock_tasks = [
-            {"id": "/documents/QTsr9VQHDd4DL5zqWqkwyjk",
-             "task": "get"},
-            {"id": "/documents/QTsr9VQHDd4DL5zqWqkwyjk/renditions",
-             "task": "get"},
-            {"id": "/bundles/2236-9996-2020-v22-n47",
-             "task": "get"},
-            {"id": "/documents/S0104-42302020000500589",
-             "task": "get"},
-            {"id": "/documents/S0104-42302020000500589/renditions",
-             "task": "get"},
-        ]
-        mock_i_docs = {
-            "2236-9996-2020-v22-n47":
-                [{"id": "QTsr9VQHDd4DL5zqWqkwyjk", "order": "00017"}],
-            "0034-8910-1974-v8-s0": [],
-            "0034-8910-1976-v10-s1": [],
-        }
-        self.kwargs["ti"].xcom_pull.side_effect = [
-            mock_tasks,
-            mock_i_docs,
-        ]
-        pre_register_documents(**self.kwargs)
-        calls = [
-            call("read_changes_task__tasks", mock_tasks, serialize_json=True),
-            call("register_issues_task__i_documents",
-                 mock_i_docs, serialize_json=True),
-        ]
-        self.assertListEqual(calls, mock_set.call_args_list)
-
-
 @patch("sync_kernel_to_website.fetch_documents_front")
 @patch("sync_kernel_to_website.Variable.set")
 @patch("sync_kernel_to_website.Variable.get")
@@ -1188,10 +1145,10 @@ class TestRegisterDocumentsRenditions(unittest.TestCase):
 
 
 @patch("sync_kernel_to_website.default_args")
-@patch("sync_kernel_to_website.create_subdag_to_register_documents_grouped_by_bundle")
+@patch("sync_kernel_to_website.Variable.set")
 @patch("sync_kernel_to_website.Variable.get")
 @patch("sync_kernel_to_website.mongo_connect")
-class TestRegisterDocumentsSubDag(unittest.TestCase):
+class TestPreRegisterDocuments(unittest.TestCase):
 
     def setUp(self):
         self.kwargs = {
@@ -1200,10 +1157,10 @@ class TestRegisterDocumentsSubDag(unittest.TestCase):
             "run_id": "test_run_id",
         }
 
-    def test_register_documents_subdag_(self,
+    def test_pre_register_documents_(self,
             mock_mongo,
             mock_get,
-            mock_create_subdag,
+            mock_set,
             mock_default_args,
             ):
         MockDAG = MagicMock(spec=DAG)
@@ -1240,57 +1197,60 @@ class TestRegisterDocumentsSubDag(unittest.TestCase):
             "kwsr9VQHDd4DQTL5zyjkqWq", "S0104-42302020000500589",
         ]
         # dados de entrada resultantes de Variable.get
-        mock_get.side_effect = [
+        self.kwargs["ti"].xcom_pull.side_effect = [
             tasks,
             i_docs,
+        ]
+        mock_get.side_effect = [
             orphan_docs,
             orphan_rends,
         ]
         mock_dag = MockDAG(ANY)
         args = mock_default_args
         args.update(self.kwargs)
-        
-        # closure
-        ANY_get_relation_data = ANY
-        
-        # funcoes reais
-        actual_register_documents = _register_documents
-        actual_register_documents_renditions = _register_documents_renditions
 
-        # obtido dependendo dos dados de entrada fornecidos por Variable.get
-        documents_to_get = {
+        # obtido dependendo dos dados de entrada (Variable.get e/ou xcom)
+        documents_to_get = [
             "QTL5zyjkqWqkwsr9VQHDd4D",
+            "S0104-42302020000500589",
             "QTsr9VQHDd4DL5zqWqkwyjk",
             "S0104-42302020000500589",
-        }
+        ]
 
-        # obtido dependendo dos dados de entrada fornecidos por Variable.get
-        renditions_to_get = {
+        # obtido dependendo dos dados de entrada (Variable.get e/ou xcom)
+        renditions_to_get = [
             "kwsr9VQHDd4DQTL5zyjkqWq",
             "S0104-42302020000500589",
             "QTsr9VQHDd4DL5zqWqkwyjk",
+            "S0104-42302020000500589",
             "5zyjkqWqkwsr9VQHDdQTL4D",
+        ]
+
+        remodeled_known_documents = {
+            "QTsr9VQHDd4DL5zqWqkwyjk":
+                ("2236-9996-2020-v22-n47",
+                    {"id": "QTsr9VQHDd4DL5zqWqkwyjk", "order": "00017"}),
         }
 
-        # chamada para a função que está sob teste
-        register_documents_subdag(mock_dag, args)
+        pre_register_documents(**self.kwargs)
+        calls = [
+            call("orphan_renditions", [], serialize_json=True),
+            call("orphan_documents", [], serialize_json=True),
+            call("documents_to_get", documents_to_get, serialize_json=True),
+            call("renditions_to_get", renditions_to_get, serialize_json=True),
+            call("remodeled_known_documents",
+                 remodeled_known_documents, serialize_json=True),
+        ]
+        print("")
+        print(calls)
+        print("")
+        print(mock_set.call_args_list)
+        self.assertListEqual(calls, mock_set.call_args_list)
 
-        # testa se `create_subdag_to_register_documents_grouped_by_bundle` foi
-        # chamada com os parâmetros esperados
-        mock_create_subdag.assert_called_once_with(
-            mock_dag,
-            actual_register_documents,
-            documents_to_get,
-            ANY_get_relation_data,
-            actual_register_documents_renditions,
-            renditions_to_get,
-            args
-        )
-
-    def test_register_documents_subdag_for_no_renditions(self,
+    def test_pre_register_documents_gets_no_renditions(self,
             mock_mongo,
             mock_get,
-            mock_create_subdag,
+            mock_set,
             mock_default_args,
             ):
         MockDAG = MagicMock(spec=DAG)
@@ -1320,9 +1280,11 @@ class TestRegisterDocumentsSubDag(unittest.TestCase):
         orphan_rends = [
         ]
         # dados de entrada resultantes de Variable.get
-        mock_get.side_effect = [
+        self.kwargs["ti"].xcom_pull.side_effect = [
             tasks,
             i_docs,
+        ]
+        mock_get.side_effect = [
             orphan_docs,
             orphan_rends,
         ]
@@ -1330,42 +1292,40 @@ class TestRegisterDocumentsSubDag(unittest.TestCase):
         args = mock_default_args
         args.update(self.kwargs)
 
-        # closure
-        ANY_get_relation_data = ANY
-
-        # funcoes reais
-        actual_register_documents = _register_documents
-        actual_register_documents_renditions = _register_documents_renditions
-
-        # obtido dependendo dos dados de entrada fornecidos por Variable.get
-        documents_to_get = {
+        # obtido dependendo dos dados de entrada (Variable.get e/ou xcom)
+        documents_to_get = [
             "QTL5zyjkqWqkwsr9VQHDd4D",
+            "S0104-42302020000500589",
             "QTsr9VQHDd4DL5zqWqkwyjk",
             "S0104-42302020000500589",
+        ]
+
+        # obtido dependendo dos dados de entrada (Variable.get e/ou xcom)
+        renditions_to_get = []
+
+        remodeled_known_documents = {
+            "QTsr9VQHDd4DL5zqWqkwyjk":
+                ("2236-9996-2020-v22-n47",
+                    {"id": "QTsr9VQHDd4DL5zqWqkwyjk", "order": "00017"}),
         }
 
-        # obtido dependendo dos dados de entrada fornecidos por Variable.get
-        renditions_to_get = set()
-
         # chamada para a função que está sob teste
-        register_documents_subdag(mock_dag, args)
+        pre_register_documents(**self.kwargs)
 
-        # testa se `create_subdag_to_register_documents_grouped_by_bundle` foi
-        # chamada com os parâmetros esperados
-        mock_create_subdag.assert_called_once_with(
-            mock_dag,
-            actual_register_documents,
-            documents_to_get,
-            ANY_get_relation_data,
-            actual_register_documents_renditions,
-            renditions_to_get,
-            args
-        )
+        calls = [
+            call("orphan_renditions", [], serialize_json=True),
+            call("orphan_documents", [], serialize_json=True),
+            call("documents_to_get", documents_to_get, serialize_json=True),
+            call("renditions_to_get", renditions_to_get, serialize_json=True),
+            call("remodeled_known_documents", remodeled_known_documents, serialize_json=True),
 
-    def test_register_documents_subdag_for_no_docs(self,
+        ]
+        self.assertListEqual(calls, mock_set.call_args_list)
+
+    def test_pre_register_documents_gets_no_docs(self,
             mock_mongo,
             mock_get,
-            mock_create_subdag,
+            mock_set,
             mock_default_args,
             ):
         MockDAG = MagicMock(spec=DAG)
@@ -1397,9 +1357,11 @@ class TestRegisterDocumentsSubDag(unittest.TestCase):
             "kwsr9VQHDd4DQTL5zyjkqWq", "S0104-42302020000500589",
         ]
         # dados de entrada resultantes de Variable.get
-        mock_get.side_effect = [
+        self.kwargs["ti"].xcom_pull.side_effect = [
             tasks,
             i_docs,
+        ]
+        mock_get.side_effect = [
             orphan_docs,
             orphan_rends,
         ]
@@ -1407,43 +1369,39 @@ class TestRegisterDocumentsSubDag(unittest.TestCase):
         args = mock_default_args
         args.update(self.kwargs)
 
-        # closure
-        ANY_get_relation_data = ANY
+        # obtido dependendo dos dados de entrada (Variable.get e/ou xcom)
+        documents_to_get = []
 
-        # funcoes reais
-        actual_register_documents = _register_documents
-        actual_register_documents_renditions = _register_documents_renditions
-
-        # obtido dependendo dos dados de entrada fornecidos por Variable.get
-        documents_to_get = set()
-
-        # obtido dependendo dos dados de entrada fornecidos por Variable.get
-        renditions_to_get = {
+        # obtido dependendo dos dados de entrada (Variable.get e/ou xcom)
+        renditions_to_get = [
             "kwsr9VQHDd4DQTL5zyjkqWq",
             "S0104-42302020000500589",
             "QTsr9VQHDd4DL5zqWqkwyjk",
+            "S0104-42302020000500589",
             "5zyjkqWqkwsr9VQHDdQTL4D",
+        ]
+
+        remodeled_known_documents = {
+            "QTsr9VQHDd4DL5zqWqkwyjk":
+                ("2236-9996-2020-v22-n47",
+                 {"id": "QTsr9VQHDd4DL5zqWqkwyjk", "order": "00017"}),
         }
 
         # chamada para a função que está sob teste
-        register_documents_subdag(mock_dag, args)
+        pre_register_documents(**self.kwargs)
+        calls = [
+            call("orphan_renditions", [], serialize_json=True),
+            call("orphan_documents", [], serialize_json=True),
+            call("documents_to_get", documents_to_get, serialize_json=True),
+            call("renditions_to_get", renditions_to_get, serialize_json=True),
+            call("remodeled_known_documents", remodeled_known_documents, serialize_json=True),
 
-        # testa se `create_subdag_to_register_documents_grouped_by_bundle` foi
-        # chamada com os parâmetros esperados
-        mock_create_subdag.assert_called_once_with(
-            mock_dag,
-            actual_register_documents,
-            documents_to_get,
-            ANY_get_relation_data,
-            actual_register_documents_renditions,
-            renditions_to_get,
-            args
-        )
+        ]
 
-    def test_register_documents_subdag_for_no_docs_and_no_rends(self,
+    def test_pre_register_documents_gets_no_docs_and_no_rends(self,
             mock_mongo,
             mock_get,
-            mock_create_subdag,
+            mock_set,
             mock_default_args,
             ):
         MockDAG = MagicMock(spec=DAG)
@@ -1468,9 +1426,11 @@ class TestRegisterDocumentsSubDag(unittest.TestCase):
         orphan_rends = [
         ]
         # dados de entrada resultantes de Variable.get
-        mock_get.side_effect = [
+        self.kwargs["ti"].xcom_pull.side_effect = [
             tasks,
             i_docs,
+        ]
+        mock_get.side_effect = [
             orphan_docs,
             orphan_rends,
         ]
@@ -1478,31 +1438,28 @@ class TestRegisterDocumentsSubDag(unittest.TestCase):
         args = mock_default_args
         args.update(self.kwargs)
 
-        # closure
-        ANY_get_relation_data = ANY
+        # obtido dependendo dos dados de entrada (Variable.get e/ou xcom)
+        documents_to_get = []
 
-        # funcoes reais
-        actual_register_documents = _register_documents
-        actual_register_documents_renditions = _register_documents_renditions
+        # obtido dependendo dos dados de entrada (Variable.get e/ou xcom)
+        renditions_to_get = []
 
-        # obtido dependendo dos dados de entrada fornecidos por Variable.get
-        documents_to_get = set()
-
-        # obtido dependendo dos dados de entrada fornecidos por Variable.get
-        renditions_to_get = set()
+        remodeled_known_documents = {
+            "QTsr9VQHDd4DL5zqWqkwyjk":
+                ("2236-9996-2020-v22-n47",
+                 {"id": "QTsr9VQHDd4DL5zqWqkwyjk", "order": "00017"}),
+        }
 
         # chamada para a função que está sob teste
-        register_documents_subdag(mock_dag, args)
+        pre_register_documents(**self.kwargs)
 
-        # testa se `create_subdag_to_register_documents_grouped_by_bundle` foi
-        # chamada com os parâmetros esperados
-        mock_create_subdag.assert_called_once_with(
-            mock_dag,
-            actual_register_documents,
-            documents_to_get,
-            ANY_get_relation_data,
-            actual_register_documents_renditions,
-            renditions_to_get,
-            args
-        )
+        calls = [
+            call("orphan_renditions", [], serialize_json=True),
+            call("orphan_documents", [], serialize_json=True),
+            call("documents_to_get", documents_to_get, serialize_json=True),
+            call("renditions_to_get", renditions_to_get, serialize_json=True),
+            call("remodeled_known_documents", remodeled_known_documents, serialize_json=True),
+
+        ]
+        self.assertListEqual(calls, mock_set.call_args_list)
 

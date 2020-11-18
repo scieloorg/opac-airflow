@@ -123,13 +123,19 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
 
         document_ids = ("XXX3V9MHSKmp6Msj5CPBZRb", )
         renditions_documents_id = ("XXX3V9MHSKmp6Msj5CPBZRb", )
-
+        mock_get_data = MagicMock()
+        mock_get_data.return_value = [
+            document_ids,
+            renditions_documents_id,
+            self.mock_get_relation_data_which_returns_none
+        ]
         create_subdag_to_register_documents_grouped_by_bundle(
-            self.mock_dag, self.mock_register_docs_callable,
-            document_ids, self.mock_get_relation_data_which_returns_none,
-            self.mock_register_renditions_callable, renditions_documents_id,
+            self.mock_dag,
+            self.mock_register_docs_callable,
+            self.mock_register_renditions_callable,
+            mock_get_data,
             self.mock_args,
-            )
+        )
 
         calls = [
             call(
@@ -159,12 +165,19 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
             "CGgFV9MHSKmp6Msj5CPBZRb"
         ]
         renditions_documents_id = []
+        mock_get_data = MagicMock()
+        mock_get_data.return_value = [
+            document_ids,
+            renditions_documents_id,
+            self.mock_get_relation_data
+        ]
         create_subdag_to_register_documents_grouped_by_bundle(
-            self.mock_dag, self.mock_register_docs_callable,
-            document_ids, self.mock_get_relation_data,
-            self.mock_register_renditions_callable, renditions_documents_id,
+            self.mock_dag,
+            self.mock_register_docs_callable,
+            self.mock_register_renditions_callable,
+            mock_get_data,
             self.mock_args,
-            )
+        )
 
         calls = [
             call(
@@ -211,10 +224,17 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
             "LL13V9MHSKmp6Msj5CPBZRb",
             "HJgFV9MHSKmp6Msj5CPBZRb",
         ]
+        mock_get_data = MagicMock()
+        mock_get_data.return_value = [
+            document_ids,
+            renditions_documents_id,
+            self.mock_get_relation_data
+        ]
         create_subdag_to_register_documents_grouped_by_bundle(
-            self.mock_dag, self.mock_register_docs_callable,
-            document_ids, self.mock_get_relation_data,
-            self.mock_register_renditions_callable, renditions_documents_id,
+            self.mock_dag,
+            self.mock_register_docs_callable,
+            self.mock_register_renditions_callable,
+            mock_get_data,
             self.mock_args,
             )
 
@@ -281,10 +301,17 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
             "LL13V9MHSKmp6Msj5CPBZRb",
             "HJgFV9MHSKmp6Msj5CPBZRb",
         ]
+        mock_get_data = MagicMock()
+        mock_get_data.return_value = [
+            document_ids,
+            renditions_documents_id,
+            self.mock_get_relation_data
+        ]
         create_subdag_to_register_documents_grouped_by_bundle(
-            self.mock_dag, self.mock_register_docs_callable,
-            document_ids, self.mock_get_relation_data,
-            self.mock_register_renditions_callable, renditions_documents_id,
+            self.mock_dag,
+            self.mock_register_docs_callable,
+            self.mock_register_renditions_callable,
+            mock_get_data,
             self.mock_args,
             )
 
