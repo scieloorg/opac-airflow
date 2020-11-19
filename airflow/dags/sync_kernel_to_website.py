@@ -813,30 +813,35 @@ def _register_documents(documents_to_get, _get_relation_data, **kwargs):
     :param documents_to_get: sequência de PID v3 de documentos
     :param _get_relation_data: callable, que dado um doc id,
         retorna (issue_id, dados do documento), por exemplo,
-        ('0034-8910-2019-v53', {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+        ('0034-8910-2019-v53',
+         {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
     """
+    logging.info("_register_documents: mongo_connect")
     mongo_connect()
-
+    logging.info("_register_documents: try_register_documents")
     orphans = try_register_documents(
-        documents_to_get, _get_relation_data, fetch_documents_front, ArticleFactory
+        documents_to_get, _get_relation_data, fetch_documents_front,
+        ArticleFactory
     )
-
-    _orphans = Variable.get("orphan_documents", [], deserialize_json=True)
-    Variable.set("orphan_documents", _orphans + orphans, serialize_json=True)
+    logging.info("_register_documents: xcom_push")
+    kwargs["ti"].xcom_push(key="orphan_documents", value=orphans)
+    logging.info("_register_documents: return")
     return True
 
 
 def _register_documents_renditions(renditions_to_get, **kwargs):
     """
     """
+    logging.info("_register_documents_renditions: mongo_connect")
     mongo_connect()
-
+    logging.info(
+        "_register_documents_renditions: try_register_documents_renditions")
     orphans = try_register_documents_renditions(
         renditions_to_get, fetch_documents_renditions, ArticleRenditionFactory
     )
-
-    _orphans = Variable.get("orphan_renditions", [], deserialize_json=True)
-    Variable.set("orphan_renditions", _orphans + orphans, serialize_json=True)
+    logging.info("_register_documents_renditions: xcom_push")
+    kwargs["ti"].xcom_push(key="orphan_renditions", value=orphans)
+    logging.info("_register_documents_renditions: return")
     return True
 
 

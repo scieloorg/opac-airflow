@@ -76,6 +76,7 @@ class TestGroupDocumentsByBundle(unittest.TestCase):
         self.assertEqual(expected, result)
 
 
+@patch("subdags.sync_kernel_to_website_subdag.finish")
 @patch("subdags.sync_kernel_to_website_subdag.DAG")
 @patch("subdags.sync_kernel_to_website_subdag.PythonOperator")
 class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
@@ -110,6 +111,7 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
 
     def test_create_subdag_to_register_documents_grouped_by_bundle_creates_subdag_with_dummy_task(self,
             mock_python_op, MockSubDAG,
+            mock_finish,
             ):
         # mock de DAG
         MockDAG = MagicMock(spec=DAG)
@@ -139,8 +141,9 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
 
         calls = [
             call(
-                task_id="register_documents_groups_id_do_nothing",
-                python_callable=ANY,
+                task_id="register_documents_groups_id_finish",
+                provide_context=True,
+                python_callable=mock_finish,
                 dag=mock_subdag,
             ),
         ]
@@ -148,6 +151,7 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
 
     def test_create_subdag_to_register_documents_grouped_by_bundle_creates_subdag_with_two_tasks(self,
             mock_python_op, MockSubDAG,
+            mock_finish,
             ):
         # mock de DAG
         MockDAG = MagicMock(spec=DAG)
@@ -181,6 +185,12 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
 
         calls = [
             call(
+                task_id='register_documents_groups_id_finish',
+                provide_context=True,
+                python_callable=mock_finish,
+                dag=mock_subdag,
+            ),
+            call(
                 task_id='register_documents_groups_id_issue_id_2_docs',
                 python_callable=self.mock_register_docs_callable,
                 op_args=(
@@ -203,6 +213,7 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
 
     def test_create_subdag_to_register_documents_grouped_by_bundle_creates_subdag_with_two_tasks_to_register_docs_and_other_two_to_register_renditions(self,
             mock_python_op, MockSubDAG,
+            mock_finish,
             ):
         # mock de DAG
         MockDAG = MagicMock(spec=DAG)
@@ -239,6 +250,12 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
             )
 
         calls = [
+            call(
+                task_id='register_documents_groups_id_finish',
+                provide_context=True,
+                python_callable=mock_finish,
+                dag=mock_subdag,
+            ),
             call(
                 task_id='register_documents_groups_id_issue_id_2_docs',
                 python_callable=self.mock_register_docs_callable,
@@ -284,6 +301,7 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
 
     def test_create_subdag_to_register_documents_grouped_by_bundle_creates_subdag_with_task_to_register_renditions(self,
             mock_python_op, MockSubDAG,
+            mock_finish,
             ):
         # mock de DAG
         MockDAG = MagicMock(spec=DAG)
@@ -316,6 +334,12 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
             )
 
         calls = [
+            call(
+                task_id='register_documents_groups_id_finish',
+                provide_context=True,
+                python_callable=mock_finish,
+                dag=mock_subdag,
+            ),
             call(
                 task_id='register_documents_groups_id_renditions',
                 python_callable=self.mock_register_renditions_callable,

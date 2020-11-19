@@ -1,6 +1,7 @@
 import logging
 
 from airflow import DAG
+from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator
 
 
@@ -52,7 +53,17 @@ def create_subdag_to_register_documents_grouped_by_bundle(
         schedule_interval=None,
     )
     with dag_subdag:
+
+        task_id = f'{CHILD_DAG_NAME}_finish'
+        t_finish = PythonOperator(
+            task_id=task_id,
+            provide_context=True,
+            python_callable=finish,
+            dag=dag_subdag,
+        )
+
         for bundle_id, doc_ids in groups.items():
+
             task_id = f'{CHILD_DAG_NAME}_{bundle_id}_docs'
 
             Logger.info("%s", bundle_id)
@@ -79,7 +90,9 @@ def create_subdag_to_register_documents_grouped_by_bundle(
                     op_kwargs={'renditions_to_get': _renditions_documents_id},
                     dag=dag_subdag,
                 )
-                t1 >> t2
+                t1 >> t2 >> t_finish
+            else:
+                t1 >> t_finish
 
         _renditions_documents_id = renditions_documents_id - set(document_ids)
         Logger.info(
@@ -96,18 +109,39 @@ def create_subdag_to_register_documents_grouped_by_bundle(
                 op_kwargs={'renditions_to_get': _renditions_documents_id},
                 dag=dag_subdag,
             )
-
-        elif not groups:
-            Logger.info("Do nothing")
-            task_id = f'{CHILD_DAG_NAME}_do_nothing'
-            PythonOperator(
-                task_id=task_id,
-                python_callable=do_nothing,
-                dag=dag_subdag,
-            )
-
+            t3 >> t_finish
     return dag_subdag
 
 
-def do_nothing(**kwargs):
+def finish(**kwargs):
+    Logger.info("Finish")
+    orphan_documents = kwargs["ti"].xcom_pull(
+        key="orphan_documents", task_ids="t1") or []
+    orphan_renditions = kwargs["ti"].xcom_pull(
+        key="orphan_renditions", task_ids="t2") or []
+    orphan_renditions += kwargs["ti"].xcom_pull(
+        key="orphan_renditions", task_ids="t3") or []
+
+    try:
+        _orphan_documents = Variable.get(
+            "orphan_documents", [], deserialize_json=True)
+        _orphan_renditions = Variable.get(
+            "orphan_renditions", [], deserialize_json=True)
+        Variable.set(
+            "orphan_documents",
+            _orphan_documents + orphan_documents,
+            serialize_json=True)
+        Variable.set(
+            "orphan_renditions",
+            _orphan_renditions + orphan_renditions,
+            serialize_json=True)
+        Logger.info("Finish %i orphan_documents", len(orphan_documents))
+        Logger.info("Finish %i orphan_renditions", len(orphan_renditions))
+    except Exception as e:
+        # sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) 
+        # could not connect to server: Connection refused
+        Logger.info("%s", e)
+    Logger.info("Finish - FIM")
     return True
+
+

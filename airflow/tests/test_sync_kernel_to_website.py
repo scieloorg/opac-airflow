@@ -1064,8 +1064,6 @@ class TestRemodelKnownDocuments(unittest.TestCase):
 
 
 @patch("sync_kernel_to_website.fetch_documents_front")
-@patch("sync_kernel_to_website.Variable.set")
-@patch("sync_kernel_to_website.Variable.get")
 @patch("sync_kernel_to_website.try_register_documents")
 @patch("sync_kernel_to_website.mongo_connect")
 class TestRegisterDocuments(unittest.TestCase):
@@ -1077,14 +1075,13 @@ class TestRegisterDocuments(unittest.TestCase):
             "run_id": "test_run_id",
         }
 
-    def test__register_documents(self, mock_mongo, mock_try_reg, mock_get,
-            mock_set, mock_fetch):
+    def test__register_documents(self, mock_mongo, mock_try_reg, 
+            mock_fetch):
         documents_to_get = [
             "QTsr9VQHDd4DL5zqWqkwyjk", "LL13V9MHSKmp6Msj5CPBZRb"]
         _get_relation_data = MagicMock(spec=callable)
 
         mock_try_reg.return_value = ["LL13V9MHSKmp6Msj5CPBZRb"]
-        mock_get.return_value = ["6Msj5CPBZRbLL13V9MHSKmp"]
 
         _register_documents(
             documents_to_get, _get_relation_data, **self.kwargs)
@@ -1093,19 +1090,13 @@ class TestRegisterDocuments(unittest.TestCase):
             documents_to_get, _get_relation_data,
             mock_fetch, ArticleFactory
         )
-        mock_get.assert_called_once_with(
-            "orphan_documents", [], deserialize_json=True
-        )
-        mock_set.assert_called_once_with(
-            "orphan_documents",
-            ["6Msj5CPBZRbLL13V9MHSKmp", "LL13V9MHSKmp6Msj5CPBZRb"],
-            serialize_json=True
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            key="orphan_documents",
+            value=["LL13V9MHSKmp6Msj5CPBZRb"]
         )
 
 
 @patch("sync_kernel_to_website.fetch_documents_renditions")
-@patch("sync_kernel_to_website.Variable.set")
-@patch("sync_kernel_to_website.Variable.get")
 @patch("sync_kernel_to_website.try_register_documents_renditions")
 @patch("sync_kernel_to_website.mongo_connect")
 class TestRegisterDocumentsRenditions(unittest.TestCase):
@@ -1118,14 +1109,12 @@ class TestRegisterDocumentsRenditions(unittest.TestCase):
         }
 
     def test__register_documents_renditions(self, mock_mongo, mock_try_reg,
-            mock_get,
-            mock_set, mock_fetch):
+            mock_fetch):
         documents_to_get = [
             "QTsr9VQHDd4DL5zqWqkwyjk", "LL13V9MHSKmp6Msj5CPBZRb"]
         _get_relation_data = MagicMock(spec=callable)
 
         mock_try_reg.return_value = ["LL13V9MHSKmp6Msj5CPBZRb"]
-        mock_get.return_value = ["6Msj5CPBZRbLL13V9MHSKmp"]
 
         _register_documents_renditions(
             documents_to_get, **self.kwargs)
@@ -1134,13 +1123,9 @@ class TestRegisterDocumentsRenditions(unittest.TestCase):
             documents_to_get,
             mock_fetch, ArticleRenditionFactory
         )
-        mock_get.assert_called_once_with(
-            "orphan_renditions", [], deserialize_json=True
-        )
-        mock_set.assert_called_once_with(
-            "orphan_renditions",
-            ["6Msj5CPBZRbLL13V9MHSKmp", "LL13V9MHSKmp6Msj5CPBZRb"],
-            serialize_json=True
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            key="orphan_renditions",
+            value=["LL13V9MHSKmp6Msj5CPBZRb"]
         )
 
 
