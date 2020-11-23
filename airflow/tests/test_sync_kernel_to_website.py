@@ -1,11 +1,23 @@
 import os
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call, ANY
 import json
 
 from airflow import DAG
 
-from sync_kernel_to_website import JournalFactory, IssueFactory
+from sync_kernel_to_website import (
+    JournalFactory,
+    IssueFactory,
+    _get_known_documents,
+    _get_relation_data,
+    _remodel_known_documents,
+    _get_relation_data_new,
+    _get_relation_data_old,
+    pre_register_documents,
+    _register_documents,
+    _register_documents_renditions,
+    register_documents_subdag_params,
+)
 from operations.sync_kernel_to_website_operations import (
     ArticleFactory,
     try_register_documents,
@@ -13,7 +25,10 @@ from operations.sync_kernel_to_website_operations import (
     try_register_documents_renditions,
 )
 from opac_schema.v1 import models
-from operations.exceptions import InvalidOrderValueError
+from operations.exceptions import (
+    InvalidOrderValueError,
+    OldFormatKnownDocsError,
+)
 
 
 FIXTURES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
@@ -576,3 +591,860 @@ class RegisterDocumentRenditionsTest(unittest.TestCase):
         )
 
         self.assertEqual(self.documents, orphans)
+
+
+@patch("sync_kernel_to_website.filter_changes")
+@patch("sync_kernel_to_website.fetch_bundles")
+class TestGetKnownDocuments(unittest.TestCase):
+
+    def test__get_known_documents_adds_and_returns_new_issue_and_its_documents_in_input_dict(
+            self, mock_fetch_bundles, mock_filter_changes):
+        mock_issue = {
+            "_id": "0001-3714-1999-v60-n2",
+            "id": "0001-3714-1999-v60-n2",
+            "created": "2020-10-06T15:15:04.310621Z",
+            "updated": "2020-10-06T15:15:04.311271Z",
+            "items": [
+                {"id": "9CgFRVMHSKmp6Msj5CPBZRb", "order": "00502"},
+                {"id": "c4H4TjsZS7YzjTjyYD5f5Ct", "order": "00501"},
+                {"id": "QXJwLFnG565Prww5YdqqpTq", "order": "00504"},
+            ],
+            "metadata": {
+                "publication_months": {"range": [9, 10]},
+                "publication_year": "2020",
+                "volume": "67",
+                "number": "5",
+                "pid": "0034-737X20200005"
+            }
+        }
+        mock_fetch_bundles.side_effect = [mock_issue]
+        mock_filter_changes.return_value = [
+            {
+                "id": "/bundles/0001-3714-1999-v60-n2",
+                "timestamp": "2020-11-05T16:54:12.236462Z",
+                "change_id": "5fa42e34c1e393cec121d6b5"
+
+            },
+        ]
+        tasks = MagicMock()
+        known_documents = {
+            "0001-3714-1998-v29-n3": [],
+        }
+        expected = {
+            "0001-3714-1998-v29-n3": [],
+            "0001-3714-1999-v60-n2": [
+                {"id": "9CgFRVMHSKmp6Msj5CPBZRb", "order": "00502"},
+                {"id": "c4H4TjsZS7YzjTjyYD5f5Ct", "order": "00501"},
+                {"id": "QXJwLFnG565Prww5YdqqpTq", "order": "00504"},
+            ],
+        }
+
+        result = _get_known_documents(known_documents, tasks)
+        self.assertDictEqual(expected, result)
+        self.assertIs(known_documents, result)
+
+    def test__get_known_documents_adds_and_returns_new_issue_and_no_documents_in_input_dict(
+            self, mock_fetch_bundles, mock_filter_changes):
+        mock_issue = {}
+        mock_fetch_bundles.side_effect = [mock_issue]
+        mock_filter_changes.return_value = [
+            {
+                "id": "/bundles/0001-3714-1999-v60-n2",
+                "timestamp": "2020-11-05T16:54:12.236462Z",
+                "change_id": "5fa42e34c1e393cec121d6b5"
+
+            },
+        ]
+        tasks = MagicMock()
+        known_documents = {
+            "0001-3714-1998-v29-n3": [],
+        }
+        expected = {
+            "0001-3714-1998-v29-n3": [],
+            "0001-3714-1999-v60-n2": [],
+        }
+
+        result = _get_known_documents(known_documents, tasks)
+        self.assertDictEqual(expected, result)
+
+    def test__get_known_documents_returns_unchanged_input_dict(
+            self, mock_fetch_bundles, mock_filter_changes):
+        mock_filter_changes.return_value = []
+        tasks = MagicMock()
+        known_documents = {
+            "0001-3714-1998-v29-n3": [],
+        }
+        expected = known_documents.copy()
+
+        result = _get_known_documents(known_documents, tasks)
+        self.assertDictEqual(expected, result)
+
+    def test__get_known_documents_do_nothing_because_input_dict_has_already_documents(
+            self, mock_fetch_bundles, mock_filter_changes):
+        mock_issue = {
+            "_id": "0001-3714-1999-v60-n2",
+            "id": "0001-3714-1999-v60-n2",
+            "created": "2020-10-06T15:15:04.310621Z",
+            "updated": "2020-10-06T15:15:04.311271Z",
+            "items": [
+                {"id": "9CgFRVMHSKmp6Msj5CPBZRb", "order": "00502"},
+                {"id": "c4H4TjsZS7YzjTjyYD5f5Ct", "order": "00501"},
+                {"id": "QXJwLFnG565Prww5YdqqpTq", "order": "00504"},
+            ],
+            "metadata": {
+                "publication_months": {"range": [9, 10]},
+                "publication_year": "2020",
+                "volume": "67",
+                "number": "5",
+                "pid": "0034-737X20200005"
+            }
+        }
+        mock_fetch_bundles.side_effect = [mock_issue]
+        mock_filter_changes.return_value = [
+            {
+                "id": "/bundles/0001-3714-1999-v60-n2",
+                "timestamp": "2020-11-05T16:54:12.236462Z",
+                "change_id": "5fa42e34c1e393cec121d6b5"
+
+            },
+        ]
+        tasks = MagicMock()
+        known_documents = {
+            "0001-3714-1999-v60-n2": [
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ],
+        }
+        expected = known_documents.copy()
+
+        result = _get_known_documents(known_documents, tasks)
+        self.assertDictEqual(expected, result)
+        self.assertIs(known_documents, result)
+
+
+class TestGetRelationData(unittest.TestCase):
+
+    def test__get_relation_data_returns_bundle_and_document(self):
+        known_documents = {
+            "issue_id": [
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ],
+            "issue_id_2": [
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ]
+        }
+        document_id = "HJgFV9MHSKmp6Msj5CPBZRb"
+        expected = (
+            "issue_id",
+            {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"}
+        )
+        result = _get_relation_data(known_documents, document_id)
+        self.assertEqual(expected, result)
+
+    def test__get_relation_data_returns_none_and_no_docs(self):
+        known_documents = {
+            "issue_id": [
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ],
+            "issue_id_2": [
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ]
+        }
+        document_id = "AAAAAAMHSKmp6Msj5CPBZRb"
+        expected = (None, {})
+        result = _get_relation_data(known_documents, document_id)
+        self.assertEqual(expected, result)
+
+    def test__get_relation_data_uses_remodeled_known_documents_and_returns_bundle_and_document(self):
+        known_documents = {
+            "RCgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ),
+            "CGgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LLgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
+            "RC13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ),
+            "CG13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJ13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LL13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
+        }
+        document_id = "HJgFV9MHSKmp6Msj5CPBZRb"
+        expected = (
+            "issue_id",
+            {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"}
+        )
+        result = _get_relation_data(known_documents, document_id)
+        self.assertEqual(expected, result)
+
+    def test__get_relation_data_uses_remodeled_known_documents_and_returns_none_and_no_docs(self):
+        known_documents = {
+            "RCgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ),
+            "CGgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LLgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
+            "RC13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ),
+            "CG13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJ13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LL13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
+        }
+        document_id = "AAAAAAMHSKmp6Msj5CPBZRb"
+        expected = (None, {})
+        result = _get_relation_data(known_documents, document_id)
+        self.assertEqual(expected, result)
+
+
+class TestGetRelationDataNew(unittest.TestCase):
+
+    def test__get_relation_data_new_raise_OldFormatKnownDocsError(self):
+        known_documents = {
+            "issue_id": [
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ],
+            "issue_id_2": [
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ]
+        }
+        document_id = "HJgFV9MHSKmp6Msj5CPBZRb"
+        with self.assertRaises(OldFormatKnownDocsError):
+            _get_relation_data_new(known_documents, document_id)
+
+    def test__get_relation_data_new_returns_none_and_no_docs(self):
+        known_documents = {}
+        document_id = "AAAAAAMHSKmp6Msj5CPBZRb"
+        expected = (None, {})
+        result = _get_relation_data_new(known_documents, document_id)
+        self.assertEqual(expected, result)
+
+    def test__get_relation_data_new_returns_bundle_and_document(self):
+        known_documents = {
+            "RCgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ),
+            "CGgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LLgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
+            "RC13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ),
+            "CG13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJ13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LL13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
+        }
+        document_id = "HJgFV9MHSKmp6Msj5CPBZRb"
+        expected = (
+            "issue_id",
+            {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"}
+        )
+        result = _get_relation_data_new(known_documents, document_id)
+        self.assertEqual(expected, result)
+
+    def test__get_relation_data_new_calls_isinstance_once(self):
+        known_documents = {
+            "RCgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ),
+            "CGgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LLgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
+            "RC13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ),
+            "CG13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJ13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LL13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
+        }
+        document_id = "AAAAAAMHSKmp6Msj5CPBZRb"
+        expected = (None, {})
+        result = _get_relation_data_new(known_documents, document_id)
+        self.assertEqual(expected, result)
+
+
+class TestGetRelationDataOld(unittest.TestCase):
+
+    def test__get_relation_data_old_returns_bundle_and_document(self):
+        known_documents = {
+            "issue_id": [
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ],
+            "issue_id_2": [
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ]
+        }
+        document_id = "HJgFV9MHSKmp6Msj5CPBZRb"
+        expected = (
+            "issue_id",
+            {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"}
+        )
+        result = _get_relation_data_old(known_documents, document_id)
+        self.assertEqual(expected, result)
+
+    def test__get_relation_data_old_returns_none_and_no_docs(self):
+        known_documents = {
+            "issue_id": [
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ],
+            "issue_id_2": [
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ]
+        }
+        document_id = "AAAAAAMHSKmp6Msj5CPBZRb"
+        expected = (None, {})
+        result = _get_relation_data_old(known_documents, document_id)
+        self.assertEqual(expected, result)
+
+
+class TestRemodelKnownDocuments(unittest.TestCase):
+
+    def test__remodel_known_documents(self):
+        known_documents = {
+            "issue_id": [
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ],
+            "issue_id_2": [
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ]
+        }
+        expected = {
+            "RCgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "RCgFV9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ),
+            "CGgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "CGgFV9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "HJgFV9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LLgFV9MHSKmp6Msj5CPBZRb": (
+                "issue_id",
+                {"id": "LLgFV9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
+            "RC13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "RC13V9MHSKmp6Msj5CPBZRb", "order": "00602"},
+            ),
+            "CG13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "CG13V9MHSKmp6Msj5CPBZRb", "order": "00604"},
+            ),
+            "HJ13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "HJ13V9MHSKmp6Msj5CPBZRb", "order": "00607"},
+            ),
+            "LL13V9MHSKmp6Msj5CPBZRb": (
+                "issue_id_2",
+                {"id": "LL13V9MHSKmp6Msj5CPBZRb", "order": "00609"},
+            ),
+        }
+        result = _remodel_known_documents(known_documents)
+        self.assertEqual(expected, result)
+
+
+@patch("sync_kernel_to_website.fetch_documents_front")
+@patch("sync_kernel_to_website.try_register_documents")
+@patch("sync_kernel_to_website.mongo_connect")
+class TestRegisterDocuments(unittest.TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    def test__register_documents(self, mock_mongo, mock_try_reg, 
+            mock_fetch):
+        documents_to_get = [
+            "QTsr9VQHDd4DL5zqWqkwyjk", "LL13V9MHSKmp6Msj5CPBZRb"]
+        _get_relation_data = MagicMock(spec=callable)
+
+        mock_try_reg.return_value = ["LL13V9MHSKmp6Msj5CPBZRb"]
+
+        _register_documents(
+            documents_to_get, _get_relation_data, **self.kwargs)
+
+        mock_try_reg.assert_called_once_with(
+            documents_to_get, _get_relation_data,
+            mock_fetch, ArticleFactory
+        )
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            key="orphan_documents",
+            value=["LL13V9MHSKmp6Msj5CPBZRb"]
+        )
+
+
+@patch("sync_kernel_to_website.fetch_documents_renditions")
+@patch("sync_kernel_to_website.try_register_documents_renditions")
+@patch("sync_kernel_to_website.mongo_connect")
+class TestRegisterDocumentsRenditions(unittest.TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    def test__register_documents_renditions(self, mock_mongo, mock_try_reg,
+            mock_fetch):
+        documents_to_get = [
+            "QTsr9VQHDd4DL5zqWqkwyjk", "LL13V9MHSKmp6Msj5CPBZRb"]
+        _get_relation_data = MagicMock(spec=callable)
+
+        mock_try_reg.return_value = ["LL13V9MHSKmp6Msj5CPBZRb"]
+
+        _register_documents_renditions(
+            documents_to_get, **self.kwargs)
+
+        mock_try_reg.assert_called_once_with(
+            documents_to_get,
+            mock_fetch, ArticleRenditionFactory
+        )
+        self.kwargs["ti"].xcom_push.assert_called_once_with(
+            key="orphan_renditions",
+            value=["LL13V9MHSKmp6Msj5CPBZRb"]
+        )
+
+
+@patch("sync_kernel_to_website.default_args")
+@patch("sync_kernel_to_website.Variable.set")
+@patch("sync_kernel_to_website.Variable.get")
+@patch("sync_kernel_to_website.mongo_connect")
+class TestPreRegisterDocuments(unittest.TestCase):
+
+    def setUp(self):
+        self.kwargs = {
+            "ti": MagicMock(),
+            "conf": None,
+            "run_id": "test_run_id",
+        }
+
+    def test_pre_register_documents_(self,
+            mock_mongo,
+            mock_get,
+            mock_set,
+            mock_default_args,
+            ):
+        MockDAG = MagicMock(spec=DAG)
+        mock_default_args.return_value = {}
+
+        # dados de entrada
+        tasks = [
+            {"id": "/documents/QTsr9VQHDd4DL5zqWqkwyjk",
+             "task": "get"},
+            {"id": "/documents/QTsr9VQHDd4DL5zqWqkwyjk/renditions",
+             "task": "get"},
+            {"id": "/bundles/2236-9996-2020-v22-n47",
+             "task": "get"},
+            {"id": "/documents/S0104-42302020000500589",
+             "task": "get"},
+            {"id": "/documents/S0104-42302020000500589/renditions",
+             "task": "get"},
+            {"id": "/documents/5zyjkqWqkwsr9VQHDdQTL4D/renditions",
+             "task": "get"},
+        ]
+        # dados de entrada
+        i_docs = {
+            "2236-9996-2020-v22-n47":
+                [{"id": "QTsr9VQHDd4DL5zqWqkwyjk", "order": "00017"}],
+            "0034-8910-1974-v8-s0": [],
+            "0034-8910-1976-v10-s1": [],
+        }
+        # dados de entrada
+        orphan_docs = [
+            "QTL5zyjkqWqkwsr9VQHDd4D", "S0104-42302020000500589",
+        ]
+        # dados de entrada
+        orphan_rends = [
+            "kwsr9VQHDd4DQTL5zyjkqWq", "S0104-42302020000500589",
+        ]
+        # dados de entrada resultantes de Variable.get
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            tasks,
+            i_docs,
+        ]
+        mock_get.side_effect = [
+            orphan_docs,
+            orphan_rends,
+        ]
+        mock_dag = MockDAG(ANY)
+        args = mock_default_args
+        args.update(self.kwargs)
+
+        # obtido dependendo dos dados de entrada (Variable.get e/ou xcom)
+        documents_to_get = [
+            "QTL5zyjkqWqkwsr9VQHDd4D",
+            "S0104-42302020000500589",
+            "QTsr9VQHDd4DL5zqWqkwyjk",
+            "S0104-42302020000500589",
+        ]
+
+        # obtido dependendo dos dados de entrada (Variable.get e/ou xcom)
+        renditions_to_get = [
+            "kwsr9VQHDd4DQTL5zyjkqWq",
+            "S0104-42302020000500589",
+            "QTsr9VQHDd4DL5zqWqkwyjk",
+            "S0104-42302020000500589",
+            "5zyjkqWqkwsr9VQHDdQTL4D",
+        ]
+
+        remodeled_known_documents = {
+            "QTsr9VQHDd4DL5zqWqkwyjk":
+                ("2236-9996-2020-v22-n47",
+                    {"id": "QTsr9VQHDd4DL5zqWqkwyjk", "order": "00017"}),
+        }
+
+        pre_register_documents(**self.kwargs)
+        calls = [
+            call("orphan_renditions", [], serialize_json=True),
+            call("orphan_documents", [], serialize_json=True),
+            call("documents_to_get", documents_to_get, serialize_json=True),
+            call("renditions_to_get", renditions_to_get, serialize_json=True),
+            call("remodeled_known_documents",
+                 remodeled_known_documents, serialize_json=True),
+        ]
+        print("")
+        print(calls)
+        print("")
+        print(mock_set.call_args_list)
+        self.assertListEqual(calls, mock_set.call_args_list)
+
+    def test_pre_register_documents_gets_no_renditions(self,
+            mock_mongo,
+            mock_get,
+            mock_set,
+            mock_default_args,
+            ):
+        MockDAG = MagicMock(spec=DAG)
+        mock_default_args.return_value = {}
+
+        # dados de entrada
+        tasks = [
+            {"id": "/documents/QTsr9VQHDd4DL5zqWqkwyjk",
+             "task": "get"},
+            {"id": "/bundles/2236-9996-2020-v22-n47",
+             "task": "get"},
+            {"id": "/documents/S0104-42302020000500589",
+             "task": "get"},
+        ]
+        # dados de entrada
+        i_docs = {
+            "2236-9996-2020-v22-n47":
+                [{"id": "QTsr9VQHDd4DL5zqWqkwyjk", "order": "00017"}],
+            "0034-8910-1974-v8-s0": [],
+            "0034-8910-1976-v10-s1": [],
+        }
+        # dados de entrada
+        orphan_docs = [
+            "QTL5zyjkqWqkwsr9VQHDd4D", "S0104-42302020000500589",
+        ]
+        # dados de entrada
+        orphan_rends = [
+        ]
+        # dados de entrada resultantes de Variable.get
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            tasks,
+            i_docs,
+        ]
+        mock_get.side_effect = [
+            orphan_docs,
+            orphan_rends,
+        ]
+        mock_dag = MockDAG(ANY)
+        args = mock_default_args
+        args.update(self.kwargs)
+
+        # obtido dependendo dos dados de entrada (Variable.get e/ou xcom)
+        documents_to_get = [
+            "QTL5zyjkqWqkwsr9VQHDd4D",
+            "S0104-42302020000500589",
+            "QTsr9VQHDd4DL5zqWqkwyjk",
+            "S0104-42302020000500589",
+        ]
+
+        # obtido dependendo dos dados de entrada (Variable.get e/ou xcom)
+        renditions_to_get = []
+
+        remodeled_known_documents = {
+            "QTsr9VQHDd4DL5zqWqkwyjk":
+                ("2236-9996-2020-v22-n47",
+                    {"id": "QTsr9VQHDd4DL5zqWqkwyjk", "order": "00017"}),
+        }
+
+        # chamada para a função que está sob teste
+        pre_register_documents(**self.kwargs)
+
+        calls = [
+            call("orphan_renditions", [], serialize_json=True),
+            call("orphan_documents", [], serialize_json=True),
+            call("documents_to_get", documents_to_get, serialize_json=True),
+            call("renditions_to_get", renditions_to_get, serialize_json=True),
+            call("remodeled_known_documents", remodeled_known_documents, serialize_json=True),
+
+        ]
+        self.assertListEqual(calls, mock_set.call_args_list)
+
+    def test_pre_register_documents_gets_no_docs(self,
+            mock_mongo,
+            mock_get,
+            mock_set,
+            mock_default_args,
+            ):
+        MockDAG = MagicMock(spec=DAG)
+        mock_default_args.return_value = {}
+
+        # dados de entrada
+        tasks = [
+            {"id": "/documents/QTsr9VQHDd4DL5zqWqkwyjk/renditions",
+             "task": "get"},
+            {"id": "/bundles/2236-9996-2020-v22-n47",
+             "task": "get"},
+            {"id": "/documents/S0104-42302020000500589/renditions",
+             "task": "get"},
+            {"id": "/documents/5zyjkqWqkwsr9VQHDdQTL4D/renditions",
+             "task": "get"},
+        ]
+        # dados de entrada
+        i_docs = {
+            "2236-9996-2020-v22-n47":
+                [{"id": "QTsr9VQHDd4DL5zqWqkwyjk", "order": "00017"}],
+            "0034-8910-1974-v8-s0": [],
+            "0034-8910-1976-v10-s1": [],
+        }
+        # dados de entrada
+        orphan_docs = [
+        ]
+        # dados de entrada
+        orphan_rends = [
+            "kwsr9VQHDd4DQTL5zyjkqWq", "S0104-42302020000500589",
+        ]
+        # dados de entrada resultantes de Variable.get
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            tasks,
+            i_docs,
+        ]
+        mock_get.side_effect = [
+            orphan_docs,
+            orphan_rends,
+        ]
+        mock_dag = MockDAG(ANY)
+        args = mock_default_args
+        args.update(self.kwargs)
+
+        # obtido dependendo dos dados de entrada (Variable.get e/ou xcom)
+        documents_to_get = []
+
+        # obtido dependendo dos dados de entrada (Variable.get e/ou xcom)
+        renditions_to_get = [
+            "kwsr9VQHDd4DQTL5zyjkqWq",
+            "S0104-42302020000500589",
+            "QTsr9VQHDd4DL5zqWqkwyjk",
+            "S0104-42302020000500589",
+            "5zyjkqWqkwsr9VQHDdQTL4D",
+        ]
+
+        remodeled_known_documents = {
+            "QTsr9VQHDd4DL5zqWqkwyjk":
+                ("2236-9996-2020-v22-n47",
+                 {"id": "QTsr9VQHDd4DL5zqWqkwyjk", "order": "00017"}),
+        }
+
+        # chamada para a função que está sob teste
+        pre_register_documents(**self.kwargs)
+        calls = [
+            call("orphan_renditions", [], serialize_json=True),
+            call("orphan_documents", [], serialize_json=True),
+            call("documents_to_get", documents_to_get, serialize_json=True),
+            call("renditions_to_get", renditions_to_get, serialize_json=True),
+            call("remodeled_known_documents", remodeled_known_documents, serialize_json=True),
+
+        ]
+
+    def test_pre_register_documents_gets_no_docs_and_no_rends(self,
+            mock_mongo,
+            mock_get,
+            mock_set,
+            mock_default_args,
+            ):
+        MockDAG = MagicMock(spec=DAG)
+        mock_default_args.return_value = {}
+
+        # dados de entrada
+        tasks = [
+            {"id": "/bundles/2236-9996-2020-v22-n47",
+             "task": "get"},
+        ]
+        # dados de entrada
+        i_docs = {
+            "2236-9996-2020-v22-n47":
+                [{"id": "QTsr9VQHDd4DL5zqWqkwyjk", "order": "00017"}],
+            "0034-8910-1974-v8-s0": [],
+            "0034-8910-1976-v10-s1": [],
+        }
+        # dados de entrada
+        orphan_docs = [
+        ]
+        # dados de entrada
+        orphan_rends = [
+        ]
+        # dados de entrada resultantes de Variable.get
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            tasks,
+            i_docs,
+        ]
+        mock_get.side_effect = [
+            orphan_docs,
+            orphan_rends,
+        ]
+        mock_dag = MockDAG(ANY)
+        args = mock_default_args
+        args.update(self.kwargs)
+
+        # obtido dependendo dos dados de entrada (Variable.get e/ou xcom)
+        documents_to_get = []
+
+        # obtido dependendo dos dados de entrada (Variable.get e/ou xcom)
+        renditions_to_get = []
+
+        remodeled_known_documents = {
+            "QTsr9VQHDd4DL5zqWqkwyjk":
+                ("2236-9996-2020-v22-n47",
+                 {"id": "QTsr9VQHDd4DL5zqWqkwyjk", "order": "00017"}),
+        }
+
+        # chamada para a função que está sob teste
+        pre_register_documents(**self.kwargs)
+
+        calls = [
+            call("orphan_renditions", [], serialize_json=True),
+            call("orphan_documents", [], serialize_json=True),
+            call("documents_to_get", documents_to_get, serialize_json=True),
+            call("renditions_to_get", renditions_to_get, serialize_json=True),
+            call("remodeled_known_documents", remodeled_known_documents, serialize_json=True),
+
+        ]
+        self.assertListEqual(calls, mock_set.call_args_list)
+

@@ -64,4 +64,17 @@ def create_subdag_to_check_documents_deeply_grouped_by_issue_pid_v2(
                 op_args=(uri_items, dag_run_data),
                 dag=dag_subdag,
             )
+        if not groups:
+            Logger.info("Do nothing")
+            task_id = f'{child_dag_name}_do_nothing'
+            PythonOperator(
+                task_id=task_id,
+                python_callable=do_nothing,
+                dag=dag_subdag,
+            )
+
     return dag_subdag
+
+
+def do_nothing(**kwargs):
+    return True

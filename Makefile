@@ -124,4 +124,4 @@ travis_compose_up:
 	@docker-compose -f $(COMPOSE_FILE_PROD) up -d
 
 travis_compose_make_test:
-	@docker-compose -f $(COMPOSE_FILE_PROD) exec opac-airflow python -m unittest -v
+	@docker-compose -f $(COMPOSE_FILE_PROD) exec opac-airflow bash -c "export AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////usr/local/airflow/airflow.db && airflow initdb && python -m unittest -v"

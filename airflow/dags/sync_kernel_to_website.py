@@ -17,7 +17,10 @@ from airflow.hooks.base_hook import BaseHook
 from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
 from airflow.operators.dagrun_operator import TriggerDagRunOperator
-
+from airflow.operators.subdag_operator import SubDagOperator
+from operations.exceptions import (
+    OldFormatKnownDocsError,
+)
 
 import requests
 
@@ -30,6 +33,9 @@ from operations.sync_kernel_to_website_operations import (
     ArticleFactory,
     ArticleRenditionFactory,
     try_register_documents_renditions,
+)
+from subdags.sync_kernel_to_website_subdag import (
+    create_subdag_to_register_documents_grouped_by_bundle,
 )
 from common.hooks import mongo_connect, kernel_connect
 
@@ -609,14 +615,238 @@ register_issues_task = PythonOperator(
 )
 
 
-def register_documents(**kwargs):
-    """Registra documentos na base de dados do OPAC a partir de
-    informações vindas da API do `Kernel`. Armazena como órfãos nas variáveis
-    do Airflow os documentos que não puderam ser salvos."""
+def _get_known_documents(known_documents, tasks) -> Dict[str, List[str]]:
+    """Recupera a lista de todos os documentos que estão relacionados com
+    um `DocumentsBundle`.
 
+    Levando em consideração que a DAG que detecta mudanças na API do Kernel
+    roda de forma assíncrona em relação a DAG de espelhamento/sincronização.
+
+    É possível que algumas situações especiais ocorram onde em uma rodada
+    **anterior** o **evento de registro** de um `Document` foi capturado mas a
+    atualização de seu `DocumentsBundle` não ocorreu (elas ocorrem em transações
+    distintas e possuem timestamps também distintos). O documento será
+    registrado como **órfão** e sua `task` não será processada na próxima
+    execução.
+
+    Na próxima execução a task `register_issue_task` entenderá que o
+    `bundle` é órfão e não conhecerá os seus documentos (known_documents)
+    e consequentemente o documento continuará órfão.
+
+    Uma solução para este problema é atualizar a lista de documentos
+    conhecidos a partir da lista de eventos de `get` de `bundles`.
+    """
+
+    for task in filter_changes(tasks, "bundles", "get"):
+        issue_id = get_id(task["id"])
+        if known_documents.get(issue_id) is None:
+            known_documents[issue_id] = fetch_bundles(issue_id).get("items", [])
+    return known_documents
+
+
+def _remodel_known_documents(known_documents):
+    """Remodela `known_documents` para que a recuperação seja mais eficiente.
+    (`_get_relation_data`)
+    """
+    remodeled_known_documents = {}
+    for issue_id, issue_docs in known_documents.items():
+        for issue_doc in issue_docs:
+            remodeled_known_documents[issue_doc["id"]] = (issue_id, issue_doc)
+    return remodeled_known_documents
+
+
+def _get_relation_data_old(known_documents, document_id: str) -> Tuple[str, Dict]:
+    """Recupera informações sobre o relacionamento entre o
+    DocumentsBundle e o Document.
+
+    Retorna uma tupla contendo o identificador da issue onde o
+    documento está relacionado e o item do relacionamento.
+
+    >> _get_relation_data("67TH7T7CyPPmgtVrGXhWXVs")
+    ('0034-8910-2019-v53', {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+
+    :param known_documents: Dicionário cujas chaves são `issue_id` e
+        valores são lista de dicionários no padrão 
+            `{'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'}`
+    :param document_id: Identificador único de um documento
+    """
+    for issue_id, docs in known_documents.items():
+        for doc in docs:
+            if document_id == doc["id"]:
+                return (issue_id, doc)
+
+    return (None, {})
+
+
+def _get_relation_data_new(known_documents, document_id: str) -> Tuple[str, Dict]:
+    """Recupera informações sobre o relacionamento entre o
+    DocumentsBundle e o Document.
+
+    Retorna uma tupla contendo o identificador da issue onde o
+    documento está relacionado e o item do relacionamento.
+
+    >> _get_relation_data_new("67TH7T7CyPPmgtVrGXhWXVs")
+    ('0034-8910-2019-v53', {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+
+    :param known_documents: Dicionário cujas chaves são `document_id` e
+        valores são
+        ```
+        ('0034-8910-2019-v53',
+         {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+        ```
+
+    :param document_id: Identificador único de um documento
+    """
+    data = known_documents.get(document_id)
+    if data:
+        return data
+    for value in known_documents.values():
+        if isinstance(value, list):
+            # old format of known_documents
+            # `_get_relation_data_old`
+            raise OldFormatKnownDocsError("Formato antigo de known_documents")
+        else:
+            return (None, {})
+    return (None, {})
+
+
+def _get_relation_data(known_documents, document_id: str) -> Tuple[str, Dict]:
+    """Recupera informações sobre o relacionamento entre o
+    DocumentsBundle e o Document.
+
+    Retorna uma tupla contendo o identificador da issue onde o
+    documento está relacionado e o item do relacionamento.
+
+    >> _get_relation_data("67TH7T7CyPPmgtVrGXhWXVs")
+    ('0034-8910-2019-v53', {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+
+    :param known_documents: dois formatos de dicionário:
+        chaves são `document_id` e
+        valores são tuplas no padrão
+            ```
+            ('0034-8910-2019-v53',
+             {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+            ```
+        chaves são `issue_id` e
+        valores são lista de dicionários no padrão
+            `{'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'}`
+    :param document_id: Identificador único de um documento
+    """
+    try:
+        return _get_relation_data_new(known_documents, document_id)
+    except OldFormatKnownDocsError:
+        return _get_relation_data_old(known_documents, document_id)
+
+
+def pre_register_documents(**kwargs):
+    """Agrupa documentos em lotes menores para serem registrados no Kernel"""
+
+    logging.info("pre_register_documents - IN")
+    tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
+    logging.info("Tasks Total: %i", len(tasks or []))
+
+    known_documents = kwargs["ti"].xcom_pull(
+        key="i_documents", task_ids="register_issues_task"
+    )
+    logging.info("Tasks Total: %i", len(known_documents or {}))
+
+    logging.info("mongo_connect")
     mongo_connect()
 
-    tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
+    logging.info("known_documents")
+    known_documents = _get_known_documents(known_documents, tasks)
+    logging.info("_remodel_known_documents")
+    remodeled_known_documents = _remodel_known_documents(known_documents)
+
+    # sequencia de PID v3 de documentos
+    documents_to_get = itertools.chain(
+        Variable.get("orphan_documents", default_var=[], deserialize_json=True),
+        (get_id(task["id"]) for task in filter_changes(tasks, "documents", "get")),
+    )
+    logging.info("documents_to_get")
+
+    # sequencia de PID v3 de documentos com renditions
+    renditions_to_get = itertools.chain(
+        Variable.get("orphan_renditions", default_var=[], deserialize_json=True),
+        (get_id(task["id"]) for task in filter_changes(tasks, "renditions", "get")),
+    )
+    logging.info("renditions_to_get")
+
+    # converte geradores para sequencias
+    documents_to_get = list(documents_to_get)
+    logging.info("%i", len(documents_to_get))
+    renditions_to_get = list(renditions_to_get)
+    logging.info("%i", len(renditions_to_get))
+
+    try:
+        logging.info("Variable.set()")
+        Variable.set("orphan_renditions", [], serialize_json=True)
+        Variable.set("orphan_documents", [], serialize_json=True)
+        Variable.set("documents_to_get", documents_to_get, serialize_json=True)
+        Variable.set("renditions_to_get", renditions_to_get, serialize_json=True)
+        Variable.set("remodeled_known_documents", remodeled_known_documents, serialize_json=True)
+
+        logging.info("%s", (documents_to_get))
+        logging.info("%s", (renditions_to_get))
+        logging.info("%s", (remodeled_known_documents))
+
+    except Exception as e:
+        # tenta contornar possivel erro que acontece no travis
+        logging.info("Excecao em pre_register_documents: %s", e)
+    logging.info("pre_register_documents - OUT")
+    return True
+
+
+pre_register_documents_task = PythonOperator(
+    task_id="pre_register_documents_task",
+    provide_context=True,
+    python_callable=pre_register_documents,
+    dag=dag,
+)
+
+
+def _register_documents(documents_to_get, _get_relation_data, **kwargs):
+    """
+    Registra os documentos da sequencia `documents_to_get` no Kernel
+    Armazena em Variable "orphan_documents", os documentos que não
+    vinculados a um `bundle`.
+    :param documents_to_get: sequência de PID v3 de documentos
+    :param _get_relation_data: callable, que dado um doc id,
+        retorna (issue_id, dados do documento), por exemplo,
+        ('0034-8910-2019-v53',
+         {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+    """
+    logging.info("_register_documents: mongo_connect")
+    mongo_connect()
+    logging.info("_register_documents: try_register_documents")
+    orphans = try_register_documents(
+        documents_to_get, _get_relation_data, fetch_documents_front,
+        ArticleFactory
+    )
+    logging.info("_register_documents: xcom_push")
+    kwargs["ti"].xcom_push(key="orphan_documents", value=orphans)
+    logging.info("_register_documents: return")
+    return True
+
+
+def _register_documents_renditions(renditions_to_get, **kwargs):
+    """
+    """
+    logging.info("_register_documents_renditions: mongo_connect")
+    mongo_connect()
+    logging.info(
+        "_register_documents_renditions: try_register_documents_renditions")
+    orphans = try_register_documents_renditions(
+        renditions_to_get, fetch_documents_renditions, ArticleRenditionFactory
+    )
+    logging.info("_register_documents_renditions: xcom_push")
+    kwargs["ti"].xcom_push(key="orphan_renditions", value=orphans)
+    logging.info("_register_documents_renditions: return")
+    return True
+
+
+def register_documents_subdag_params(dag, args):
+    """Agrupa documentos em lotes menores para serem registrados no Kernel"""
 
     def _get_relation_data(document_id: str) -> Tuple[str, Dict]:
         """Recupera informações sobre o relacionamento entre o
@@ -631,102 +861,36 @@ def register_documents(**kwargs):
         :param document_id: Identificador único de um documento
         """
 
-        for issue_id, items in known_documents.items():
-            for item in items:
-                if document_id == item["id"]:
-                    return (issue_id, item)
+        return _get_relation_data_new(remodeled_known_documents, document_id)
 
-        return (None, {})
+    logging.info("register_documents_subdag_params")
+    try:
+        logging.info("Variable.get()")
+        documents_to_get = Variable.get(
+            "documents_to_get", [], deserialize_json=True)
+        renditions_to_get = Variable.get(
+            "renditions_to_get", [], deserialize_json=True)
+        remodeled_known_documents = Variable.get(
+            "remodeled_known_documents", {}, deserialize_json=True)
 
-    def _get_known_documents(**kwargs) -> Dict[str, List[str]]:
-        """Recupera a lista de todos os documentos que estão relacionados com
-        um `DocumentsBundle`.
+    except Exception as e:
+        # tenta contornar possivel erro que acontece no travis
+        logging.info("Excecao em register_documents_subdag: %s", e)
+        documents_to_get = []
+        renditions_to_get = []
+        remodeled_known_documents = {}
 
-        Levando em consideração que a DAG que detecta mudanças na API do Kernel
-        roda de forma assíncrona em relação a DAG de espelhamento/sincronização.
-
-        É possível que algumas situações especiais ocorram onde em uma rodada
-        **anterior** o **evento de registro** de um `Document` foi capturado mas a
-        atualização de seu `DocumentsBundle` não ocorreu (elas ocorrem em transações
-        distintas e possuem timestamps também distintos). O documento será
-        registrado como **órfão** e sua `task` não será processada na próxima
-        execução.
-
-        Na próxima execução a task `register_issue_task` entenderá que o
-        `bundle` é órfão e não conhecerá os seus documentos (known_documents)
-        e consequentemente o documento continuará órfão.
-
-        Uma solução para este problema é atualizar a lista de documentos
-        conhecidos a partir da lista de eventos de `get` de `bundles`.
-        """
-
-        known_documents = kwargs["ti"].xcom_pull(
-            key="i_documents", task_ids="register_issues_task"
-        )
-
-        issues_recently_updated = [
-            get_id(task["id"]) for task in filter_changes(tasks, "bundles", "get")
-            if known_documents.get(get_id(task["id"])) is None
-        ]
-
-        for issue_id in issues_recently_updated:
-            known_documents.setdefault(issue_id, [])
-            known_documents[issue_id] = list(
-                itertools.chain(
-                    known_documents[issue_id], fetch_bundles(issue_id).get("items", [])
-                )
-            )
-        return known_documents
-
-    known_documents = _get_known_documents(**kwargs)
-
-    # TODO: Em caso de um update no document é preciso atualizar o registro
-    # Precisamos de uma nova task?
-
-    documents_to_get = itertools.chain(
-        Variable.get("orphan_documents", default_var=[], deserialize_json=True),
-        (get_id(task["id"]) for task in filter_changes(tasks, "documents", "get")),
-    )
-
-    orphans = try_register_documents(
-        documents_to_get, _get_relation_data, fetch_documents_front, ArticleFactory
-    )
-
-    Variable.set("orphan_documents", orphans, serialize_json=True)
+    return documents_to_get, renditions_to_get, _get_relation_data
 
 
-register_documents_task = PythonOperator(
-    task_id="register_documents_task",
-    provide_context=True,
-    python_callable=register_documents,
-    dag=dag,
-)
-
-
-def register_documents_renditions(**kwargs):
-    """Registra as manifestações de documentos processados na base de dados
-    do OPAC"""
-
-    mongo_connect()
-
-    tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
-
-    renditions_to_get = itertools.chain(
-        Variable.get("orphan_renditions", default_var=[], deserialize_json=True),
-        (get_id(task["id"]) for task in filter_changes(tasks, "renditions", "get")),
-    )
-
-    orphans = try_register_documents_renditions(
-        renditions_to_get, fetch_documents_renditions, ArticleRenditionFactory
-    )
-
-    Variable.set("orphan_renditions", orphans, serialize_json=True)
-
-
-register_documents_renditions_task = PythonOperator(
-    task_id="register_documents_renditions_task",
-    provide_context=True,
-    python_callable=register_documents_renditions,
+register_documents_subdag_task = SubDagOperator(
+    task_id='register_documents_groups_id',
+    subdag=create_subdag_to_register_documents_grouped_by_bundle(
+        dag, _register_documents, _register_documents_renditions,
+        register_documents_subdag_params,
+        default_args,
+        ),
+    default_args=default_args,
     dag=dag,
 )
 
@@ -877,11 +1041,9 @@ register_journals_task << read_changes_task
 
 register_issues_task << register_journals_task
 
-register_documents_task << register_issues_task
-
-register_documents_renditions_task << register_documents_task
-
-delete_journals_task << register_documents_renditions_task
+register_issues_task >> pre_register_documents_task
+pre_register_documents_task >> register_documents_subdag_task
+register_documents_subdag_task >> delete_journals_task
 
 delete_issues_task << delete_journals_task
 
