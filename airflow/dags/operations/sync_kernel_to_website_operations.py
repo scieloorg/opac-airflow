@@ -237,7 +237,14 @@ def ArticleFactory(
     ]
 
     article.original_language = _get_original_language(data)
-    article.publication_date = _nestget(data, "pub_date", 0, "text", 0)
+    publication_date = _nestget(data, "pub_date", 0, "text", 0)
+
+    if publication_date:
+        publication_date_list = publication_date.split(" ")
+        publication_date_list.reverse()
+        publication_date = "-".join(publication_date_list)
+
+    article.publication_date = publication_date
 
     article.type = _nestget(data, "article", 0, "type", 0)
 
@@ -284,13 +291,13 @@ def try_register_documents(
     relação serão considerados órfãos.
 
     Args:
-        documents (Iterable): iterável com os identicadores dos documentos 
+        documents (Iterable): iterável com os identicadores dos documentos
             a serem registrados.
-        get_relation_data (callable): função que identifica o fasículo 
+        get_relation_data (callable): função que identifica o fasículo
             e o item de relacionamento que está sendo registrado.
-        fetch_document_front (callable): função que recupera os dados de 
+        fetch_document_front (callable): função que recupera os dados de
             `front` do documento a partir da API do Kernel.
-        article_factory (callable): função que cria uma instância do modelo 
+        article_factory (callable): função que cria uma instância do modelo
             de dados do Artigo na base do OPAC.
 
     Returns:
@@ -356,11 +363,11 @@ def ArticleRenditionFactory(article_id: str, data: List[dict]) -> models.Article
     A partir do article_id uma instância de Artigo é recuperada da base OPAC e
     seus assets são populados. Se o Artigo não existir na base OPAC a exceção
     models.ArticleDoesNotExists é lançada.
-    
+
     Args:
         article_id (str): Identificador do artigo a ser recuperado
         data (List[dict]): Lista de renditions do artigo
-    
+
     Returns:
         models.Article: Artigo recuperado e atualizado com uma nova lista de assets."""
 
@@ -389,7 +396,7 @@ def try_register_documents_renditions(
     órfãos.
 
     Args:
-        documents (Iterable): iterável com os identicadores dos documentos 
+        documents (Iterable): iterável com os identicadores dos documentos
             a serem registrados.
         get_rendition_data (callable): Recupera os dados de manifestações
             de um documento.
