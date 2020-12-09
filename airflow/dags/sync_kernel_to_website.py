@@ -701,12 +701,13 @@ def _get_relation_data_new(known_documents, document_id: str) -> Tuple[str, Dict
     if data:
         return data
     for value in known_documents.values():
-        if isinstance(value, list):
-            # old format of known_documents
-            # `_get_relation_data_old`
-            raise OldFormatKnownDocsError("Formato antigo de known_documents")
-        else:
-            return (None, {})
+        if value:
+            if all([isinstance(doc, dict) for doc in value]):
+                # old format of known_documents
+                # `_get_relation_data_old`
+                raise OldFormatKnownDocsError("Formato antigo de known_documents")
+            else:
+                return (None, {})
     return (None, {})
 
 
