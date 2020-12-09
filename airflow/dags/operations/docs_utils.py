@@ -66,12 +66,12 @@ def get_document_sps_package(current_version):
         return SPS_Package(xml_tree, '')
     except (
             AttributeError,
-            lxml.etree.Error,
+            etree.XMLSyntaxError,
+            etree.Error,
             ) as e:
         raise GetSPSPackageFromDocManifestException(
-                "Unable to get SPS Package of %s: %s",
-                current_version["data"],
-                e
+                "Unable to get SPS Package of %s: %s" %
+                (current_version["data"], e)
             )
 
 
