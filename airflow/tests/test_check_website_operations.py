@@ -2723,6 +2723,161 @@ class TestCheckDocumentAvailability(TestCase):
                     _result["components"][i]
                 )
 
+    @patch("operations.check_website_operations.datetime")
+    @patch("operations.check_website_operations.async_requests.parallel_requests")
+    @patch("operations.check_website_operations.requests.get")
+    @patch("operations.docs_utils.hooks.kernel_connect")
+    def test_check_document_availability_of_doc_has_no_pdf_returns_doc_is_totally_complete_(
+            self, mock_doc_manifest, mock_get, mock_request, mock_dt):
+        doc_id = "ZrT6FWNFFR3KBKHZVPN8Y9N"
+        website_url = "https://www.scielo.br"
+        object_store_url = "https://minio.scielo.br"
+        mock_doc_manifest.return_value = MockResponse(
+            200,
+            read_file(
+                "./tests/fixtures/ZrT6FWNFFR3KBKHZVPN8Y9N.manifest.json")
+        )
+        mock_get.return_value = MockResponse(
+                200,
+                read_file(
+                    "./tests/fixtures/ZrT6FWNFFR3KBKHZVPN8Y9N.xml")
+                )
+        mock_request.side_effect = [
+            [
+                MockClientResponse(
+                    200,
+                    "https://www.scielo.br/j/esa/a/ZrT6FWNFFR3KBKHZVPN8Y9N"
+                    "?format=html&lang=pt",
+                    read_file(
+                        "./tests/fixtures/ZrT6FWNFFR3KBKHZVPN8Y9N_pt.html"
+                    )
+                ),
+            ],
+            [
+                MockClientResponse(
+                    200,
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "ZrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "8972aaa0916382b6f2d51a6d22732bb083851913.png"
+                    ),
+            ]
+        ]
+
+        mock_dt.utcnow.side_effect = [T0, T5]
+
+        web_html_availability = [{
+            "lang": "pt",
+            "format": "html",
+            "pid_v2": "S1413-41522020005004201",
+            "acron": "esa",
+            "doc_id_for_human": "1809-4457-esa-ahead-S1413-41522020182506",
+            "doc_id": "ZrT6FWNFFR3KBKHZVPN8Y9N",
+            "uri": "https://www.scielo.br/j/esa/a/ZrT6FWNFFR3KBKHZVPN8Y9N?format=html&lang=pt",
+            "available": True,
+            "status code": 200,
+            "start time": START_TIME,
+            "end time": END_TIME,
+            "duration": DURATION,
+            "components": [
+                {
+                    "type": "asset",
+                    "id": "1809-4457-esa-s1413-41522020182506-gf1",
+                    "present_in_html": [
+                        "https://minio.scielo.br/documentstore/1809-4457/"
+                        "ZrT6FWNFFR3KBKHZVPN8Y9N/"
+                        "8972aaa0916382b6f2d51a6d22732bb083851913.png",
+                    ],
+                    "absent_in_html": [
+                    ],
+                },
+            ],
+            "total missing components": 0,
+            "total expected components": 1,
+            "pdf": {"total": 0, "missing": 0},
+            "assets": {
+                "total expected": 1,
+                "total missing": 0,
+                "total alternatives": 1,
+                "total alternatives present in html": 1,
+            },
+        }]
+        web_pdf_availability = []
+        # https://minio.scielo.br/documentstore/1809-4457/ZrT6FWNFFR3KBKHZVPN8Y9N/409acdeb8f632022d41b3d94a3f00a837867937c.pdf
+        renditions_availability = []
+        assets_availability = [
+            {
+                "asset_id": "1809-4457-esa-s1413-41522020182506-gf1.png",
+                "uri": (
+                    "https://minio.scielo.br/documentstore/1809-4457/"
+                    "ZrT6FWNFFR3KBKHZVPN8Y9N/"
+                    "8972aaa0916382b6f2d51a6d22732bb083851913.png"
+                ),
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+            },
+        ]
+        expected = {
+            "summary": {
+                "web html": {
+                    "total": 1, "total unavailable": 0, "total incomplete": 0,
+                    "requested": True},
+                "web pdf": {
+                    "total": 0, "total unavailable": 0, "requested": True},
+                "renditions": {
+                    "total": 0, "total unavailable": 0, "requested": True},
+                "assets": {
+                    "total": 1, "total unavailable": 0, "requested": True},
+                "processing":
+                    {"start": T0, "end": T5, "duration": T0_to_T5}
+            },
+            "detail": {
+                "web html": web_html_availability,
+                "web pdf": web_pdf_availability,
+                "renditions": renditions_availability,
+                "assets": assets_availability,
+            },
+        }
+        result = check_document_availability(doc_id, website_url, object_store_url)
+        self.assertDictEqual(
+            expected["summary"]["web html"], result["summary"]["web html"])
+        self.assertDictEqual(
+            expected["summary"]["web pdf"], result["summary"]["web pdf"])
+        self.assertDictEqual(
+            expected["summary"]["renditions"], result["summary"]["renditions"])
+        self.assertDictEqual(
+            expected["summary"]["assets"], result["summary"]["assets"])
+        self.assertDictEqual(
+            expected["summary"]["processing"], result["summary"]["processing"])
+
+        self.assertListEqual(
+            expected["detail"]["renditions"],
+            result["detail"]["renditions"]
+        )
+        self.assertListEqual(
+            expected["detail"]["assets"],
+            result["detail"]["assets"]
+        )
+
+        _expected = expected["detail"]["web html"][0]
+        _result = result["detail"]["web html"][0]
+
+        for name in ("total missing components", "total expected components"):
+            with self.subTest(name):
+                self.assertEqual(
+                    _expected[name],
+                    _result[name]
+                )
+
+        for i in range(1):
+            with self.subTest(i):
+                self.assertDictEqual(
+                    _expected["components"][i],
+                    _result["components"][i]
+                )
+
 
 class TestGetUriListFromGroupedPIDs(TestCase):
 
