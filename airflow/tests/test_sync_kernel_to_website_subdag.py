@@ -1,4 +1,5 @@
 import unittest
+from datetime import timedelta
 from unittest.mock import MagicMock, patch, call, ANY
 
 from airflow import DAG
@@ -197,6 +198,8 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
                     ["LL13V9MHSKmp6Msj5CPBZRb"],
                     self.mock_get_relation_data
                 ),
+                retries=1,
+                retry_delay=timedelta(minutes=1),
                 dag=mock_subdag,
             ),
             call(
@@ -206,6 +209,8 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
                     ["HJgFV9MHSKmp6Msj5CPBZRb", "CGgFV9MHSKmp6Msj5CPBZRb"],
                     self.mock_get_relation_data
                 ),
+                retries=1,
+                retry_delay=timedelta(minutes=1),
                 dag=mock_subdag,
             ),
         ]
@@ -263,6 +268,8 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
                     ["LL13V9MHSKmp6Msj5CPBZRb"],
                     self.mock_get_relation_data
                 ),
+                retries=1,
+                retry_delay=timedelta(minutes=1),
                 dag=mock_subdag,
             ),
             call(
@@ -271,6 +278,8 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
                 op_kwargs=(
                     {"renditions_to_get": {"LL13V9MHSKmp6Msj5CPBZRb"}}
                 ),
+                retries=1,
+                retry_delay=timedelta(minutes=1),
                 dag=mock_subdag,
             ),
 
@@ -281,6 +290,8 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
                     ["HJgFV9MHSKmp6Msj5CPBZRb", "CGgFV9MHSKmp6Msj5CPBZRb"],
                     self.mock_get_relation_data
                 ),
+                retries=1,
+                retry_delay=timedelta(minutes=1),
                 dag=mock_subdag,
             ),
             call(
@@ -293,6 +304,8 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
                         }
                     }
                 ),
+                retries=1,
+                retry_delay=timedelta(minutes=1),
                 dag=mock_subdag,
             ),
         ]
