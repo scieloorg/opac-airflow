@@ -63,14 +63,14 @@ class TestGroupDocumentsByBundle(unittest.TestCase):
             document_ids, self.mock_get_relation_data)
         self.assertEqual(expected, result)
 
-    def test__group_documents_by_bundle_returns_empty_dict(self):
+    def test__group_documents_by_bundle_create_group_with_orphans_docs(self):
         def mock_get_relation_data(doc_id):
             return (None, {})
 
         document_ids = (
             "XXX3V9MHSKmp6Msj5CPBZRb",
         )
-        expected = {}
+        expected = {None: ["XXX3V9MHSKmp6Msj5CPBZRb"]}
         result = _group_documents_by_bundle(
             document_ids, mock_get_relation_data)
         self.assertEqual(expected, result)

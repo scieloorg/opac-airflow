@@ -10,15 +10,15 @@ PARENT_DAG_NAME = 'sync_kernel_to_website'
 
 
 def _group_documents_by_bundle(document_ids, _get_relation_data):
-    """Agrupa `document_ids` em grupos
+    """Agrupa `document_ids` em grupos usando `bundle_id`
+    Caso `bundle_id` is `None`, `doc_id` são órfãos
     """
     Logger.info("_group_documents_by_bundle")
     groups = {}
     for doc_id in document_ids:
         bundle_id, doc = _get_relation_data(doc_id)
-        if bundle_id:
-            groups[bundle_id] = groups.get(bundle_id) or []
-            groups[bundle_id].append(doc_id)
+        groups[bundle_id] = groups.get(bundle_id) or []
+        groups[bundle_id].append(doc_id)
     Logger.info("_group_documents_by_bundle: %i", len(groups))
     return groups
 
