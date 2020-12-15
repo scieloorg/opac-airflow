@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 
 from airflow import DAG
 from airflow.models import Variable
@@ -73,6 +74,8 @@ def create_subdag_to_register_documents_grouped_by_bundle(
                 task_id=task_id,
                 python_callable=register_docs_callable,
                 op_args=(doc_ids, _get_relation_data),
+                retries=1,
+                retry_delay=timedelta(minutes=1),
                 dag=dag_subdag,
             )
 
@@ -88,6 +91,8 @@ def create_subdag_to_register_documents_grouped_by_bundle(
                     task_id=task_id,
                     python_callable=register_renditions_callable,
                     op_kwargs={'renditions_to_get': _renditions_documents_id},
+                    retries=1,
+                    retry_delay=timedelta(minutes=1),
                     dag=dag_subdag,
                 )
                 t1 >> t2 >> t_finish
