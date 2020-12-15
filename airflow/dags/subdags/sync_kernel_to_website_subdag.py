@@ -39,13 +39,45 @@ def create_subdag_to_register_documents_grouped_by_bundle(
 
     Logger.info("Call register_documents_subdag_params")
     data = register_documents_subdag_params(dag, args)
+
+    # obtém as listas de documents_id e renditions_id mais recentes
+    # _get_relation_data é um callable para recuperar (issue_id, doc data)
+    # dado um PID v3
     document_ids, renditions_documents_id, _get_relation_data = data
 
+    # transforma a lista em um conjunto (set)
     renditions_documents_id = set(renditions_documents_id)
 
     Logger.info("Call _group_documents_by_bundle")
     groups = _group_documents_by_bundle(document_ids, _get_relation_data)
     Logger.info("Total groups: %i", len(groups))
+
+    # `orphan_documents` são documentos registrados no Kernel, mas que ao tentar
+    # ser registrado no website, levanta uma exceção, devido à ausência de
+    # vínculo com seu respectivo `bundle`.
+    # No entanto, agora como o registro de documentos no website é guiado
+    # pelos `groups`, é sabido previamente quais são os documentos órfãos:
+    # `groups[None]`
+    try:
+        orphan_documents = groups.pop(None)
+    except KeyError:
+        orphan_documents = []
+
+    # `orphan_renditions` são as manifestação de documentos registradas
+    # no Kernel, mas que ao tentar ser registrada no website,
+    # levanta uma exceção, pois o documento a qual está vinculada
+    # não está registrado no website.
+    # A falha do registro pode ser minimizada previamente, excluindo
+    # os valores já identificados como órfãos (`orphan_documents`).
+    # Nota: Pode haver em `renditions_documents_id` valores que não sabemos
+    # identificar previamente se são de documentos registrados ou não.
+
+    # `orphan_renditions` é a interseção de `renditions_documents_id` com
+    # `orphan_documents`
+    orphan_renditions = renditions_documents_id & set(orphan_documents)
+
+    # subtrai de `renditions_documents_id` os id das manifestações órfãs
+    renditions_documents_id = renditions_documents_id - orphan_renditions
 
     dag_subdag = DAG(
         dag_id='{}.{}'.format(PARENT_DAG_NAME, CHILD_DAG_NAME),
