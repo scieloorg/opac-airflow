@@ -147,32 +147,41 @@ def create_subdag_to_register_documents_grouped_by_bundle(
 
 def finish(**kwargs):
     Logger.info("Finish")
-    orphan_documents = kwargs["ti"].xcom_pull(
+    t1_orphan_documents = kwargs["ti"].xcom_pull(
         key="orphan_documents", task_ids="t1") or []
-    orphan_renditions = kwargs["ti"].xcom_pull(
+    t2_orphan_renditions = kwargs["ti"].xcom_pull(
         key="orphan_renditions", task_ids="t2") or []
-    orphan_renditions += kwargs["ti"].xcom_pull(
+    t3_orphan_renditions = kwargs["ti"].xcom_pull(
         key="orphan_renditions", task_ids="t3") or []
 
-    try:
-        _orphan_documents = Variable.get(
-            "orphan_documents", [], deserialize_json=True)
-        _orphan_renditions = Variable.get(
-            "orphan_renditions", [], deserialize_json=True)
-        Variable.set(
-            "orphan_documents",
-            _orphan_documents + orphan_documents,
-            serialize_json=True)
-        Variable.set(
-            "orphan_renditions",
-            _orphan_renditions + orphan_renditions,
-            serialize_json=True)
-        Logger.info("Finish %i orphan_documents", len(orphan_documents))
-        Logger.info("Finish %i orphan_renditions", len(orphan_renditions))
-    except Exception as e:
-        # sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) 
-        # could not connect to server: Connection refused
-        Logger.info("%s", e)
+    if t1_orphan_documents:
+        try:
+            orphan_documents = Variable.get(
+                "orphan_documents", [], deserialize_json=True)
+
+            orphan_documents += t1_orphan_documents
+            Variable.set(
+                "orphan_documents", orphan_documents, serialize_json=True)
+            Logger.info("Finish %i orphan_documents", len(orphan_documents))
+        except Exception as e:
+            # sqlalchemy.exc.OperationalError: (psycopg2.OperationalError)
+            # could not connect to server: Connection refused
+            Logger.info("%s", e)
+
+    if t2_orphan_renditions or t3_orphan_renditions:
+        try:
+            orphan_renditions = Variable.get(
+                "orphan_renditions", [], deserialize_json=True)
+
+            orphan_renditions += t2_orphan_renditions + t3_orphan_renditions
+            Variable.set(
+                "orphan_renditions", orphan_renditions, serialize_json=True)
+            Logger.info("Finish %i orphan_renditions", len(orphan_renditions))
+        except Exception as e:
+            # sqlalchemy.exc.OperationalError: (psycopg2.OperationalError)
+            # could not connect to server: Connection refused
+            Logger.info("%s", e)
+
     Logger.info("Finish - FIM")
     return True
 
