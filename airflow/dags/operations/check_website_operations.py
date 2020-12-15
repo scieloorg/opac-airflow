@@ -736,14 +736,15 @@ def add_responses(doc_data_list, website_url=None, request=True, timeout=None):
         None
     """
     body = False
+    doc_data_list = doc_data_list or []
     if website_url:
         for doc_data in doc_data_list:
             doc_data["uri"] = website_url + doc_data["uri"]
             body = doc_data.get("format") == "html"
-    uri_items = (doc_data["uri"] for doc_data in doc_data_list if doc_data["uri"])
 
     responses = {}
-    if request:
+    if request and doc_data_list:
+        uri_items = (doc_data["uri"] for doc_data in doc_data_list if doc_data["uri"])
         responses = async_requests.parallel_requests(uri_items, body=body, timeout=timeout)
         responses = {resp.uri: resp for resp in responses}
 
@@ -873,7 +874,7 @@ def check_pdf_webpages_availability(doc_data_list):
     report = []
     summary = {}
     unavailable = 0
-
+    doc_data_list = doc_data_list or []
     for doc_data in doc_data_list:
         doc_uri = doc_data["uri"]
 
@@ -1198,7 +1199,7 @@ def check_document_availability(doc_id, website_url, object_store_url, flags={},
                   flags.get("CHECK_WEB_HTML_PAGES", True),
                   timeout=timeout)
 
-    add_responses(doc_data_grouped_by_webpage_type["web pdf"], website_url,
+    add_responses(doc_data_grouped_by_webpage_type.get("web pdf"), website_url,
                   flags.get("CHECK_WEB_PDF_PAGES", True),
                   timeout=timeout)
 
@@ -1217,7 +1218,7 @@ def check_document_availability(doc_id, website_url, object_store_url, flags={},
                 object_store_url
             )
     web_pdf_availability, web_pdf_numbers = check_pdf_webpages_availability(
-            doc_data_grouped_by_webpage_type["web pdf"])
+            doc_data_grouped_by_webpage_type.get("web pdf"))
 
     renditions_availability, q_unavailable_renditions = check_responses(
                 renditions_data

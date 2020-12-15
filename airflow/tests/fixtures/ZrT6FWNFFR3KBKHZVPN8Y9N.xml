@@ -1,0 +1,179 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.1 20151215//EN" "http://jats.nlm.nih.gov/publishing/1.1/JATS-journalpublishing1.dtd">
+<article xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:xlink="http://www.w3.org/1999/xlink" article-type="research-article" dtd-version="1.1" specific-use="sps-1.9" xml:lang="pt">
+  <front>
+    <journal-meta>
+      <journal-id journal-id-type="publisher-id">esa</journal-id>
+      <journal-title-group>
+        <journal-title>Engenharia Sanitaria e Ambiental</journal-title>
+        <abbrev-journal-title abbrev-type="publisher">Eng. Sanit. Ambient.</abbrev-journal-title>
+      </journal-title-group>
+      <issn pub-type="ppub">1413-4152</issn>
+      <issn pub-type="epub">1809-4457</issn>
+      <publisher>
+        <publisher-name>Associação Brasileira de Engenharia Sanitária e Ambiental - ABES</publisher-name>
+      </publisher>
+    </journal-meta>
+    <article-meta>
+      <article-id specific-use="scielo-v3" pub-id-type="publisher-id">BrT6FWNFFR3KBKHZVPN8Y9N</article-id>
+      <article-id specific-use="scielo-v2" pub-id-type="publisher-id">S1413-41522020005004201</article-id>
+      <article-id pub-id-type="doi">10.1590/S1413-41522020182506</article-id>
+      <article-id pub-id-type="other">04201</article-id>
+      <article-categories>
+        <subj-group subj-group-type="heading">
+          <subject>Artigo Técnico</subject>
+        </subj-group>
+      </article-categories>
+      <title-group>
+        <article-title>Biossólido no estabelecimento de espécies herbáceas e nos atributos químicos e microbiológicos em solo impactado pela mineração de carvão</article-title>
+        <trans-title-group xml:lang="en">
+          <trans-title>Biosolids in the establishment of herbaceous species and in chemical and microbiological attributes in soil impacted by coal mining</trans-title>
+        </trans-title-group>
+      </title-group>
+      <contrib-group>
+        <contrib contrib-type="author">
+          <contrib-id contrib-id-type="orcid">0000-0003-1059-7579</contrib-id>
+          <name>
+            <surname>Kitamura</surname>
+            <given-names>Natália Caron</given-names>
+          </name>
+          <xref ref-type="aff" rid="aff1">
+            <sup>1</sup>
+          </xref>
+          <xref ref-type="corresp" rid="c1">*</xref>
+        </contrib>
+        <contrib contrib-type="author">
+          <contrib-id contrib-id-type="orcid">0000-0002-0347-0003</contrib-id>
+          <name>
+            <surname>Lourenzi</surname>
+            <given-names>Cledimar Rogério</given-names>
+          </name>
+          <xref ref-type="aff" rid="aff1">
+            <sup>1</sup>
+          </xref>
+        </contrib>
+        <contrib contrib-type="author">
+          <contrib-id contrib-id-type="orcid">0000-0002-8034-8597</contrib-id>
+          <name>
+            <surname>Bueno</surname>
+            <given-names>Alcenir Claudio</given-names>
+          </name>
+          <xref ref-type="aff" rid="aff1">
+            <sup>1</sup>
+          </xref>
+        </contrib>
+        <contrib contrib-type="author">
+          <contrib-id contrib-id-type="orcid">0000-0001-7410-2817</contrib-id>
+          <name>
+            <surname>Pinto</surname>
+            <given-names>Antonio Lourenço</given-names>
+          </name>
+          <xref ref-type="aff" rid="aff1">
+            <sup>1</sup>
+          </xref>
+        </contrib>
+        <contrib contrib-type="author">
+          <contrib-id contrib-id-type="orcid">0000-0002-5443-6614</contrib-id>
+          <name>
+            <surname>Soares</surname>
+            <given-names>Cláudio Roberto Fonseca Sousa</given-names>
+          </name>
+          <xref ref-type="aff" rid="aff1">
+            <sup>1</sup>
+          </xref>
+        </contrib>
+        <contrib contrib-type="author">
+          <contrib-id contrib-id-type="orcid">0000-0001-8347-003X</contrib-id>
+          <name>
+            <surname>Giachini</surname>
+            <given-names>Admir José</given-names>
+          </name>
+          <xref ref-type="aff" rid="aff1">
+            <sup>1</sup>
+          </xref>
+        </contrib>
+        <aff id="aff1">
+          <label>1</label>
+          <institution content-type="original">Universidade Federal de Santa Catarina - Florianópolis (SC), Brasil.</institution>
+          <institution content-type="orgname">Universidade Federal de Santa Catarina</institution>
+          <addr-line>
+            <city>Florianópolis</city>
+            <state>SC</state>
+          </addr-line>
+          <country country="BR">Brazil</country>
+        </aff>
+      </contrib-group>
+      <author-notes>
+        <corresp id="c1">
+          <label>*</label>
+          <bold>Autora correspondente:</bold>
+          <email>natalia.caron03@gmail.com</email>
+        </corresp>
+      </author-notes>
+      <pub-date date-type="pub" publication-format="electronic">
+        <day>03</day>
+        <month>08</month>
+        <year>2020</year>
+      </pub-date>
+      <history>
+        <date date-type="received">
+          <day>10</day>
+          <month>07</month>
+          <year>2017</year>
+        </date>
+        <date date-type="accepted">
+          <day>11</day>
+          <month>06</month>
+          <year>2019</year>
+        </date>
+      </history>
+      <permissions>
+        <license license-type="open-access" xlink:href="https://creativecommons.org/licenses/by/4.0/" xml:lang="pt">
+          <license-p>Este é um artigo publicado em acesso aberto sob uma licença Creative Commons</license-p>
+        </license>
+      </permissions>
+      <abstract>
+        <title>RESUMO</title>
+        <p>O presente estudo tem como objetivo avaliar o efeito da aplicação de diferentes concentrações de biossólido de lodo de esgoto, submetido a tratamento térmico, no estabelecimento de espécies herbáceas (aveia preta, ervilhaca e azevém) e nos atributos químicos e microbiológicos de um solo degradado pela mineração de carvão. O experimento foi instalado em área degradada pela mineração de carvão, localizada no munícipio de Treviso (SC), sendo os tratamentos compostos pelas concentrações de 0, 6,25, 100, 250 e 500 Mg ha<sup>-1</sup> de biossólido, em parcelas de 2×2 m. Foram cultivadas espécies de aveia preta, ervilhaca e azevém de maneira consorciada, avaliando-se os parâmetros das plantas e os atributos químicos do solo nas profundidades 0-5, 5-10 e 10-20 cm. O biossólido proporcionou a elevação do pH do solo e o aumento dos teores disponíveis de P, K e carbono orgânico total e não influenciou na colonização micorrízica, na respiração basal do solo e na nodulação radicular. O uso do resíduo biossólido como substrato em áreas degradadas é uma alternativa para sua disposição final pela economia ao utilizá-lo como fertilizante, além dos benefícios ambientais, associados ao seu uso.</p>
+      </abstract>
+      <trans-abstract xml:lang="en">
+        <title>ABSTRACT</title>
+        <p>This study aims to evaluate the effects of different concentrations of sewage sludge biosolid concentrations, submitted to thermal treatment, in the establishment of herbaceous species (black oats, vetches, and ryegrass) and in the chemical and microbiological attributes of a soil degraded by coal mining. The experiment was installed in an area degraded by coal mining, in Treviso/SC, with treatments composed of concentrations of 0; 6.25; 100; 250; and 500 Mg ha<sup>-1</sup> of biosolids, in 2×2 m plots. Species of black oat, vetch, and ryegrass were grown in a consortium manner, evaluating the plant parameters and chemical attributes of the soil at depths 0-5, 5-10, and 10-20 cm. The biosolids provided improvements in soil fertility, such as pH elevation, increased levels available of P, K, and total organic carbon, in addition to not influencing mycorrhizal colonization, basal soil respiration, and root nodulation. The use of biosolid waste as a substrate in degraded areas is an alternative to its final disposal due to the economy when using it as a fertilizer, in addition to the environmental benefits associated with its use.</p>
+      </trans-abstract>
+      <kwd-group xml:lang="pt">
+        <title>Palavras-chave:</title>
+        <kwd>áreas degradadas</kwd>
+        <kwd>lodo de esgoto</kwd>
+        <kwd>microrganismos do solo</kwd>
+      </kwd-group>
+      <kwd-group xml:lang="en">
+        <title>Keywords:</title>
+        <kwd>degraded areas</kwd>
+        <kwd>sewage sludge</kwd>
+        <kwd>soil microorganisms</kwd>
+      </kwd-group>
+      <counts>
+        <fig-count count="3"/>
+        <table-count count="4"/>
+        <equation-count count="2"/>
+        <ref-count count="66"/>
+      </counts>
+    </article-meta>
+  </front>
+  <body>
+    <sec sec-type="intro">
+      <p>
+        <fig id="f1">
+          <label>Figura 1 -</label>
+          <caption>
+            <title>(A) Altura média das plantas, (B) matéria seca da parte aérea (MSPA) e (C) matéria seca radicular (MSR) do consórcio aveia preta, ervilhaca e azevém cultivados em solo degradado pela mineração de carvão com adição de biossólido. Barras verticais representam o erro padrão da média (n = 5). Médias seguidas da mesma letra não diferem entre si pelo teste de Scott-Knott (p &lt; 0,05).</title>
+          </caption>
+          <alternatives>
+            <graphic xlink:href="1809-4457-esa-s1413-41522020182506-gf1.png"/>
+            <graphic xlink:href="1809-4457-esa-s1413-41522020182506-gf1.thumbnail.jpg" specific-use="scielo-web" content-type="scielo-267x140"/>
+          </alternatives>
+        </fig>
+      </p>
+      </sec>
+    </body>
+</article>
