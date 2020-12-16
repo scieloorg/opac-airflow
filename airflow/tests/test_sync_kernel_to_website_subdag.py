@@ -384,3 +384,25 @@ class TestFinish(unittest.TestCase):
         ]
         finish(bundles, orphan_documents, orphan_renditions, **self.kwargs)
         mock_set.assert_not_called()
+
+    @patch("subdags.sync_kernel_to_website_subdag.Variable.set")
+    def test_finish_set_no_bundles_and_no_orphans(self, mock_set):
+        bundles = []
+        orphan_documents = []
+        orphan_renditions = {}
+
+        issue_id_1__orphan_docs = None
+        issue_id_1__orphan_rends = None
+        issue_id_2__orphan_docs = None
+        issue_id_2__orphan_rends = None
+        _orphan_rends = None
+
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            issue_id_1__orphan_docs,
+            issue_id_2__orphan_docs,
+            issue_id_1__orphan_rends,
+            issue_id_2__orphan_rends,
+            _orphan_rends,
+        ]
+        finish(bundles, orphan_documents, orphan_renditions, **self.kwargs)
+        mock_set.assert_not_called()
