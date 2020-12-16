@@ -6,6 +6,7 @@ from airflow import DAG
 from subdags.sync_kernel_to_website_subdag import (
     _group_documents_by_bundle,
     create_subdag_to_register_documents_grouped_by_bundle,
+    finish,
 )
 
 
@@ -355,3 +356,31 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
             ),
         ]
         self.assertListEqual(calls, mock_python_op.call_args_list)
+
+
+class TestFinish(unittest.TestCase):
+
+    def setUp(self):
+        self.kwargs = {"ti": MagicMock()}
+
+    @patch("subdags.sync_kernel_to_website_subdag.Variable.set")
+    def test_finish_set_no_orphans(self, mock_set):
+        bundles = ['issue_id_1', 'issue_id_2']
+        orphan_documents = []
+        orphan_renditions = {}
+
+        issue_id_1__orphan_docs = None
+        issue_id_1__orphan_rends = None
+        issue_id_2__orphan_docs = None
+        issue_id_2__orphan_rends = None
+        _orphan_rends = None
+
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            issue_id_1__orphan_docs,
+            issue_id_2__orphan_docs,
+            issue_id_1__orphan_rends,
+            issue_id_2__orphan_rends,
+            _orphan_rends,
+        ]
+        finish(bundles, orphan_documents, orphan_renditions, **self.kwargs)
+        mock_set.assert_not_called()
