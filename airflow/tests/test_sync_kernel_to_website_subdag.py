@@ -406,3 +406,83 @@ class TestFinish(unittest.TestCase):
         ]
         finish(bundles, orphan_documents, orphan_renditions, **self.kwargs)
         mock_set.assert_not_called()
+
+    @patch("subdags.sync_kernel_to_website_subdag.Variable.set")
+    def test_finish_set_no_bundles_and_orphan_docs(self, mock_set):
+        bundles = []
+        orphan_documents = ['LL13V9MHSKmp6Msj5CPBZRb']
+        orphan_renditions = {}
+
+        issue_id_1__orphan_docs = None
+        issue_id_1__orphan_rends = None
+        issue_id_2__orphan_docs = None
+        issue_id_2__orphan_rends = None
+        _orphan_rends = None
+
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            issue_id_1__orphan_docs,
+            issue_id_2__orphan_docs,
+            issue_id_1__orphan_rends,
+            issue_id_2__orphan_rends,
+            _orphan_rends,
+        ]
+        finish(bundles, orphan_documents, orphan_renditions, **self.kwargs)
+        calls = [
+            call("orphan_documents",
+                 ['LL13V9MHSKmp6Msj5CPBZRb'], serialize_json=True),
+        ]
+        self.assertListEqual(calls, mock_set.call_args_list)
+
+    @patch("subdags.sync_kernel_to_website_subdag.Variable.set")
+    def test_finish_set_no_bundles_and_orphan_docs_and_rends(self, mock_set):
+        bundles = []
+        orphan_documents = ['LL13V9MHSKmp6Msj5CPBZRb']
+        orphan_renditions = {'LL13V9MHSKmp6Msj5CPBZRb'}
+
+        issue_id_1__orphan_docs = None
+        issue_id_1__orphan_rends = None
+        issue_id_2__orphan_docs = None
+        issue_id_2__orphan_rends = None
+        _orphan_rends = None
+
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            issue_id_1__orphan_docs,
+            issue_id_2__orphan_docs,
+            issue_id_1__orphan_rends,
+            issue_id_2__orphan_rends,
+            _orphan_rends,
+        ]
+        finish(bundles, orphan_documents, orphan_renditions, **self.kwargs)
+        calls = [
+            call("orphan_documents",
+                 ['LL13V9MHSKmp6Msj5CPBZRb'], serialize_json=True),
+            call("orphan_renditions",
+                 ['LL13V9MHSKmp6Msj5CPBZRb'], serialize_json=True),
+        ]
+        self.assertListEqual(calls, mock_set.call_args_list)
+
+    @patch("subdags.sync_kernel_to_website_subdag.Variable.set")
+    def test_finish_set_no_bundles_and_orphan_rends(self, mock_set):
+        bundles = []
+        orphan_documents = []
+        orphan_renditions = {'LL13V9MHSKmp6Msj5CPBZRb'}
+
+        issue_id_1__orphan_docs = None
+        issue_id_1__orphan_rends = None
+        issue_id_2__orphan_docs = None
+        issue_id_2__orphan_rends = None
+        _orphan_rends = None
+
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            issue_id_1__orphan_docs,
+            issue_id_2__orphan_docs,
+            issue_id_1__orphan_rends,
+            issue_id_2__orphan_rends,
+            _orphan_rends,
+        ]
+        finish(bundles, orphan_documents, orphan_renditions, **self.kwargs)
+        calls = [
+            call("orphan_renditions",
+                 ['LL13V9MHSKmp6Msj5CPBZRb'], serialize_json=True),
+        ]
+        self.assertListEqual(calls, mock_set.call_args_list)

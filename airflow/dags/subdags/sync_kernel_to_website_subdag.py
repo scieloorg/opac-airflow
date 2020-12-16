@@ -155,7 +155,7 @@ def finish(bundles, orphan_documents, orphan_renditions, **kwargs):
             key="orphan_documents",
             task_ids=f'register_documents_groups_id_{bundle_id}_docs') or []
 
-    t2_orphan_renditions = orphan_renditions or []
+    t2_orphan_renditions = list(orphan_renditions) or []
     for bundle_id in bundles:
         t2_orphan_renditions += kwargs["ti"].xcom_pull(
             key="orphan_renditions",
