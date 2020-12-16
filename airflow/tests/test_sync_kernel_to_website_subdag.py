@@ -486,3 +486,50 @@ class TestFinish(unittest.TestCase):
                  ['LL13V9MHSKmp6Msj5CPBZRb'], serialize_json=True),
         ]
         self.assertListEqual(calls, mock_set.call_args_list)
+
+
+    @patch("subdags.sync_kernel_to_website_subdag.Variable.set")
+    def test_finish_all_have_orphans(self, mock_set):
+        bundles = ['issue_id_1', 'issue_id_2']
+        orphan_documents = ['a113V9MHSKmp6Msj5CPBZRb']
+        orphan_renditions = [
+            'a2gFV9MHSKmp6Msj5CPBZRb', 'a3a3V9MHSKmp6Msj5CPBZRb']
+
+        issue_id_1__orphan_docs = [
+            'I1gFV9MHSKmp6Msj5CPBZRb', 'I113V9MHSKmp6Msj5CPBZRb']
+        issue_id_1__orphan_rends = [
+            'I1gFV9MHSKmp6Msj5CPBZRb', 'I113V9MHSKmp6Msj5CPBZRb']
+        issue_id_2__orphan_docs = [
+            'i213V9MHSKmp6Msj5CPBZRb', 'i203V9MHSKmp6Msj5CPBZRb']
+        issue_id_2__orphan_rends = [
+            'i213V9MHSKmp6Msj5CPBZRb', 'i203V9MHSKmp6Msj5CPBZRb']
+        _orphan_rends = ['I313V9MHSKmp6Msj5CPBZRb', 'I313xxxxxKmp6Msj5CPBZRb']
+
+        self.kwargs["ti"].xcom_pull.side_effect = [
+            issue_id_1__orphan_docs,
+            issue_id_2__orphan_docs,
+            issue_id_1__orphan_rends,
+            issue_id_2__orphan_rends,
+            _orphan_rends,
+        ]
+
+        expected_orphan_documents = [
+            'a113V9MHSKmp6Msj5CPBZRb',
+            'I1gFV9MHSKmp6Msj5CPBZRb', 'I113V9MHSKmp6Msj5CPBZRb',
+            'i213V9MHSKmp6Msj5CPBZRb', 'i203V9MHSKmp6Msj5CPBZRb'
+        ]
+        expected_orphan_renditions = [
+            'a2gFV9MHSKmp6Msj5CPBZRb', 'a3a3V9MHSKmp6Msj5CPBZRb',
+            'I1gFV9MHSKmp6Msj5CPBZRb', 'I113V9MHSKmp6Msj5CPBZRb',
+            'i213V9MHSKmp6Msj5CPBZRb', 'i203V9MHSKmp6Msj5CPBZRb',
+            'I313V9MHSKmp6Msj5CPBZRb', 'I313xxxxxKmp6Msj5CPBZRb',
+        ]
+
+        finish(bundles, orphan_documents, orphan_renditions, **self.kwargs)
+        calls = [
+            call("orphan_documents",
+                 expected_orphan_documents, serialize_json=True),
+            call("orphan_renditions",
+                 expected_orphan_renditions, serialize_json=True),
+        ]
+        self.assertListEqual(calls, mock_set.call_args_list)
