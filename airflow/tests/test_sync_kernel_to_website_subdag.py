@@ -145,6 +145,7 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
                 task_id="register_documents_groups_id_finish",
                 provide_context=True,
                 python_callable=mock_finish,
+                op_args=([], ["XXX3V9MHSKmp6Msj5CPBZRb"], ["XXX3V9MHSKmp6Msj5CPBZRb"]),
                 dag=mock_subdag,
             ),
         ]
@@ -189,6 +190,7 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
                 task_id='register_documents_groups_id_finish',
                 provide_context=True,
                 python_callable=mock_finish,
+                op_args=(["issue_id_2", "issue_id"], [], []),
                 dag=mock_subdag,
             ),
             call(
@@ -255,6 +257,7 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
                 task_id='register_documents_groups_id_finish',
                 provide_context=True,
                 python_callable=mock_finish,
+                op_args=(["issue_id_2", "issue_id"], [], []),
                 dag=mock_subdag,
             ),
             call(
@@ -339,6 +342,7 @@ class TestCreateSubdagToRegisterDocumentsGroupedByBundle(unittest.TestCase):
                 task_id='register_documents_groups_id_finish',
                 provide_context=True,
                 python_callable=mock_finish,
+                op_args=([], [], []),
                 dag=mock_subdag,
             ),
             call(

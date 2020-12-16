@@ -91,7 +91,7 @@ def create_subdag_to_register_documents_grouped_by_bundle(
             task_id=task_id,
             provide_context=True,
             python_callable=finish,
-            op_args=(groups.keys(), orphan_documents, orphan_renditions),
+            op_args=(list(groups.keys()), orphan_documents, list(orphan_renditions)),
             dag=dag_subdag,
         )
 
