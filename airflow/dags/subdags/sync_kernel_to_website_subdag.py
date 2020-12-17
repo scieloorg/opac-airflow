@@ -149,32 +149,31 @@ def create_subdag_to_register_documents_grouped_by_bundle(
 def finish(bundles, orphan_documents, orphan_renditions, **kwargs):
     Logger.info("Finish")
 
-    t1_orphan_documents = orphan_documents or []
+    orphan_documents = orphan_documents or []
     for bundle_id in bundles:
-        t1_orphan_documents += kwargs["ti"].xcom_pull(
+        orphan_documents += kwargs["ti"].xcom_pull(
             key="orphan_documents",
             task_ids=f'register_documents_groups_id_{bundle_id}_docs') or []
 
-    t2_orphan_renditions = list(orphan_renditions) or []
+    orphan_renditions = list(orphan_renditions)
     for bundle_id in bundles:
-        t2_orphan_renditions += kwargs["ti"].xcom_pull(
+        orphan_renditions += kwargs["ti"].xcom_pull(
             key="orphan_renditions",
             task_ids=f'register_documents_groups_id_{bundle_id}_renditions') or []
 
-    t3_orphan_renditions = kwargs["ti"].xcom_pull(
+    orphan_renditions += kwargs["ti"].xcom_pull(
         key="orphan_renditions",
         task_ids="register_documents_groups_id_renditions") or []
 
-    if t1_orphan_documents:
+    if orphan_documents:
         Variable.set(
-            "orphan_documents", t1_orphan_documents, serialize_json=True)
+            "orphan_documents", orphan_documents, serialize_json=True)
 
-    orphan_renditions = t2_orphan_renditions + t3_orphan_renditions
     if orphan_renditions:
         Variable.set(
             "orphan_renditions", orphan_renditions, serialize_json=True)
 
-    Logger.info("Finish %i orphan_documents", len(t1_orphan_documents))
+    Logger.info("Finish %i orphan_documents", len(orphan_documents))
     Logger.info("Finish %i orphan_renditions", len(orphan_renditions))
     Logger.info("Finish - FIM")
     return True
