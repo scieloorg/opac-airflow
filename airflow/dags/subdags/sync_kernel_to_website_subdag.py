@@ -166,24 +166,15 @@ def finish(bundles, orphan_documents, orphan_renditions, **kwargs):
         task_ids="register_documents_groups_id_renditions") or []
 
     if t1_orphan_documents:
-        try:
-            Variable.set(
-                "orphan_documents", t1_orphan_documents, serialize_json=True)
-        except Exception as e:
-            # sqlalchemy.exc.OperationalError: (psycopg2.OperationalError)
-            # could not connect to server: Connection refused
-            Logger.info("%s", e)
-    Logger.info("Finish %i orphan_documents", len(t1_orphan_documents))
+        Variable.set(
+            "orphan_documents", t1_orphan_documents, serialize_json=True)
 
-    if t2_orphan_renditions or t3_orphan_renditions:
-        try:
-            orphan_renditions = t2_orphan_renditions + t3_orphan_renditions
-            Variable.set(
-                "orphan_renditions", orphan_renditions, serialize_json=True)
-        except Exception as e:
-            # sqlalchemy.exc.OperationalError: (psycopg2.OperationalError)
-            # could not connect to server: Connection refused
-            Logger.info("%s", e)
+    orphan_renditions = t2_orphan_renditions + t3_orphan_renditions
+    if orphan_renditions:
+        Variable.set(
+            "orphan_renditions", orphan_renditions, serialize_json=True)
+
+    Logger.info("Finish %i orphan_documents", len(t1_orphan_documents))
     Logger.info("Finish %i orphan_renditions", len(orphan_renditions))
     Logger.info("Finish - FIM")
     return True
