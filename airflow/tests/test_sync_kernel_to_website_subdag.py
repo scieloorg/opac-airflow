@@ -431,11 +431,9 @@ class TestFinish(unittest.TestCase):
             _orphan_rends,
         ]
         finish(bundles, orphan_documents, orphan_renditions, **self.kwargs)
-        calls = [
-            call("orphan_documents",
-                 ['LL13V9MHSKmp6Msj5CPBZRb'], serialize_json=True),
-        ]
-        self.assertListEqual(calls, mock_set.call_args_list)
+        mock_set.assert_called_once_with(
+            "orphan_documents",
+            ['LL13V9MHSKmp6Msj5CPBZRb'], serialize_json=True)
 
     @patch("subdags.sync_kernel_to_website_subdag.Variable.set")
     def test_finish_set_no_bundles_and_orphan_docs_and_rends(self, mock_set):
@@ -463,7 +461,7 @@ class TestFinish(unittest.TestCase):
             call("orphan_renditions",
                  ['LL13V9MHSKmp6Msj5CPBZRb'], serialize_json=True),
         ]
-        self.assertListEqual(calls, mock_set.call_args_list)
+        mock_set.assert_has_calls(calls)
 
     @patch("subdags.sync_kernel_to_website_subdag.Variable.set")
     def test_finish_set_no_bundles_and_orphan_rends(self, mock_set):
@@ -485,12 +483,9 @@ class TestFinish(unittest.TestCase):
             _orphan_rends,
         ]
         finish(bundles, orphan_documents, orphan_renditions, **self.kwargs)
-        calls = [
-            call("orphan_renditions",
-                 ['LL13V9MHSKmp6Msj5CPBZRb'], serialize_json=True),
-        ]
-        self.assertListEqual(calls, mock_set.call_args_list)
-
+        mock_set.assert_called_once_with(
+            "orphan_renditions",
+            ['LL13V9MHSKmp6Msj5CPBZRb'], serialize_json=True)
 
     @patch("subdags.sync_kernel_to_website_subdag.Variable.set")
     def test_finish_all_have_orphans(self, mock_set):
