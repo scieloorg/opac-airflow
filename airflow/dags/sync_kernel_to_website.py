@@ -743,53 +743,53 @@ def pre_register_documents(**kwargs):
     """Agrupa documentos em lotes menores para serem registrados no Kernel"""
 
     logging.info("pre_register_documents - IN")
-    tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
-    logging.info("Tasks Total: %i", len(tasks or []))
+    tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task") or []
+    logging.info("Total tasks: %i", len(tasks))
 
     known_documents = kwargs["ti"].xcom_pull(
         key="i_documents", task_ids="register_issues_task"
-    )
-    logging.info("Tasks Total: %i", len(known_documents or {}))
+    ) or []
+    logging.info("Total known_documents: %i", len(known_documents))
 
     logging.info("mongo_connect")
     mongo_connect()
 
-    logging.info("known_documents")
+    logging.info("_get_known_documents")
     known_documents = _get_known_documents(known_documents, tasks)
     logging.info("_remodel_known_documents")
     remodeled_known_documents = _remodel_known_documents(known_documents)
 
     # sequencia de PID v3 de documentos
+    logging.info("documents_to_get")
     documents_to_get = itertools.chain(
         Variable.get("orphan_documents", default_var=[], deserialize_json=True),
-        (get_id(task["id"]) for task in filter_changes(tasks, "documents", "get")),
+        (get_id(task["id"])for task in filter_changes(tasks, "documents", "get")),
     )
-    logging.info("documents_to_get")
 
     # sequencia de PID v3 de documentos com renditions
+    logging.info("renditions_to_get")
     renditions_to_get = itertools.chain(
         Variable.get("orphan_renditions", default_var=[], deserialize_json=True),
         (get_id(task["id"]) for task in filter_changes(tasks, "renditions", "get")),
     )
-    logging.info("renditions_to_get")
 
     # converte geradores para sequencias
     documents_to_get = list(documents_to_get)
-    logging.info("%i", len(documents_to_get))
+    logging.info("Total documents_to_get: %i", len(documents_to_get))
     renditions_to_get = list(renditions_to_get)
-    logging.info("%i", len(renditions_to_get))
+    logging.info("Total renditions_to_get: %i", len(renditions_to_get))
 
     try:
-        logging.info("Variable.set()")
+        logging.info("Variable.set('orphan_renditions')")
         Variable.set("orphan_renditions", [], serialize_json=True)
+        logging.info("Variable.set('orphan_documents')")
         Variable.set("orphan_documents", [], serialize_json=True)
+        logging.info("Variable.set('documents_to_get')")
         Variable.set("documents_to_get", documents_to_get, serialize_json=True)
+        logging.info("Variable.set('renditions_to_get')")
         Variable.set("renditions_to_get", renditions_to_get, serialize_json=True)
+        logging.info("Variable.set('remodeled_known_documents')")
         Variable.set("remodeled_known_documents", remodeled_known_documents, serialize_json=True)
-
-        logging.info("%s", (documents_to_get))
-        logging.info("%s", (renditions_to_get))
-        logging.info("%s", (remodeled_known_documents))
 
     except Exception as e:
         # tenta contornar possivel erro que acontece no travis
