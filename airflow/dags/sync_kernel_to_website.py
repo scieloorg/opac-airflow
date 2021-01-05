@@ -864,9 +864,9 @@ def register_documents_subdag_params(dag, args):
 
         return _get_relation_data_new(remodeled_known_documents, document_id)
 
-    logging.info("register_documents_subdag_params")
+    logging.debug("register_documents_subdag_params")
     try:
-        logging.info("Variable.get()")
+        logging.debug("Variable.get()")
         documents_to_get = Variable.get(
             "documents_to_get", [], deserialize_json=True)
         renditions_to_get = Variable.get(
