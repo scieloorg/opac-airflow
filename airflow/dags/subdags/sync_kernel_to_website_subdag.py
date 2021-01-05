@@ -14,13 +14,13 @@ def _group_documents_by_bundle(document_ids, _get_relation_data):
     """Agrupa `document_ids` em grupos usando `bundle_id`
     Caso `bundle_id` is `None`, `doc_id` são órfãos
     """
-    Logger.info("_group_documents_by_bundle")
+    Logger.debug("_group_documents_by_bundle")
     groups = {}
     for doc_id in document_ids:
         bundle_id, doc = _get_relation_data(doc_id)
         groups[bundle_id] = groups.get(bundle_id) or []
         groups[bundle_id].append(doc_id)
-    Logger.info("_group_documents_by_bundle: %i", len(groups))
+    Logger.debug("_group_documents_by_bundle: %i", len(groups))
     return groups
 
 
@@ -34,11 +34,11 @@ def create_subdag_to_register_documents_grouped_by_bundle(
     para que se houver falha, será necessário reexecutar apenas os grupos
     que falharam
     """
-    Logger.info("Create register_documents_grouped_by_bundle subdag")
+    Logger.debug("Create register_documents_grouped_by_bundle subdag")
 
     CHILD_DAG_NAME = 'register_documents_groups_id'
 
-    Logger.info("Call register_documents_subdag_params")
+    Logger.debug("Call register_documents_subdag_params")
     data = register_documents_subdag_params(dag, args)
 
     # obtém as listas de documents_id e renditions_id mais recentes
@@ -49,9 +49,9 @@ def create_subdag_to_register_documents_grouped_by_bundle(
     # transforma a lista em um conjunto (set)
     renditions_documents_id = set(renditions_documents_id)
 
-    Logger.info("Call _group_documents_by_bundle")
+    Logger.debug("Call _group_documents_by_bundle")
     groups = _group_documents_by_bundle(document_ids, _get_relation_data)
-    Logger.info("Total groups: %i", len(groups))
+    Logger.debug("Total groups: %i", len(groups))
 
     # `orphan_documents` são documentos registrados no Kernel, mas que ao tentar
     # ser registrado no website, levanta uma exceção, devido à ausência de
@@ -100,8 +100,8 @@ def create_subdag_to_register_documents_grouped_by_bundle(
 
             task_id = f'{CHILD_DAG_NAME}_{bundle_id}_docs'
 
-            Logger.info("%s", bundle_id)
-            Logger.info("Total: %i", len(doc_ids))
+            Logger.debug("%s", bundle_id)
+            Logger.debug("Total: %i", len(doc_ids))
 
             t1 = PythonOperator(
                 task_id=task_id,
@@ -114,7 +114,7 @@ def create_subdag_to_register_documents_grouped_by_bundle(
 
             # register documents renditions
             _renditions_documents_id = set(doc_ids) & renditions_documents_id
-            Logger.info(
+            Logger.debug(
                 "Total renditions documents (%s): %i",
                 bundle_id, len(_renditions_documents_id))
             if _renditions_documents_id:
@@ -133,7 +133,7 @@ def create_subdag_to_register_documents_grouped_by_bundle(
                 t1 >> t_finish
 
         _renditions_documents_id = renditions_documents_id - set(document_ids)
-        Logger.info(
+        Logger.debug(
                 "Total renditions documents: %i",
                 len(_renditions_documents_id))
         if _renditions_documents_id:
@@ -152,7 +152,7 @@ def create_subdag_to_register_documents_grouped_by_bundle(
 
 
 def finish(bundles, orphan_documents, orphan_renditions, **kwargs):
-    Logger.info("Finish")
+    Logger.debug("Finish")
 
     orphan_documents = orphan_documents or []
     for bundle_id in bundles:
@@ -178,7 +178,7 @@ def finish(bundles, orphan_documents, orphan_renditions, **kwargs):
         Variable.set(
             "orphan_renditions", orphan_renditions, serialize_json=True)
 
-    Logger.info("Finish %i orphan_documents", len(orphan_documents))
-    Logger.info("Finish %i orphan_renditions", len(orphan_renditions))
-    Logger.info("Finish - FIM")
+    Logger.debug("Finish %i orphan_documents", len(orphan_documents))
+    Logger.debug("Finish %i orphan_renditions", len(orphan_renditions))
+    Logger.debug("Finish - FIM")
     return True
