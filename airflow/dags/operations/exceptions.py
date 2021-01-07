@@ -34,10 +34,6 @@ class InvalidOrderValueError(Exception):
     ...
 
 
-class OldFormatKnownDocsError(Exception):
-    ...
-
-
 class LinkDocumentToDocumentsBundleException(Exception):
     def __init__(self, message, response=None, *args, **kwargs):
         self.message = message
