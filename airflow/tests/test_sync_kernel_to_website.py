@@ -281,7 +281,103 @@ class ArticleFactoryTests(unittest.TestCase):
 
     def test_has_publication_date_attribute(self):
         self.assertTrue(hasattr(self.document, "publication_date"))
-        self.assertEqual("31 01 2019", self.document.publication_date)
+        self.assertEqual("2019-01-31", self.document.publication_date)
+
+    def test_has_publication_date_attribute_with_just_year(self):
+
+        document_dict = {"pub_date": [
+                          {
+                            "text": [
+                              "2019"
+                            ],
+                            "pub_type": [
+                              "epub"
+                            ],
+                            "pub_format": [],
+                            "date_type": [],
+                            "day": [
+                              "31"
+                            ],
+                            "month": [
+                              "01"
+                            ],
+                            "year": [
+                              "2019"
+                            ],
+                            "season": []
+                          }
+                        ]}
+
+        document = ArticleFactory(
+            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, ""
+        )
+
+        self.assertTrue(hasattr(document, "publication_date"))
+        self.assertEqual("2019", document.publication_date)
+
+    def test_has_publication_date_attribute_with_just_month(self):
+
+        document_dict = {"pub_date": [
+                          {
+                            "text": [
+                              "01"
+                            ],
+                            "pub_type": [
+                              "epub"
+                            ],
+                            "pub_format": [],
+                            "date_type": [],
+                            "day": [
+                              "31"
+                            ],
+                            "month": [
+                              "01"
+                            ],
+                            "year": [
+                              "2019"
+                            ],
+                            "season": []
+                          }
+                        ]}
+
+        document = ArticleFactory(
+            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, ""
+        )
+
+        self.assertTrue(hasattr(document, "publication_date"))
+        self.assertEqual("01", document.publication_date)
+
+    def test_has_publication_date_attribute_with_just_month_year(self):
+
+        document_dict = {"pub_date": [
+                          {
+                            "text": [
+                              "01 2019"
+                            ],
+                            "pub_type": [
+                              "epub"
+                            ],
+                            "pub_format": [],
+                            "date_type": [],
+                            "day": [
+                              "31"
+                            ],
+                            "month": [
+                              "01"
+                            ],
+                            "year": [
+                              "2019"
+                            ],
+                            "season": []
+                          }
+                        ]}
+
+        document = ArticleFactory(
+            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, ""
+        )
+
+        self.assertTrue(hasattr(document, "publication_date"))
+        self.assertEqual("2019-01", document.publication_date)
 
     def test_has_type_attribute(self):
         self.assertTrue(hasattr(self.document, "type"))
