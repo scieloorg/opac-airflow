@@ -830,6 +830,28 @@ def get_number_of_incomplete_html(incomplete, report):
 
         summary.append(missing_components)
 
+    number_of_missing_pdf_or_html = sum(
+        [1 for item in summary if item["missing_pdf_or_html"]]
+    )
+    number_of_missing_assets = sum([1 for item in summary if item["missing_assets"]])
+
+    if number_of_missing_pdf_or_html > 0:
+        # Falta PDF e/ou HTML
+        return incomplete
+    elif number_of_missing_assets > 0 and number_of_missing_assets != len(summary):
+        # Nem todos os tem todos os assets
+        return incomplete
+    elif number_of_missing_assets > 0 and number_of_missing_assets == len(summary):
+        # Verifica se é o caso de assets diferentes para cada idioma
+        assets = {}
+        for item in summary:
+            for id, missing_asset in item["missing_assets_detail"].items():
+                assets.setdefault(id, {True: 0, False: 0})
+                assets[id][missing_asset] += 1
+        for id, counter in assets.items():
+            if counter[True] > 1:
+                # Se o asset estiver presente em mais de 1 HTML, deveria estar em todos
+                return incomplete
     return 0
 
 
@@ -905,7 +927,7 @@ def check_html_webpages_availability(html_data_items, assets_data, webpages_data
     summary = {
         "total": len(html_data_items),
         "total unavailable": unavailable,
-        "total incomplete": incomplete,
+        "total incomplete": get_number_of_incomplete_html(incomplete, report),
     }
     return report, summary
 
