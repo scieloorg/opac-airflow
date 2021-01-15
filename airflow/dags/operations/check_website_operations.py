@@ -775,6 +775,63 @@ def get_number_of_incomplete_html(incomplete, report):
         # ``incomplete`` já representa o número total de HTMLs incompletos
         return incomplete
 
+    """
+    Monta esta estrutura para a análise:
+        summary = [
+            {
+                "missing_pdf_or_html": False,
+                "missing_assets": False,
+                "missing_assets_detail": {
+                    asset_id_1: False,
+                    asset_id_2: True,
+                    asset_id_3: True,
+                },
+            },
+            {
+                "missing_pdf_or_html": False,
+                "missing_assets": False,
+                "missing_assets_detail": {
+                    asset_id_1: True,
+                    asset_id_2: False,
+                    asset_id_3: True,
+                },
+            },
+            {
+                "missing_pdf_or_html": False,
+                "missing_assets": False,
+                "missing_assets_detail": {
+                    asset_id_1: True,
+                    asset_id_2: True,
+                    asset_id_3: False,
+                },
+            },
+        ]
+    """
+    summary = []
+    for html in report:
+        missing_components = {"missing_pdf_or_html": False, "missing_assets": False}
+
+        if html.get("pdf", {}).get("missing") or html.get("html", {}).get("missing"):
+            missing_components["missing_pdf_or_html"] = True
+
+        if html.get("assets", {}).get("total missing") > 0:
+            missing_components["missing_assets"] = True
+            missing_components["missing_assets_detail"] = {}
+            for component in html.get("components", []):
+                if component["type"] == "asset":
+                    if component.get("present_in_html"):
+                        missing_components["missing_assets_detail"][
+                            component["id"]
+                        ] = False
+                    else:
+                        missing_components["missing_assets_detail"][
+                            component["id"]
+                        ] = True
+
+        summary.append(missing_components)
+
+    return 0
+
 
 def check_html_webpages_availability(html_data_items, assets_data, webpages_data, object_store_url):
     """
