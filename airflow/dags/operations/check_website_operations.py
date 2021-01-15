@@ -752,6 +752,30 @@ def add_responses(doc_data_list, website_url=None, request=True, timeout=None):
         doc_data["response"] = responses.get(doc_data["uri"])
 
 
+def get_number_of_incomplete_html(incomplete, report):
+    """
+    Analisa os detalhes dos ativos digitais faltando no nível do documento, não das 
+    traduções, pois existem casos em que há ativos digitais diferentes para cada
+    idioma. Para considerar que não está faltando nada no documento, é necessário:
+
+    - Que todos os assets estejam em todos os HTMLs (mesmos assets para todos os 
+      idiomas)
+    - Que cada asset esteja apenas em um dos HTMLs (assets diferentes para cada idioma)
+    - Que haja links para PDFs em outros idiomas
+    - Que haja links para HTMLs em outros idiomas
+
+    Args:
+        incomplete: número de incompletos da análise no nível do HTML
+        report: dados de todos os HTMLs
+    Returns:
+        Número de HTMLs incompletos após análise.
+    """
+    if incomplete == 0 or len(report) == 1:
+        # Se não foram detectados HTMLs incompletos ou se há somente 1 HTML, o argumento
+        # ``incomplete`` já representa o número total de HTMLs incompletos
+        return incomplete
+
+
 def check_html_webpages_availability(html_data_items, assets_data, webpages_data, object_store_url):
     """
     Verifica também se os ativos digitais e outras
