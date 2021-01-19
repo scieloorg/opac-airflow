@@ -752,6 +752,109 @@ def add_responses(doc_data_list, website_url=None, request=True, timeout=None):
         doc_data["response"] = responses.get(doc_data["uri"])
 
 
+def get_number_of_incomplete_html(incomplete, report):
+    """
+    Analisa os detalhes dos ativos digitais faltando no nível do documento, não das 
+    traduções, pois existem casos em que há ativos digitais diferentes para cada
+    idioma. Para considerar que não está faltando nada no documento, é necessário:
+
+    - Que todos os assets estejam em todos os HTMLs (mesmos assets para todos os 
+      idiomas)
+    - Que cada asset esteja apenas em um dos HTMLs (assets diferentes para cada idioma)
+    - Que haja links para PDFs em outros idiomas
+    - Que haja links para HTMLs em outros idiomas
+
+    Args:
+        incomplete: número de incompletos da análise no nível do HTML
+        report: dados de todos os HTMLs
+    Returns:
+        Número de HTMLs incompletos após análise.
+    """
+    if incomplete == 0 or len(report) == 1:
+        # Se não foram detectados HTMLs incompletos ou se há somente 1 HTML, o argumento
+        # ``incomplete`` já representa o número total de HTMLs incompletos
+        return incomplete
+
+    """
+    Monta esta estrutura para a análise:
+        summary = [
+            {
+                "missing_pdf_or_html": False,
+                "missing_assets": False,
+                "missing_assets_detail": {
+                    asset_id_1: False,
+                    asset_id_2: True,
+                    asset_id_3: True,
+                },
+            },
+            {
+                "missing_pdf_or_html": False,
+                "missing_assets": False,
+                "missing_assets_detail": {
+                    asset_id_1: True,
+                    asset_id_2: False,
+                    asset_id_3: True,
+                },
+            },
+            {
+                "missing_pdf_or_html": False,
+                "missing_assets": False,
+                "missing_assets_detail": {
+                    asset_id_1: True,
+                    asset_id_2: True,
+                    asset_id_3: False,
+                },
+            },
+        ]
+    """
+    summary = []
+    for html in report:
+        missing_components = {"missing_pdf_or_html": False, "missing_assets": False}
+
+        if html.get("pdf", {}).get("missing") or html.get("html", {}).get("missing"):
+            missing_components["missing_pdf_or_html"] = True
+
+        if html.get("assets", {}).get("total missing") > 0:
+            missing_components["missing_assets"] = True
+            missing_components["missing_assets_detail"] = {}
+            for component in html.get("components", []):
+                if component["type"] == "asset":
+                    if component.get("present_in_html"):
+                        missing_components["missing_assets_detail"][
+                            component["id"]
+                        ] = False
+                    else:
+                        missing_components["missing_assets_detail"][
+                            component["id"]
+                        ] = True
+
+        summary.append(missing_components)
+
+    number_of_missing_pdf_or_html = sum(
+        [1 for item in summary if item["missing_pdf_or_html"]]
+    )
+    number_of_missing_assets = sum([1 for item in summary if item["missing_assets"]])
+
+    if number_of_missing_pdf_or_html > 0:
+        # Falta PDF e/ou HTML
+        return incomplete
+    elif number_of_missing_assets > 0 and number_of_missing_assets != len(summary):
+        # Nem todos os tem todos os assets
+        return incomplete
+    elif number_of_missing_assets > 0 and number_of_missing_assets == len(summary):
+        # Verifica se é o caso de assets diferentes para cada idioma
+        assets = {}
+        for item in summary:
+            for id, missing_asset in item["missing_assets_detail"].items():
+                assets.setdefault(id, {True: 0, False: 0})
+                assets[id][missing_asset] += 1
+        for id, counter in assets.items():
+            if counter[True] > 1:
+                # Se o asset estiver presente em mais de 1 HTML, deveria estar em todos
+                return incomplete
+    return 0
+
+
 def check_html_webpages_availability(html_data_items, assets_data, webpages_data, object_store_url):
     """
     Verifica também se os ativos digitais e outras
@@ -824,7 +927,7 @@ def check_html_webpages_availability(html_data_items, assets_data, webpages_data
     summary = {
         "total": len(html_data_items),
         "total unavailable": unavailable,
-        "total incomplete": incomplete,
+        "total incomplete": get_number_of_incomplete_html(incomplete, report),
     }
     return report, summary
 

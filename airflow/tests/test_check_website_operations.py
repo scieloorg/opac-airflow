@@ -23,6 +23,7 @@ from operations.check_website_operations import (
     check_doc_webpage_uri_items_expected_in_webpage,
     check_document_webpages_availability,
     check_pdf_webpages_availability,
+    get_number_of_incomplete_html,
     check_html_webpages_availability,
     check_document_html,
     check_document_html_content,
@@ -3959,6 +3960,291 @@ class TestGroupDocDataByWebpageType(TestCase):
         }
         result = group_doc_data_by_webpage_type(doc_webpages_data)
         self.assertDictEqual(expected, result)
+
+
+class TesteGetNumberOfIncompleteHtml(TestCase):
+    def test_returns_0_if_giving_incomplete_is_0(self):
+        incomplete = 0
+        self.assertEqual(get_number_of_incomplete_html(incomplete, []), 0)
+
+    def test_returns_incomplete_if_there_is_only_one_html_and_incomplete(self):
+        report = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
+                "available": True,
+                "status code": 200,
+                "components": [
+                    {
+                        "type": "asset",
+                        "id": "asset_uri_1",
+                        "present_in_html": ["asset_uri_1.jpg",],
+                        "absent_in_html": ["asset_uri_1.tiff", "asset_uri_1.png",],
+                    },
+                    {
+                        "type": "asset",
+                        "id": "asset_uri_2",
+                        "present_in_html": [],
+                        "absent_in_html": [
+                            "asset_uri_2.jpg", "asset_uri_2.tiff", "asset_uri_2.png",
+                        ],
+                    },
+                    {
+                        "type": "pdf",
+                        "id": "en",
+                        "present_in_html": ["/j/xjk/a/ldld?format=pdf&lang=en",],
+                    },
+                    {
+                        "type": "html",
+                        "id": "es",
+                        "present_in_html": ["/j/xjk/a/ldld?format=html&lang=es",],
+                    },
+                    {
+                        "type": "pdf",
+                        "id": "es",
+                        "present_in_html": ["/j/xjk/a/ldld?format=pdf&lang=es",],
+                    },
+                ],
+                "total missing components": 1,
+                "total expected components": 5,
+                "pdf": {"total": 2, "missing": 0},
+                "html": {"total": 1, "missing": 0},
+                "assets": {
+                    "total expected": 2,
+                    "total missing": 1,
+                    "total alternatives": 6,
+                    "total alternatives present in html": 1,
+                },
+            },
+        ]
+        incomplete = 1
+        self.assertEqual(get_number_of_incomplete_html(incomplete, report), incomplete)
+
+    def test_returns_incomplete_if_missing_components_in_one_of_htmls(self):
+        report = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
+                "available": True,
+                "status code": 200,
+                "components": [
+                    {
+                        "type": "asset",
+                        "id": "asset_uri_1",
+                        "present_in_html": ["asset_uri_1.jpg",],
+                        "absent_in_html": ["asset_uri_1.tiff", "asset_uri_1.png",],
+                    },
+                    {
+                        "type": "asset",
+                        "id": "asset_uri_2",
+                        "present_in_html": ["asset_uri_2.jpg",],
+                        "absent_in_html": ["asset_uri_2.tiff", "asset_uri_2.png",],
+                    },
+                    {
+                        "type": "pdf",
+                        "id": "en",
+                        "present_in_html": ["/j/xjk/a/ldld?format=pdf&lang=en",],
+                    },
+                    {
+                        "type": "html",
+                        "id": "es",
+                        "present_in_html": [],
+                        "absent_in_html": ["/j/xjk/a/ldld?format=html&lang=es",],
+                    },
+                    {
+                        "type": "pdf",
+                        "id": "es",
+                        "present_in_html": ["/j/xjk/a/ldld?format=pdf&lang=es",],
+                    },
+                ],
+                "total missing components": 0,
+                "total expected components": 5,
+                "pdf": {"total": 2, "missing": 1},
+                "html": {"total": 1, "missing": 0},
+                "assets": {
+                    "total expected": 2,
+                    "total missing": 0,
+                    "total alternatives": 6,
+                    "total alternatives present in html": 2,
+                },
+            },
+            {
+                "lang": "es",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es",
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "components": [
+                    {
+                        "type": "asset",
+                        "id": "asset_uri_1",
+                        "present_in_html": [],
+                        "absent_in_html": [
+                            "asset_uri_1.jpg", "asset_uri_1.tiff", "asset_uri_1.png",
+                        ],
+                    },
+                    {
+                        "type": "asset",
+                        "id": "asset_uri_2",
+                        "present_in_html": ["asset_uri_2.jpg",],
+                        "absent_in_html": ["asset_uri_2.tiff", "asset_uri_2.png",],
+                    },
+                    {
+                        "type": "html",
+                        "id": "en",
+                        "present_in_html": ["/j/xjk/a/ldld?format=html&lang=en",],
+                    },
+                    {
+                        "type": "pdf",
+                        "id": "en",
+                        "present_in_html": ["/j/xjk/a/ldld?format=pdf&lang=en",],
+                    },
+                    {
+                        "type": "pdf",
+                        "id": "es",
+                        "present_in_html": ["/j/xjk/a/ldld?format=pdf&lang=es",],
+                    },
+                ],
+                "total expected components": 5,
+                "total missing components": 1,
+                "html": {"total": 1, "missing": 0},
+                "pdf": {"total": 2, "missing": 0},
+                "assets": {
+                    "total expected": 2,
+                    "total missing": 1,
+                    "total alternatives": 6,
+                    "total alternatives present in html": 2,
+                },
+            },
+        ]
+        incomplete = 2
+        self.assertEqual(get_number_of_incomplete_html(incomplete, report), incomplete)
+
+    def test_returns_0_if_missing_components_in_one_of_htmls_but_it_is_in_the_other(self):
+        report = [
+            {
+                "lang": "en",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=en",
+                "available": True,
+                "status code": 200,
+                "components": [
+                    {
+                        "type": "asset",
+                        "id": "asset_uri_1",
+                        "present_in_html": ["asset_uri_1.jpg",],
+                        "absent_in_html": ["asset_uri_1.tiff", "asset_uri_1.png",],
+                    },
+                    {
+                        "type": "asset",
+                        "id": "asset_uri_2",
+                        "present_in_html": [],
+                        "absent_in_html": [
+                            "asset_uri_2.jpg", "asset_uri_2.tiff", "asset_uri_2.png",
+                        ],
+                    },
+                    {
+                        "type": "pdf",
+                        "id": "en",
+                        "present_in_html": ["/j/xjk/a/ldld?format=pdf&lang=en",],
+                    },
+                    {
+                        "type": "html",
+                        "id": "es",
+                        "present_in_html": ["/j/xjk/a/ldld?format=html&lang=es",],
+                    },
+                    {
+                        "type": "pdf",
+                        "id": "es",
+                        "present_in_html": ["/j/xjk/a/ldld?format=pdf&lang=es",],
+                    },
+                ],
+                "total missing components": 1,
+                "total expected components": 5,
+                "pdf": {"total": 2, "missing": 0},
+                "html": {"total": 1, "missing": 0},
+                "assets": {
+                    "total expected": 2,
+                    "total missing": 1,
+                    "total alternatives": 6,
+                    "total alternatives present in html": 2,
+                },
+            },
+            {
+                "lang": "es",
+                "format": "html",
+                "pid_v2": "pid-v2", "acron": "xjk",
+                "doc_id_for_human": "artigo-1234",
+                "doc_id": "ldld",
+                "uri": "https://www.scielo.br/j/xjk/a/ldld?format=html&lang=es",
+                "available": True,
+                "status code": 200,
+                "start time": START_TIME,
+                "end time": END_TIME,
+                "duration": DURATION,
+                "components": [
+                    {
+                        "type": "asset",
+                        "id": "asset_uri_1",
+                        "present_in_html": [],
+                        "absent_in_html": [
+                            "asset_uri_1.jpg", "asset_uri_1.tiff", "asset_uri_1.png",
+                        ],
+                    },
+                    {
+                        "type": "asset",
+                        "id": "asset_uri_2",
+                        "present_in_html": ["asset_uri_2.jpg",],
+                        "absent_in_html": ["asset_uri_2.tiff", "asset_uri_2.png",],
+                    },
+                    {
+                        "type": "html",
+                        "id": "en",
+                        "present_in_html": ["/j/xjk/a/ldld?format=html&lang=en",],
+                    },
+                    {
+                        "type": "pdf",
+                        "id": "en",
+                        "present_in_html": ["/j/xjk/a/ldld?format=pdf&lang=en",],
+                    },
+                    {
+                        "type": "pdf",
+                        "id": "es",
+                        "present_in_html": ["/j/xjk/a/ldld?format=pdf&lang=es",],
+                    },
+                ],
+                "total expected components": 5,
+                "total missing components": 1,
+                "html": {"total": 1, "missing": 0},
+                "pdf": {"total": 2, "missing": 0},
+                "assets": {
+                    "total expected": 2,
+                    "total missing": 1,
+                    "total alternatives": 6,
+                    "total alternatives present in html": 2,
+                },
+            },
+        ]
+        incomplete = 2
+        res = get_number_of_incomplete_html(incomplete, report)
+        self.assertEqual(res, 0)
 
 
 class TestCheckHtmlWebpagesAvailability(TestCase):
