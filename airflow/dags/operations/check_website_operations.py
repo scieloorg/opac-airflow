@@ -839,7 +839,7 @@ def get_number_of_incomplete_html(incomplete, report):
         # Falta PDF e/ou HTML
         return incomplete
     elif number_of_missing_assets > 0 and number_of_missing_assets != len(summary):
-        # Nem todos os tem todos os assets
+        # Nem todos os HTMLs tem todos os assets
         return incomplete
     elif number_of_missing_assets > 0 and number_of_missing_assets == len(summary):
         # Verifica se é o caso de assets diferentes para cada idioma
@@ -849,8 +849,9 @@ def get_number_of_incomplete_html(incomplete, report):
                 assets.setdefault(id, {True: 0, False: 0})
                 assets[id][missing_asset] += 1
         for id, counter in assets.items():
-            if counter[True] > 1:
-                # Se o asset estiver presente em mais de 1 HTML, deveria estar em todos
+            if counter[False] > 1:
+                # Se o asset estiver presente em mais de 1 HTML (missing == False),
+                # deveria estar em todos
                 return incomplete
     return 0
 
