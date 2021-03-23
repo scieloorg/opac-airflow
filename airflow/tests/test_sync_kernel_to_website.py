@@ -512,6 +512,97 @@ class ExAOPArticleFactoryTests(unittest.TestCase):
         )
 
 
+@patch("operations.sync_kernel_to_website_operations.models.Article.objects")
+@patch("operations.sync_kernel_to_website_operations.models.Issue.objects")
+class AbstractsArticleFactoryTests(unittest.TestCase):
+    def setUp(self):
+        self.document_front = load_json_fixture(
+            "kernel-document-front-s1518-8787.2019053000621.json"
+        )
+
+    def test_no_trans_abstracts_attribute(self, MockIssueObjects, MockArticleObjects):
+        MockArticleObjects.get.side_effect = models.Article.DoesNotExist
+        self.document = ArticleFactory(
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+        )
+
+        self.assertTrue(hasattr(self.document, "abstracts"))
+        self.assertEqual(2, len(self.document.abstracts))
+        self.assertTrue(hasattr(self.document, "abstract_languages"))
+        self.assertEqual(2, len(self.document.abstract_languages))
+
+    def test_no_abstract(self, MockIssueObjects, MockArticleObjects):
+        MockArticleObjects.get.side_effect = models.Article.DoesNotExist
+        self.document_front["article_meta"] = [{
+            "abstract": []
+        }]
+        self.document_front["trans_abstract"] = []
+        self.document_front["sub_article"] = [{
+            "article_meta": [{
+                "abstract": []
+            }]
+        }]
+        self.document = ArticleFactory(
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+        )
+
+        self.assertTrue(hasattr(self.document, "abstracts"))
+        self.assertEqual(0, len(self.document.abstracts))
+        self.assertTrue(hasattr(self.document, "abstract_languages"))
+        self.assertEqual(0, len(self.document.abstract_languages))
+
+    def test_has_trans_abstract(self, MockIssueObjects, MockArticleObjects):
+        MockArticleObjects.get.side_effect = models.Article.DoesNotExist
+        self.document_front["trans_abstract"] = [{
+            "lang": ["fr"],
+            "text": ["Resumen."],
+            "title": ["Resumen"],
+        }]
+        self.document = ArticleFactory(
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+        )
+
+        self.assertTrue(hasattr(self.document, "abstracts"))
+        self.assertEqual(3, len(self.document.abstracts))
+        self.assertEqual(self.document.abstracts[0].language, "en")
+        self.assertEqual(self.document.abstracts[1].language, "fr")
+        self.assertEqual(self.document.abstracts[2].language, "pt")
+        self.assertTrue(hasattr(self.document, "abstract_languages"))
+        self.assertEqual(3, len(self.document.abstract_languages))
+        self.assertEqual(self.document.abstract_languages, ["en", "fr", "pt"])
+
+    def test_abstract_and_trans_abstract(self, MockIssueObjects, MockArticleObjects):
+        MockArticleObjects.get.side_effect = models.Article.DoesNotExist
+        self.document_front["article"] = [{
+            "lang": ["en"],
+        }]
+        self.document_front["article_meta"] = [{
+            "abstract": ["ABSTRACT: an abstract."]
+        }]
+        self.document_front["trans_abstract"] = [{
+            "lang": ["pt"],
+            "text": ["Resumo: um resumo."],
+            "title": ["Resumo"],
+        }]
+        self.document_front["sub_article"] = [{
+            "article_meta": [{
+                "abstract": []
+            }]
+        }]
+        self.document = ArticleFactory(
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+        )
+
+        self.assertTrue(hasattr(self.document, "abstracts"))
+        self.assertEqual(2, len(self.document.abstracts))
+        self.assertEqual(self.document.abstracts[0].language, "en")
+        self.assertEqual(self.document.abstracts[0].text, "ABSTRACT: an abstract.")
+        self.assertEqual(self.document.abstracts[1].language, "pt")
+        self.assertEqual(self.document.abstracts[1].text, "Resumo: um resumo.")
+        self.assertEqual(2, len(self.document.abstract_languages))
+        self.assertEqual(self.document.abstract_languages, ["en", "pt"])
+
+
 class RegisterDocumentTests(unittest.TestCase):
     def setUp(self):
         self.documents = ["67TH7T7CyPPmgtVrGXhWXVs"]
