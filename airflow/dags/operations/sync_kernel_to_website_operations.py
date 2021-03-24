@@ -148,34 +148,42 @@ def ArticleFactory(
     def _get_abstracts(data: dict) -> List[models.Abstract]:
         """Recupera todos os abstracts do artigo"""
 
-        abstracts = [
+        abstracts = []
+
+        # Abstract do texto original
+        if len(_nestget(data, "article_meta", 0, "abstract", 0)) > 0:
+            abstracts.append(
+                models.Abstract(
+                    **{
+                        "text": _nestget(data, "article_meta", 0, "abstract", 0),
+                        "language": _get_original_language(data),
+                    }
+                )
+            )
+
+        # Trans abstracts
+        abstracts += [
             models.Abstract(
                 **{
-                    "text": _nestget(data, "article_meta", 0, "abstract", 0),
-                    "language": _get_original_language(data),
+                    "text": _nestget(trans_abstract, "text", 0),
+                    "language": _nestget(trans_abstract, "lang", 0),
                 }
             )
+            for trans_abstract in data.get("trans_abstract", [])
+            if trans_abstract and _nestget(trans_abstract, "text", 0)
         ]
 
-        for trans_abstract in data.get("trans_abstract", []):
-            abstracts.append(
-                models.Abstract(
-                    **{
-                        "text": _nestget(trans_abstract, "text", 0),
-                        "language": _nestget(trans_abstract, "lang", 0),
-                    }
-                )
+        # Abstracts de sub-article
+        abstracts += [
+            models.Abstract(
+                **{
+                    "text": _nestget(sub_article, "article_meta", 0, "abstract", 0),
+                    "language": _nestget(sub_article, "article", 0, "lang", 0),
+                }
             )
-
-        for sub_article in _nestget(data, "sub_article"):
-            abstracts.append(
-                models.Abstract(
-                    **{
-                        "text": _nestget(sub_article, "article_meta", 0, "abstract", 0),
-                        "language": _nestget(sub_article, "article", 0, "lang", 0),
-                    }
-                )
-            )
+            for sub_article in _nestget(data, "sub_article")
+            if len(_nestget(sub_article, "article_meta", 0, "abstract", 0)) > 0
+        ]
 
         return abstracts
 
