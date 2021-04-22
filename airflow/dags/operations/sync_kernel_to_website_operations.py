@@ -78,6 +78,11 @@ def ArticleFactory(
     article.scielo_pids = {
         version: value for version, value in scielo_pids if value is not None
     }
+
+    if article.pid != article.scielo_pids.get("v2"):
+        article.aop_pid = article.pid
+        article.pid = article.scielo_pids.get("v2")
+
     article.doi = _nestget(data, "article_meta", 0, "article_doi", 0)
 
     def _get_article_authors(data) -> Generator:

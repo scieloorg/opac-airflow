@@ -511,6 +511,28 @@ class ExAOPArticleFactoryTests(unittest.TestCase):
             "2019.nahead"
         )
 
+    def test_article_factory_creates_aop_id_and_update_pid_with_scielo_pids_v2(
+            self, MockIssueObjects, MockArticleObjects):
+        MockArticle = MagicMock(
+            spec=models.Article,
+            aop_url_segs=None,
+            url_segment="10.151/S1518-8787.2019053000621",
+            pid="pid-aop",
+        )
+        MockArticleObjects.get.return_value = MockArticle
+
+        regular_issue_id = None
+
+        # ArticleFactory
+        self.document = ArticleFactory(
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front,
+            regular_issue_id, "1", ""
+        )
+        self.assertEqual(self.document.pid, "S1518-87872019053000621")
+        self.assertEqual(self.document.aop_pid, "pid-aop")
+        self.assertEqual(
+            self.document.scielo_pids['v2'], "S1518-87872019053000621")
+
 
 @patch("operations.sync_kernel_to_website_operations.models.Article.objects")
 @patch("operations.sync_kernel_to_website_operations.models.Issue.objects")
