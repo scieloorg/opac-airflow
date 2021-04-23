@@ -517,7 +517,7 @@ class ExAOPArticleFactoryTests(unittest.TestCase):
             spec=models.Article,
             aop_url_segs=None,
             url_segment="10.151/S1518-8787.2019053000621",
-            pid="pid-aop",
+            pid="S1518-87872019005000621",
         )
         MockArticleObjects.get.return_value = MockArticle
 
@@ -529,9 +529,32 @@ class ExAOPArticleFactoryTests(unittest.TestCase):
             regular_issue_id, "1", ""
         )
         self.assertEqual(self.document.pid, "S1518-87872019053000621")
-        self.assertEqual(self.document.aop_pid, "pid-aop")
-        self.assertEqual(
-            self.document.scielo_pids['v2'], "S1518-87872019053000621")
+        self.assertEqual(self.document.aop_pid, "S1518-87872019005000621")
+
+    def test_article_factory_creates_aop_id_from_previous_pid_and_update_pid_with_scielo_pids_v2(
+            self, MockIssueObjects, MockArticleObjects):
+        MockArticle = MagicMock(
+            spec=models.Article,
+            aop_url_segs=None,
+            url_segment="10.151/S1518-8787.2019053000621",
+            pid="S1518-87872019005000621",
+        )
+        MockArticleObjects.get.return_value = MockArticle
+
+        regular_issue_id = self.issue._id
+
+        # obtém de kernel front: previous_pid (nao implementado no clea ainda)
+        self.document_front = load_json_fixture(
+            "kernel-document-front-s1518-8787.2019053000621_previous_pid.json"
+        )
+
+        # ArticleFactory
+        self.document = ArticleFactory(
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front,
+            regular_issue_id, "1", ""
+        )
+        self.assertEqual(self.document.pid, "S1518-87872019053000621")
+        self.assertEqual(self.document.aop_pid, "S1518-8787XXXX005000621")
 
     @patch("operations.sync_kernel_to_website_operations.logging")
     def test_article_factory_logs_warning_if_issue_id_continues_to_be_aop(
