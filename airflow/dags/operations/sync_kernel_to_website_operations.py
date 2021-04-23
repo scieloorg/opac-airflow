@@ -43,8 +43,9 @@ def ArticleFactory(
                 return default
         return data
 
-    def _get_previous_pid(data) -> Generator:
-        """Recupera previous-pid, se existir"""
+    def _get_previous_pid(data):
+        """Recupera previous-pid, se existir
+        Retorna str ou None"""
 
         # depende de uma melhoria no clea
         _previous_id = _nestget(data, "article_meta", 0, "previous_pid", 0)
@@ -53,6 +54,9 @@ def ArticleFactory(
 
         # tenta obter pelo `article_publisher_id`
         article_meta = _nestget(data, "article_meta", 0)
+        if not article_meta:
+            return
+
         scielo_pid_v2 = _nestget(article_meta, "scielo_pid_v2", 0)
         scielo_pid_v3 = _nestget(article_meta, "scielo_pid_v3", 0)
         article_ids = set(_nestget(article_meta, "article_publisher_id"))
@@ -64,7 +68,7 @@ def ArticleFactory(
         # match com o padrão de pid v2
         for pid in pids:
             _matched = match(scielo_pid_v2[:10] + r"(\d{13})", pid)
-            if _matched.group() == pid:
+            if _matched and _matched.group() == pid:
                 return pid
 
     AUTHOR_CONTRIB_TYPES = (
