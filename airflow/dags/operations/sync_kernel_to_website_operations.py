@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from re import match
 from typing import Iterable, Generator, Dict, List, Tuple
 
 import requests
@@ -42,6 +43,34 @@ def ArticleFactory(
                 return default
         return data
 
+    def _get_previous_pid(data):
+        """Recupera previous-pid, se existir
+        Retorna str ou None"""
+
+        # depende de uma melhoria no clea
+        _previous_id = _nestget(data, "article_meta", 0, "previous_pid", 0)
+        if _previous_id:
+            return _previous_id
+
+        # tenta obter pelo `article_publisher_id`
+        article_meta = _nestget(data, "article_meta", 0)
+        if not article_meta:
+            return
+
+        scielo_pid_v2 = _nestget(article_meta, "scielo_pid_v2", 0)
+        scielo_pid_v3 = _nestget(article_meta, "scielo_pid_v3", 0)
+        article_ids = set(_nestget(article_meta, "article_publisher_id"))
+
+        # desconsidera pid v2 e v3
+        pids = article_ids - {scielo_pid_v3} - {scielo_pid_v2}
+
+        # dentre os pids que sobraram, retorna um que faça
+        # match com o padrão de pid v2
+        for pid in pids:
+            _matched = match(scielo_pid_v2[:10] + r"(\d{13})", pid)
+            if _matched and _matched.group() == pid:
+                return pid
+
     AUTHOR_CONTRIB_TYPES = (
         "author",
         "editor",
@@ -78,6 +107,12 @@ def ArticleFactory(
     article.scielo_pids = {
         version: value for version, value in scielo_pids if value is not None
     }
+
+    _previous_id = _get_previous_pid(data)
+    if _previous_id:
+        article.aop_pid = _previous_id
+        article.pid = article.scielo_pids.get("v2")
+
     article.doi = _nestget(data, "article_meta", 0, "article_doi", 0)
 
     def _get_article_authors(data) -> Generator:
@@ -272,6 +307,26 @@ def ArticleFactory(
 
     # Issue vinculada
     issue = models.Issue.objects.get(_id=issue_id)
+
+    # será bug? um ex-aop continua com o issue_id de aop
+    # registra no log um WARNING para ajudar a resolver a próxima ocorrência
+    _number = _nestget(data, "article_meta", 0, "pub_issue", 0)
+    if not issue.number == _number:
+        _vol = _nestget(data, "article_meta", 0, "pub_volume", 0)
+        # compara issue registrado no opac com issue do kernel/front
+        values = {
+            'kernel/front': {
+                'volume': _vol, 'number': _number},
+            'website': {
+                'issue_id': issue_id,
+                'volume': issue.volume, 'number': issue.number},
+        }
+        msg = (
+            "Divergência nos dados de `issue` do documento (document_id=%s): "
+            "%s" % (document_id, values)
+        )
+        logging.warning(msg)
+
     article.issue = issue
     article.journal = issue.journal
     article.order = _get_order(document_order, article.scielo_pids.get("v2"))
