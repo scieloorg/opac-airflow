@@ -5,13 +5,175 @@ from lxml import etree
 from common.sps_package import (
     SPS_Package,
     extract_number_and_supplment_from_issue_element,
+    parse_issue,
 )
 
 
-class  TestSPSPackage(TestCase):
+
+class TestParseIssue(TestCase):
     """
-    Estes testes são para verificar a saída de
+    Estes testes são para explicitar a saída de
+    parse_issue usando o contéudo de <issue></issue>
+    """
+    def test_parse_issue_for_5_parenteses_suppl(self):
+        expected = "05-s0"
+        result = parse_issue("5 (suppl)")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_5_Suppl(self):
+        expected = "05-s0"
+        result = parse_issue("5 Suppl")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_5_Suppl_1(self):
+        expected = "05-s01"
+        result = parse_issue("5 Suppl 1")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_5_spe(self):
+        expected = "05-spe"
+        result = parse_issue("5 spe")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_5_suppl(self):
+        expected = "05-s0"
+        result = parse_issue("5 suppl")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_5_suppl_1(self):
+        expected = "05-s01"
+        result = parse_issue("5 suppl 1")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_5_suppl_dot_1(self):
+        expected = "05-s01"
+        result = parse_issue("5 suppl. 1")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_25_Suppl_1(self):
+        expected = "25-s01"
+        result = parse_issue("25 Suppl 1")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_2_hyphen_5_suppl_1(self):
+        expected = "2-5-s01"
+        result = parse_issue("2-5 suppl 1")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_2spe(self):
+        expected = "spe"
+        result = parse_issue("2spe")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_Spe(self):
+        expected = "spe"
+        result = parse_issue("Spe")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_Supldot_1(self):
+        expected = "s01"
+        result = parse_issue("Supl. 1")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_Suppl(self):
+        expected = "s0"
+        result = parse_issue("Suppl")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_Suppl_12(self):
+        expected = "s12"
+        result = parse_issue("Suppl 12")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_s2(self):
+        expected = "s2"
+        result = parse_issue("s2")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_spe(self):
+        expected = "spe"
+        result = parse_issue("spe")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_special(self):
+        expected = "spe"
+        result = parse_issue("Especial")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_spe_1(self):
+        expected = "spe01"
+        result = parse_issue("spe 1")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_spe_pr(self):
+        expected = "spepr"
+        result = parse_issue("spe pr")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_spe2(self):
+        expected = "spe"
+        result = parse_issue("spe2")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_spedot2(self):
+        expected = "spe"
+        result = parse_issue("spe.2")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_supp_1(self):
+        expected = "s01"
+        result = parse_issue("supp 1")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_suppl(self):
+        expected = "s0"
+        result = parse_issue("suppl")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_suppl_1(self):
+        expected = "s01"
+        result = parse_issue("suppl 1")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_suppl_12(self):
+        expected = "s12"
+        result = parse_issue("suppl 12")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_suppl_1hyphen2(self):
+        expected = "s1-2"
+        result = parse_issue("suppl 1-2")
+        self.assertEqual(expected, result)
+
+    def test_parse_issue_for_suppldot_1(self):
+        expected = "s01"
+        result = parse_issue("suppl. 1")
+        self.assertEqual(expected, result)
+
+    @skip("Encontrado no sistema, porém fora do padrão aceitável")
+    def test_parse_issue_for_spepr(self):
+        expected = "spepr"
+        result = parse_issue("spepr")
+        self.assertEqual(expected, result)
+
+    @skip("Encontrado no sistema, porém fora do padrão aceitável")
+    def test_parse_issue_for_supp5_1(self):
+        expected = "supp5-s01"
+        result = parse_issue("supp5 1")
+        self.assertEqual(expected, result)
+
+    @skip("Encontrado no sistema, porém fora do padrão aceitável")
+    def test_parse_issue_for_suppl_5_pr(self):
+        expected = "5pr"
+        result = parse_issue("suppl 5 pr")
+        self.assertEqual(expected, result)
+
+
+class TestSPSPackage(TestCase):
+    """
+    Estes testes são para explicitar a saída de
     SPS_Package.number e SPS_Package.supplement
+    dado o valor de <issue></issue>
     """
     def get_sps_package(self, issue):
         xml_text = f"""
