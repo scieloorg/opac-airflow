@@ -10,6 +10,16 @@ import common.hooks as hooks
 from operations.exceptions import InvalidOrderValueError
 
 
+def _nestget(data, *path, default=""):
+    """Obtém valores de list ou dicionários."""
+    for key_or_index in path:
+        try:
+            data = data[key_or_index]
+        except (KeyError, IndexError):
+            return default
+    return data
+
+
 def ArticleFactory(
     document_id: str,
     data: dict,
@@ -33,15 +43,6 @@ def ArticleFactory(
         models.Article: Instância de um artigo próprio do modelo de dados do
             OPAC.
     """
-
-    def _nestget(data, *path, default=""):
-        """Obtém valores de list ou dicionários."""
-        for key_or_index in path:
-            try:
-                data = data[key_or_index]
-            except (KeyError, IndexError):
-                return default
-        return data
 
     def _get_previous_pid(data):
         """Recupera previous-pid, se existir
