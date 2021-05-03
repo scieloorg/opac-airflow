@@ -703,7 +703,7 @@ class RegisterDocumentTests(unittest.TestCase):
 
         try_register_documents(
             documents=self.documents,
-            get_relation_data=lambda document_id: (
+            get_relation_data=lambda document_id, _front_data: (
                 "issue-1",
                 {"id": "67TH7T7CyPPmgtVrGXhWXVs", "order": "01"},
             ),
@@ -719,7 +719,7 @@ class RegisterDocumentTests(unittest.TestCase):
 
         try_register_documents(
             documents=self.documents,
-            get_relation_data=lambda _: ("", {}),
+            get_relation_data=lambda _, _front_data: ("", {}),
             fetch_document_front=fetch_document_front_mock,
             article_factory=article_factory_mock,
         )
@@ -734,7 +734,7 @@ class RegisterDocumentTests(unittest.TestCase):
 
         try_register_documents(
             documents=self.documents,
-            get_relation_data=lambda _: (
+            get_relation_data=lambda _, _front_data: (
                 "issue-1",
                 {"id": "67TH7T7CyPPmgtVrGXhWXVs", "order": "01"},
             ),

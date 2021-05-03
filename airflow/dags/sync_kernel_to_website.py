@@ -163,6 +163,11 @@ def _get_relation_data_from_kernel_bundle(document_id, front_data=None):
         ('0034-8910-2019-v53',
          {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
     """
+    logging.info(
+        "Unable to find %s in bundles changes. "
+        "Try to get bundle_id and order from Kernel" % document_id
+    )
+
     bundle_id = None
     front_data = front_data or fetch_documents_front(document_id)
     if front_data:
@@ -180,6 +185,9 @@ def _get_relation_data_from_kernel_bundle(document_id, front_data=None):
             if doc.get("id") == document_id:
                 # ('0034-8910-2019-v53',
                 #  {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+                logging.info(
+                    "Got bundle_id and order from Kernel: %s %s" %
+                    (bundle_id, str(doc)))
                 return (bundle_id, doc)
     # retorna o bundle_id e {}
     return bundle_id, {}
@@ -650,7 +658,7 @@ def register_documents(**kwargs):
 
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
-    def _get_relation_data(document_id: str) -> Tuple[str, Dict]:
+    def _get_relation_data(document_id: str, front_data=None) -> Tuple[str, Dict]:
         """Recupera informações sobre o relacionamento entre o
         DocumentsBundle e o Document.
 
@@ -658,7 +666,8 @@ def register_documents(**kwargs):
         documento está relacionado e o item do relacionamento.
 
         >> _get_relation_data("67TH7T7CyPPmgtVrGXhWXVs")
-        ('0034-8910-2019-v53', {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+        ('0034-8910-2019-v53',
+         {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
 
         :param document_id: Identificador único de um documento
         """
@@ -668,7 +677,7 @@ def register_documents(**kwargs):
                 if document_id == item["id"]:
                     return (issue_id, item)
 
-        return (None, {})
+        return _get_relation_data_from_kernel_bundle(document_id, front_data)
 
     def _get_known_documents(**kwargs) -> Dict[str, List[str]]:
         """Recupera a lista de todos os documentos que estão relacionados com
