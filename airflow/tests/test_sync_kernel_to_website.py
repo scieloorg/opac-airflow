@@ -11,6 +11,8 @@ from operations.sync_kernel_to_website_operations import (
     try_register_documents,
     ArticleRenditionFactory,
     try_register_documents_renditions,
+    _get_bundle_pub_year,
+    KernelFrontHasNoPubYearError,
 )
 from opac_schema.v1 import models
 from operations.exceptions import InvalidOrderValueError
@@ -837,3 +839,103 @@ class RegisterDocumentRenditionsTest(unittest.TestCase):
         )
 
         self.assertEqual(self.documents, orphans)
+
+
+class KernelFrontDataTests(unittest.TestCase):
+
+    def test__get_bundle_pub_year_returns_date_type_collection_year(self):
+        article_meta_pub_date = [
+            {
+                "text": ["14 08 2020"],
+                "pub_type": [],
+                "pub_format": ["electronic"],
+                "date_type": ["pub"],
+                "day": ["14"],
+                "month": ["08"],
+                "year": ["2021"],
+                "season": []
+            }, {
+                "text": ["08 2020"],
+                "pub_type": [],
+                "pub_format": ["electronic"],
+                "date_type": ["collection"],
+                "day": [],
+                "month": ["08"],
+                "year": ["2020"],
+                "season": []
+            }
+        ]
+        expected = "2020"
+        result = _get_bundle_pub_year(article_meta_pub_date)
+        self.assertTrue(expected, result)
+
+    def test__get_bundle_pub_year_returns_pub_type_collection_year(self):
+        article_meta_pub_date = [
+            {
+                "text": ["14 08 2020"],
+                "pub_type": ["pub"],
+                "pub_format": ["electronic"],
+                "date_type": [],
+                "day": ["14"],
+                "month": ["08"],
+                "year": ["2021"],
+                "season": []
+            }, {
+                "text": ["08 2020"],
+                "pub_type": ["collection"],
+                "pub_format": ["electronic"],
+                "date_type": [],
+                "day": [],
+                "month": ["08"],
+                "year": ["2020"],
+                "season": []
+            }
+        ]
+        expected = "2020"
+        result = _get_bundle_pub_year(article_meta_pub_date)
+        self.assertTrue(expected, result)
+
+    def test__get_bundle_pub_year_returns_any_pub_year(self):
+        article_meta_pub_date = [
+            {
+                "text": ["14 08 2020"],
+                "pub_type": [],
+                "pub_format": ["electronic"],
+                "date_type": ["pub"],
+                "day": ["14"],
+                "month": ["08"],
+                "year": ["2021"],
+                "season": []
+            }
+        ]
+        expected = "2021"
+        result = _get_bundle_pub_year(article_meta_pub_date)
+        self.assertTrue(expected, result)
+
+    def test__get_bundle_pub_year_raises_missing_pub_year_error(self):
+        article_meta_pub_date = [
+            {
+                "text": ["14 08 2020"],
+                "pub_type": [],
+                "pub_format": ["electronic"],
+                "date_type": ["pub"],
+                "day": ["14"],
+                "month": ["08"],
+                "season": []
+            }
+        ]
+        with self.assertRaises(KernelFrontHasNoPubYearError) as exc:
+            _get_bundle_pub_year(article_meta_pub_date)
+        self.assertEqual(
+            "Missing publication year in: {}".format(article_meta_pub_date),
+            str(exc.exception)
+        )
+
+    def test__get_bundle_pub_year_raises_missing_pub_year_error_2(self):
+        article_meta_pub_date = None
+        with self.assertRaises(KernelFrontHasNoPubYearError) as exc:
+            _get_bundle_pub_year(article_meta_pub_date)
+        self.assertEqual(
+            "Missing publication year in: {}".format(article_meta_pub_date),
+            str(exc.exception)
+        )

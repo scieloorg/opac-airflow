@@ -10,6 +10,10 @@ import common.hooks as hooks
 from operations.exceptions import InvalidOrderValueError
 
 
+class KernelFrontHasNoPubYearError(Exception):
+    ...
+
+
 def _nestget(data, *path, default=""):
     """Obtém valores de list ou dicionários."""
     for key_or_index in path:
@@ -18,6 +22,20 @@ def _nestget(data, *path, default=""):
         except (KeyError, IndexError):
             return default
     return data
+
+
+def _get_bundle_pub_year(publication_dates):
+    try:
+        pubdates = {}
+        for pubdate in publication_dates or []:
+            pub_date_type = pubdate.get("date_type") or pubdate.get("pub_type")
+            pub_year = pubdate.get("year")
+            if pub_year and pub_date_type:
+                pubdates[pub_date_type[0]] = pub_year[0]
+        return pubdates.get("collection") or list(pubdates.values())[0]
+    except (IndexError, AttributeError):
+        raise KernelFrontHasNoPubYearError(
+            "Missing publication year in: {}".format(publication_dates))
 
 
 def ArticleFactory(
