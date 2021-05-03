@@ -30,6 +30,7 @@ from operations.sync_kernel_to_website_operations import (
     ArticleFactory,
     ArticleRenditionFactory,
     try_register_documents_renditions,
+    _get_bundle_id,
 )
 from common.hooks import mongo_connect, kernel_connect
 
@@ -151,6 +152,37 @@ def fetch_documents_front(document_id):
          Obtém o JSON do Document do Kernel com base no parametro 'document_id'
     """
     return fetch_data("/documents/%s/front" % (document_id))
+
+
+def _get_relation_data_from_kernel_bundle(document_id, front_data=None):
+    """
+    Obtém os dados do documento no bundle
+    É uma alternativa a `_get_relation_data` que obtém dos dados de changes
+
+    >> _get_relation_data("67TH7T7CyPPmgtVrGXhWXVs")
+        ('0034-8910-2019-v53',
+         {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+    """
+    bundle_id = None
+    front_data = front_data or fetch_documents_front(document_id)
+    if front_data:
+        # obtém o bundle_id a partir dos dados do endpoint kernel front
+        bundle_id = _get_bundle_id(front_data)
+    if bundle_id:
+        # obtém os dados do bundle a partir do endpoint kernel bundles
+        bundle = fetch_bundles(bundle_id) or {}
+
+        # obtém os documentos associados ao bundle
+        docs = bundle.get("items") or []
+
+        # retorna o documento correspondente
+        for doc in docs:
+            if doc.get("id") == document_id:
+                # ('0034-8910-2019-v53',
+                #  {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+                return (bundle_id, doc)
+    # retorna o bundle_id e {}
+    return bundle_id, {}
 
 
 def fetch_documents_renditions(document_id: str) -> List[Dict]:

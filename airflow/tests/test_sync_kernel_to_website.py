@@ -5,7 +5,10 @@ import json
 
 from airflow import DAG
 
-from sync_kernel_to_website import JournalFactory, IssueFactory
+from sync_kernel_to_website import (
+    JournalFactory, IssueFactory,
+    _get_relation_data_from_kernel_bundle,
+)
 from operations.sync_kernel_to_website_operations import (
     ArticleFactory,
     try_register_documents,
@@ -1167,4 +1170,150 @@ class KernelFrontDataTests(unittest.TestCase):
         article['article_meta'][0]['pub_issue'] = []
         expected = "1518-8787-aop"
         result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+
+@patch("sync_kernel_to_website.fetch_documents_front")
+@patch("sync_kernel_to_website.fetch_bundles")
+class TestGetRelationDataFromKernelBundle(unittest.TestCase):
+
+    def _bundle_data(self):
+        return (
+            {
+                "_id": "1518-8787-2019-v53",
+                "id": "1518-8787-2019-v53",
+                "created": "2021-04-23T10:02:40.486194Z",
+                "updated": "2021-04-23T19:24:13.583105Z",
+                "items": [
+                    {"id": "tH9GfMmrX6dk3x9NtcDJG3v", "order": "00383"},
+                    {"id": "mYnRLqHZJd3K3g7DSNdhLXB", "order": "00395"},
+                    {"id": "TXvqPFmSZCdvK9trq5TzRhB", "order": "00381"}],
+                "metadata": {
+                    "publication_months": {"range": [3, 3]},
+                    "publication_year": "2019", "volume": "53",
+                    "pid": "1518-878720190530"}
+            }
+        )
+
+    def _front_data(self):
+        return (
+            {
+                "article_meta": [
+                  {
+                    "article_doi": [
+                      "10.11606/S1518-8787.2019053000621"
+                    ],
+                    "article_publisher_id": [
+                        "S1518-87872019053000621",
+                        "TXvqPFmSZCdvK9trq5TzRhB",
+                        "S1518-87872019005000621"
+                    ],
+                    "scielo_pid_v1": [
+                        "S1518-8787(19)03000621"
+                    ],
+                    "scielo_pid_v2": [
+                        "S1518-87872019053000621"
+                    ],
+                    "scielo_pid_v3": [
+                        "TXvqPFmSZCdvK9trq5TzRhB"
+                    ],
+                    "pub_volume": [
+                      "53"
+                    ],
+                    "pub_issue": []
+                  }
+                ],
+                "pub_date": [
+                  {
+                    "text": [
+                      "31 01 2019"
+                    ],
+                    "pub_type": [
+                      "epub"
+                    ],
+                    "pub_format": [],
+                    "date_type": [],
+                    "day": [
+                      "31"
+                    ],
+                    "month": [
+                      "01"
+                    ],
+                    "year": [
+                      "2019"
+                    ],
+                    "season": []
+                  }
+                ],
+            }
+        )
+
+    def test__get_relation_data_from_kernel_bundle_calls_fetch_documents_front(
+                self,
+                mock_fetch_bundles,
+                mock_fetch_documents_front,
+            ):
+        mock_fetch_bundles.return_value = self._bundle_data()
+        mock_fetch_documents_front.return_value = self._front_data()
+
+        expected = (
+            "1518-8787-2019-v53",
+            {"id": "TXvqPFmSZCdvK9trq5TzRhB", "order": "00381"})
+        result = _get_relation_data_from_kernel_bundle(
+            "TXvqPFmSZCdvK9trq5TzRhB", front_data=None)
+        self.assertEqual(expected, result)
+        mock_fetch_documents_front.assert_called_once()
+        mock_fetch_bundles.assert_called_once()
+
+    def test__get_relation_data_from_kernel_bundle_uses_front_data_provided(
+                self,
+                mock_fetch_bundles,
+                mock_fetch_documents_front,
+            ):
+        mock_fetch_bundles.return_value = self._bundle_data()
+        expected = (
+            "1518-8787-2019-v53",
+            {"id": "TXvqPFmSZCdvK9trq5TzRhB", "order": "00381"})
+        result = _get_relation_data_from_kernel_bundle(
+            "TXvqPFmSZCdvK9trq5TzRhB", front_data=self._front_data())
+        self.assertEqual(expected, result)
+        mock_fetch_documents_front.assert_not_called()
+        mock_fetch_bundles.assert_called_once()
+
+    def test__get_relation_data_from_kernel_bundle_fetch_bundles_not_called(
+                self,
+                mock_fetch_bundles,
+                mock_fetch_documents_front,
+            ):
+        mock_fetch_bundles.return_value = self._bundle_data()
+        mock_fetch_documents_front.return_value = {}
+        expected = (None, {})
+        result = _get_relation_data_from_kernel_bundle(
+            "TXvqPFmSZCdvK9trq5TzRhB", front_data=None)
+        self.assertEqual(expected, result)
+        mock_fetch_documents_front.assert_called_once()
+        mock_fetch_bundles.assert_not_called()
+
+    def test__get_relation_data_from_kernel_bundle_fetch_bundles_has_no_docs(
+                self,
+                mock_fetch_bundles,
+                mock_fetch_documents_front,
+            ):
+        mock_fetch_bundles.return_value = {}
+        mock_fetch_documents_front.return_value = {}
+        expected = ("1518-8787-2019-v53", {})
+        result = _get_relation_data_from_kernel_bundle(
+            "TXvqPFmSZCdvK9trq5TzRhB", front_data=self._front_data())
+        self.assertEqual(expected, result)
+
+    def test__get_relation_data_from_kernel_bundle_fetch_bundles_doc_not_found(
+                self,
+                mock_fetch_bundles,
+                mock_fetch_documents_front,
+            ):
+        mock_fetch_bundles.return_value = self._bundle_data()
+        mock_fetch_documents_front.return_value = {}
+        expected = ("1518-8787-2019-v53", {})
+        result = _get_relation_data_from_kernel_bundle(
+            "TXvQPFmSZCdvK9trq5TzRhB", front_data=self._front_data())
         self.assertEqual(expected, result)
