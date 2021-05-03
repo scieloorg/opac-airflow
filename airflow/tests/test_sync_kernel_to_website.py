@@ -13,6 +13,7 @@ from operations.sync_kernel_to_website_operations import (
     try_register_documents_renditions,
     _get_bundle_pub_year,
     KernelFrontHasNoPubYearError,
+    _get_bundle_id,
 )
 from opac_schema.v1 import models
 from operations.exceptions import InvalidOrderValueError
@@ -843,31 +844,63 @@ class RegisterDocumentRenditionsTest(unittest.TestCase):
 
 class KernelFrontDataTests(unittest.TestCase):
 
+    def _get_article(self):
+        return {
+            "article_meta": [
+              {
+                "article_doi": [
+                  "10.11606/S1518-8787.2019053000621"
+                ],
+                "article_publisher_id": [
+                    "S1518-87872019053000621",
+                    "67TH7T7CyPPmgtVrGXhWXVs",
+                    "S1518-87872019005000621"
+                ],
+                "scielo_pid_v1": [
+                    "S1518-8787(19)03000621"
+                ],
+                "scielo_pid_v2": [
+                    "S1518-87872019053000621"
+                ],
+                "scielo_pid_v3": [
+                    "67TH7T7CyPPmgtVrGXhWXVs"
+                ],
+                "pub_volume": [
+                  "53"
+                ],
+                "pub_issue": []
+              }
+            ],
+            "pub_date": [
+              {
+                "text": [
+                  "31 01 2019"
+                ],
+                "pub_type": [
+                  "epub"
+                ],
+                "pub_format": [],
+                "date_type": [],
+                "day": [
+                  "31"
+                ],
+                "month": [
+                  "01"
+                ],
+                "year": [
+                  "2019"
+                ],
+                "season": []
+              }
+            ],
+        }
+
     def test__get_bundle_pub_year_returns_date_type_collection_year(self):
-        article_meta_pub_date = [
-            {
-                "text": ["14 08 2020"],
-                "pub_type": [],
-                "pub_format": ["electronic"],
-                "date_type": ["pub"],
-                "day": ["14"],
-                "month": ["08"],
-                "year": ["2021"],
-                "season": []
-            }, {
-                "text": ["08 2020"],
-                "pub_type": [],
-                "pub_format": ["electronic"],
-                "date_type": ["collection"],
-                "day": [],
-                "month": ["08"],
-                "year": ["2020"],
-                "season": []
-            }
-        ]
-        expected = "2020"
+        article = self._get_article()
+        article_meta_pub_date = article["pub_date"]
+        expected = "2019"
         result = _get_bundle_pub_year(article_meta_pub_date)
-        self.assertTrue(expected, result)
+        self.assertEqual(expected, result)
 
     def test__get_bundle_pub_year_returns_pub_type_collection_year(self):
         article_meta_pub_date = [
@@ -893,7 +926,7 @@ class KernelFrontDataTests(unittest.TestCase):
         ]
         expected = "2020"
         result = _get_bundle_pub_year(article_meta_pub_date)
-        self.assertTrue(expected, result)
+        self.assertEqual(expected, result)
 
     def test__get_bundle_pub_year_returns_any_pub_year(self):
         article_meta_pub_date = [
@@ -910,7 +943,7 @@ class KernelFrontDataTests(unittest.TestCase):
         ]
         expected = "2021"
         result = _get_bundle_pub_year(article_meta_pub_date)
-        self.assertTrue(expected, result)
+        self.assertEqual(expected, result)
 
     def test__get_bundle_pub_year_raises_missing_pub_year_error(self):
         article_meta_pub_date = [
@@ -939,3 +972,199 @@ class KernelFrontDataTests(unittest.TestCase):
             "Missing publication year in: {}".format(article_meta_pub_date),
             str(exc.exception)
         )
+
+    def test__get_bundle_id_returns_bundle_id(self):
+        article = self._get_article()
+        expected = "1518-8787-2019-v53"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_5_Suppl(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['5 Suppl']
+        expected = "1518-8787-2019-v53-n5-s0"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_5_Suppl_1(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['5 Suppl 1']
+        expected = "1518-8787-2019-v53-n5-s1"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_5_spe(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['5 spe']
+        expected = "1518-8787-2019-v53-n5spe"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_5_suppl(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['5 suppl']
+        expected = "1518-8787-2019-v53-n5-s0"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_5_suppl_1(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['5 suppl 1']
+        expected = "1518-8787-2019-v53-n5-s1"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_5_suppl_dot__1(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['5 suppl. 1']
+        expected = "1518-8787-2019-v53-n5-s1"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_25_Suppl_1(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['25 Suppl 1']
+        expected = "1518-8787-2019-v53-n25-s1"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_2_1_hyphen_5_suppl_1(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['2-5 suppl 1']
+        expected = "1518-8787-2019-v53-n2-5-s1"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_2spe(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['2spe']
+        expected = "1518-8787-2019-v53-n2spe"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_Spe(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['Spe']
+        expected = "1518-8787-2019-v53-nspe"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_Supl_dot__1(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['Supl. 1']
+        expected = "1518-8787-2019-v53-s1"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_Suppl(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['Suppl']
+        expected = "1518-8787-2019-v53-s0"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_Suppl_12(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['Suppl 12']
+        expected = "1518-8787-2019-v53-s12"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_s2(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['s2']
+        expected = "1518-8787-2019-v53-s2"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_spe(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['spe']
+        expected = "1518-8787-2019-v53-nspe"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_Especial(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['Especial']
+        expected = "1518-8787-2019-v53-nspe"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_spe_1(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['spe 1']
+        expected = "1518-8787-2019-v53-nspe1"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_spe_pr(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['spe pr']
+        expected = "1518-8787-2019-v53-nspepr"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_spe2(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['spe2']
+        expected = "1518-8787-2019-v53-nspe2"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_spe_dot_2(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['spe.2']
+        expected = "1518-8787-2019-v53-nspe2"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_supp_1(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['supp 1']
+        expected = "1518-8787-2019-v53-s1"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_suppl(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['suppl']
+        expected = "1518-8787-2019-v53-s0"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_suppl_1(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['suppl 1']
+        expected = "1518-8787-2019-v53-s1"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_suppl_12(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['suppl 12']
+        expected = "1518-8787-2019-v53-s12"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_suppl_1_hyphen_2(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['suppl 1-2']
+        expected = "1518-8787-2019-v53-s1-2"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for_suppl_dot__1(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_issue'] = ['suppl. 1']
+        expected = "1518-8787-2019-v53-s1"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)
+
+    def test__get_bundle_id_returns_bundle_id_for____aop(self):
+        article = self._get_article()
+        article['article_meta'][0]['pub_volume'] = []
+        article['article_meta'][0]['pub_issue'] = []
+        expected = "1518-8787-aop"
+        result = _get_bundle_id(article)
+        self.assertEqual(expected, result)

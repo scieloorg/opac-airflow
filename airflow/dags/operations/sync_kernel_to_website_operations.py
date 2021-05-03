@@ -8,7 +8,12 @@ from opac_schema.v1 import models
 
 import common.hooks as hooks
 from operations.exceptions import InvalidOrderValueError
-
+from operations.docs_utils import (
+    get_bundle_id,
+)
+from common.sps_package import (
+    extract_number_and_supplment_from_issue_element,
+)
 
 class KernelFrontHasNoPubYearError(Exception):
     ...
@@ -25,6 +30,10 @@ def _nestget(data, *path, default=""):
 
 
 def _get_bundle_pub_year(publication_dates):
+    """
+    Retorna o ano de publicação do fascículo a partir dos dados pub_date
+    provenientes do kernel front
+    """
     try:
         pubdates = {}
         for pubdate in publication_dates or []:
@@ -36,6 +45,23 @@ def _get_bundle_pub_year(publication_dates):
     except (IndexError, AttributeError):
         raise KernelFrontHasNoPubYearError(
             "Missing publication year in: {}".format(publication_dates))
+
+
+def _get_bundle_id(kernel_front_data):
+    """
+    Retorna o bundle_id do fascículo a partir dos dados
+    provenientes do kernel front
+    """
+    article_meta = _nestget(kernel_front_data, "article_meta", 0)
+
+    issue = _nestget(article_meta, "pub_issue", 0)
+    number, supplement = extract_number_and_supplment_from_issue_element(issue)
+    volume = _nestget(article_meta, "pub_volume", 0)
+    scielo_pid_v2 = _nestget(article_meta, "scielo_pid_v2", 0)
+    issn_id = scielo_pid_v2[1:10]
+    year = _get_bundle_pub_year(_nestget(kernel_front_data, "pub_date"))
+    return get_bundle_id(
+        issn_id, year, volume or None, number or None, supplement or None)
 
 
 def ArticleFactory(
