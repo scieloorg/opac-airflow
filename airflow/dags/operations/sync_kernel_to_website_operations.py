@@ -353,25 +353,6 @@ def ArticleFactory(
     # Issue vinculada
     issue = models.Issue.objects.get(_id=issue_id)
 
-    # será bug? um ex-aop continua com o issue_id de aop
-    # registra no log um WARNING para ajudar a resolver a próxima ocorrência
-    _number = _nestget(data, "article_meta", 0, "pub_issue", 0)
-    if not issue.number == _number:
-        _vol = _nestget(data, "article_meta", 0, "pub_volume", 0)
-        # compara issue registrado no opac com issue do kernel/front
-        values = {
-            'kernel/front': {
-                'volume': _vol, 'number': _number},
-            'website': {
-                'issue_id': issue_id,
-                'volume': issue.volume, 'number': issue.number},
-        }
-        msg = (
-            "Divergência nos dados de `issue` do documento (document_id=%s): "
-            "%s" % (document_id, values)
-        )
-        logging.warning(msg)
-
     logging.info("ISSUE %s" % str(issue))
     logging.info("ARTICLE.ISSUE %s" % str(article.issue))
 
