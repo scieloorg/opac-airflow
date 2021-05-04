@@ -372,6 +372,9 @@ def ArticleFactory(
         )
         logging.warning(msg)
 
+    logging.info("ISSUE %s" % str(issue))
+    logging.info("ARTICLE.ISSUE %s" % str(article.issue))
+
     article.issue = issue
     article.journal = issue.journal
     article.order = _get_order(document_order, article.scielo_pids.get("v2"))
@@ -424,8 +427,8 @@ def try_register_documents(
 
     for document_id in documents:
         try:
-            issue_id, item = get_relation_data(document_id)
             document_front = fetch_document_front(document_id)
+            issue_id, item = get_relation_data(document_id, document_front)
             document_xml_url = "{base_url}documents/{document_id}".format(
                 base_url=BASE_URL, document_id=document_id
             )
@@ -437,6 +440,7 @@ def try_register_documents(
                 document_xml_url,
             )
             document.save()
+            logging.info("ARTICLE saved %s %s" % (document_id, issue_id))
         except InvalidOrderValueError as e:
             logging.error(
                 "Could not register document %s. "
