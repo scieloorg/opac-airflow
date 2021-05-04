@@ -239,12 +239,15 @@ def read_changes(ds, **kwargs):
     variable_timestamp = Variable.get("change_timestamp", "")
     tasks, timestamp = reader.read(changes(since=variable_timestamp))
 
-    if timestamp is None or timestamp == variable_timestamp:
-        return False
+    orphans = (
+        Variable.get(
+            "orphan_documents", default_var=[], deserialize_json=True)
+    )
 
     kwargs["ti"].xcom_push(key="tasks", value=tasks)
-    Variable.set("change_timestamp", timestamp)
-    return timestamp
+    if timestamp:
+        Variable.set("change_timestamp", timestamp)
+    return bool(orphans) or bool(timestamp and timestamp != variable_timestamp)
 
 
 def get_entity(endpoint):
@@ -304,7 +307,7 @@ def filter_changes(tasks, entity, action):
     Return a list of items that matched by criteria ``entity`` and ``action``
     """
 
-    for task in tasks:
+    for task in tasks or []:
         _entity = get_entity(task["id"])
         if _entity == entity and task.get("task") == action:
             yield task
