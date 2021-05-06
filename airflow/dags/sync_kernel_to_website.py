@@ -30,6 +30,7 @@ from operations.sync_kernel_to_website_operations import (
     ArticleFactory,
     ArticleRenditionFactory,
     try_register_documents_renditions,
+    _get_bundle_id,
 )
 from common.hooks import mongo_connect, kernel_connect
 
@@ -153,6 +154,45 @@ def fetch_documents_front(document_id):
     return fetch_data("/documents/%s/front" % (document_id))
 
 
+def _get_relation_data_from_kernel_bundle(document_id, front_data=None):
+    """
+    Obtém os dados do documento no bundle
+    É uma alternativa a `_get_relation_data` que obtém dos dados de changes
+
+    >> _get_relation_data("67TH7T7CyPPmgtVrGXhWXVs")
+        ('0034-8910-2019-v53',
+         {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+    """
+    logging.info(
+        "Unable to find %s in bundles changes. "
+        "Try to get bundle_id and order from Kernel" % document_id
+    )
+
+    bundle_id = None
+    front_data = front_data or fetch_documents_front(document_id)
+    if front_data:
+        # obtém o bundle_id a partir dos dados do endpoint kernel front
+        bundle_id = _get_bundle_id(front_data)
+    if bundle_id:
+        # obtém os dados do bundle a partir do endpoint kernel bundles
+        bundle = fetch_bundles(bundle_id) or {}
+
+        # obtém os documentos associados ao bundle
+        docs = bundle.get("items") or []
+
+        # retorna o documento correspondente
+        for doc in docs:
+            if doc.get("id") == document_id:
+                # ('0034-8910-2019-v53',
+                #  {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+                logging.info(
+                    "Got bundle_id and order from Kernel: %s %s" %
+                    (bundle_id, str(doc)))
+                return (bundle_id, doc)
+    # retorna o bundle_id e {}
+    return bundle_id, {}
+
+
 def fetch_documents_renditions(document_id: str) -> List[Dict]:
     """Obtém o uma lista contendo as representações de um documento
 
@@ -199,12 +239,15 @@ def read_changes(ds, **kwargs):
     variable_timestamp = Variable.get("change_timestamp", "")
     tasks, timestamp = reader.read(changes(since=variable_timestamp))
 
-    if timestamp is None or timestamp == variable_timestamp:
-        return False
+    orphans = (
+        Variable.get(
+            "orphan_documents", default_var=[], deserialize_json=True)
+    )
 
     kwargs["ti"].xcom_push(key="tasks", value=tasks)
-    Variable.set("change_timestamp", timestamp)
-    return timestamp
+    if timestamp:
+        Variable.set("change_timestamp", timestamp)
+    return bool(orphans) or bool(timestamp and timestamp != variable_timestamp)
 
 
 def get_entity(endpoint):
@@ -264,7 +307,7 @@ def filter_changes(tasks, entity, action):
     Return a list of items that matched by criteria ``entity`` and ``action``
     """
 
-    for task in tasks:
+    for task in tasks or []:
         _entity = get_entity(task["id"])
         if _entity == entity and task.get("task") == action:
             yield task
@@ -618,7 +661,7 @@ def register_documents(**kwargs):
 
     tasks = kwargs["ti"].xcom_pull(key="tasks", task_ids="read_changes_task")
 
-    def _get_relation_data(document_id: str) -> Tuple[str, Dict]:
+    def _get_relation_data(document_id: str, front_data=None) -> Tuple[str, Dict]:
         """Recupera informações sobre o relacionamento entre o
         DocumentsBundle e o Document.
 
@@ -626,7 +669,8 @@ def register_documents(**kwargs):
         documento está relacionado e o item do relacionamento.
 
         >> _get_relation_data("67TH7T7CyPPmgtVrGXhWXVs")
-        ('0034-8910-2019-v53', {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
+        ('0034-8910-2019-v53',
+         {'id': '67TH7T7CyPPmgtVrGXhWXVs', 'order': '01'})
 
         :param document_id: Identificador único de um documento
         """
@@ -636,7 +680,7 @@ def register_documents(**kwargs):
                 if document_id == item["id"]:
                     return (issue_id, item)
 
-        return (None, {})
+        return _get_relation_data_from_kernel_bundle(document_id, front_data)
 
     def _get_known_documents(**kwargs) -> Dict[str, List[str]]:
         """Recupera a lista de todos os documentos que estão relacionados com

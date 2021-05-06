@@ -8,6 +8,60 @@ from opac_schema.v1 import models
 
 import common.hooks as hooks
 from operations.exceptions import InvalidOrderValueError
+from operations.docs_utils import (
+    get_bundle_id,
+)
+from common.sps_package import (
+    extract_number_and_supplment_from_issue_element,
+)
+
+class KernelFrontHasNoPubYearError(Exception):
+    ...
+
+
+def _nestget(data, *path, default=""):
+    """Obtém valores de list ou dicionários."""
+    for key_or_index in path:
+        try:
+            data = data[key_or_index]
+        except (KeyError, IndexError):
+            return default
+    return data
+
+
+def _get_bundle_pub_year(publication_dates):
+    """
+    Retorna o ano de publicação do fascículo a partir dos dados pub_date
+    provenientes do kernel front
+    """
+    try:
+        pubdates = {}
+        for pubdate in publication_dates or []:
+            pub_date_type = pubdate.get("date_type") or pubdate.get("pub_type")
+            pub_year = pubdate.get("year")
+            if pub_year and pub_date_type:
+                pubdates[pub_date_type[0]] = pub_year[0]
+        return pubdates.get("collection") or list(pubdates.values())[0]
+    except (IndexError, AttributeError):
+        raise KernelFrontHasNoPubYearError(
+            "Missing publication year in: {}".format(publication_dates))
+
+
+def _get_bundle_id(kernel_front_data):
+    """
+    Retorna o bundle_id do fascículo a partir dos dados
+    provenientes do kernel front
+    """
+    article_meta = _nestget(kernel_front_data, "article_meta", 0)
+
+    issue = _nestget(article_meta, "pub_issue", 0)
+    number, supplement = extract_number_and_supplment_from_issue_element(issue)
+    volume = _nestget(article_meta, "pub_volume", 0)
+    scielo_pid_v2 = _nestget(article_meta, "scielo_pid_v2", 0)
+    issn_id = scielo_pid_v2[1:10]
+    year = _get_bundle_pub_year(_nestget(kernel_front_data, "pub_date"))
+    return get_bundle_id(
+        issn_id, year, volume or None, number or None, supplement or None)
 
 
 def ArticleFactory(
@@ -33,15 +87,6 @@ def ArticleFactory(
         models.Article: Instância de um artigo próprio do modelo de dados do
             OPAC.
     """
-
-    def _nestget(data, *path, default=""):
-        """Obtém valores de list ou dicionários."""
-        for key_or_index in path:
-            try:
-                data = data[key_or_index]
-            except (KeyError, IndexError):
-                return default
-        return data
 
     def _get_previous_pid(data):
         """Recupera previous-pid, se existir
@@ -308,24 +353,8 @@ def ArticleFactory(
     # Issue vinculada
     issue = models.Issue.objects.get(_id=issue_id)
 
-    # será bug? um ex-aop continua com o issue_id de aop
-    # registra no log um WARNING para ajudar a resolver a próxima ocorrência
-    _number = _nestget(data, "article_meta", 0, "pub_issue", 0)
-    if not issue.number == _number:
-        _vol = _nestget(data, "article_meta", 0, "pub_volume", 0)
-        # compara issue registrado no opac com issue do kernel/front
-        values = {
-            'kernel/front': {
-                'volume': _vol, 'number': _number},
-            'website': {
-                'issue_id': issue_id,
-                'volume': issue.volume, 'number': issue.number},
-        }
-        msg = (
-            "Divergência nos dados de `issue` do documento (document_id=%s): "
-            "%s" % (document_id, values)
-        )
-        logging.warning(msg)
+    logging.info("ISSUE %s" % str(issue))
+    logging.info("ARTICLE.ISSUE %s" % str(article.issue))
 
     article.issue = issue
     article.journal = issue.journal
@@ -379,8 +408,8 @@ def try_register_documents(
 
     for document_id in documents:
         try:
-            issue_id, item = get_relation_data(document_id)
             document_front = fetch_document_front(document_id)
+            issue_id, item = get_relation_data(document_id, document_front)
             document_xml_url = "{base_url}documents/{document_id}".format(
                 base_url=BASE_URL, document_id=document_id
             )
@@ -392,6 +421,7 @@ def try_register_documents(
                 document_xml_url,
             )
             document.save()
+            logging.info("ARTICLE saved %s %s" % (document_id, issue_id))
         except InvalidOrderValueError as e:
             logging.error(
                 "Could not register document %s. "
