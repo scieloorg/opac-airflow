@@ -207,6 +207,200 @@ class IssueFactoryTests(unittest.TestCase):
         self.assertTrue(self.issue.is_public)
 
 
+class IssueFactoryVolSupplTests(unittest.TestCase):
+    def setUp(self):
+        self.mongo_connect_mock = patch(
+            "sync_kernel_to_website.mongo_connect"
+        )
+        self.mongo_connect_mock.start()
+        self.journal_objects = patch(
+            "sync_kernel_to_website.models.Journal.objects"
+        )
+        self.MockJournal = MagicMock(spec=models.Journal)
+        JournalObjectsMock = self.journal_objects.start()
+        JournalObjectsMock.get.return_value = self.MockJournal
+        self.issue_objects = patch("sync_kernel_to_website.models.Issue.objects")
+        IssueObjectsMock = self.issue_objects.start()
+        IssueObjectsMock.get.side_effect = models.Issue.DoesNotExist
+
+        self.issue_data = load_json_fixture("kernel-issues-0001-3714-1998-v29-s0.json")
+        self.issue = IssueFactory(self.issue_data, "0001-3714", "12345")
+
+    def tearDown(self):
+        self.mongo_connect_mock.stop()
+        self.journal_objects.stop()
+        self.issue_objects.stop()
+
+    def test_attribute_number(self):
+        self.assertEqual(self.issue.number, None)
+
+    def test_attribute_volume(self):
+        self.assertEqual(self.issue.volume, "29")
+
+    def test_attribute_label(self):
+        self.assertEqual(self.issue.label, "v29s0")
+
+    def test_attribute_suppl_text(self):
+        self.assertEqual(self.issue.suppl_text, "0")
+
+    def test_attribute_type(self):
+        self.assertEqual(self.issue.type, "supplement")
+
+
+class IssueFactoryNumSupplTests(unittest.TestCase):
+    def setUp(self):
+        self.mongo_connect_mock = patch(
+            "sync_kernel_to_website.mongo_connect"
+        )
+        self.mongo_connect_mock.start()
+        self.journal_objects = patch(
+            "sync_kernel_to_website.models.Journal.objects"
+        )
+        self.MockJournal = MagicMock(spec=models.Journal)
+        JournalObjectsMock = self.journal_objects.start()
+        JournalObjectsMock.get.return_value = self.MockJournal
+        self.issue_objects = patch("sync_kernel_to_website.models.Issue.objects")
+        IssueObjectsMock = self.issue_objects.start()
+        IssueObjectsMock.get.side_effect = models.Issue.DoesNotExist
+
+        self.issue_data = load_json_fixture("kernel-issues-0001-3714-1998-n3-s0.json")
+        self.issue = IssueFactory(self.issue_data, "0001-3714", "12345")
+
+    def test_attribute_number(self):
+        self.assertEqual(self.issue.number, "3")
+
+    def test_attribute_volume(self):
+        # idealmente volume deveria ser None
+        self.assertEqual(self.issue.volume, '')
+
+    def test_attribute_label(self):
+        self.assertEqual(self.issue.label, "n3s0")
+
+    def test_attribute_suppl_text(self):
+        self.assertEqual(self.issue.suppl_text, "0")
+
+    def test_attribute_type(self):
+        self.assertEqual(self.issue.type, "supplement")
+
+
+class IssueFactoryVolTests(unittest.TestCase):
+    def setUp(self):
+        self.mongo_connect_mock = patch(
+            "sync_kernel_to_website.mongo_connect"
+        )
+        self.mongo_connect_mock.start()
+        self.journal_objects = patch(
+            "sync_kernel_to_website.models.Journal.objects"
+        )
+        self.MockJournal = MagicMock(spec=models.Journal)
+        JournalObjectsMock = self.journal_objects.start()
+        JournalObjectsMock.get.return_value = self.MockJournal
+        self.issue_objects = patch("sync_kernel_to_website.models.Issue.objects")
+        IssueObjectsMock = self.issue_objects.start()
+        IssueObjectsMock.get.side_effect = models.Issue.DoesNotExist
+
+        self.issue_data = load_json_fixture("kernel-issues-0001-3714-1998-v29.json")
+        self.issue = IssueFactory(self.issue_data, "0001-3714", "12345")
+
+    def test_attribute_number(self):
+        self.assertIsNone(self.issue.number)
+
+    def test_attribute_volume(self):
+        self.assertEqual(self.issue.volume, "29")
+
+    def test_attribute_label(self):
+        self.assertEqual(self.issue.label, "v29")
+
+    def test_attribute_suppl_text(self):
+        self.assertIsNone(self.issue.suppl_text)
+
+    def test_attribute_type(self):
+        # deveria ser regular ou publicação contínua...
+        self.assertEqual(self.issue.type, "volume_issue")
+
+
+class IssueFactoryNumTests(unittest.TestCase):
+    def setUp(self):
+        self.mongo_connect_mock = patch(
+            "sync_kernel_to_website.mongo_connect"
+        )
+        self.mongo_connect_mock.start()
+        self.journal_objects = patch(
+            "sync_kernel_to_website.models.Journal.objects"
+        )
+        self.MockJournal = MagicMock(spec=models.Journal)
+        JournalObjectsMock = self.journal_objects.start()
+        JournalObjectsMock.get.return_value = self.MockJournal
+        self.issue_objects = patch("sync_kernel_to_website.models.Issue.objects")
+        IssueObjectsMock = self.issue_objects.start()
+        IssueObjectsMock.get.side_effect = models.Issue.DoesNotExist
+
+        self.issue_data = load_json_fixture("kernel-issues-0001-3714-1998-n3.json")
+        self.issue = IssueFactory(self.issue_data, "0001-3714", "12345")
+
+    def tearDown(self):
+        self.mongo_connect_mock.stop()
+        self.journal_objects.stop()
+        self.issue_objects.stop()
+
+    def test_attribute_number(self):
+        self.assertEqual(self.issue.number, "3")
+
+    def test_attribute_volume(self):
+        # idealmente volume deveria ser None
+        self.assertEqual(self.issue.volume, "")
+
+    def test_attribute_label(self):
+        self.assertEqual(self.issue.label, "n3")
+
+    def test_attribute_suppl_text(self):
+        self.assertIsNone(self.issue.suppl_text)
+
+    def test_attribute_type(self):
+        self.assertEqual(self.issue.type, "regular")
+
+
+class IssueFactoryAOPTests(unittest.TestCase):
+    def setUp(self):
+        self.mongo_connect_mock = patch(
+            "sync_kernel_to_website.mongo_connect"
+        )
+        self.mongo_connect_mock.start()
+        self.journal_objects = patch(
+            "sync_kernel_to_website.models.Journal.objects"
+        )
+        self.MockJournal = MagicMock(spec=models.Journal)
+        JournalObjectsMock = self.journal_objects.start()
+        JournalObjectsMock.get.return_value = self.MockJournal
+        self.issue_objects = patch("sync_kernel_to_website.models.Issue.objects")
+        IssueObjectsMock = self.issue_objects.start()
+        IssueObjectsMock.get.side_effect = models.Issue.DoesNotExist
+
+        self.issue_data = load_json_fixture("kernel-issues-0001-3714-1998-aop.json")
+        self.issue = IssueFactory(self.issue_data, "0001-3714", "12345")
+
+    def tearDown(self):
+        self.mongo_connect_mock.stop()
+        self.journal_objects.stop()
+        self.issue_objects.stop()
+
+    def test_attribute_number(self):
+        self.assertIsNone(self.issue.number)
+
+    def test_attribute_volume(self):
+        # idealmente volume deveria ser None
+        self.assertEqual(self.issue.volume, '')
+
+    def test_attribute_label(self):
+        self.assertIsNone(self.issue.label)
+
+    def test_attribute_suppl_text(self):
+        self.assertIsNone(self.issue.suppl_text)
+
+    def test_attribute_type(self):
+        self.assertEqual(self.issue.type, "ahead")
+
+
 class ArticleFactoryTests(unittest.TestCase):
     def setUp(self):
         self.article_objects = patch(
