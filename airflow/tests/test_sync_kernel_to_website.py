@@ -385,7 +385,7 @@ class IssueFactoryAOPTests(unittest.TestCase):
         self.issue_objects.stop()
 
     def test_attribute_number(self):
-        self.assertIsNone(self.issue.number)
+        self.assertEqual(self.issue.number, "ahead")
 
     def test_attribute_volume(self):
         # idealmente volume deveria ser None

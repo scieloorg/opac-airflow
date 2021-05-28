@@ -465,7 +465,8 @@ def IssueFactory(data, journal_id, issue_order=None, _type="regular"):
         issue = models.Issue()
     else:
         journal_id = journal_id or issue.journal._id
-        _type = (data["id"].endswith("-aop") and "ahead") or _type
+
+    _type = (data["id"].endswith("-aop") and "ahead") or _type
 
     issue._id = issue.iid = data["id"]
     issue.spe_text = metadata.get("spe_text", "")
