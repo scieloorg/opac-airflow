@@ -465,7 +465,7 @@ def IssueFactory(data, journal_id, issue_order=None, _type="regular"):
         issue = models.Issue()
     else:
         journal_id = journal_id or issue.journal._id
-        _type = "ahead" if _type == "ahead" or data["id"].endswith("-aop") else _type
+        _type = (data["id"].endswith("-aop") and "ahead") or _type
 
     issue._id = issue.iid = data["id"]
     issue.spe_text = metadata.get("spe_text", "")
@@ -497,27 +497,15 @@ def IssueFactory(data, journal_id, issue_order=None, _type="regular"):
         Returns:
             str: label produzido a partir de um bundle
         """
-
-        START_REGEX = re.compile("^0")
-        END_REGEX = re.compile("0$")
-
-        label_number = metadata.get("number", "")
-        label_volume = metadata.get("volume", "")
-        label_supplement = (
-            " suppl %s" % metadata.get("supplement", "")
-            if metadata.get("supplement", "")
-            else ""
+        prefixes = ("v", "n", "s")
+        names = ("volume", "number", "supplement")
+        return "".join(
+            f"{prefix}{metadata.get(name)}"
+            for prefix, name in zip(prefixes, names)
+            if metadata.get(name)
         )
 
-        if label_number:
-            label_number += label_supplement
-            label_number = START_REGEX.sub("", label_number)
-            label_number = END_REGEX.sub("", label_number)
-            label_number = label_number.strip()
-
-        return "".join(["v" + label_volume, "n" + label_number])
-
-    issue.label = _get_issue_label(metadata)
+    issue.label = _get_issue_label(metadata) or None
 
     if metadata.get("supplement"):
         issue.suppl_text = metadata.get("supplement")
