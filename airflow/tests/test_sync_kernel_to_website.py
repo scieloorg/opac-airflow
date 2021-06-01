@@ -729,7 +729,7 @@ class ExAOPArticleFactoryTests(unittest.TestCase):
             regular_issue_id, "1", ""
         )
         self.assertEqual(self.document.pid, "S1518-87872019053000621")
-        self.assertEqual(self.document.aop_pid, "S1518-87872019005000621")
+        self.assertIsNone(self.document.aop_pid)
 
     def test_article_factory_creates_aop_id_from_previous_pid_and_update_pid_with_scielo_pids_v2(
             self, MockIssueObjects, MockArticleObjects):
