@@ -97,25 +97,6 @@ def ArticleFactory(
         if _previous_id:
             return _previous_id
 
-        # tenta obter pelo `article_publisher_id`
-        article_meta = _nestget(data, "article_meta", 0)
-        if not article_meta:
-            return
-
-        scielo_pid_v2 = _nestget(article_meta, "scielo_pid_v2", 0)
-        scielo_pid_v3 = _nestget(article_meta, "scielo_pid_v3", 0)
-        article_ids = set(_nestget(article_meta, "article_publisher_id"))
-
-        # desconsidera pid v2 e v3
-        pids = article_ids - {scielo_pid_v3} - {scielo_pid_v2}
-
-        # dentre os pids que sobraram, retorna um que faça
-        # match com o padrão de pid v2
-        for pid in pids:
-            _matched = match(scielo_pid_v2[:10] + r"(\d{13})", pid)
-            if _matched and _matched.group() == pid:
-                return pid
-
     AUTHOR_CONTRIB_TYPES = (
         "author",
         "editor",
@@ -153,10 +134,8 @@ def ArticleFactory(
         version: value for version, value in scielo_pids if value is not None
     }
 
-    _previous_id = _get_previous_pid(data)
-    if _previous_id:
-        article.aop_pid = _previous_id
-        article.pid = article.scielo_pids.get("v2")
+    article.aop_pid = _get_previous_pid(data)
+    article.pid = article.scielo_pids.get("v2")
 
     article.doi = _nestget(data, "article_meta", 0, "article_doi", 0)
 
