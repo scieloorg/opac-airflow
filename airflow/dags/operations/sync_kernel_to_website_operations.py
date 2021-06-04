@@ -87,16 +87,6 @@ def ArticleFactory(
         models.Article: Instância de um artigo próprio do modelo de dados do
             OPAC.
     """
-
-    def _get_previous_pid(data):
-        """Recupera previous-pid, se existir
-        Retorna str ou None"""
-
-        # depende de uma melhoria no clea
-        _previous_id = _nestget(data, "article_meta", 0, "previous_pid", 0)
-        if _previous_id:
-            return _previous_id
-
     AUTHOR_CONTRIB_TYPES = (
         "author",
         "editor",
@@ -134,7 +124,7 @@ def ArticleFactory(
         version: value for version, value in scielo_pids if value is not None
     }
 
-    article.aop_pid = _get_previous_pid(data)
+    article.aop_pid = _nestget(data, "article_meta", 0, "previous_pid", 0)
     article.pid = article.scielo_pids.get("v2")
 
     article.doi = _nestget(data, "article_meta", 0, "article_doi", 0)
@@ -334,10 +324,12 @@ def ArticleFactory(
 
     logging.info("ISSUE %s" % str(issue))
     logging.info("ARTICLE.ISSUE %s" % str(article.issue))
+    logging.info("ARTICLE.AOP_PID %s" % str(article.aop_pid))
+    logging.info("ARTICLE.PID %s" % str(article.pid))
 
     article.issue = issue
     article.journal = issue.journal
-    article.order = _get_order(document_order, article.scielo_pids.get("v2"))
+    article.order = _get_order(document_order, article.pid)
     article.xml = document_xml_url
 
     # Campo de compatibilidade do OPAC
