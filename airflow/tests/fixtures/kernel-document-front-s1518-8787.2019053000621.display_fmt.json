@@ -953,8 +953,8 @@
         ]
       }
     ],
-    "display-format": {
-        "article-title": {
+    "display_format": {
+        "article_title": {
           "pt": "Título em português <sup>1</sup>",
           "es": "Título em español <sup>1</sup>",
           "en": "Article title <sup>1</sup>"

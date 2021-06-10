@@ -32,7 +32,7 @@ def _nestget(data, *path, default=""):
 def _get_main_article_title(data):
     try:
         lang = _nestget(data, "article", 0, "lang", 0)
-        return data['display-format']['article-title'][lang]
+        return data['display_format']['article_title'][lang]
     except KeyError:
         return _nestget(data, "article_meta", 0, "article_title", 0)
 
@@ -167,7 +167,7 @@ def ArticleFactory(
         """Recupera a lista de títulos do artigo"""
         try:
             _lang = _get_original_language(data)
-            for lang, title in data['display-format']['article-title'].items():
+            for lang, title in data['display_format']['article_title'].items():
                 if _lang != lang:
                     yield models.TranslatedTitle(
                         **{
