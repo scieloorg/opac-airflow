@@ -29,6 +29,14 @@ def _nestget(data, *path, default=""):
     return data
 
 
+def _get_main_article_title(data):
+    try:
+        lang = _nestget(data, "article", 0, "lang", 0)
+        return data['display_format']['article_title'][lang]
+    except KeyError:
+        return _nestget(data, "article_meta", 0, "article_title", 0)
+
+
 def _get_bundle_pub_year(publication_dates):
     """
     Retorna o ano de publicação do fascículo a partir dos dados pub_date
@@ -105,7 +113,7 @@ def ArticleFactory(
         article = models.Article()
 
     # Dados principais
-    article.title = _nestget(data, "article_meta", 0, "article_title", 0)
+    article.title = _get_main_article_title(data)
     article.section = _nestget(data, "article_meta", 0, "pub_subject", 0)
     article.abstract = _nestget(data, "article_meta", 0, "abstract", 0)
 
@@ -157,16 +165,27 @@ def ArticleFactory(
 
     def _get_translated_titles(data: dict) -> Generator:
         """Recupera a lista de títulos do artigo"""
-
-        for sub_article in _nestget(data, "sub_article"):
-            yield models.TranslatedTitle(
-                **{
-                    "name": _nestget(
-                        sub_article, "article_meta", 0, "article_title", 0
-                    ),
-                    "language": _nestget(sub_article, "article", 0, "lang", 0),
-                }
-            )
+        try:
+            _lang = _get_original_language(data)
+            for lang, title in data['display_format']['article_title'].items():
+                if _lang != lang:
+                    yield models.TranslatedTitle(
+                        **{
+                            "name": title,
+                            "language": lang,
+                        }
+                    )
+        except KeyError:
+            for sub_article in _nestget(data, "sub_article"):
+                yield models.TranslatedTitle(
+                    **{
+                        "name": _nestget(
+                            sub_article, "article_meta", 0, "article_title", 0
+                        ),
+                        "language": _nestget(
+                            sub_article, "article", 0, "lang", 0),
+                    }
+                )
 
     def _get_translated_sections(data: dict) -> List[models.TranslatedSection]:
         """Recupera a lista de seções traduzidas a partir do document front"""

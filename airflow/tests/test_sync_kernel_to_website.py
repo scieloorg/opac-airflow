@@ -1482,3 +1482,47 @@ class TestGetRelationDataFromKernelBundle(unittest.TestCase):
         result = _get_relation_data_from_kernel_bundle(
             "TXvQPFmSZCdvK9trq5TzRhB", front_data=self._front_data())
         self.assertEqual(expected, result)
+
+
+class ArticleFactoryDisplayFormatTests(unittest.TestCase):
+    def setUp(self):
+        self.article_objects = patch(
+            "operations.sync_kernel_to_website_operations.models.Article.objects"
+        )
+        self.issue_objects = patch(
+            "operations.sync_kernel_to_website_operations.models.Issue.objects"
+        )
+        ArticleObjectsMock = self.article_objects.start()
+        self.issue_objects.start()
+
+        ArticleObjectsMock.get.side_effect = models.Article.DoesNotExist
+
+        self.document_front = load_json_fixture(
+            "kernel-document-front-s1518-8787.2019053000621.display_fmt.json"
+        )
+        self.document = ArticleFactory(
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+        )
+
+    def tearDown(self):
+        self.article_objects.stop()
+        self.issue_objects.stop()
+
+    def test_translated_titles_attribute(self):
+        expected = [
+            {
+                "name": "Título em português <sup>1</sup>",
+                "language": "pt",
+            },
+            {
+                "name": "Título em español <sup>1</sup>",
+                "language": "es",
+            }
+        ]
+        self.assertEqual(
+            expected[0]['name'], self.document.translated_titles[0].name)
+        self.assertEqual(
+            expected[1]['name'], self.document.translated_titles[1].name)
+
+    def test_main_title_attribute(self):
+        self.assertEqual("Article title <sup>1</sup>", self.document.title)
