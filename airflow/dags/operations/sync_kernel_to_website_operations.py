@@ -112,6 +112,9 @@ def ArticleFactory(
     except models.Article.DoesNotExist:
         article = models.Article()
 
+    # atualiza status
+    article.is_public = True
+
     # Dados principais
     article.title = _get_main_article_title(data)
     article.section = _nestget(data, "article_meta", 0, "pub_subject", 0)
