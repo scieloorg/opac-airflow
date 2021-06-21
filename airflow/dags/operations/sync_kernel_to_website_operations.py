@@ -78,6 +78,7 @@ def ArticleFactory(
     issue_id: str,
     document_order: int,
     document_xml_url: str,
+    repeated_doc_pids=None,
 ) -> models.Article:
     """Cria uma instância de artigo a partir dos dados de entrada.
 
@@ -134,6 +135,8 @@ def ArticleFactory(
     article.scielo_pids = {
         version: value for version, value in scielo_pids if value is not None
     }
+    if repeated_doc_pids:
+        article.scielo_pids.update({"other": repeated_doc_pids})
 
     article.aop_pid = _nestget(data, "article_meta", 0, "previous_pid", 0)
     article.pid = article.scielo_pids.get("v2")
@@ -403,6 +406,11 @@ def try_register_documents(
         try:
             document_front = fetch_document_front(document_id)
             issue_id, item = get_relation_data(document_id, document_front)
+            doi = (
+                _get_doi_from_kernel(document_front) or
+                _get_doi_from_website(document_id)
+            )
+            repeated_doc_pids = _unpublish_repeated_documents(document_id, doi)
             document_xml_url = "{base_url}documents/{document_id}".format(
                 base_url=BASE_URL, document_id=document_id
             )
@@ -412,6 +420,7 @@ def try_register_documents(
                 issue_id,
                 item.get("order"),
                 document_xml_url,
+                repeated_doc_pids,
             )
             document.save()
             logging.info("ARTICLE saved %s %s" % (document_id, issue_id))
@@ -438,8 +447,75 @@ def try_register_documents(
                 exc.response.status_code,
                 exc.response.url,
             )
+        except Exception as exc:
+            logging.error(
+                "Could not register document '%s'. "
+                "Unexpected error '%s'.",
+                document_id,
+                str(exc),
+            )
 
     return list(set(orphans))
+
+
+def _unpublish_repeated_documents(document_id, doi):
+    """
+    Identifica documentos _repetidos_ usando o `doi`
+    Obtém os pids dos documentos _repetidos_ para serem ingressados no registro
+    que representará o documento
+    """
+    if not doi:
+        return None
+
+    try:
+        docs = models.Article.objects(doi=doi)
+    except models.Article.DoesNotExist:
+        logging.info("No registered article with doi='%s'" % doi)
+    except Exception as e:
+        logging.info("Error getting documents by doi='%s': %s" % (doi, str(e)))
+        return None
+
+    pids = set()
+    for doc in docs:
+        if doc._id == document_id:
+            continue
+        logging.info("Repeated document %s / %s / %s / %s" %
+                     (doc._id, doc.pid, doc.aop_pid, str(doc.scielo_pids)))
+        # obtém os pids
+        pids |= set(doc.scielo_pids and doc.scielo_pids.values() or [])
+        pids |= set([i for i in [doc._id, doc.pid, doc.aop_pid] if i])
+
+        try:
+            # despublica
+            doc.is_public = False
+            doc.unpublish_reason = "repeated {}".format(document_id)
+            doc.save()
+        except Exception as e:
+            logging.info(
+                "Error unpublishing repeated document %s: %s" %
+                (doc._id, str(e)))
+    return pids
+
+
+def _get_doi_from_kernel(document_front):
+    """
+    Obtém o doi do documento pelo registro no kernel
+    """
+    logging.info("Get doi from kernel")
+    return _nestget(document_front, "article_meta", 0, "article_doi", 0)
+
+
+def _get_doi_from_website(document_id):
+    """
+    Obtém o doi do documento pelo registro no site.
+    """
+    logging.info("Get doi from website")
+    try:
+        article = models.Article.objects.get(_id=document_id)
+    except models.Article.DoesNotExist:
+        logging.info("%s is not registered" % document_id)
+    else:
+        return article.doi
 
 
 def ArticleRenditionFactory(article_id: str, data: List[dict]) -> models.Article:

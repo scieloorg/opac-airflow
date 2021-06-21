@@ -17,6 +17,7 @@ from operations.sync_kernel_to_website_operations import (
     _get_bundle_pub_year,
     KernelFrontHasNoPubYearError,
     _get_bundle_id,
+    _unpublish_repeated_documents,
 )
 from opac_schema.v1 import models
 from operations.exceptions import InvalidOrderValueError
@@ -28,6 +29,18 @@ FIXTURES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtur
 def load_json_fixture(filename):
     with open(os.path.join(FIXTURES_PATH, filename)) as f:
         return json.load(f)
+
+
+class MockArticle:
+
+    def __init__(self, _id, pid, aop_pid, scielo_pids):
+        self._id = _id
+        self.pid = pid
+        self.aop_pid = aop_pid
+        self.scielo_pids = scielo_pids
+
+    def save(self):
+        pass
 
 
 class JournalFactoryTests(unittest.TestCase):
@@ -913,6 +926,7 @@ class RegisterDocumentTests(unittest.TestCase):
             "issue-1",
             "01",
             "http://kernel_url/documents/67TH7T7CyPPmgtVrGXhWXVs",
+            None,
         )
 
 class ArticleRenditionFactoryTests(unittest.TestCase):
@@ -1526,3 +1540,18 @@ class ArticleFactoryDisplayFormatTests(unittest.TestCase):
 
     def test_main_title_attribute(self):
         self.assertEqual("Article title <sup>1</sup>", self.document.title)
+
+
+@patch("operations.sync_kernel_to_website_operations.models.Article.objects")
+class TestUnpublishDocuments(unittest.TestCase):
+    def test_unpublish_repeated_documents(self, mock_objects):
+        document_id = "doc"
+        doi = "doi"
+        mock_objects.return_value = [
+            MockArticle("id1", "pid1", aop_pid=None, scielo_pids=None),
+            MockArticle("id2", "pid2", aop_pid=None, scielo_pids=None),
+            MockArticle("doc", "pdi3", aop_pid=None, scielo_pids=None),
+        ]
+        result = _unpublish_repeated_documents(document_id, doi)
+        self.assertSetEqual({"id1", "id2", "pid1", "pid2"}, result)
+
