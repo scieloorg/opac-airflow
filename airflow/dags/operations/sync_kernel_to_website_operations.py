@@ -447,6 +447,9 @@ def try_register_documents(
                 exc.response.status_code,
                 exc.response.url,
             )
+            if exc.response.status_code == 410:
+                # GONE
+                _unpublish_deleted_document(document_id)
         except Exception as exc:
             logging.error(
                 "Could not register document '%s'. "
@@ -456,6 +459,36 @@ def try_register_documents(
             )
 
     return list(set(orphans))
+
+
+def _unpublish_deleted_document(document_id):
+    """
+    Despublica documento no site se estiver deleted no kernel
+    """
+    logging.info(
+        "Unpublish document '%s' because it does not exist at kernel",
+        document_id,
+    )
+    try:
+        article = models.Article.objects.get(_id=document_id)
+    except models.Article.DoesNotExist:
+        logging.info(
+            "'%s' does not exist in Website database",
+            document_id,
+        )
+        return
+    try:
+        article.is_public = False
+        doc.unpublish_reason = "unavailable at kernel"
+        article.save()
+        _unpublish_repeated_documents(document_id, article.doi)
+    except Exception as e:
+        logging.error(
+            "Could not unpublish document '%s'. %s" % (
+                document_id,
+                e,
+            )
+        )
 
 
 def _unpublish_repeated_documents(document_id, doi):
