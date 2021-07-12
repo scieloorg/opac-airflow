@@ -135,6 +135,12 @@ def ArticleFactory(
     article.scielo_pids = {
         version: value for version, value in scielo_pids if value is not None
     }
+
+    # insere outros tipos de PIDs/IDs em `scielo_ids['other']`
+    article_publisher_id = _nestget(
+        data, "article_meta", 0, "article_publisher_id") or []
+    repeated_doc_pids = repeated_doc_pids or []
+    repeated_doc_pids = list(set(repeated_doc_pids + article_publisher_id))
     if repeated_doc_pids:
         article.scielo_pids.update({"other": repeated_doc_pids})
 
