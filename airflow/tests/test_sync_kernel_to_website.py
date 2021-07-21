@@ -460,9 +460,10 @@ class ArticleFactoryTests(unittest.TestCase):
         self.assertEqual(self.document.aid, "67TH7T7CyPPmgtVrGXhWXVs")
         self.assertEqual(self.document.doi, "10.11606/S1518-8787.2019053000621")
         self.assertEqual(self.document.scielo_pids, {
-            "v1": "S1518-8787(19)03000621",
-            "v2": "S1518-87872019053000621",
-            "v3": "67TH7T7CyPPmgtVrGXhWXVs",
+            'v1': 'S1518-8787(19)03000621',
+            'v2': 'S1518-87872019053000621',
+            'v3': '67TH7T7CyPPmgtVrGXhWXVs',
+            'other': ['S1518-87872019005000621', 'S1518-87872019053000621', '67TH7T7CyPPmgtVrGXhWXVs']
         })
 
     def test_has_authors_attribute(self):
