@@ -162,6 +162,35 @@ def ArticleFactory(
                     )
                 )
 
+    def _get_author_affiliation(data, xref_aff_id):
+        """Recupera a afiliação ``institution_orgname`` de xref_aff_id"""
+
+        for aff in _nestget(data, "aff"):
+            if _nestget(aff, "aff_id", 0) == xref_aff_id:
+                return _nestget(aff, "institution_orgname", 0)
+
+    def _get_article_authors_meta(data):
+        """Recupera a lista de autores do artigo para popular opac_schema.AuthorMeta,
+        contendo a afiliação e orcid"""
+
+        authors = []
+
+        for contrib in _nestget(data, "contrib"):
+            if _nestget(contrib, "contrib_type", 0) in AUTHOR_CONTRIB_TYPES:
+                authors.append(
+                    {'name':
+                        "%s, %s"
+                        % (
+                            _nestget(contrib, "contrib_surname", 0),
+                            _nestget(contrib, "contrib_given_names", 0),
+                        ),
+                     'orcid': _nestget(contrib, "contrib_orcid", 0),
+                     'affiliation': _get_author_affiliation(data, _nestget(contrib, "xref_aff", 0))
+                    }
+                )
+
+        return authors
+
     def _get_original_language(data: dict) -> str:
         return _nestget(data, "article", 0, "lang", 0)
 
@@ -314,6 +343,7 @@ def ArticleFactory(
                 raise InvalidOrderValueError(order_err_msg)
 
     article.authors = list(_get_article_authors(data))
+    article.authors_meta = _get_article_authors_meta(data)
     article.languages = list(_get_languages(data))
     article.translated_titles = list(_get_translated_titles(data))
     article.trans_sections = list(_get_translated_sections(data))
@@ -533,7 +563,7 @@ def _unpublish_repeated_documents(document_id, doi):
             logging.info(
                 "Error unpublishing repeated document %s: %s" %
                 (doc._id, str(e)))
-    return pids
+    return list(pids)
 
 
 def _get_doi_from_kernel(document_front):

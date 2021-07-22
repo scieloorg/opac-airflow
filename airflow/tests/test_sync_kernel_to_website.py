@@ -459,14 +459,21 @@ class ArticleFactoryTests(unittest.TestCase):
         self.assertEqual(self.document._id, "67TH7T7CyPPmgtVrGXhWXVs")
         self.assertEqual(self.document.aid, "67TH7T7CyPPmgtVrGXhWXVs")
         self.assertEqual(self.document.doi, "10.11606/S1518-8787.2019053000621")
-        self.assertEqual(self.document.scielo_pids, {
-            "v1": "S1518-8787(19)03000621",
-            "v2": "S1518-87872019053000621",
-            "v3": "67TH7T7CyPPmgtVrGXhWXVs",
+
+        self.document.scielo_pids['other'] = sorted(self.document.scielo_pids.get('other'))
+
+        self.assertDictEqual(self.document.scielo_pids, {
+            'v1': 'S1518-8787(19)03000621',
+            'v2': 'S1518-87872019053000621',
+            'v3': '67TH7T7CyPPmgtVrGXhWXVs',
+            'other': sorted(['S1518-87872019005000621', 'S1518-87872019053000621', '67TH7T7CyPPmgtVrGXhWXVs'])
         })
 
     def test_has_authors_attribute(self):
         self.assertTrue(hasattr(self.document, "authors"))
+
+    def test_has_authors_meta_attribute(self):
+        self.assertTrue(hasattr(self.document, "authors_meta"))
 
     def test_has_translated_titles_attribute(self):
         self.assertTrue(hasattr(self.document, "translated_titles"))
@@ -682,6 +689,21 @@ class ArticleFactoryTests(unittest.TestCase):
             document_xml_url=MagicMock()
         )
         self.assertEqual(1234, article.order)
+
+    def test_authors_meta_has_attribute_name(self):
+        self.assertEqual(self.document.authors_meta[0].get('name'), "Kindermann, Lucas")
+        self.assertEqual(self.document.authors_meta[1].get('name'), "Traebert, Jefferson")
+        self.assertEqual(self.document.authors_meta[2].get('name'), "Nunes, Rodrigo Dias")
+
+    def test_authors_meta_has_attribute_orcid(self):
+        self.assertEqual(self.document.authors_meta[0].get('orcid'), "0000-0002-9789-501X")
+        self.assertEqual(self.document.authors_meta[1].get('orcid'), "0000-0002-7389-985X")
+        self.assertEqual(self.document.authors_meta[2].get('orcid'), "0000-0002-2261-8253")
+
+    def test_authors_meta_has_attribute_affiliation(self):
+        self.assertEqual(self.document.authors_meta[0].get('affiliation'), "Universidade do Sul de Santa Catarina")
+        self.assertEqual(self.document.authors_meta[1].get('affiliation'), "Universidade do Sul de Santa Catarina")
+        self.assertEqual(self.document.authors_meta[2].get('affiliation'), "Universidade do Sul de Santa Catarina")
 
 
 @patch("operations.sync_kernel_to_website_operations.models.Article.objects")
@@ -1553,5 +1575,5 @@ class TestUnpublishDocuments(unittest.TestCase):
             MockArticle("doc", "pdi3", aop_pid=None, scielo_pids=None),
         ]
         result = _unpublish_repeated_documents(document_id, doi)
-        self.assertSetEqual({"id1", "id2", "pid1", "pid2"}, result)
+        self.assertListEqual(sorted(["id1", "id2", "pid1", "pid2"]), sorted(result))
 
