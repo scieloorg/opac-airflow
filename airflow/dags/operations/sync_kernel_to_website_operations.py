@@ -178,15 +178,17 @@ def ArticleFactory(
         for contrib in _nestget(data, "contrib"):
             if _nestget(contrib, "contrib_type", 0) in AUTHOR_CONTRIB_TYPES:
                 authors.append(
-                    {'name':
-                        "%s, %s"
-                        % (
-                            _nestget(contrib, "contrib_surname", 0),
-                            _nestget(contrib, "contrib_given_names", 0),
-                        ),
-                     'orcid': _nestget(contrib, "contrib_orcid", 0),
-                     'affiliation': _get_author_affiliation(data, _nestget(contrib, "xref_aff", 0))
-                    }
+                    models.AuthorMeta(
+                        **{'name':
+                            "%s, %s"
+                            % (
+                                _nestget(contrib, "contrib_surname", 0),
+                                _nestget(contrib, "contrib_given_names", 0),
+                            ),
+                        'orcid': _nestget(contrib, "contrib_orcid", 0),
+                        'affiliation': _get_author_affiliation(data, _nestget(contrib, "xref_aff", 0))
+                        }
+                    )
                 )
 
         return authors
