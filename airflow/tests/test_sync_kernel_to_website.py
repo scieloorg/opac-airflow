@@ -691,19 +691,19 @@ class ArticleFactoryTests(unittest.TestCase):
         self.assertEqual(1234, article.order)
 
     def test_authors_meta_has_attribute_name(self):
-        self.assertEqual(self.document.authors_meta[0].get('name'), "Kindermann, Lucas")
-        self.assertEqual(self.document.authors_meta[1].get('name'), "Traebert, Jefferson")
-        self.assertEqual(self.document.authors_meta[2].get('name'), "Nunes, Rodrigo Dias")
+        self.assertEqual(self.document.authors_meta[0].name, "Kindermann, Lucas")
+        self.assertEqual(self.document.authors_meta[1].name, "Traebert, Jefferson")
+        self.assertEqual(self.document.authors_meta[2].name, "Nunes, Rodrigo Dias")
 
     def test_authors_meta_has_attribute_orcid(self):
-        self.assertEqual(self.document.authors_meta[0].get('orcid'), "0000-0002-9789-501X")
-        self.assertEqual(self.document.authors_meta[1].get('orcid'), "0000-0002-7389-985X")
-        self.assertEqual(self.document.authors_meta[2].get('orcid'), "0000-0002-2261-8253")
+        self.assertEqual(self.document.authors_meta[0].orcid, "0000-0002-9789-501X")
+        self.assertEqual(self.document.authors_meta[1].orcid, "0000-0002-7389-985X")
+        self.assertEqual(self.document.authors_meta[2].orcid, "0000-0002-2261-8253")
 
     def test_authors_meta_has_attribute_affiliation(self):
-        self.assertEqual(self.document.authors_meta[0].get('affiliation'), "Universidade do Sul de Santa Catarina")
-        self.assertEqual(self.document.authors_meta[1].get('affiliation'), "Universidade do Sul de Santa Catarina")
-        self.assertEqual(self.document.authors_meta[2].get('affiliation'), "Universidade do Sul de Santa Catarina")
+        self.assertEqual(self.document.authors_meta[0].affiliation, "Universidade do Sul de Santa Catarina")
+        self.assertEqual(self.document.authors_meta[1].affiliation, "Universidade do Sul de Santa Catarina")
+        self.assertEqual(self.document.authors_meta[2].affiliation, "Universidade do Sul de Santa Catarina")
 
 
 @patch("operations.sync_kernel_to_website_operations.models.Article.objects")
