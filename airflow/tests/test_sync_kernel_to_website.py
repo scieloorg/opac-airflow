@@ -705,6 +705,94 @@ class ArticleFactoryTests(unittest.TestCase):
         self.assertEqual(self.document.authors_meta[1].affiliation, "Universidade do Sul de Santa Catarina")
         self.assertEqual(self.document.authors_meta[2].affiliation, "Universidade do Sul de Santa Catarina")
 
+    def test_authors_meta_dont_add_empty_values(self):
+        """
+        Tests that no empty keys in arthors_meta are created.
+        """
+        document_dict = {"contrib": [
+                {
+                    "contrib_bio": [],
+                    "contrib_degrees": [],
+                    "contrib_email": [],
+                    "contrib_name": [
+                        "Kindermann Lucas"
+                    ],
+                    "contrib_given_names": [
+                        "Lucas"
+                    ],
+                    "contrib_prefix": [],
+                    "contrib_role": [],
+                    "contrib_suffix": [],
+                    "contrib_surname": [
+                        "Kindermann"
+                    ],
+                    "contrib_type": [
+                        "author"
+                    ],
+                    "xref_corresp": [
+                        "c1"
+                    ],
+                    "xref_corresp_text": [
+                        ""
+                    ],
+                    "xref_aff": [
+                        "aff1"
+                    ],
+                    "xref_aff_text": [
+                        "I"
+                    ]
+                }
+            ],
+            "aff": [
+                {
+                    "addr_city": [
+                        "Palhoça"
+                    ],
+                    "addr_country": [
+                        "Brasil"
+                    ],
+                    "addr_country_code": [
+                        "BR"
+                    ],
+                    "addr_postal_code": [],
+                    "addr_state": [
+                        "SC"
+                    ],
+                    "aff_id": [
+                        "aff1"
+                    ],
+                    "aff_text": [
+                        "I Universidade do Sul de Santa Catarina Universidade do Sul de Santa Catarina Faculdade de Medicina Palhoça SC Brasil Universidade do Sul de Santa Catarina. Faculdade de Medicina. Palhoça, SC, Brasil"
+                    ],
+                    "aff_email": [],
+                    "institution_original": [
+                        "Universidade do Sul de Santa Catarina. Faculdade de Medicina. Palhoça, SC, Brasil"
+                    ],
+                    "institution_orgdiv1": [
+                        "Faculdade de Medicina"
+                    ],
+                    "institution_orgdiv2": [],
+                    "institution_orgname_rewritten": [
+                        "Universidade do Sul de Santa Catarina"
+                    ],
+                    "label": [
+                        "I"
+                    ],
+                    "phone": []
+                }
+            ]
+        }
+
+        document = ArticleFactory(
+            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, ""
+        )
+
+        self.assertTrue(hasattr(document, "authors_meta"))
+        self.assertIsNone(
+            document.authors_meta[0].orcid)
+        self.assertIsNone(
+            document.authors_meta[0].affiliation)
+
 
 @patch("operations.sync_kernel_to_website_operations.models.Article.objects")
 @patch("operations.sync_kernel_to_website_operations.models.Issue.objects")
