@@ -155,9 +155,11 @@ def ArticleFactory(
         for contrib in _nestget(data, "contrib"):
             if _nestget(contrib, "contrib_type", 0) in AUTHOR_CONTRIB_TYPES:
                 yield (
-                    "%s, %s"
+                    "%s%s, %s"
                     % (
                         _nestget(contrib, "contrib_surname", 0),
+                        " " + _nestget(contrib, "contrib_suffix",
+                                       0) if _nestget(contrib, "contrib_suffix", 0) else "",
                         _nestget(contrib, "contrib_given_names", 0),
                     )
                 )
@@ -179,8 +181,10 @@ def ArticleFactory(
             if _nestget(contrib, "contrib_type", 0) in AUTHOR_CONTRIB_TYPES:
                 author_dict = {}
 
-                author_dict['name'] = "%s, %s" % (
+                author_dict['name'] = "%s%s, %s" % (
                     _nestget(contrib, "contrib_surname", 0),
+                    " " + _nestget(contrib, "contrib_suffix",
+                                   0) if _nestget(contrib, "contrib_suffix", 0) else "",
                     _nestget(contrib, "contrib_given_names", 0),
                 )
 
