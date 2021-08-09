@@ -793,6 +793,57 @@ class ArticleFactoryTests(unittest.TestCase):
         self.assertIsNone(
             document.authors_meta[0].affiliation)
 
+    def test_authors_meta_return_suffix_on_author_name(self):
+        """
+        Tests if return the suffix of author name when exists.
+        """
+        document_dict = {"contrib": [
+                {
+                    "contrib_bio": [],
+                    "contrib_degrees": [],
+                    "contrib_email": [],
+                    "contrib_name": [
+                        "Kindermann Lucas"
+                    ],
+                    "contrib_given_names": [
+                        "Lucas"
+                    ],
+                    "contrib_prefix": [],
+                    "contrib_role": [],
+                    "contrib_suffix": [
+                        "Silva"
+                    ],
+                    "contrib_surname": [
+                        "Kindermann"
+                    ],
+                    "contrib_type": [
+                        "author"
+                    ],
+                    "xref_corresp": [
+                        "c1"
+                    ],
+                    "xref_corresp_text": [
+                        ""
+                    ],
+                    "xref_aff": [
+                        "aff1"
+                    ],
+                    "xref_aff_text": [
+                        "I"
+                    ]
+                }
+            ]
+        }
+
+        document = ArticleFactory(
+            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, ""
+        )
+
+        self.assertTrue(hasattr(document, "authors_meta"))
+
+        self.assertEqual(
+            document.authors_meta[0].name, "Kindermann Silva, Lucas")
+
 
 @patch("operations.sync_kernel_to_website_operations.models.Article.objects")
 @patch("operations.sync_kernel_to_website_operations.models.Issue.objects")
