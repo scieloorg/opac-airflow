@@ -811,7 +811,7 @@ class ArticleFactoryTests(unittest.TestCase):
                     "contrib_prefix": [],
                     "contrib_role": [],
                     "contrib_suffix": [
-                        "Silva"
+                        "Júnior"
                     ],
                     "contrib_surname": [
                         "Kindermann"
@@ -842,7 +842,7 @@ class ArticleFactoryTests(unittest.TestCase):
         self.assertTrue(hasattr(document, "authors_meta"))
 
         self.assertEqual(
-            document.authors_meta[0].name, "Kindermann Silva, Lucas")
+            document.authors_meta[0].name, "Kindermann Júnior, Lucas")
 
 
 @patch("operations.sync_kernel_to_website_operations.models.Article.objects")
