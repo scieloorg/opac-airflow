@@ -561,7 +561,7 @@ def _unpublish_repeated_documents(document_id, doi):
         logging.info("Repeated document %s / %s / %s / %s" %
                      (doc._id, doc.pid, doc.aop_pid, str(doc.scielo_pids)))
         # obtém os pids
-        pids |= set(doc.scielo_pids and doc.scielo_pids.values() or [])
+        pids |= set(doc.scielo_pids and (doc.scielo_pids.get("other") or []))
         pids |= set([i for i in [doc._id, doc.pid, doc.aop_pid] if i])
 
         try:
