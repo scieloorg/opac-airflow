@@ -21,7 +21,6 @@ from operations.sync_kernel_to_website_operations import (
     _get_bundle_id,
 )
 from common.hooks import mongo_connect, kernel_connect
-from common.utils import trydate
 
 failure_recipients = os.environ.get("EMIAL_ON_FAILURE_RECIPIENTS", None)
 EMIAL_ON_FAILURE_RECIPIENTS = (
