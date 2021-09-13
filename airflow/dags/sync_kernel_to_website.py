@@ -1,27 +1,15 @@
 import os
 import re
-import json
 import logging
-from datetime import timedelta
 import itertools
 from typing import Dict, List, Tuple
-
-import tenacity
-from tenacity import retry
 
 import airflow
 from airflow import DAG
 from airflow.sensors.http_sensor import HttpSensor
-from airflow.hooks.http_hook import HttpHook
-from airflow.hooks.base_hook import BaseHook
 from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
 from airflow.operators.dagrun_operator import TriggerDagRunOperator
-
-
-import requests
-
-from mongoengine import connect
 
 from opac_schema.v1 import models
 
@@ -33,6 +21,7 @@ from operations.sync_kernel_to_website_operations import (
     _get_bundle_id,
 )
 from common.hooks import mongo_connect, kernel_connect
+from common.utils import trydate
 
 failure_recipients = os.environ.get("EMIAL_ON_FAILURE_RECIPIENTS", None)
 EMIAL_ON_FAILURE_RECIPIENTS = (
@@ -402,6 +391,20 @@ def JournalFactory(data):
     if journal.logo_url is None or len(journal.logo_url) == 0:
         journal.logo_url = metadata.get("logo_url", "")
     journal.current_status = metadata.get("status_history", [{}])[-1].get("status")
+
+    timelines = []
+    for timeline in metadata.get("status_history", []):
+
+        timelines.append(models.Timeline(**{
+            'status': timeline.get('status', ''),
+            'since': timeline.get('date', ''),
+            'reason': timeline.get('reason', ''),
+        }))
+
+    journal.timeline = timelines
+
+    if metadata.get("next_journal", ""):
+        journal.next_title = metadata["next_journal"]["name"]
 
     journal.created = data.get("created", "")
     journal.updated = data.get("updated", "")
