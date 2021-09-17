@@ -405,6 +405,9 @@ def JournalFactory(data):
     if metadata.get("next_journal", ""):
         journal.next_title = metadata["next_journal"]["name"]
 
+    if metadata.get("previous_journal", ""):
+        journal.previous_journal_ref = metadata["previous_journal"]["name"]
+
     journal.created = data.get("created", "")
     journal.updated = data.get("updated", "")
 
