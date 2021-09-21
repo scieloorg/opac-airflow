@@ -100,7 +100,7 @@ class Reader:
         return entities, last_timestamp
 
 
-def fetch_data(endpoint):
+def fetch_data(endpoint, json=True):
     """
     Obtém o JSON do endpoint do Kernel
     """
@@ -111,7 +111,11 @@ def fetch_data(endpoint):
     kernel_timeout = Variable.get("KERNEL_FETCH_DATA_TIMEOUT", default_var=None)
     if kernel_timeout:
         kwargs["timeout"] = int(kernel_timeout)
-    return kernel_connect(**kwargs).json()
+
+    if json:
+        return kernel_connect(**kwargs).json()
+    else:
+        return kernel_connect(**kwargs)
 
 
 def fetch_changes(since):
@@ -140,6 +144,13 @@ def fetch_documents_front(document_id):
          Obtém o JSON do Document do Kernel com base no parametro 'document_id'
     """
     return fetch_data("/documents/%s/front" % (document_id))
+
+
+def fetch_documents_xml(document_id):
+    """
+         Obtém o XML do Document do Kernel com base no parametro 'document_id'
+    """
+    return fetch_data("/documents/%s" % (document_id), json=False)
 
 
 def _get_relation_data_from_kernel_bundle(document_id, front_data=None):
@@ -727,7 +738,7 @@ def register_documents(**kwargs):
     )
 
     orphans = try_register_documents(
-        documents_to_get, _get_relation_data, fetch_documents_front, ArticleFactory
+        documents_to_get, _get_relation_data, fetch_documents_front, ArticleFactory, fetch_documents_xml,
     )
 
     Variable.set("orphan_documents", orphans, serialize_json=True)
