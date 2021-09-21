@@ -399,3 +399,37 @@ class SPS_Package:
         """True if delete tag is present.
         """
         return self.xmltree.find(".//article-id[@specific-use='delete']") is not None
+
+    @property
+    def related_articles(self):
+        """Return a list of dict
+
+        Example:
+
+            "related_articles" : [
+                {
+                    "doi" : "10.1590/S0103-50532006000200015",
+                    "related_type" : "corrected-article"
+                },
+                {
+                    "doi" : "10.1590/S0103-5053200600020098983",
+                    "related_type" : "addendum"
+                },
+                {
+                    "doi" : "10.1590/S0103-50532006000200015",
+                    "related_type" : "retraction"
+                },
+            ]
+        """
+
+        related_list = []
+        for node in self.xmltree.findall(".//related-article"):
+            related_doi = node.attrib['{http://www.w3.org/1999/xlink}href']
+
+            related_dict = {}
+            related_dict['doi'] = related_doi
+            related_dict['related_type'] = node.attrib['related-article-type']
+
+            related_list.append(related_dict)
+
+        return related_list
