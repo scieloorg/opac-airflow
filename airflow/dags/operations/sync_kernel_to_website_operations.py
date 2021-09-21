@@ -385,8 +385,6 @@ def ArticleFactory(
         related-article-type="corrected-article"
         xlink:href="10.1590/S0103-50532006000200015"/>
         """
-        # # sps_package = SPS_Package(et.XML(xml))
-        # resp = requests.get('http://www.scielo.br/j/jbchs/a/Z6mnK3PjKhDZtHJQJYPzxpw/?lang=en&format=xml', verify=False)
 
         sps_package = SPS_Package(et.XML(resp.content))
 
