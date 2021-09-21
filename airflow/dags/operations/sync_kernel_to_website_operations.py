@@ -386,7 +386,7 @@ def ArticleFactory(
         xlink:href="10.1590/S0103-50532006000200015"/>
         """
 
-        sps_package = SPS_Package(et.XML(resp.content))
+        sps_package = SPS_Package(et.XML(xml))
 
         for related_dict in sps_package.related_articles:
             if _update_related_articles(related_dict):
