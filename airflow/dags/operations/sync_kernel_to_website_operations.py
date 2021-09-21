@@ -1,9 +1,10 @@
 import logging
 from datetime import datetime
 from re import match
-from typing import Iterable, Generator, Dict, List, Tuple
+from typing import Callable, Iterable, Generator, Dict, List, Tuple
 
 import requests
+from lxml import etree as et
 from opac_schema.v1 import models
 
 import common.hooks as hooks
@@ -11,7 +12,9 @@ from operations.exceptions import InvalidOrderValueError
 from operations.docs_utils import (
     get_bundle_id,
 )
+
 from common.sps_package import (
+    SPS_Package,
     extract_number_and_supplment_from_issue_element,
 )
 
@@ -79,6 +82,7 @@ def ArticleFactory(
     document_order: int,
     document_xml_url: str,
     repeated_doc_pids=None,
+    fetch_document_xml:callable=None,
 ) -> models.Article:
     """Cria uma instância de artigo a partir dos dados de entrada.
 
@@ -91,6 +95,8 @@ def ArticleFactory(
         issue_id (str): Identificador de issue.
         document_order (int): Posição do artigo.
         document_xml_url (str): URL do XML do artigo
+        fetch_document_xml (callable): Função para obter o XML do Kernel caso
+        necessário.
 
     Returns:
         models.Article: Instância de um artigo próprio do modelo de dados do
@@ -352,6 +358,43 @@ def ArticleFactory(
             except (ValueError, TypeError):
                 raise InvalidOrderValueError(order_err_msg)
 
+    def _update_related_articles(related_dict):
+        """
+        Atualiza o campo related_articles com o pid do artigo vinculado à errata,
+        adendo ou retratação.
+        """
+        related_doi = related_dict.get('doi')
+
+        # Update the articles by doi
+        if related_doi:
+            try:
+                article = models.Article.objects.get(doi=related_doi)
+            except models.Article.DoesNotExist as ex:
+                logging.error("Documento não existe na base de dados do site com o DOI: %s, ao tentar popular o campo related_articles, erro: %s" % (related_doi, ex))
+            else:
+                article.related_articles = [
+                                    models.RelatedArticle(**related_dict)]
+                return article.save()
+
+
+    def _get_related_articles(document_id, xml):
+        """
+        Obtém a lista de documentos relacionados do XML tag:
+
+        <related-article ext-link-type="doi" id="ra1"
+        related-article-type="corrected-article"
+        xlink:href="10.1590/S0103-50532006000200015"/>
+        """
+        # # sps_package = SPS_Package(et.XML(xml))
+        # resp = requests.get('http://www.scielo.br/j/jbchs/a/Z6mnK3PjKhDZtHJQJYPzxpw/?lang=en&format=xml', verify=False)
+
+        sps_package = SPS_Package(et.XML(resp.content))
+
+        for related_dict in sps_package.related_articles:
+            if _update_related_articles(related_dict):
+                logging.info("Relacionamento entre o artigo DOI: %s(%s) e relacionado DOI: %s realizado com sucesso" % (
+                             related_dict.get('doi'), related_dict.get('related_type'), document_id))
+
     article.authors = list(_get_article_authors(data))
     article.authors_meta = _get_article_authors_meta(data)
     article.languages = list(_get_languages(data))
@@ -403,6 +446,13 @@ def ArticleFactory(
     article.order = _get_order(document_order, article.pid)
     article.xml = document_xml_url
 
+    # Se for uma errata ou retratação ou adendo.
+    if (article.type == "correction"
+        or article.type == "retraction"
+        or article.type == "addendum"):
+        xml = fetch_document_xml(document_id)
+        _get_related_articles(article.doi, xml)
+
     # Campo de compatibilidade do OPAC
     article.htmls = [{"lang": lang} for lang in _get_languages(data)]
 
@@ -417,6 +467,7 @@ def try_register_documents(
     get_relation_data: callable,
     fetch_document_front: callable,
     article_factory: callable,
+    fetch_document_xml: callable,
 ) -> List[str]:
     """Registra documentos do Kernel na base de dados do `OPAC`.
 
@@ -433,6 +484,8 @@ def try_register_documents(
             `front` do documento a partir da API do Kernel.
         article_factory (callable): função que cria uma instância do modelo
             de dados do Artigo na base do OPAC.
+        fetch_document_xml (callable): função que recupera XML
+            do documento a partir da API do Kernel.
 
     Returns:
         List[str] orphans: Lista contendo todos os identificadores dos
@@ -467,6 +520,7 @@ def try_register_documents(
                 item.get("order"),
                 document_xml_url,
                 repeated_doc_pids,
+                fetch_document_xml
             )
             document.save()
             logging.info("ARTICLE saved %s %s" % (document_id, issue_id))
