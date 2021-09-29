@@ -115,7 +115,7 @@ def fetch_data(endpoint, json=True):
     if json:
         return kernel_connect(**kwargs).json()
     else:
-        return kernel_connect(**kwargs)
+        return kernel_connect(**kwargs).content
 
 
 def fetch_changes(since):
