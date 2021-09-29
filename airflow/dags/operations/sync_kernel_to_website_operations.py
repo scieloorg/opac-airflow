@@ -490,9 +490,7 @@ def ArticleFactory(
     article.xml = document_xml_url
 
     # Se for uma errata ou retratação ou adendo.
-    if (article.type == "correction"
-        or article.type == "retraction"
-        or article.type == "addendum"):
+    if article.type in ["correction", "retraction", "addendum"]:
         # Obtém o XML da errada no kernel
         xml = fetch_document_xml(document_id)
         _get_related_articles(xml)
