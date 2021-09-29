@@ -380,7 +380,6 @@ def ArticleFactory(
         Está sendo alterado o atributo related_articles do ``article``
         """
 
-        # Obtém os ``related_article`` e atualiza o ``related_dict`` com o pid_v3 e grava no article.
         related_doi = related_dict.get('doi')
 
         article_data = {
