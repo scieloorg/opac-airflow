@@ -1,9 +1,10 @@
 import logging
 from datetime import datetime
 from re import match
-from typing import Iterable, Generator, Dict, List, Tuple
+from typing import Callable, Iterable, Generator, Dict, List, Tuple
 
 import requests
+from lxml import etree as et
 from opac_schema.v1 import models
 
 import common.hooks as hooks
@@ -11,7 +12,9 @@ from operations.exceptions import InvalidOrderValueError
 from operations.docs_utils import (
     get_bundle_id,
 )
+
 from common.sps_package import (
+    SPS_Package,
     extract_number_and_supplment_from_issue_element,
 )
 
@@ -79,6 +82,7 @@ def ArticleFactory(
     document_order: int,
     document_xml_url: str,
     repeated_doc_pids=None,
+    fetch_document_xml:callable=None,
 ) -> models.Article:
     """Cria uma instância de artigo a partir dos dados de entrada.
 
@@ -91,6 +95,8 @@ def ArticleFactory(
         issue_id (str): Identificador de issue.
         document_order (int): Posição do artigo.
         document_xml_url (str): URL do XML do artigo
+        fetch_document_xml (callable): Função para obter o XML do Kernel caso
+        necessário.
 
     Returns:
         models.Article: Instância de um artigo próprio do modelo de dados do
@@ -352,6 +358,86 @@ def ArticleFactory(
             except (ValueError, TypeError):
                 raise InvalidOrderValueError(order_err_msg)
 
+    def _update_related_articles(article, related_dict):
+        """
+        Atualiza os documentos relacionados.
+
+        Nesse método será realizado uma atualização no related_articles de
+        ambos os documento ou seja ``["correction", "retraction", "addendum",] -> documento``
+        quando ``documento -> ["correction", "retraction", "addendum",]``.
+
+        Será necessário uma pesquisa na base de dados do OPAC para obter o
+        pid_v3 dos documentos relacionado para que seja possível armazena-lo
+        nessa relação.
+
+        article = A instância corrente de models.Article(Artigo sendo processado)
+
+        related_dict = {
+                        "doi" : "10.1590/S0103-50532006000200015",
+                        "related_type" : "retraction"
+                        }
+
+        Está sendo alterado o atributo related_articles do ``article``
+        """
+
+        related_doi = related_dict.get('doi')
+
+        article_data = {
+                        "ref_id": article._id,
+                        "doi": article.doi    ,
+                        "related_type" : article.type,
+                        }
+
+        if related_doi:
+            try:
+                related_article = models.Article.objects.get(doi=related_doi)
+            except models.Article.DoesNotExist as ex:
+                logging.error("Não foi possível encontrar na base de dados do site o artigo com DOI: %s, portanto, não foi possível atualiza o related_articles do relacionado, com os dados: %s, erro: %s" % (article.doi, article_data, ex))
+            else:
+
+                related_article_model = models.RelatedArticle(**article_data)
+
+                # Garante a unicidade da relação.
+                if related_article_model not in related_article.related_articles:
+                    # Necessário atualizar o ``related_article`` com os dados do ``article`` caso ele exista na base de dados.
+                    related_article.related_articles += [related_article_model]
+                    related_article.save()
+
+                # Atualiza a referência no ``ref_id`` no dicionário de ``related_article```
+                related_dict['ref_id'] = related_article._id
+
+            article_related_model = models.RelatedArticle(
+            **related_dict)
+
+            # Garante a unicidade da relação.
+            if article_related_model not in article.related_articles:
+                article.related_articles += [article_related_model]
+                logging.info("Relacionamento entre o documento processado: %s e seu relacionado: %s, realizado com sucesso. Tipo de relação entre os documentos: %s" % (
+                article.doi, related_dict.get('doi'), related_dict.get('related_type')))
+
+
+    def _get_related_articles(xml):
+        """
+        Obtém a lista de documentos relacionados do XML e atualiza os
+        documentos dessa realação.
+
+        Tag no XML que representa essa relação:
+            <related-article ext-link-type="doi" id="ra1"
+            related-article-type="corrected-article"
+            xlink:href="10.1590/S0103-50532006000200015"/>
+        """
+
+        try:
+            etree_xml = et.XML(xml)
+        except ValueError as ex:
+            logging.error("Erro ao tentar analisar(parser) do XML, erro: %s", ex)
+        else:
+
+            sps_package = SPS_Package(etree_xml)
+
+            for related_dict in sps_package.related_articles:
+                _update_related_articles(article, related_dict)
+
     article.authors = list(_get_article_authors(data))
     article.authors_meta = _get_article_authors_meta(data)
     article.languages = list(_get_languages(data))
@@ -403,6 +489,12 @@ def ArticleFactory(
     article.order = _get_order(document_order, article.pid)
     article.xml = document_xml_url
 
+    # Se for uma errata ou retratação ou adendo.
+    if article.type in ["correction", "retraction", "addendum"]:
+        # Obtém o XML da errada no kernel
+        xml = fetch_document_xml(document_id)
+        _get_related_articles(xml)
+
     # Campo de compatibilidade do OPAC
     article.htmls = [{"lang": lang} for lang in _get_languages(data)]
 
@@ -417,6 +509,7 @@ def try_register_documents(
     get_relation_data: callable,
     fetch_document_front: callable,
     article_factory: callable,
+    fetch_document_xml: callable,
 ) -> List[str]:
     """Registra documentos do Kernel na base de dados do `OPAC`.
 
@@ -433,6 +526,8 @@ def try_register_documents(
             `front` do documento a partir da API do Kernel.
         article_factory (callable): função que cria uma instância do modelo
             de dados do Artigo na base do OPAC.
+        fetch_document_xml (callable): função que recupera XML
+            do documento a partir da API do Kernel.
 
     Returns:
         List[str] orphans: Lista contendo todos os identificadores dos
@@ -467,6 +562,7 @@ def try_register_documents(
                 item.get("order"),
                 document_xml_url,
                 repeated_doc_pids,
+                fetch_document_xml
             )
             document.save()
             logging.info("ARTICLE saved %s %s" % (document_id, issue_id))
