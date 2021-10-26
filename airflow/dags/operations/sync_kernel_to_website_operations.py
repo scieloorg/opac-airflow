@@ -442,7 +442,7 @@ def ArticleFactory(
     article.authors_meta = _get_article_authors_meta(data)
     article.languages = list(_get_languages(data))
     article.translated_titles = list(_get_translated_titles(data))
-    article.trans_sections = list(_get_translated_sections(data))
+    article.sections = list(_get_translated_sections(data))
     article.abstracts = list(_get_abstracts(data))
     article.keywords = list(_get_keywords(data))
 
