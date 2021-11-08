@@ -17,6 +17,8 @@ echo
 GERAPADRAO_ID=$(date "+%Y-%m-%d-%H%M%s")
 nohup ./CallPrepSyncToKernel.bat ${GERAPADRAO_ID} > /tmp/CallPrepSyncToKernel.out 2>&1 &
 
+./PrepSyncToKernelCpBases.bat
+
 GeraScielo.bat .. .. log/GeraPadrao.log adiciona
 
 nohup ./CallTriggerSyncIsisToKernel.bat  ${GERAPADRAO_ID} > /tmp/CallTriggerSyncIsisToKernel.out 2>&1 &
