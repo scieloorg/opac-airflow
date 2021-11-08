@@ -377,6 +377,23 @@ def copy_mst_files_to_work_folder(**kwargs):
             desatination_path = os.path.join(WORK_ISIS_FILES, file)
             copying_paths.append([origin_path, desatination_path])
 
+    # obtém as title e issue de `airflow-gate`, se existirem,
+    # sobreescrevendo os arquivos que acabaram de ser obtidos de `bases`
+    try:
+        path = Variable.get("XC_SPS_PACKAGES_DIR")
+        if path:
+            files = [
+                f for f in os.listdir(path) if f.endswith(".xrf") or f.endswith(".mst")
+            ]
+            for file in files:
+                origin_path = os.path.join(path, file)
+                desatination_path = os.path.join(WORK_ISIS_FILES, file)
+                copying_paths.append([origin_path, desatination_path])
+    except Exception as e:
+        logging.exception(
+            "ERROR: Getting bases from %s : %s" %
+            (ALTERNATIVE_BASE_FOLDER_PATH, e))
+
     for origin, destination in copying_paths:
         logging.info("copying file from %s to %s." % (origin, destination))
         shutil.copy(origin, destination)
