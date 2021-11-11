@@ -10,6 +10,7 @@ from airflow.sensors.http_sensor import HttpSensor
 from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
 from airflow.operators.dagrun_operator import TriggerDagRunOperator
+from airflow.operators.email_operator import EmailOperator
 
 from opac_schema.v1 import models
 
@@ -22,7 +23,15 @@ from operations.sync_kernel_to_website_operations import (
 )
 from common.hooks import mongo_connect, kernel_connect
 
+email_notification_recipients = os.environ.get(
+    "EMAIL_NOTIFICATION_RECIPIENTS", None)
+
+EMAIL_NOTIFICATION_RECIPIENTS = (
+    email_notification_recipients.split(",") if email_notification_recipients else []
+)
+
 failure_recipients = os.environ.get("EMIAL_ON_FAILURE_RECIPIENTS", None)
+
 EMIAL_ON_FAILURE_RECIPIENTS = (
     failure_recipients.split(",") if failure_recipients else []
 )
@@ -915,6 +924,15 @@ register_last_issues_task = PythonOperator(
     dag=dag,
 )
 
+send_notification_email = EmailOperator(
+    task_id='send_notification_email',
+    to=EMAIL_NOTIFICATION_RECIPIENTS,
+    subject='Site atualizado',
+    html_content=""" <h3>Site <a href="https://www.scielo.br">https://www.scielo.br</a> atualizado.</h3> """,
+    mime_charset='utf-8',
+    dag=dag
+)
+
 trigger_check_website_dag_task = TriggerDagRunOperator(
     task_id="trigger_check_website_dag_task",
     trigger_dag_id="check_website",
@@ -939,4 +957,6 @@ delete_documents_task << delete_issues_task
 
 register_last_issues_task << delete_documents_task
 
-register_last_issues_task >> trigger_check_website_dag_task
+send_notification_email << register_last_issues_task
+
+send_notification_email >> trigger_check_website_dag_task
