@@ -667,6 +667,11 @@ def _unpublish_repeated_documents(document_id, doi):
     for doc in docs:
         if doc._id == document_id:
             continue
+        if doc.title != new_doc.title:
+            continue
+        if doc.issue != new_doc.issue and not doc.issue.endswith("aop"):
+            continue
+
         logging.info("Repeated document %s / %s / %s / %s" %
                      (doc._id, doc.pid, doc.aop_pid, str(doc.scielo_pids)))
         # obtém os pids
