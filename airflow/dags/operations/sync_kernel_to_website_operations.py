@@ -664,13 +664,27 @@ def _unpublish_repeated_documents(document_id, doi):
         return None
 
     new_doc = models.Article.objects(_id=document_id)
+    try:
+        new_doc = new_doc[0]
+        new_title = new_doc.title
+        new_issue = new_doc.issue
+    except (IndexError, TypeError, ValueError, AttributeError) as e:
+        logging.info(
+            "Unpublished repeated document %s. %s" %
+            (document_id, e))
+    except Exception as e:
+        logging.info(
+            "Unpublished repeated document %s. Unexpected: %s" %
+            (document_id, e))
+        return
+
     pids = set()
     for doc in docs:
         if doc._id == document_id:
             continue
-        if doc.title != new_doc.title:
+        if doc.title != new_title:
             continue
-        if doc.issue != new_doc.issue and not doc.issue.endswith("aop"):
+        if doc.issue != new_issue and not doc.issue.endswith("aop"):
             continue
 
         logging.info("Repeated document %s / %s / %s / %s" %
