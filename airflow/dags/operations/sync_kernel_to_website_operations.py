@@ -663,6 +663,7 @@ def _unpublish_repeated_documents(document_id, doi):
         logging.info("Error getting documents by doi='%s': %s" % (doi, str(e)))
         return None
 
+    new_doc = models.Article.objects(_id=document_id)
     pids = set()
     for doc in docs:
         if doc._id == document_id:
