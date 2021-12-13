@@ -672,6 +672,7 @@ def _unpublish_repeated_documents(document_id, doi):
         logging.info(
             "Unpublished repeated document %s. %s" %
             (document_id, e))
+        return
     except Exception as e:
         logging.info(
             "Unpublished repeated document %s. Unexpected: %s" %
