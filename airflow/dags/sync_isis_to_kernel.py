@@ -260,11 +260,17 @@ def register_or_update(_id: str, payload: dict, entity_url: str):
         }
 
         if DeepDiff(_metadata, payload, ignore_order=True):
-            response = hooks.kernel_connect(
-                endpoint="{}{}".format(entity_url, _id),
-                method="PATCH",
-                data=payload
-            )
+            endpoint = "{}{}".format(entity_url, _id)
+            try:
+                response = hooks.kernel_connect(
+                    endpoint=endpoint,
+                    method="PATCH",
+                    data=payload
+                )
+            except requests.exceptions.HTTPError as exc:
+                logging.info("Erro ao tentar realizar um PATCH no endpoint: %s, payload: %s" %
+                             (endpoint, payload))
+
     return response
 
 
