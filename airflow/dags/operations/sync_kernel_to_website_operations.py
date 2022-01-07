@@ -390,9 +390,22 @@ def ArticleFactory(
 
         if related_doi:
             try:
-                related_article = models.Article.objects.get(doi=related_doi)
+                related_article = models.Article.objects.get(doi=related_doi, is_public=True)
+            except models.Article.MultipleObjectsReturned as ex:
+                articles = models.Article.objects.filter(
+                    doi=related_doi, is_public=True)
+
+                logging.info("Foram encontrados na base de dados do site mais de 1 artigo com o DOI: %s. Lista de ID de artigos encontrados: %s" % (
+                    related_doi, [d.id for d in articles]))
+
+                # Quando existe mais de um registro no relacionamento, consideramos o primeiro encontrado.
+                first_found = articles[0]
+
+                logging.info("Para essa relação foi considerado o primeiro encontrado, artigo com id: %s" % first_found.id)
+                related_article = first_found
             except models.Article.DoesNotExist as ex:
-                logging.error("Não foi possível encontrar na base de dados do site o artigo com DOI: %s, portanto, não foi possível atualiza o related_articles do relacionado, com os dados: %s, erro: %s" % (article.doi, article_data, ex))
+                logging.error("Não foi possível encontrar na base de dados do site o artigo com DOI: %s, portanto, não foi possível atualiza o related_articles do relacionado, com os dados: %s, erro: %s" % (
+                    related_doi, article_data, ex))
             else:
 
                 related_article_model = models.RelatedArticle(**article_data)
@@ -406,14 +419,14 @@ def ArticleFactory(
                 # Atualiza a referência no ``ref_id`` no dicionário de ``related_article```
                 related_dict['ref_id'] = related_article._id
 
-            article_related_model = models.RelatedArticle(
-            **related_dict)
+                article_related_model = models.RelatedArticle(
+                **related_dict)
 
-            # Garante a unicidade da relação.
-            if article_related_model not in article.related_articles:
-                article.related_articles += [article_related_model]
-                logging.info("Relacionamento entre o documento processado: %s e seu relacionado: %s, realizado com sucesso. Tipo de relação entre os documentos: %s" % (
-                article.doi, related_dict.get('doi'), related_dict.get('related_type')))
+                # Garante a unicidade da relação.
+                if article_related_model not in article.related_articles:
+                    article.related_articles += [article_related_model]
+                    logging.info("Relacionamento entre o documento processado: %s e seu relacionado: %s, realizado com sucesso. Tipo de relação entre os documentos: %s" % (
+                    article.doi, related_dict.get('doi'), related_dict.get('related_type')))
 
 
     def _get_related_articles(xml):
@@ -650,10 +663,31 @@ def _unpublish_repeated_documents(document_id, doi):
         logging.info("Error getting documents by doi='%s': %s" % (doi, str(e)))
         return None
 
+    new_doc = models.Article.objects(_id=document_id)
+    try:
+        new_doc = new_doc[0]
+        new_title = new_doc.title
+        new_issue = new_doc.issue
+    except (IndexError, TypeError, ValueError, AttributeError) as e:
+        logging.info(
+            "Unpublished repeated document %s. %s" %
+            (document_id, e))
+        return
+    except Exception as e:
+        logging.info(
+            "Unpublished repeated document %s. Unexpected: %s" %
+            (document_id, e))
+        return
+
     pids = set()
     for doc in docs:
         if doc._id == document_id:
             continue
+        if doc.title != new_title:
+            continue
+        if doc.issue != new_issue and not doc.issue.endswith("aop"):
+            continue
+
         logging.info("Repeated document %s / %s / %s / %s" %
                      (doc._id, doc.pid, doc.aop_pid, str(doc.scielo_pids)))
         # obtém os pids
