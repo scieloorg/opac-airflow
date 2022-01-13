@@ -390,7 +390,8 @@ def ArticleFactory(
 
         if related_doi:
             try:
-                related_article = models.Article.objects.get(doi=related_doi, is_public=True)
+                # Busca por DOIs com maiúsculo e minúsculo ``doi__iexact``
+                related_article = models.Article.objects.get(doi__iexact=related_doi, is_public=True)
             except models.Article.MultipleObjectsReturned as ex:
                 articles = models.Article.objects.filter(
                     doi=related_doi, is_public=True)
