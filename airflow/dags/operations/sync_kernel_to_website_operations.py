@@ -380,6 +380,8 @@ def ArticleFactory(
         Está sendo alterado o atributo related_articles do ``article``
         """
 
+        related_article = None
+
         related_doi = related_dict.get('doi')
 
         article_data = {
@@ -407,7 +409,8 @@ def ArticleFactory(
             except models.Article.DoesNotExist as ex:
                 logging.error("Não foi possível encontrar na base de dados do site o artigo com DOI: %s, portanto, não foi possível atualiza o related_articles do relacionado, com os dados: %s, erro: %s" % (
                     related_doi, article_data, ex))
-            else:
+
+            if related_article:
 
                 related_article_model = models.RelatedArticle(**article_data)
 
