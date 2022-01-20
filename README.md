@@ -89,6 +89,7 @@ $ airflow webserver
 * `KERNEL_FETCH_DATA_TIMEOUT`: Timeout para requisições de leitura do Kernel
 
 
+
 ## Variáveis opcionais:
 * `TIMEOUT_FOR_SINGLE_REQ` (opcional): informa um valor inteiro em segundos para o _timeout_ de uma requisição. Valor padrão 10 segundos
 * `TIMEOUT_FOR_MULT_REQ` (opcional): informa um valor inteiro em segundos para o _timeout_ total de requisições simultâneas. Valor padrão: 300 segundos
@@ -102,11 +103,12 @@ $ airflow webserver
 * `CHECK_DIGITAL_ASSETS` (opcional, valor padrão é `true`): com valor `false` inibe a execução da verificação dos ativos digitais, tal como estão registrados no _Object store_
 * `CHECK_WEB_HTML_PAGES` (opcional, valor padrão é `true`): com valor `false` inibe a execução da verificação das páginas Web do padrão `/j/:acron/a/:iddoc/format=html&lang=??`, com as variações de idioma. Também inibiria a verficação dos componentes do HTML resultante desta consulta, ou seja, a presença dos ativos digitais e a presença dos links para as demais versões do documento (formato e idioma)
 * `CHECK_WEB_PDF_PAGES` (opcional, valor padrão é `true`): inibe a execução da verificação das páginas Web do padrão `/j/:acron/a/:iddoc/format=pdf&lang=??`, com as variações de idioma
+* `IS_SPORADIC`: A boolean to define if must send e-mail with the finished of the flow. Default value is ``False``, possible values ['False', 'True'] all strings.
 
 
 ## Variáveis de ambiente:
 
-* `AIRFLOW_HOME`: Diretório de instalação da aplicação 
+* `AIRFLOW_HOME`: Diretório de instalação da aplicação
 * `EMIAL_ON_FAILURE_RECIPIENTS`: Conta de e-mail para envio de falha, padrão: infra@scielo.org
 * `AIRFLOW__SMTP__SMTP_HOST`: Endereço do servidor de e-mail
 * `AIRFLOW__SMTP__SMTP_USER`: Endereço de e-mail responsável pelo envio de e-mails
