@@ -916,6 +916,16 @@ def register_last_issues(ds, **kwargs):
         except AttributeError:
             logging.info("No issues are registered to models.Journal: %s " % journal)
 
+def must_send_email(ds, **kwargs):
+    """If IS_SPORADIC == True return False to avoid send e-mail,
+       but if IS_SPORADIC == False, return True to send e-mail.
+       Default is
+    """
+
+    is_sporadic = Variable.get("IS_SPORADIC", "False")
+
+    return False if is_sporadic == "True" else True
+
 
 register_last_issues_task = PythonOperator(
     task_id="register_last_issues",
@@ -932,6 +942,14 @@ send_notification_email = EmailOperator(
     mime_charset='utf-8',
     dag=dag
 )
+
+check_if_send_email = ShortCircuitOperator(
+    task_id="check_if_send_email",
+    provide_context=True,
+    python_callable=must_send_email,
+    dag=dag,
+)
+
 
 trigger_check_website_dag_task = TriggerDagRunOperator(
     task_id="trigger_check_website_dag_task",
@@ -957,6 +975,8 @@ delete_documents_task << delete_issues_task
 
 register_last_issues_task << delete_documents_task
 
-send_notification_email << register_last_issues_task
+check_if_send_email << register_last_issues_task
+
+send_notification_email << check_if_send_email
 
 send_notification_email >> trigger_check_website_dag_task
