@@ -432,6 +432,58 @@ def ArticleFactory(
                     logging.info("Relacionamento entre o documento processado: %s e seu relacionado: %s, realizado com sucesso. Tipo de relação entre os documentos: %s" % (
                     article.doi, related_dict.get('doi'), related_dict.get('related_type')))
 
+    def _get_publication_date_by_type(publication_dates, date_type="pub",
+                                      reverse_date=True):
+        """
+        Obtém a lista de datas de publicação do /front do kernel,
+        no seguinte formato, exemplo:
+
+        [{'text': ['2022'],
+          'pub_type': [],
+          'pub_format': ['electronic'],
+          'date_type': ['collection'],
+          'day': [],
+          'month': [],
+          'year': ['2022'],
+          'season': []},
+        {'text': ['02 02 2022'],
+         'pub_type': [],
+         'pub_format': ['electronic'],
+         'date_type': ['pub'],
+         'day': ['02'],
+         'month': ['02'],
+         'year': ['2022'],
+         'season': []}]
+
+         Retorna a data considerando a chave o tipo `date_type`.
+
+         Return a string.
+        """
+        def _check_date_format(date_string, format="%Y-%m-%d"):
+            """
+            Check if date as string is a expected format.
+            """
+            try:
+                return datetime.strptime(date_string, format).strftime(format)
+            except ValueError:
+                logging.info("The date isnt in a well format, the correct format: %s" % format)
+
+            return date_string
+
+        try:
+            formed_date = ""
+            for pubdate in publication_dates or []:
+                if date_type in pubdate.get('date_type'):
+                    pubdate_list = pubdate.get('text')[0].split(" ")
+                    if reverse_date:
+                        pubdate_list.reverse()
+                    formed_date = "-".join(pubdate_list)
+            return _check_date_format(formed_date) if reverse_date else _check_date_format(formed_date, "%d-%m-%Y")
+        except (IndexError, AttributeError):
+            raise KernelFrontHasNoPubYearError(
+                "Missing publication date type: {} in list of dates: {}".format(date_type, publication_dates))
+
+
 
     def _get_related_articles(xml):
         """
@@ -468,14 +520,11 @@ def ArticleFactory(
     ]
 
     article.original_language = _get_original_language(data)
-    publication_date = _nestget(data, "pub_date", 0, "text", 0)
+    publications_date = _nestget(data, "pub_date")
 
-    if publication_date:
-        publication_date_list = publication_date.split(" ")
-        publication_date_list.reverse()
-        publication_date = "-".join(publication_date_list)
-
-    article.publication_date = publication_date
+    if publications_date:
+        formed_publication_date = _get_publication_date_by_type(publications_date, "pub")
+        article.publication_date = formed_publication_date
 
     article.type = _nestget(data, "article", 0, "type", 0)
 
