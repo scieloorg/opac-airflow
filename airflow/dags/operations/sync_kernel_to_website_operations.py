@@ -474,15 +474,16 @@ def ArticleFactory(
             formed_date = ""
             for pubdate in publication_dates or []:
                 if date_type in pubdate.get('date_type'):
-                    pubdate_list = pubdate.get('text')[0].split(" ")
+                    pubdate_list = [_nestget(pubdate, 'day', 0),
+                                    _nestget(pubdate, 'month', 0),
+                                    _nestget(pubdate, 'year', 0)]
                     if reverse_date:
                         pubdate_list.reverse()
-                    formed_date = "-".join(pubdate_list)
+                    formed_date = "-".join([pub for pub in pubdate_list if pub])
             return _check_date_format(formed_date) if reverse_date else _check_date_format(formed_date, "%d-%m-%Y")
         except (IndexError, AttributeError):
             raise KernelFrontHasNoPubYearError(
                 "Missing publication date type: {} in list of dates: {}".format(date_type, publication_dates))
-
 
 
     def _get_related_articles(xml):
