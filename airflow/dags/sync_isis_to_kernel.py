@@ -270,8 +270,27 @@ def register_or_update(_id: str, payload: dict, entity_url: str):
             except requests.exceptions.HTTPError as exc:
                 logging.info("Erro ao tentar realizar um PATCH no endpoint: %s, payload: %s" %
                              (endpoint, payload))
+                _retry_journal_patch(_metadata, payload, endpoint)
 
     return response
+
+
+def _retry_journal_patch(_metadata, payload, endpoint):
+    for k, v in payload.items():
+        if _metadata.get(k) == v:
+            continue
+        patch_payload = {k: v or ''}
+        try:
+            response = hooks.kernel_connect(
+                endpoint=endpoint,
+                method="PATCH",
+                data=patch_payload
+            )
+        except requests.exceptions.HTTPError as exc:
+            logging.info(
+                "Erro ao tentar realizar um PATCH no endpoint: %s, payload: %s" %
+                endpoint, patch_payload,
+            )
 
 
 def create_journal_issn_index(title_json_dirname, journals):
