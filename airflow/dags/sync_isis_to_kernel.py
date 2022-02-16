@@ -295,6 +295,32 @@ def _retry_journal_patch(_metadata, payload, endpoint):
             )
 
 
+def _try_journal_patch(payload, endpoint):
+    try:
+        response = hooks.kernel_connect(
+            endpoint=endpoint,
+            method="PATCH",
+            data=payload
+        )
+        logging.info(
+            "Sucesso ao realizar um PATCH no endpoint: %s, payload: %s" %
+            (endpoint, payload)
+        )
+        return True
+    except requests.exceptions.HTTPError as exc:
+        logging.info(
+            "Erro ao tentar realizar um PATCH no endpoint: %s, payload: %s" %
+            (endpoint, payload)
+        )
+        return False
+    except Exception as exc:
+        logging.info(
+            "Erro inesperado ao tentar realizar um PATCH no endpoint: %s, payload: %s, erro: %s" %
+            (endpoint, payload, str(exc))
+        )
+        return False
+
+
 def create_journal_issn_index(title_json_dirname, journals):
     _issn_index = {}
     for journal in journals:
