@@ -261,15 +261,7 @@ def register_or_update(_id: str, payload: dict, entity_url: str):
 
         if DeepDiff(_metadata, payload, ignore_order=True):
             endpoint = "{}{}".format(entity_url, _id)
-            try:
-                response = hooks.kernel_connect(
-                    endpoint=endpoint,
-                    method="PATCH",
-                    data=payload
-                )
-            except requests.exceptions.HTTPError as exc:
-                logging.info("Erro ao tentar realizar um PATCH no endpoint: %s, payload: %s" %
-                             (endpoint, payload))
+            if not _try_journal_patch(payload, endpoint):
                 _retry_journal_patch(_metadata, payload, endpoint)
 
     return response
@@ -279,18 +271,7 @@ def _retry_journal_patch(_metadata, payload, endpoint):
     for k, v in payload.items():
         if _metadata.get(k) == v:
             continue
-        patch_payload = {k: v or ''}
-        try:
-            response = hooks.kernel_connect(
-                endpoint=endpoint,
-                method="PATCH",
-                data=patch_payload
-            )
-        except requests.exceptions.HTTPError as exc:
-            logging.info(
-                "Erro ao tentar realizar um PATCH no endpoint: %s, payload: %s" %
-                (endpoint, patch_payload),
-            )
+        _try_journal_patch({k: v}, endpoint)
 
 
 def _try_journal_patch(payload, endpoint):
