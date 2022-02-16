@@ -289,7 +289,7 @@ def _retry_journal_patch(_metadata, payload, endpoint):
         except requests.exceptions.HTTPError as exc:
             logging.info(
                 "Erro ao tentar realizar um PATCH no endpoint: %s, payload: %s" %
-                endpoint, patch_payload,
+                (endpoint, patch_payload),
             )
 
 
