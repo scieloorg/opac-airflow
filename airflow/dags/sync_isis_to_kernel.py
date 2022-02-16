@@ -267,6 +267,8 @@ def register_or_update(_id: str, payload: dict, entity_url: str):
                     method="PATCH",
                     data=payload
                 )
+                logging.info("Sucesso ao realizar um PATCH no endpoint: %s, payload: %s" %
+                             (endpoint, payload))
             except requests.exceptions.HTTPError as exc:
                 logging.info("Erro ao tentar realizar um PATCH no endpoint: %s, payload: %s" %
                              (endpoint, payload))
@@ -289,7 +291,7 @@ def _retry_journal_patch(_metadata, payload, endpoint):
         except requests.exceptions.HTTPError as exc:
             logging.info(
                 "Erro ao tentar realizar um PATCH no endpoint: %s, payload: %s" %
-                endpoint, patch_payload,
+                (endpoint, patch_payload)
             )
 
 
