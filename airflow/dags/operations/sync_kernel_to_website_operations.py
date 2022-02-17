@@ -18,6 +18,7 @@ from common.sps_package import (
     extract_number_and_supplment_from_issue_element,
 )
 
+
 class KernelFrontHasNoPubYearError(Exception):
     ...
 
@@ -82,7 +83,7 @@ def ArticleFactory(
     document_order: int,
     document_xml_url: str,
     repeated_doc_pids=None,
-    fetch_document_xml:callable=None,
+    fetch_document_xml: callable = None,
 ) -> models.Article:
     """Cria uma instância de artigo a partir dos dados de entrada.
 
@@ -134,7 +135,8 @@ def ArticleFactory(
     scielo_pids = [
         (
             f"v{version}",
-            _nestget(data, "article_meta", 0, f"scielo_pid_v{version}", 0, default=None)
+            _nestget(data, "article_meta", 0,
+                     f"scielo_pid_v{version}", 0, default=None)
         )
         for version in range(1, 4)
     ]
@@ -195,7 +197,8 @@ def ArticleFactory(
                 )
 
                 if _nestget(contrib, "contrib_orcid", 0):
-                    author_dict['orcid'] = _nestget(contrib, "contrib_orcid", 0)
+                    author_dict['orcid'] = _nestget(
+                        contrib, "contrib_orcid", 0)
 
                 aff = _get_author_affiliation(
                     data, _nestget(contrib, "xref_aff", 0))
@@ -385,15 +388,16 @@ def ArticleFactory(
         related_doi = related_dict.get('doi')
 
         article_data = {
-                        "ref_id": article._id,
-                        "doi": article.doi    ,
-                        "related_type" : article.type,
-                        }
+            "ref_id": article._id,
+            "doi": article.doi,
+            "related_type": article.type,
+        }
 
         if related_doi:
             try:
                 # Busca por DOIs com maiúsculo e minúsculo ``doi__iexact``
-                related_article = models.Article.objects.get(doi__iexact=related_doi, is_public=True)
+                related_article = models.Article.objects.get(
+                    doi__iexact=related_doi, is_public=True)
             except models.Article.MultipleObjectsReturned as ex:
                 articles = models.Article.objects.filter(
                     doi=related_doi, is_public=True)
@@ -404,7 +408,8 @@ def ArticleFactory(
                 # Quando existe mais de um registro no relacionamento, consideramos o primeiro encontrado.
                 first_found = articles[0]
 
-                logging.info("Para essa relação foi considerado o primeiro encontrado, artigo com id: %s" % first_found.id)
+                logging.info(
+                    "Para essa relação foi considerado o primeiro encontrado, artigo com id: %s" % first_found.id)
                 related_article = first_found
             except models.Article.DoesNotExist as ex:
                 logging.error("Não foi possível encontrar na base de dados do site o artigo com DOI: %s, portanto, não foi possível atualiza o related_articles do relacionado, com os dados: %s, erro: %s" % (
@@ -424,13 +429,13 @@ def ArticleFactory(
                 related_dict['ref_id'] = related_article._id
 
                 article_related_model = models.RelatedArticle(
-                **related_dict)
+                    **related_dict)
 
                 # Garante a unicidade da relação.
                 if article_related_model not in article.related_articles:
                     article.related_articles += [article_related_model]
                     logging.info("Relacionamento entre o documento processado: %s e seu relacionado: %s, realizado com sucesso. Tipo de relação entre os documentos: %s" % (
-                    article.doi, related_dict.get('doi'), related_dict.get('related_type')))
+                        article.doi, related_dict.get('doi'), related_dict.get('related_type')))
 
     def _get_publication_date_by_type(publication_dates, date_type="pub",
                                       reverse_date=True):
@@ -466,7 +471,8 @@ def ArticleFactory(
             try:
                 return datetime.strptime(date_string, format).strftime(format)
             except ValueError:
-                logging.info("The date isnt in a well format, the correct format: %s" % format)
+                logging.info(
+                    "The date isnt in a well format, the correct format: %s" % format)
 
             return date_string
 
@@ -485,7 +491,6 @@ def ArticleFactory(
             raise KernelFrontHasNoPubYearError(
                 "Missing publication date type: {} in list of dates: {}".format(date_type, publication_dates))
 
-
     def _get_related_articles(xml):
         """
         Obtém a lista de documentos relacionados do XML e atualiza os
@@ -500,7 +505,8 @@ def ArticleFactory(
         try:
             etree_xml = et.XML(xml)
         except ValueError as ex:
-            logging.error("Erro ao tentar analisar(parser) do XML, erro: %s", ex)
+            logging.error(
+                "Erro ao tentar analisar(parser) do XML, erro: %s", ex)
         else:
 
             sps_package = SPS_Package(etree_xml)
@@ -524,7 +530,8 @@ def ArticleFactory(
     publications_date = _nestget(data, "pub_date")
 
     if publications_date:
-        formed_publication_date = _get_publication_date_by_type(publications_date, "pub")
+        formed_publication_date = _get_publication_date_by_type(
+            publications_date, "pub")
         article.publication_date = formed_publication_date
 
     article.type = _nestget(data, "article", 0, "type", 0)
@@ -532,7 +539,8 @@ def ArticleFactory(
     # Dados de localização
     article.elocation = _nestget(data, "article_meta", 0, "pub_elocation", 0)
     article.fpage = _nestget(data, "article_meta", 0, "pub_fpage", 0)
-    article.fpage_sequence = _nestget(data, "article_meta", 0, "pub_fpage_seq", 0)
+    article.fpage_sequence = _nestget(
+        data, "article_meta", 0, "pub_fpage_seq", 0)
     article.lpage = _nestget(data, "article_meta", 0, "pub_lpage", 0)
 
     if article.issue is not None and article.issue.number == "ahead":
@@ -556,8 +564,8 @@ def ArticleFactory(
     article.order = _get_order(document_order, article.pid)
     article.xml = document_xml_url
 
-    # Se for uma errata ou retratação ou adendo.
-    if article.type in ["correction", "retraction", "addendum"]:
+    # Se for uma errata ou retratação ou adendo ou comentário de artigo.
+    if article.type in ["correction", "retraction", "addendum", "article-commentary"]:
         # Obtém o XML da errada no kernel
         xml = fetch_document_xml(document_id)
         _get_related_articles(xml)
