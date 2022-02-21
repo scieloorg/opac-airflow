@@ -162,6 +162,13 @@ def fetch_documents_xml(document_id):
     return fetch_data("/documents/%s" % (document_id), json=False)
 
 
+def fetch_documents_manifest(document_id):
+    """
+         Obtém o XML do Document do Kernel com base no parametro 'document_id'
+    """
+    return fetch_data("/documents/%s/manifest" % (document_id), json=True)
+
+
 def _get_relation_data_from_kernel_bundle(document_id, front_data=None):
     """
     Obtém os dados do documento no bundle
@@ -747,7 +754,7 @@ def register_documents(**kwargs):
     )
 
     orphans = try_register_documents(
-        documents_to_get, _get_relation_data, fetch_documents_front, ArticleFactory, fetch_documents_xml,
+        documents_to_get, _get_relation_data, fetch_documents_front, ArticleFactory, fetch_documents_xml, fetch_documents_manifest,
     )
 
     Variable.set("orphan_documents", orphans, serialize_json=True)
@@ -915,6 +922,7 @@ def register_last_issues(ds, **kwargs):
             journal.save()
         except AttributeError:
             logging.info("No issues are registered to models.Journal: %s " % journal)
+
 
 def must_send_email(ds, **kwargs):
     """If IS_SPORADIC == True return False to avoid send e-mail,
