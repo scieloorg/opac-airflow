@@ -390,6 +390,51 @@ class SPS_Package:
         )
 
     @property
+    def doi_with_lang(self):
+        """Return a list of dict
+
+        Example:
+
+            "doi_with_lang" : [
+                {
+                    "doi" : "10.1590/S0103-50532006000200015_ru",
+                    "language" : "ru"
+                },
+                {
+                    "doi" : "10.1590/S0103-5053200600020098983_pt",
+                    "language" : "pt"
+                },
+                {
+                    "doi" : "10.1590/S0103-50532006000200015_en",
+                    "language" : "en"
+                },
+                {
+                    "doi" : "10.1590/S0103-50532006000200015_es1",
+                    "language" : "es"
+                },
+                {
+                    "doi" : "10.1590/S0103-50532006000200015_es2",
+                    "language" : "es"
+                },
+            ]
+        """
+
+        doi_with_lang = []
+        for node in self.xmltree.xpath('//sub-article[@article-type="translation"]'):
+
+            lang = node.attrib['{http://www.w3.org/XML/1998/namespace}lang']
+
+            doi_dict = {}
+
+            for doi in node.findall('.//article-id[@pub-id-type="doi"]'):
+                doi_dict['doi'] = doi.text
+                doi_dict['language'] = lang
+
+                doi_with_lang.append(doi_dict)
+
+        return doi_with_lang
+
+    @property
     def assets_names(self):
         attr_name = "{http://www.w3.org/1999/xlink}href"
         return [node.get(attr_name) for node in self.elements_which_has_xlink_href]

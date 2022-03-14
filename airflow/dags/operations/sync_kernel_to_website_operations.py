@@ -493,7 +493,7 @@ def ArticleFactory(
             raise KernelFrontHasNoPubYearError(
                 "Missing publication date type: {} in list of dates: {}".format(date_type, publication_dates))
 
-    def _get_related_articles(xml):
+    def _get_related_articles(sps_package):
         """
         Obtém a lista de documentos relacionados do XML e atualiza os
         documentos dessa realação.
@@ -504,17 +504,8 @@ def ArticleFactory(
             xlink:href="10.1590/S0103-50532006000200015"/>
         """
 
-        try:
-            etree_xml = et.XML(xml)
-        except ValueError as ex:
-            logging.error(
-                "Erro ao tentar analisar(parser) do XML, erro: %s", ex)
-        else:
-
-            sps_package = SPS_Package(etree_xml)
-
-            for related_dict in sps_package.related_articles:
-                _update_related_articles(article, related_dict)
+        for related_dict in sps_package.related_articles:
+            _update_related_articles(article, related_dict)
 
     def _update_suppl_material(document_id, filename, url):
         """
@@ -573,6 +564,26 @@ def ArticleFactory(
                     return _update_suppl_material(article,
                                                   filename=key, url=_nestget(asset, 0, 1))
 
+    def _get_doi_with_lang(article, sps_package):
+        """
+        Obtém a lista de DOIs com idiomas do XML e atualiza o artigo,
+        acrescetando o doi do idioma original.
+
+        Trecho do XML em que obtemos essa dado:
+        <sub-article article-type="translation" id="s1" xml:lang="en">
+            <front-stub>
+                <article-id pub-id-type="doi">10.1590/S0034-759020210302x</article-id>
+                <article-categories>
+        """
+
+        doi_with_lang = sps_package.doi_with_lang
+
+        # Adiciona o DOI do idioma original.
+        doi_with_lang.append(
+            {'doi': article.doi, 'language': article.original_language})
+
+        return doi_with_lang
+
     article.authors = list(_get_article_authors(data))
     article.authors_meta = _get_article_authors_meta(data)
     article.languages = list(_get_languages(data))
@@ -628,11 +639,25 @@ def ArticleFactory(
         json = fetch_documents_manifest(document_id)
         article.mat_suppl = _get_suppl_material(document_id, json)
 
-    # Se for uma errata ou retratação ou adendo ou comentário de artigo.
-    if article.type in ["correction", "retraction", "addendum", "article-commentary"]:
-        # Obtém o XML da errada no kernel
-        xml = fetch_document_xml(document_id)
-        _get_related_articles(xml)
+    xml = fetch_document_xml(document_id)
+
+    try:
+        etree_xml = et.XML(xml)
+        sps_package = SPS_Package(etree_xml)
+    except ValueError as ex:
+        logging.error(
+            "Erro ao tentar analisar(parser) do XML, erro: %s", ex)
+    else:
+
+        # Verifica se o XML contém DOI com idioma
+        doi_with_langs = _get_doi_with_lang(article, sps_package)
+        article.doi_with_lang = [models.DOIWithLang(**doi)
+                                 for doi in doi_with_langs]
+
+        # Se for uma errata ou retratação ou adendo ou comentário de artigo.
+        if article.type in ["correction", "retraction", "addendum", "article-commentary"]:
+            # Obtém o XML da errada no kernel
+            _get_related_articles(sps_package)
 
     # Campo de compatibilidade do OPAC
     article.htmls = [{"lang": lang} for lang in _get_languages(data)]
