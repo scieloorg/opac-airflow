@@ -645,7 +645,7 @@ def ArticleFactory(
             article.save()
         except mongoengine.errors.ValidationError as ex:
             logging.error("Erro ao tentar salvar o material supplementar do artigo!, error: %s", ex)
-            logging.error("Contéudo retornado na função que obtém a lista de suplemento: %s", mat_suppl)
+            logging.error("Conteúdo retornado na função que obtém a lista de suplemento: %s", mat_suppl)
             article.mat_suppl = []
 
     xml = fetch_document_xml(document_id)
