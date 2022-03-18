@@ -4,6 +4,7 @@ from re import match
 from typing import Callable, Iterable, Generator, Dict, List, Tuple
 
 import requests
+import mongoengine
 from lxml import etree as et
 from opac_schema.v1 import models
 
@@ -637,7 +638,15 @@ def ArticleFactory(
     # Cadastra o material suplementar
     if fetch_documents_manifest:
         json = fetch_documents_manifest(document_id)
-        article.mat_suppl = _get_suppl_material(document_id, json)
+        mat_suppl = _get_suppl_material(document_id, json)
+
+        try:
+            article.mat_suppl = mat_suppl
+            article.save()
+        except mongoengine.errors.ValidationError as ex:
+            logging.error("Erro ao tentar salvar o material supplementar do artigo!, error: %s", ex)
+            logging.error("Contéudo retornado na função que obtém a lista de suplemento: %s", mat_suppl)
+            article.mat_suppl = []
 
     xml = fetch_document_xml(document_id)
 
