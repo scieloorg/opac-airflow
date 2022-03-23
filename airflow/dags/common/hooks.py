@@ -67,8 +67,7 @@ def kernel_connect(endpoint, method, data=None, headers=DEFAULT_HEADER, timeout=
 
 @retry(
     wait=wait_exponential(),
-    stop=stop_after_attempt(4),
-    retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
+    stop=stop_after_attempt(10),
 )
 def object_store_connect(bytes_data, filepath, bucket_name):
     s3_hook = S3Hook(aws_conn_id="aws_default")
@@ -104,6 +103,7 @@ def mongo_connect():
     connect(host=uri, **conn.extra_dejson)
 
 
+@retry(wait=wait_exponential(), stop=stop_after_attempt(10))
 def add_execution_in_database(
     table, data={}, connection_id="postgres_report_connection"
 ):
