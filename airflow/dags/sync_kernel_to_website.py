@@ -753,11 +753,12 @@ def register_documents(**kwargs):
         (get_id(task["id"]) for task in filter_changes(tasks, "documents", "get")),
     )
 
-    orphans = try_register_documents(
+    orphans, failed = try_register_documents(
         documents_to_get, _get_relation_data, fetch_documents_front, ArticleFactory, fetch_documents_xml, fetch_documents_manifest,
     )
 
     Variable.set("orphan_documents", orphans, serialize_json=True)
+    Variable.set("failed_documents", failed, serialize_json=True)
 
 
 register_documents_task = PythonOperator(

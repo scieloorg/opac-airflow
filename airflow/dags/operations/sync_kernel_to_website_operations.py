@@ -3,6 +3,8 @@ from datetime import datetime
 from re import match
 from typing import Callable, Iterable, Generator, Dict, List, Tuple
 
+from airflow.models import Variable
+
 import requests
 import mongoengine
 from lxml import etree as et
@@ -710,6 +712,8 @@ def try_register_documents(
     """
 
     orphans = []
+    failed_documents = Variable.get("failed_documents", default_var=[],
+                                   deserialize_json=True)
 
     # Para capturarmos a URL base é necessário que o hook tenha sido utilizado
     # ao menos uma vez.
@@ -741,7 +745,15 @@ def try_register_documents(
             )
             document.save()
             logging.info("ARTICLE saved %s %s" % (document_id, issue_id))
+            logging.info(
+                "Link to article on OPAC: https://www.scielo.br/j/%s/a/%s" % (document.journal.acronym, document_id))
+
+            # Remove itens que estava com falha.
+            if document_id in failed_documents:
+                failed_documents.remove(document_id)
+
         except InvalidOrderValueError as e:
+            failed_documents.append(document_id)
             logging.error(
                 "Could not register document %s. "
                 "%s",
@@ -757,6 +769,7 @@ def try_register_documents(
                 issue_id,
             )
         except requests.exceptions.HTTPError as exc:
+            failed_documents.append(document_id)
             logging.error(
                 "Could not register document '%s'. "
                 "The code '%s' was returned during the request to '%s'.",
@@ -768,6 +781,7 @@ def try_register_documents(
                 # GONE
                 _unpublish_deleted_document(document_id)
         except Exception as exc:
+            failed_documents.append(document_id)
             logging.error(
                 "Could not register document '%s'. "
                 "Unexpected error '%s'.",
@@ -775,7 +789,7 @@ def try_register_documents(
                 str(exc),
             )
 
-    return list(set(orphans))
+    return (list(set(orphans)), list(set(failed_documents)))
 
 
 def _unpublish_deleted_document(document_id):
