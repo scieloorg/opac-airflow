@@ -11,6 +11,7 @@ from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
 from airflow.operators.dagrun_operator import TriggerDagRunOperator
 from airflow.operators.email_operator import EmailOperator
+from airflow.utils.email import send_email
 
 from opac_schema.v1 import models
 
@@ -30,9 +31,16 @@ EMAIL_NOTIFICATION_RECIPIENTS = (
     email_notification_recipients.split(",") if email_notification_recipients else []
 )
 
-failure_recipients = os.environ.get("EMIAL_ON_FAILURE_RECIPIENTS", None)
+email_failed_recipients = os.environ.get(
+    "EMAIL_FAILED_RECIPIENTS", None)
 
-EMIAL_ON_FAILURE_RECIPIENTS = (
+EMAIL_FAILED_RECIPIENTS = (
+    email_failed_recipients.split(",") if email_failed_recipients else []
+)
+
+failure_recipients = os.environ.get("EMAIL_ON_FAILURE_RECIPIENTS", None)
+
+EMAIL_ON_FAILURE_RECIPIENTS = (
     failure_recipients.split(",") if failure_recipients else []
 )
 
@@ -45,7 +53,7 @@ default_args = {
     "email_on_failure": True,
     "email_on_retry": True,
     "depends_on_past": False,
-    "email": EMIAL_ON_FAILURE_RECIPIENTS,
+    "email": EMAIL_ON_FAILURE_RECIPIENTS,
 }
 
 dag = DAG(
@@ -753,11 +761,15 @@ def register_documents(**kwargs):
         (get_id(task["id"]) for task in filter_changes(tasks, "documents", "get")),
     )
 
-    orphans = try_register_documents(
+    orphans, failed = try_register_documents(
         documents_to_get, _get_relation_data, fetch_documents_front, ArticleFactory, fetch_documents_xml, fetch_documents_manifest,
     )
 
+    # Adiciona os documentos que falharam como documentos orfãos, para reprocessamento.
+    orphans = list(set(orphans + failed))
+
     Variable.set("orphan_documents", orphans, serialize_json=True)
+    Variable.set("failed_documents", failed, serialize_json=True)
 
 
 register_documents_task = PythonOperator(
@@ -927,13 +939,36 @@ def register_last_issues(ds, **kwargs):
 def must_send_email(ds, **kwargs):
     """If IS_SPORADIC == True return False to avoid send e-mail,
        but if IS_SPORADIC == False, return True to send e-mail.
-       Default is
+       Default is False
     """
 
     is_sporadic = Variable.get("IS_SPORADIC", "False")
 
+    # Garante que sempre que o IS_SPORADIC retorne para o valor False,
+    # após qualquer execução.
+    Variable.set("IS_SPORADIC", "False")
+
     return False if is_sporadic == "True" else True
 
+
+def has_failed(ds, **kwargs):
+    """Check if ``failed_documents``has items.
+    """
+    failed_documents = Variable.get("failed_documents", [], deserialize_json=True)
+
+    return bool(failed_documents)
+
+
+def failed_email_sender(ds, **kwargs):
+    """Send an e-mail with the PID v3 to a EMAIL_FAILED_RECIPIENTS
+    """
+    failed_documents = Variable.get("failed_documents", [])
+
+    send_email(
+        to=EMAIL_FAILED_RECIPIENTS,
+        subject='[SCIELO AIRFLOW] - Artigo com falha no processamento',
+        html_content=str(failed_documents),
+    )
 
 register_last_issues_task = PythonOperator(
     task_id="register_last_issues",
@@ -945,7 +980,7 @@ register_last_issues_task = PythonOperator(
 send_notification_email = EmailOperator(
     task_id='send_notification_email',
     to=EMAIL_NOTIFICATION_RECIPIENTS,
-    subject='Site atualizado',
+    subject='[SCIELO AIRFLOW] - Site atualizado',
     html_content=""" <h3>Site <a href="https://www.scielo.br">https://www.scielo.br</a> atualizado.</h3> """,
     mime_charset='utf-8',
     dag=dag
@@ -955,6 +990,20 @@ check_if_send_email = ShortCircuitOperator(
     task_id="check_if_send_email",
     provide_context=True,
     python_callable=must_send_email,
+    dag=dag,
+)
+
+check_if_send_email_failed = ShortCircuitOperator(
+    task_id="check_if_send_email_failed",
+    provide_context=True,
+    python_callable=has_failed,
+    dag=dag,
+)
+
+send_failed_email = PythonOperator(
+    task_id="send_failed_email",
+    provide_context=True,
+    python_callable=failed_email_sender,
     dag=dag,
 )
 
@@ -987,4 +1036,8 @@ check_if_send_email << register_last_issues_task
 
 send_notification_email << check_if_send_email
 
-send_notification_email >> trigger_check_website_dag_task
+check_if_send_email_failed << send_notification_email
+
+send_failed_email << check_if_send_email_failed
+
+send_failed_email >> trigger_check_website_dag_task
