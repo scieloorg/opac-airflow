@@ -38,9 +38,9 @@ EMAIL_FAILED_RECIPIENTS = (
     email_failed_recipients.split(",") if email_failed_recipients else []
 )
 
-failure_recipients = os.environ.get("EMIAL_ON_FAILURE_RECIPIENTS", None)
+failure_recipients = os.environ.get("EMAIL_ON_FAILURE_RECIPIENTS", None)
 
-EMIAL_ON_FAILURE_RECIPIENTS = (
+EMAIL_ON_FAILURE_RECIPIENTS = (
     failure_recipients.split(",") if failure_recipients else []
 )
 
@@ -53,7 +53,7 @@ default_args = {
     "email_on_failure": True,
     "email_on_retry": True,
     "depends_on_past": False,
-    "email": EMIAL_ON_FAILURE_RECIPIENTS,
+    "email": EMAIL_ON_FAILURE_RECIPIENTS,
 }
 
 dag = DAG(
