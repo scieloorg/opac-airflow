@@ -861,7 +861,7 @@ def _unpublish_repeated_documents(document_id, doi):
             continue
         if doc.title != new_title:
             continue
-        if doc.issue != new_issue and not doc.issue.endswith("aop"):
+        if doc.issue != new_issue and doc.issue.type != "ahead":
             continue
 
         logging.info("Repeated document %s / %s / %s / %s" %
