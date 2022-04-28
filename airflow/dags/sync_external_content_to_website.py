@@ -22,7 +22,7 @@ default_args = {
 dag = DAG(
     dag_id="sync_external_content_to_website",
     default_args=default_args,
-    schedule_interval="@hourly",
+    schedule_interval="0 0 * * 6",
     catchup=False
 )
 
