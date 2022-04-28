@@ -26,6 +26,7 @@ from tempfile import mkdtemp
 
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator, ShortCircuitOperator
+from airflow.operators.dagrun_operator import TriggerDagRunOperator
 from airflow.models import Variable
 
 from operations import sync_documents_to_kernel_operations
@@ -193,8 +194,14 @@ link_documents_task = ShortCircuitOperator(
     dag=dag,
 )
 
+trigger_sync_kernel_to_website_dag_task = TriggerDagRunOperator(
+    task_id="trigger_sync_kernel_to_website_dag_task",
+    trigger_dag_id="sync_kernel_to_website",
+    dag=dag,
+)
+
 list_documents_task >> delete_documents_task
 delete_documents_task >> optimize_package_task
 optimize_package_task >> register_update_documents_task
 register_update_documents_task >> link_documents_task
-
+link_documents_task >> trigger_sync_kernel_to_website_dag_task
