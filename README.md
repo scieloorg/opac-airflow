@@ -151,6 +151,14 @@ cd airflow
 python -m unittest -v
 ```
 
+## Sequência de execução das DAGs
+
+>sync_isis_to_kernel
+>>   pre_sync_documents_to_kernel
+>>>     sync_documents_to_kernel
+>>>>        sync_kernel_to_website
+
+> sync_external_content_to_website (executado todo 00:00 do sábado)
 
 ## Licença de uso
 
