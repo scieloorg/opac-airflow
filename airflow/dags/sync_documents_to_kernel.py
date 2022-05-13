@@ -31,6 +31,7 @@ from airflow.models import Variable
 
 from operations import sync_documents_to_kernel_operations
 from common.hooks import add_execution_in_database
+from common.airflow_functions import get_most_recent_dag_run
 
 
 Logger = logging.getLogger(__name__)
@@ -159,6 +160,20 @@ def link_documents_to_documentsbundle(dag_run, **kwargs):
         return False
 
 
+def check_if_last_execute(dag_run, **kwargs):
+    latest_dag_run = get_most_recent_dag_run('sync_documents_to_kernel')
+    logging.info("Latest dag_run ID: %s" % latest_dag_run.id)
+    logging.info("Current dag_run ID: %s" % dag_run.id)
+
+    if latest_dag_run:
+        if latest_dag_run.id == dag_run.id:
+            return True
+        else:
+            return False
+    else:
+        return False
+
+
 list_documents_task = ShortCircuitOperator(
     task_id="list_docs_task_id",
     provide_context=True,
@@ -194,6 +209,12 @@ link_documents_task = ShortCircuitOperator(
     dag=dag,
 )
 
+check_if_last_execute_dag_run = ShortCircuitOperator(
+    task_id="check_if_last_execute_dag_run",
+    provide_context=True,
+    python_callable=check_if_last_execute,
+    dag=dag,
+)
 trigger_sync_kernel_to_website_dag_task = TriggerDagRunOperator(
     task_id="trigger_sync_kernel_to_website_dag_task",
     trigger_dag_id="sync_kernel_to_website",
@@ -204,4 +225,5 @@ list_documents_task >> delete_documents_task
 delete_documents_task >> optimize_package_task
 optimize_package_task >> register_update_documents_task
 register_update_documents_task >> link_documents_task
-link_documents_task >> trigger_sync_kernel_to_website_dag_task
+link_documents_task >> check_if_last_execute_dag_run
+check_if_last_execute_dag_run >> trigger_sync_kernel_to_website_dag_task
