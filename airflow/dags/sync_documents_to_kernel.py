@@ -215,6 +215,7 @@ check_if_last_execute_dag_run = ShortCircuitOperator(
     python_callable=check_if_last_execute,
     dag=dag,
 )
+
 trigger_sync_kernel_to_website_dag_task = TriggerDagRunOperator(
     task_id="trigger_sync_kernel_to_website_dag_task",
     trigger_dag_id="sync_kernel_to_website",
@@ -225,5 +226,6 @@ list_documents_task >> delete_documents_task
 delete_documents_task >> optimize_package_task
 optimize_package_task >> register_update_documents_task
 register_update_documents_task >> link_documents_task
-link_documents_task >> check_if_last_execute_dag_run
+
+# Verifica se é a última DagRun
 check_if_last_execute_dag_run >> trigger_sync_kernel_to_website_dag_task
