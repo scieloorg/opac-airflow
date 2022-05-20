@@ -44,7 +44,7 @@ def http_hook_run(api_hook, method, endpoint, data=None, headers=DEFAULT_HEADER,
         headers=headers,
         extra_options={"timeout": timeout, "check_response": False}
     )
-    Logger.debug(
+    Logger.info(
         "%s %s - Payload: %s - status_code: %s",
         method, endpoint, json.dumps((data or ""), indent=2), response.status_code
     )

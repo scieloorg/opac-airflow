@@ -190,6 +190,9 @@ def is_document_to_delete(zipfile, sps_xml_file):
 def register_update_doc_into_kernel(xml_data):
 
     payload = {"data": xml_data["xml_url"], "assets": xml_data["assets"]}
+
+    Logger.info('Payload to kernel (data and assets): %s', payload)
+
     try:
         hooks.kernel_connect(
             "/documents/{}".format(xml_data["scielo_id"]), "PUT", payload
@@ -203,6 +206,8 @@ def register_update_doc_into_kernel(xml_data):
     else:
         for pdf_payload in (xml_data or {}).get("pdfs", []):
             Logger.info('Putting Rendition "%s" to Kernel', pdf_payload["filename"])
+
+            Logger.info('Payload to kernel (renditions): %s', pdf_payload)
             try:
                 hooks.kernel_connect(
                     "/documents/{}/renditions".format(xml_data["scielo_id"]),
