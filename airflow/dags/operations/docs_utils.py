@@ -10,6 +10,7 @@ from lxml import etree
 
 from common.sps_package import SPS_Package
 import common.hooks as hooks
+from common.mime import mime_types
 from operations.exceptions import (
     DeleteDocFromKernelException,
     DocumentToDeleteException,
@@ -68,11 +69,11 @@ def get_document_sps_package(current_version):
             AttributeError,
             etree.XMLSyntaxError,
             etree.Error,
-            ) as e:
+    ) as e:
         raise GetSPSPackageFromDocManifestException(
-                "Unable to get SPS Package of %s: %s" %
-                (current_version["data"], e)
-            )
+            "Unable to get SPS Package of %s: %s" %
+            (current_version["data"], e)
+        )
 
 
 def get_document_data_to_generate_uri(current_version, sps_package=None):
@@ -129,9 +130,9 @@ def get_document_assets_data(current_version):
             _uri = None
 
         uri = {
-                "asset_id": asset_id,
-                "uri": _uri,
-            }
+            "asset_id": asset_id,
+            "uri": _uri,
+        }
         assets_by_prefix[prefix].append(uri)
         assets_data.append(uri)
     # cria lista dos grupos de ativos digitais
@@ -170,7 +171,8 @@ def get_document_renditions_data(current_version):
 
 def delete_doc_from_kernel(doc_to_delete):
     try:
-        response = hooks.kernel_connect("/documents/" + doc_to_delete, "DELETE")
+        response = hooks.kernel_connect(
+            "/documents/" + doc_to_delete, "DELETE")
     except requests.exceptions.HTTPError as exc:
         raise DeleteDocFromKernelException(str(exc)) from None
 
@@ -205,7 +207,8 @@ def register_update_doc_into_kernel(xml_data):
         ) from None
     else:
         for pdf_payload in (xml_data or {}).get("pdfs", []):
-            Logger.info('Putting Rendition "%s" to Kernel', pdf_payload["filename"])
+            Logger.info('Putting Rendition "%s" to Kernel',
+                        pdf_payload["filename"])
 
             Logger.info('Payload to kernel (renditions): %s', pdf_payload)
             try:
@@ -232,10 +235,12 @@ def get_xml_data(xml_content, xml_package_name):
     """
     parser = etree.XMLParser(remove_blank_text=True, no_network=True)
     try:
-        metadata = SPS_Package(etree.XML(xml_content, parser), xml_package_name)
+        metadata = SPS_Package(
+            etree.XML(xml_content, parser), xml_package_name)
     except (etree.XMLSyntaxError, TypeError) as exc:
         raise PutXMLInObjectStoreException(
-            'Could not get xml data from "{}" : {}'.format(xml_package_name, str(exc))
+            'Could not get xml data from "{}" : {}'.format(
+                xml_package_name, str(exc))
         ) from None
     else:
         pdfs = [
@@ -286,14 +291,24 @@ def put_object_in_object_store(file, journal, scielo_id, filename, metadata=None
     n_filename = files_sha1(file)
     _, file_extension = os.path.splitext(filename)
 
+    if not metadata:
+        metadata = {"mimetype": mime_types.get(
+            file_extension, "application/octet-stream")}
+    else:
+        if 'mimetype' not in metadata:
+            metadata.update({"mimetype": mime_types.get(
+                file_extension, "application/octet-stream")})
+
     filepath = "{}/{}/{}".format(
         journal, scielo_id, "{}{}".format(n_filename, file_extension)
     )
     try:
-        object_url = hooks.object_store_connect(file, filepath, "documentstore")
+        object_url = hooks.object_store_connect(
+            file, filepath, "documentstore")
     except botocore.exceptions.BotoCoreError as exc:
         raise ObjectStoreError(
-            'Could not put object "{}" in object store : {}'.format(filepath, str(exc))
+            'Could not put object "{}" in object store : {}'.format(
+                filepath, str(exc))
         )
     else:
         if metadata is not None:
@@ -309,6 +324,7 @@ def put_object_in_object_store(file, journal, scielo_id, filename, metadata=None
                 )
         return object_url
 
+
 def put_assets_and_pdfs_in_object_store(zipfile, xml_data):
     """
     - Ler XML
@@ -321,7 +337,8 @@ def put_assets_and_pdfs_in_object_store(zipfile, xml_data):
     """
     _assets = []
     for asset in (xml_data or {}).get("assets", []):
-        Logger.info('Putting Asset file "%s" to Object Store', asset["asset_id"])
+        Logger.info('Putting Asset file "%s" to Object Store',
+                    asset["asset_id"])
         try:
             asset_file = zipfile.read(asset["asset_id"])
         except KeyError as exc:
@@ -463,9 +480,11 @@ def get_or_create_bundle(bundle_id, is_aop):
             try:
                 return hooks.kernel_connect("/bundles/" + bundle_id, "GET")
             except requests.exceptions.HTTPError as exc:
-                raise LinkDocumentToDocumentsBundleException(str(exc), response=exc.response)
+                raise LinkDocumentToDocumentsBundleException(
+                    str(exc), response=exc.response)
         else:
-            raise LinkDocumentToDocumentsBundleException(str(exc), response=exc.response)
+            raise LinkDocumentToDocumentsBundleException(
+                str(exc), response=exc.response)
 
 
 def update_aop_bundle_items(issn_id, documents_list):
@@ -525,4 +544,3 @@ def group_pids(document_pids_list):
         group[journal_pid][issue_pid] = group[journal_pid].get(issue_pid, [])
         group[journal_pid][issue_pid].append(doc_pid_v2)
     return group
-
