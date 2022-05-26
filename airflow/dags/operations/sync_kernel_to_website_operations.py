@@ -556,7 +556,8 @@ def ArticleFactory(
         # check if exist a supplementary_material
         logging.info("Checking if exists supplementary material....")
 
-        assets = _nestget(json, "versions", 0, "assets")
+        # Devemos pegar sempre o último asset da lista de assets do kernel [-1]
+        assets = _nestget(json, "versions", -1, "assets")
         suppls = [k for k in assets.keys() if 'suppl' in k]
 
         if any(suppls):
