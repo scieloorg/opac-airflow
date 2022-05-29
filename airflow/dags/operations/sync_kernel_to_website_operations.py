@@ -110,11 +110,7 @@ def ArticleFactory(
     """
     AUTHOR_CONTRIB_TYPES = (
         "author",
-        "editor",
-        "organizer",
-        "translator",
         "autor",
-        "compiler",
     )
 
     try:
