@@ -414,6 +414,14 @@ class IssueFactoryAOPTests(unittest.TestCase):
         self.assertEqual(self.issue.type, "ahead")
 
 
+def mock_fetch_document_xml(document_id):
+    return "<article/>"
+
+
+def mock_fetch_documents_manifest(document_id):
+    return None
+
+
 class ArticleFactoryTests(unittest.TestCase):
     def setUp(self):
         self.article_objects = patch(
@@ -431,7 +439,9 @@ class ArticleFactoryTests(unittest.TestCase):
             "kernel-document-front-s1518-8787.2019053000621.json"
         )
         self.document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
     def tearDown(self):
@@ -529,7 +539,9 @@ class ArticleFactoryTests(unittest.TestCase):
                         ]}
 
         document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(document, "publication_date"))
@@ -561,7 +573,9 @@ class ArticleFactoryTests(unittest.TestCase):
                         ]}
 
         document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(document, "publication_date"))
@@ -593,7 +607,9 @@ class ArticleFactoryTests(unittest.TestCase):
                         ]}
 
         document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(document, "publication_date"))
@@ -784,7 +800,9 @@ class ArticleFactoryTests(unittest.TestCase):
         }
 
         document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(document, "authors_meta"))
@@ -836,7 +854,9 @@ class ArticleFactoryTests(unittest.TestCase):
         }
 
         document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(document, "authors_meta"))
@@ -942,7 +962,9 @@ class AbstractsArticleFactoryTests(unittest.TestCase):
     def test_no_trans_abstracts_attribute(self, MockIssueObjects, MockArticleObjects):
         MockArticleObjects.get.side_effect = models.Article.DoesNotExist
         self.document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(self.document, "abstracts"))
@@ -962,7 +984,9 @@ class AbstractsArticleFactoryTests(unittest.TestCase):
             }]
         }]
         self.document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(self.document, "abstracts"))
@@ -978,7 +1002,9 @@ class AbstractsArticleFactoryTests(unittest.TestCase):
             "title": ["Resumen"],
         }]
         self.document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(self.document, "abstracts"))
@@ -1009,7 +1035,9 @@ class AbstractsArticleFactoryTests(unittest.TestCase):
             }]
         }]
         self.document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(self.document, "abstracts"))
@@ -1676,7 +1704,9 @@ class ArticleFactoryDisplayFormatTests(unittest.TestCase):
             "kernel-document-front-s1518-8787.2019053000621.display_fmt.json"
         )
         self.document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
     def tearDown(self):
