@@ -100,8 +100,9 @@ def ArticleFactory(
         issue_id (str): Identificador de issue.
         document_order (int): Posição do artigo.
         document_xml_url (str): URL do XML do artigo
+        repeated_doc_pids (str list): Lista de PIDs
         fetch_document_xml (callable): Função para obter o XML do Kernel caso
-        fetch_document_xml (callable): Função para obter o JSON Manifest do Kernel caso
+        fetch_documents_manifest (callable): Função para obter o JSON Manifest do Kernel caso
         necessário.
 
     Returns:
@@ -480,7 +481,7 @@ def ArticleFactory(
         try:
             formed_date = ""
             for pubdate in publication_dates or []:
-                if date_type in pubdate.get('date_type'):
+                if date_type in pubdate.get('date_type') or "epub" in pubdate.get("pub_type"):
                     pubdate_list = [_nestget(pubdate, 'day', 0),
                                     _nestget(pubdate, 'month', 0),
                                     _nestget(pubdate, 'year', 0)]
@@ -864,7 +865,7 @@ def _unpublish_repeated_documents(document_id, doi):
         logging.info("Repeated document %s / %s / %s / %s" %
                      (doc._id, doc.pid, doc.aop_pid, str(doc.scielo_pids)))
         # obtém os pids
-        pids |= set(doc.scielo_pids and (doc.scielo_pids.get("other") or []))
+        pids |= set(doc.scielo_pids and doc.scielo_pids.get("other") or [])
         pids |= set([i for i in [doc._id, doc.pid, doc.aop_pid] if i])
 
         try:
