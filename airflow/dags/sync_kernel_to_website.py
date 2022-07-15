@@ -606,6 +606,11 @@ def try_register_issues(
             else:
                 # Não é necessário o campo de ordenação(order) no ahead
                 issue = issue_factory(data, journal_id, _type="ahead")
+
+            if not data.get("items"):
+                # issue não tem documentos, então não deve ficar disponível
+                issue.is_public = False
+
             issue.save()
         except models.Journal.DoesNotExist:
             orphans.append(issue_id)
