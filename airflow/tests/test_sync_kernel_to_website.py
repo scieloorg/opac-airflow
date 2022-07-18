@@ -33,11 +33,13 @@ def load_json_fixture(filename):
 
 class MockArticle:
 
-    def __init__(self, _id, pid, aop_pid, scielo_pids):
+    def __init__(self, _id, pid, aop_pid, scielo_pids, title=None, issue=None):
         self._id = _id
         self.pid = pid
         self.aop_pid = aop_pid
         self.scielo_pids = scielo_pids
+        self.title = title
+        self.issue = issue
 
     def save(self):
         pass
@@ -414,6 +416,14 @@ class IssueFactoryAOPTests(unittest.TestCase):
         self.assertEqual(self.issue.type, "ahead")
 
 
+def mock_fetch_document_xml(document_id):
+    return "<article/>"
+
+
+def mock_fetch_documents_manifest(document_id):
+    return None
+
+
 class ArticleFactoryTests(unittest.TestCase):
     def setUp(self):
         self.article_objects = patch(
@@ -431,7 +441,9 @@ class ArticleFactoryTests(unittest.TestCase):
             "kernel-document-front-s1518-8787.2019053000621.json"
         )
         self.document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
     def tearDown(self):
@@ -480,8 +492,8 @@ class ArticleFactoryTests(unittest.TestCase):
         self.assertEqual(1, len(self.document.translated_titles))
 
     def test_has_trans_sections_attribute(self):
-        self.assertTrue(hasattr(self.document, "trans_sections"))
-        self.assertEqual(2, len(self.document.trans_sections))
+        self.assertTrue(hasattr(self.document, "sections"))
+        self.assertEqual(2, len(self.document.sections))
 
     def test_has_abstracts_attribute(self):
         self.assertTrue(hasattr(self.document, "abstracts"))
@@ -529,11 +541,13 @@ class ArticleFactoryTests(unittest.TestCase):
                         ]}
 
         document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(document, "publication_date"))
-        self.assertEqual("2019", document.publication_date)
+        self.assertEqual("2019-01-31", document.publication_date)
 
     def test_has_publication_date_attribute_with_just_month(self):
 
@@ -561,11 +575,13 @@ class ArticleFactoryTests(unittest.TestCase):
                         ]}
 
         document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(document, "publication_date"))
-        self.assertEqual("01", document.publication_date)
+        self.assertEqual("2019-01-31", document.publication_date)
 
     def test_has_publication_date_attribute_with_just_month_year(self):
 
@@ -593,11 +609,13 @@ class ArticleFactoryTests(unittest.TestCase):
                         ]}
 
         document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(document, "publication_date"))
-        self.assertEqual("2019-01", document.publication_date)
+        self.assertEqual("2019-01-31", document.publication_date)
 
     def test_has_type_attribute(self):
         self.assertTrue(hasattr(self.document, "type"))
@@ -647,7 +665,9 @@ class ArticleFactoryTests(unittest.TestCase):
                     data=self.document_front,
                     issue_id="issue-1",
                     document_order=order,
-                    document_xml_url=""
+                    document_xml_url="",
+                    repeated_doc_pids=[],
+                    fetch_document_xml=mock_fetch_document_xml,
                 )
                 self.assertEqual(621, article.order)
 
@@ -661,7 +681,10 @@ class ArticleFactoryTests(unittest.TestCase):
                 data=front,
                 issue_id="issue-1",
                 document_order="bla",
-                document_xml_url=""
+                document_xml_url="",
+                repeated_doc_pids=[],
+                fetch_document_xml=mock_fetch_document_xml,
+
             )
 
     def test_order_attribute_returns_zero_because_pid_v2_is_None_and_order_is_None(self):
@@ -674,7 +697,10 @@ class ArticleFactoryTests(unittest.TestCase):
                 data=front,
                 issue_id="issue-1",
                 document_order=None,
-                document_xml_url=""
+                document_xml_url="",
+                repeated_doc_pids=[],
+                fetch_document_xml=mock_fetch_document_xml,
+
             )
 
     def test_order_attribute_returns_order(self):
@@ -686,7 +712,8 @@ class ArticleFactoryTests(unittest.TestCase):
             data=front,
             issue_id=MagicMock(),
             document_order="1234",
-            document_xml_url=MagicMock()
+            document_xml_url=MagicMock(),
+            fetch_document_xml=mock_fetch_document_xml,
         )
         self.assertEqual(1234, article.order)
 
@@ -784,7 +811,9 @@ class ArticleFactoryTests(unittest.TestCase):
         }
 
         document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(document, "authors_meta"))
@@ -836,7 +865,9 @@ class ArticleFactoryTests(unittest.TestCase):
         }
 
         document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", document_dict, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(document, "authors_meta"))
@@ -872,7 +903,8 @@ class ExAOPArticleFactoryTests(unittest.TestCase):
         MockArticle.issue = self.issue
         MockArticleObjects.get.return_value = MockArticle
         self.document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", "1", ""
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", "1", "",
+            fetch_document_xml=mock_fetch_document_xml,
         )
         self.assertIsNotNone(self.document.aop_url_segs)
         self.assertIsInstance(self.document.aop_url_segs, models.AOPUrlSegments)
@@ -900,7 +932,9 @@ class ExAOPArticleFactoryTests(unittest.TestCase):
         # ArticleFactory
         self.document = ArticleFactory(
             "67TH7T7CyPPmgtVrGXhWXVs", self.document_front,
-            regular_issue_id, "1", ""
+            regular_issue_id, "1", "",
+            [],
+            mock_fetch_document_xml,
         )
         self.assertEqual(self.document.pid, "S1518-87872019053000621")
         self.assertEqual(self.document.aop_pid, '')
@@ -925,7 +959,9 @@ class ExAOPArticleFactoryTests(unittest.TestCase):
         # ArticleFactory
         self.document = ArticleFactory(
             "67TH7T7CyPPmgtVrGXhWXVs", self.document_front,
-            regular_issue_id, "1", ""
+            regular_issue_id, "1", "",
+            [],
+            mock_fetch_document_xml,
         )
         self.assertEqual(self.document.pid, "S1518-87872019053000621")
         self.assertEqual(self.document.aop_pid, "S1518-8787XXXX005000621")
@@ -942,7 +978,9 @@ class AbstractsArticleFactoryTests(unittest.TestCase):
     def test_no_trans_abstracts_attribute(self, MockIssueObjects, MockArticleObjects):
         MockArticleObjects.get.side_effect = models.Article.DoesNotExist
         self.document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(self.document, "abstracts"))
@@ -962,7 +1000,9 @@ class AbstractsArticleFactoryTests(unittest.TestCase):
             }]
         }]
         self.document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(self.document, "abstracts"))
@@ -978,7 +1018,9 @@ class AbstractsArticleFactoryTests(unittest.TestCase):
             "title": ["Resumen"],
         }]
         self.document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(self.document, "abstracts"))
@@ -1009,7 +1051,9 @@ class AbstractsArticleFactoryTests(unittest.TestCase):
             }]
         }]
         self.document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
         self.assertTrue(hasattr(self.document, "abstracts"))
@@ -1087,7 +1131,7 @@ class RegisterDocumentTests(unittest.TestCase):
             "issue-1",
             "01",
             "http://kernel_url/documents/67TH7T7CyPPmgtVrGXhWXVs",
-            None,
+            None, None, None
         )
 
 class ArticleRenditionFactoryTests(unittest.TestCase):
@@ -1676,7 +1720,9 @@ class ArticleFactoryDisplayFormatTests(unittest.TestCase):
             "kernel-document-front-s1518-8787.2019053000621.display_fmt.json"
         )
         self.document = ArticleFactory(
-            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, ""
+            "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, "",
+            [],
+            mock_fetch_document_xml,
         )
 
     def tearDown(self):
@@ -1709,9 +1755,12 @@ class TestUnpublishDocuments(unittest.TestCase):
         document_id = "doc"
         doi = "doi"
         mock_objects.return_value = [
-            MockArticle("id1", "pid1", aop_pid=None, scielo_pids=None),
-            MockArticle("id2", "pid2", aop_pid=None, scielo_pids=None),
-            MockArticle("doc", "pdi3", aop_pid=None, scielo_pids=None),
+            MockArticle("id1", "pid1", aop_pid=None, scielo_pids=None,
+                        title="Título", issue="Issue"),
+            MockArticle("id2", "pid2", aop_pid=None, scielo_pids=None,
+                        title="Título", issue="Issue"),
+            MockArticle("doc", "pdi3", aop_pid=None, scielo_pids=None,
+                        title="Título", issue="Issue"),
         ]
         result = _unpublish_repeated_documents(document_id, doi)
         self.assertListEqual(sorted(["id1", "id2", "pid1", "pid2"]), sorted(result))

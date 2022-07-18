@@ -52,8 +52,8 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
                 if os.path.isfile(dest_file_path):
                     Logger.info("Skip %s", str(item))
                     continue
-                Logger.info("Moving %s to %s", str(item), str(proc_dir_path))
-                shutil.move(str(item), str(proc_dir_path))
+
+                insert_package_in_proc_dir(str(item), str(proc_dir_path))
 
             # verifica no destino
             acron_issue_list = []
@@ -74,3 +74,12 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
 
     Logger.debug("get_sps_packages OUT")
     return sps_packages_list
+
+
+def insert_package_in_proc_dir(source_file_path, proc_path):
+    move_package_to_proc_dir(source_file_path, proc_path)
+
+
+def move_package_to_proc_dir(source_file_path, proc_path):
+    Logger.info("Moving %s to %s", source_file_path, proc_path)
+    shutil.move(source_file_path, proc_path)
