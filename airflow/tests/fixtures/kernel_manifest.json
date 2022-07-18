@@ -1,0 +1,139 @@
+
+{
+
+    "id": "9v4cns4pzjKwq7z4w5YkSFF",
+    "versions": [
+        {
+            "data": "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/ad660c3a1986f2fc0d000a78dd62a016c29948f9.xml",
+            "assets": {
+                "0001-3765-aabc-94-03-e20211104-f1.jpg": [
+                    [
+                        "2022-07-16T03:05:26.363042Z",
+                        "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/d30f2458b2b65466724b59982a9551838bfae113.jpg"
+                    ]
+                ],
+                "0001-3765-aabc-94-03-e20211104-f1.thumbnail.jpg": [
+                    [
+                        "2022-07-16T03:05:26.363283Z",
+                        "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/488e63e8a41f49210c1f5dc019ad133c0ec60b31.jpg"
+                    ]
+                ],
+                "0001-3765-aabc-94-03-e20211104-f2.jpg": [
+                    [
+                        "2022-07-16T03:05:26.363529Z",
+                        "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/bd526a5cee23f08f09e20035e314b360eac5d2b6.jpg"
+                    ]
+                ],
+                "0001-3765-aabc-94-03-e20211104-f2.thumbnail.jpg": [
+                    [
+                        "2022-07-16T03:05:26.363815Z",
+                        "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/6b8dcd51fd9ca0d416e41e40b69ab739ce97949e.jpg"
+                    ]
+                ],
+                "0001-3765-aabc-94-03-e20211104-f3.jpg": [
+                    [
+                        "2022-07-16T03:05:26.364109Z",
+                        "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/330aa5d993769428a91aadfc7b4218a33380997b.jpg"
+                    ]
+                ],
+                "0001-3765-aabc-94-03-e20211104-f3.thumbnail.jpg": [
+                    [
+                        "2022-07-16T03:05:26.364415Z",
+                        "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/7e3a003b860ee4075de4ff0a17c299325a5a93df.jpg"
+                    ]
+                ],
+                "0001-3765-aabc-94-03-e20211104-suppl01.pdf": [
+                    [
+                        "2022-07-16T03:05:26.364775Z",
+                        "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/03d018289606fde4da558f1753b389c4fe59b79a.pdf"
+                    ]
+                ]
+            },
+            "timestamp": "2022-07-16T03:05:26.360580Z",
+            "renditions": [
+                {
+                    "filename": "0001-3765-aabc-94-03-e20211104.pdf",
+                    "data": [
+                        {
+                            "timestamp": "2022-07-16T03:05:26.508933Z",
+                            "url": "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/da86ba3762c85ecd797b10d72a1410c739847253.pdf",
+                            "size_bytes": 1173996
+                        }
+                    ],
+                    "mimetype": "application/pdf",
+                    "lang": "en"
+                }
+            ]
+        },
+        {
+            "data": "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/0941915a8481f899cf8808b2314d098440751fce.xml",
+            "assets": {
+                "0001-3765-aabc-94-03-e20211104-f1.jpg": [
+                    [
+                        "2022-07-16T03:08:58.780650Z",
+                        "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/d30f2458b2b65466724b59982a9551838bfae113.jpg"
+                    ]
+                ],
+                "0001-3765-aabc-94-03-e20211104-f1.thumbnail.jpg": [
+                    [
+                        "2022-07-16T03:08:58.780735Z",
+                        "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/488e63e8a41f49210c1f5dc019ad133c0ec60b31.jpg"
+                    ]
+                ],
+                "0001-3765-aabc-94-03-e20211104-f2.jpg": [
+                    [
+                        "2022-07-16T03:08:58.780779Z",
+                        "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/bd526a5cee23f08f09e20035e314b360eac5d2b6.jpg"
+                    ]
+                ],
+                "0001-3765-aabc-94-03-e20211104-f2.thumbnail.jpg": [
+                    [
+                        "2022-07-16T03:08:58.780830Z",
+                        "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/6b8dcd51fd9ca0d416e41e40b69ab739ce97949e.jpg"
+                    ]
+                ],
+                "0001-3765-aabc-94-03-e20211104-f3.jpg": [
+                    [
+                        "2022-07-16T03:08:58.780876Z",
+                        "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/330aa5d993769428a91aadfc7b4218a33380997b.jpg"
+                    ]
+                ],
+                "0001-3765-aabc-94-03-e20211104-f3.thumbnail.jpg": [
+                    [
+                        "2022-07-16T03:08:58.780924Z",
+                        "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/7e3a003b860ee4075de4ff0a17c299325a5a93df.jpg"
+                    ]
+                ],
+                "0001-3765-aabc-94-03-e20211104-suppl01.pdf": [
+                    [
+                        "2022-07-16T03:08:58.780976Z",
+                        "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/03d018289606fde4da558f1753b389c4fe59b79a.pdf"
+                    ]
+                ],
+                "0001-3765-aabc-94-03-e20211104-suppl01-es.pdf": [
+                    [
+                        "2022-07-16T03:08:58.780976Z",
+                        "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/03d018289606fde4da558f1753b389c4fe59b7es.pdf"
+                    ]
+                ]
+            },
+            "timestamp": "2022-07-16T03:08:58.780570Z",
+            "renditions": [
+                {
+                    "filename": "0001-3765-aabc-94-03-e20211104.pdf",
+                    "data": [
+                        {
+                            "timestamp": "2022-07-16T03:08:58.915619Z",
+                            "url": "https://minio.scielo.br/documentstore/1678-2690/9v4cns4pzjKwq7z4w5YkSFF/da86ba3762c85ecd797b10d72a1410c739847253.pdf",
+                            "size_bytes": 1173996
+                        }
+                    ],
+                    "mimetype": "application/pdf",
+                    "lang": "en"
+                }
+            ]
+        }
+    ],
+    "_id": "9v4cns4pzjKwq7z4w5YkSFF"
+
+}

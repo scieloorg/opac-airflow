@@ -468,6 +468,16 @@ class ArticleFactoryTests(unittest.TestCase):
             "0001-3765-aabc-94-03-e20211104-suppl01.pdf",
             self.document.mat_suppl[0].filename,
         )
+        self.assertEqual(
+            "https://minio.scielo.br/documentstore/1678-2690/"
+            "9v4cns4pzjKwq7z4w5YkSFF/"
+            "03d018289606fde4da558f1753b389c4fe59b7es.pdf",
+            self.document.mat_suppl[1].url,
+        )
+        self.assertEqual(
+            "0001-3765-aabc-94-03-e20211104-suppl01-es.pdf",
+            self.document.mat_suppl[1].filename,
+        )
 
     def test_has_title_attribute(self):
         self.assertTrue(hasattr(self.document, "title"))
