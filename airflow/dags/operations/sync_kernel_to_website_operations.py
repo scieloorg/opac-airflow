@@ -507,40 +507,6 @@ def ArticleFactory(
         for related_dict in sps_package.related_articles:
             _update_related_articles(article, related_dict)
 
-    def _update_suppl_material(document_id, filename, url):
-        """
-        Atualiza os material suplementar.
-
-        Return a suplementary material dict.
-
-            {
-                "url" : "https://minio.scielo.br/documentstore/2237-9622/d6DyD7CHXbpTJbLq7NQQNdq/5d88e2211c5357e2a9d8caeac2170f4f3d1305d1.pdf"
-                "filename": "suppl01.pdf"
-            }
-        """
-
-        suppl_data = {
-            "url": url,
-            "filename": filename
-        }
-
-        mat_suppl_entity = models.MatSuppl(**suppl_data)
-
-        try:
-            # Verifica se é uma atualização.
-            _article = models.Article.objects.get(_id=document_id)
-        except models.Article.DoesNotExist as ex:
-            # Caso não seja uma atualização
-            return models.MatSuppl(**suppl_data)
-        else:
-            # É uma atualização
-            # Mantém a unicidade da atualização do material suplementar
-            if mat_suppl_entity not in _article.mat_suppl:
-                _article.mat_suppl += [mat_suppl_entity]
-                return _article.mat_suppl
-            else:
-                return _article.mat_suppl
-
     def _get_suppl_material(article, json):
         """
         Obtém a lista de material suplementar do JSON do Manifest do Kernel e caso existe atualiza a entidade MatSuppl.
@@ -555,15 +521,19 @@ def ArticleFactory(
 
         # Devemos pegar sempre o último asset da lista de assets do kernel [-1]
         assets = _nestget(json, "versions", -1, "assets")
-        suppls = [k for k in assets.keys() if 'suppl' in k]
 
-        if any(suppls):
-            logging.info("Exists supplementary material: %s" %
-                         (' '.join(suppls)))
-            for key, asset in assets.items():
-                if key in suppls:
-                    return _update_suppl_material(article,
-                                                  filename=key, url=_nestget(asset, 0, 1))
+        mat_suppls = []
+        for k, asset_versions in assets.items():
+            most_recent = asset_versions[-1]
+            if 'suppl' in k:
+                logging.info("Supplementary material: %s" % k)
+                mat_suppls.append(
+                    models.MatSuppl(**{
+                        "url": most_recent[1],
+                        "filename": k
+                    })
+                )
+        return mat_suppls
 
     def _get_doi_with_lang(article, sps_package):
         """
@@ -637,16 +607,22 @@ def ArticleFactory(
 
     # Cadastra o material suplementar
     if fetch_documents_manifest:
-        json = fetch_documents_manifest(document_id)
-        mat_suppl = _get_suppl_material(document_id, json)
 
         try:
+            json = fetch_documents_manifest(document_id)
+            mat_suppl = _get_suppl_material(document_id, json)
+
             article.mat_suppl = mat_suppl
             article.save()
         except mongoengine.errors.ValidationError as ex:
-            logging.error("Erro ao tentar salvar o material supplementar do artigo!, error: %s", ex)
-            logging.error("Conteúdo retornado na função que obtém a lista de suplemento: %s", mat_suppl)
             article.mat_suppl = []
+            logging.error("Erro no formato do material supplementar do artigo!, error: %s", ex)
+            logging.error("Conteúdo retornado na função que obtém a lista de suplemento: %s", mat_suppl)
+        except mongoengine.connection.ConnectionFailure as ex:
+            logging.error("Erro ao tentar salvar o material supplementar do artigo!, error: %s", ex)
+        except Exception as ex:
+            article.mat_suppl = []
+            logging.error("Erro ao obter supplementary material %s, error: %s %s" % (document_id, type(ex), ex))
 
     xml = fetch_document_xml(document_id)
 
