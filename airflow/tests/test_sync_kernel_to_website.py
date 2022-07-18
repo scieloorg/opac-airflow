@@ -420,8 +420,10 @@ def mock_fetch_document_xml(document_id):
     return "<article/>"
 
 
-def mock_fetch_documents_manifest(document_id):
-    return None
+def mock_fetch_document_manifest(document_id):
+    return load_json_fixture(
+        "kernel_manifest.json"
+    )
 
 
 class ArticleFactoryTests(unittest.TestCase):
@@ -440,10 +442,12 @@ class ArticleFactoryTests(unittest.TestCase):
         self.document_front = load_json_fixture(
             "kernel-document-front-s1518-8787.2019053000621.json"
         )
+
         self.document = ArticleFactory(
             "67TH7T7CyPPmgtVrGXhWXVs", self.document_front, "issue-1", 621, "",
             [],
             mock_fetch_document_xml,
+            mock_fetch_document_manifest,
         )
 
     def tearDown(self):
@@ -452,6 +456,28 @@ class ArticleFactoryTests(unittest.TestCase):
 
     def test_has_method_save(self):
         self.assertTrue(hasattr(self.document, "save"))
+
+    def test_has_mat_suppl_attribute(self):
+        self.assertEqual(
+            "https://minio.scielo.br/documentstore/1678-2690/"
+            "9v4cns4pzjKwq7z4w5YkSFF/"
+            "03d018289606fde4da558f1753b389c4fe59b79a.pdf",
+            self.document.mat_suppl[0].url,
+        )
+        self.assertEqual(
+            "0001-3765-aabc-94-03-e20211104-suppl01.pdf",
+            self.document.mat_suppl[0].filename,
+        )
+        self.assertEqual(
+            "https://minio.scielo.br/documentstore/1678-2690/"
+            "9v4cns4pzjKwq7z4w5YkSFF/"
+            "03d018289606fde4da558f1753b389c4fe59b7es.pdf",
+            self.document.mat_suppl[1].url,
+        )
+        self.assertEqual(
+            "0001-3765-aabc-94-03-e20211104-suppl01-es.pdf",
+            self.document.mat_suppl[1].filename,
+        )
 
     def test_has_title_attribute(self):
         self.assertTrue(hasattr(self.document, "title"))
