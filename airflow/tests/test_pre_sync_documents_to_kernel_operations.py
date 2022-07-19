@@ -60,6 +60,34 @@ class TestGetSPSPackagesWithPidManager(TestCase):
         shutil.rmtree(self.proc_dir_name)
 
     @patch("operations.pre_sync_documents_to_kernel_operations.move_package_to_proc_dir")
+    def test_get_sps_packages_calls_move_package_to_proc_dir_because_there_is_no_id_provider_db_uri(
+            self,
+            mk_move_package_to_proc_dir,
+            mk_id_provider_functions,
+            ):
+        """
+        Testa que move_package_to_proc_dir será executado porque as funções do
+        ID provider são None, None no lugar de `request_document_id`, `connect`
+        """
+        mk_request_id = MagicMock(name='request_id')
+        mk_connect = Mock(name='connect')
+
+        mk_id_provider_functions.return_value = {
+            "request_document_id": mk_request_id,
+            "connect": mk_connect
+        }
+        self.kwargs['id_provider_db_uri'] = None
+        get_sps_packages(**self.kwargs)
+
+        calls = mk_move_package_to_proc_dir.call_args_list
+        self.assertEqual(len(calls), 9)
+        for zipfile in self.zipfiles:
+            with self.subTest(zipfile):
+                self.assertIn(call(zipfile, self.proc_dir_name), calls)
+        mk_connect.assert_not_called()
+        mk_request_id.assert_not_called()
+
+    @patch("operations.pre_sync_documents_to_kernel_operations.move_package_to_proc_dir")
     def test_get_sps_packages_calls_move_package_to_proc_dir(
             self,
             mk_move_package_to_proc_dir,

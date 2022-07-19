@@ -74,6 +74,7 @@ def get_sps_packages(conf, **kwargs):
     sincronizados.
     Armazena os pacotes em XCom para a próxima tarefa.
     """
+    SCIELO_CORE_ID_PROVIDER_DB_URI = Variable.get("SCIELO_CORE_ID_PROVIDER_DB_URI")
     _xc_sps_packages_dir = Path(Variable.get("XC_SPS_PACKAGES_DIR"))
     _proc_sps_packages_dir = Path(Variable.get("PROC_SPS_PACKAGES_DIR")) / kwargs["run_id"]
     if not _proc_sps_packages_dir.is_dir():
@@ -88,6 +89,7 @@ def get_sps_packages(conf, **kwargs):
         _scilista_file_path,
         _xc_sps_packages_dir,
         _proc_sps_packages_dir,
+        SCIELO_CORE_ID_PROVIDER_DB_URI,
     )
 
     if _sps_packages:
