@@ -7,4 +7,5 @@ beautifulsoup4==4.9.0
 git+https://github.com/scieloorg/xylose.git@1.35.8#egg=xylose
 git+https://github.com/scieloorg/opac_schema.git@v2.66#egg=opac_schema
 git+https://github.com/scieloorg/packtools.git@2.9.5#egg=packtools
+git+https://github.com/robertatakenaka/scielo_core.git@v0.14#egg=scielo_core
 aiohttp==3.6.2
