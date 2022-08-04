@@ -112,10 +112,24 @@ def register_update_documents(dag_run, **kwargs):
         key="optimized_package", task_ids="optimize_package_task_id"
     )
 
-    package = _optimized_package or dag_run.conf.get("sps_package")
-    _documents, executions = sync_documents_to_kernel_operations.register_update_documents(
-        package, _xmls_to_preserve
-    )
+    executions = []
+    _documents = []
+
+    # tenta registrar pacote otimizado e/ou não otimizado
+    for package in (_optimized_package, dag_run.conf.get("sps_package")):
+
+        if not package:
+            continue
+
+        try:
+            logging.info("Try to register: %s" % package)
+            _documents, executions = sync_documents_to_kernel_operations.register_update_documents(
+                package, _xmls_to_preserve
+            )
+        except FileNotFoundError as e:
+            logging.info("Package not found %s %s" % (package, e))
+        else:
+            break
 
     for execution in executions:
         execution["dag_run"] = kwargs.get("run_id")

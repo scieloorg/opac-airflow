@@ -1,5 +1,5 @@
 from unittest import TestCase, main
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 from tempfile import mkdtemp
 
 from airflow import DAG
@@ -208,6 +208,61 @@ class TestRegisterUpdateDocuments(TestCase):
         kwargs["ti"].xcom_push.assert_called_once_with(
             key="documents", value=documents
         )
+
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
+    def test_register_update_documents_uses_not_optimized_package(
+        self, mk_register_update_documents
+    ):
+        xmls_filenames = [
+            "1806-907X-rba-53-01-1-8.xml",
+            "1806-907X-rba-53-01-9-18.xml",
+            "1806-907X-rba-53-01-19-25.xml",
+        ]
+        mk_dag_run = MagicMock()
+        mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
+        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+        kwargs["ti"].xcom_pull.side_effect = [
+            xmls_filenames,
+            "path_to_optimized_package/package.zip"
+        ]
+        mk_register_update_documents.side_effect = [
+            FileNotFoundError, ([], [])
+        ]
+        register_update_documents(**kwargs)
+
+        calls = [
+            call("path_to_optimized_package/package.zip", xmls_filenames),
+            call("path_to_sps_package/package.zip", xmls_filenames),
+        ]
+        self.assertListEqual(calls, mk_register_update_documents.call_args_list)
+
+    @patch("sync_documents_to_kernel.sync_documents_to_kernel_operations.register_update_documents")
+    def test_register_update_documents_found_no_package(
+        self, mk_register_update_documents
+    ):
+        xmls_filenames = [
+            "1806-907X-rba-53-01-1-8.xml",
+            "1806-907X-rba-53-01-9-18.xml",
+            "1806-907X-rba-53-01-19-25.xml",
+        ]
+        mk_dag_run = MagicMock()
+        mk_dag_run.conf.get.return_value = "path_to_sps_package/package.zip"
+        kwargs = {"ti": MagicMock(), "dag_run": mk_dag_run}
+        kwargs["ti"].xcom_pull.side_effect = [
+            xmls_filenames,
+            "path_to_optimized_package/package.zip"
+        ]
+        mk_register_update_documents.side_effect = [
+            FileNotFoundError, FileNotFoundError
+        ]
+        register_update_documents(**kwargs)
+
+        calls = [
+            call("path_to_optimized_package/package.zip", xmls_filenames),
+            call("path_to_sps_package/package.zip", xmls_filenames),
+        ]
+        self.assertListEqual(calls, mk_register_update_documents.call_args_list)
+        kwargs["ti"].xcom_push.assert_not_called()
 
 
 @patch(

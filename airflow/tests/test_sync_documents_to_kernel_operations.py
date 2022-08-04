@@ -3,6 +3,7 @@ import copy
 import tempfile
 import builtins
 import json
+from zipfile import ZipFile
 from unittest import TestCase, main
 from unittest.mock import patch, Mock, MagicMock, ANY, mock_open, call
 from tempfile import mkdtemp, mkstemp
@@ -16,6 +17,7 @@ from operations.sync_documents_to_kernel_operations import (
     optimize_sps_pkg_zip_file,
     register_update_documents,
     link_documents_to_documentsbundle,
+    is_readable_pkg_file,
 )
 from operations.exceptions import (
     DeleteDocFromKernelException,
@@ -1012,17 +1014,20 @@ class TestLinkDocumentToDocumentsbundleAOPs(TestCase):
 
 class TestOptimizeSPPackage(TestCase):
 
+    @patch("operations.sync_documents_to_kernel_operations.is_readable_pkg_file")
     @patch("operations.sync_documents_to_kernel_operations.ZipFile")
     @patch("operations.sync_documents_to_kernel_operations.Logger")
     @patch("operations.sync_documents_to_kernel_operations.SPPackage")
     @patch("operations.sync_documents_to_kernel_operations.os.path.isfile")
-    def test_optimize_sps_pkg_zip_file_write_log_messages_in_and_out(
+    def test_optimize_sps_pkg_zip_file_get_optimized_package(
         self,
         mock_isfile,
         MockSPPackage,
         MockLogger,
         MockZipFile,
+        mock_is_readable_pkg_file,
     ):
+        mock_is_readable_pkg_file.return_value = True
         mock_isfile.return_value = True
         MockZipFile = mock_open
         mock_optimise = Mock("optimise")
@@ -1034,6 +1039,58 @@ class TestOptimizeSPPackage(TestCase):
 
         ret = optimize_sps_pkg_zip_file("dir/destination/rba_v53n1.zip", new_sps_zip_dir)
         self.assertEqual(ret, os.path.join(new_sps_zip_dir, "rba_v53n1.zip"))
+
+    @patch("operations.sync_documents_to_kernel_operations.is_readable_pkg_file")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.SPPackage")
+    @patch("operations.sync_documents_to_kernel_operations.os.path.isfile")
+    def test_optimize_sps_pkg_zip_file_do_not_get_optimized_package(
+        self,
+        mock_isfile,
+        MockSPPackage,
+        MockLogger,
+        MockZipFile,
+        mock_is_readable_pkg_file,
+    ):
+        mock_is_readable_pkg_file.return_value = False
+        mock_isfile.return_value = True
+        MockZipFile = mock_open
+        mock_optimise = Mock("optimise")
+        mock_optimise.return_value = None
+        mock_package = Mock("package")
+        mock_package.optimise = mock_optimise
+        MockSPPackage.from_file.return_value = mock_package
+        new_sps_zip_dir = mkdtemp()
+
+        ret = optimize_sps_pkg_zip_file("dir/destination/rba_v53n1.zip", new_sps_zip_dir)
+        self.assertIsNone(ret)
+
+    def test_is_readable_pkg_file_package_returns_false_file_does_not_exist(self):
+        ret = is_readable_pkg_file("/tmp/notfoundfile.zip")
+        self.assertFalse(ret)
+
+    def test_is_readable_pkg_file_package_returns_false_file_is_not_zip(self):
+        tmpfile = os.path.join(mkdtemp(), "teste.txt")
+        with open(tmpfile, "w") as fp:
+            fp.write("")
+        ret = is_readable_pkg_file(tmpfile)
+        self.assertFalse(ret)
+
+    def test_is_readable_pkg_file_package_returns_false_invalid_path(self):
+        ret = is_readable_pkg_file("")
+        self.assertFalse(ret)
+
+    def test_is_readable_pkg_file_package_returns_false_path_is_none(self):
+        ret = is_readable_pkg_file(None)
+        self.assertFalse(ret)
+
+    def test_is_readable_pkg_file_package_returns_true(self):
+        tmpfile = os.path.join(mkdtemp(), "pkg.zip")
+        with ZipFile(tmpfile, "w") as fp:
+            fp.writestr("a.xml", "<article/>")
+        ret = is_readable_pkg_file(tmpfile)
+        self.assertTrue(ret)
 
 
 if __name__ == "__main__":
