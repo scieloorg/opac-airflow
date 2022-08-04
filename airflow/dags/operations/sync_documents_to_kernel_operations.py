@@ -139,10 +139,6 @@ def optimize_sps_pkg_zip_file(sps_pkg_zip_file, new_sps_zip_dir):
     if is_readable_pkg_file(new_sps_pkg_zip_file):
         Logger.debug("optimize_sps_pkg_zip_file OUT")
         return new_sps_pkg_zip_file
-    else:
-        Logger.info("Use non-optimised package %s" % sps_pkg_zip_file)
-        Logger.debug("optimize_sps_pkg_zip_file OUT")
-        return sps_pkg_zip_file
 
 
 class UnreadableZipFile(Exception):
