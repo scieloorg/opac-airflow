@@ -3,7 +3,7 @@ import logging
 import json
 from tempfile import mkdtemp
 from packtools import SPPackage
-from zipfile import ZipFile
+from zipfile import ZipFile, BadZipFile
 from copy import deepcopy
 from typing import Dict, List, Tuple
 
@@ -136,11 +136,37 @@ def optimize_sps_pkg_zip_file(sps_pkg_zip_file, new_sps_zip_dir):
         preserve_files=False
     )
 
-    if os.path.isfile(new_sps_pkg_zip_file):
+    if is_readable_pkg_file(new_sps_pkg_zip_file):
         Logger.debug("optimize_sps_pkg_zip_file OUT")
         return new_sps_pkg_zip_file
+    else:
+        Logger.info("Use non-optimised package %s" % sps_pkg_zip_file)
+        Logger.debug("optimize_sps_pkg_zip_file OUT")
+        return sps_pkg_zip_file
 
-    Logger.debug("optimize_sps_pkg_zip_file OUT")
+
+class UnreadableZipFile(Exception):
+    ... 
+
+
+def is_readable_pkg_file(zip_file_path):
+    Logger.info("Check %s" % zip_file_path)
+    try:
+        with ZipFile(zip_file_path) as zipfile:
+            if not zipfile.namelist():
+                Logger.info("Zip file %s is empty" % zip_file_path)
+                raise FileNotFoundError("Zip file %s is empty" % zip_file_path)
+            for item in zipfile.namelist():
+                Logger.info("Zip file %s: %s" % (zip_file_path, item))
+
+    except (AttributeError, FileNotFoundError, IOError, BadZipFile) as e:
+        Logger.exception(
+            "Unreadable zipfile %s %s %s" % (zip_file_path, type(e), e)
+        )
+        return False
+    else:
+        Logger.info("readable zipfile %s" % zip_file_path)
+        return True
 
 
 def register_update_documents(sps_package, xmls_to_preserve):
