@@ -594,6 +594,7 @@ def ArticleFactory(
 
     # Issue vinculada
     issue = models.Issue.objects.get(_id=issue_id)
+    issue.is_public = True
 
     logging.info("ISSUE %s" % str(issue))
     logging.info("ARTICLE.ISSUE %s" % str(article.issue))
