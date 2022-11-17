@@ -1,5 +1,5 @@
 apache-airflow[s3,postgres,sentry]==01.10.12
-lxml==4.5
+lxml==4.9.1
 pymongo==3.9.0
 deepdiff[murmur]==4.0.7
 feedparser==5.2.1
@@ -8,3 +8,4 @@ git+https://github.com/scieloorg/xylose.git@1.35.8#egg=xylose
 git+https://github.com/scieloorg/opac_schema.git@v2.66#egg=opac_schema
 git+https://github.com/scieloorg/packtools.git@2.9.5#egg=packtools
 aiohttp==3.6.2
+apache-airflow>=2.4.0 # not directly required, pinned by Snyk to avoid a vulnerability
