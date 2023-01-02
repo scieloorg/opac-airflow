@@ -293,11 +293,11 @@ def put_object_in_object_store(file, journal, scielo_id, filename, metadata=None
 
     if not metadata:
         metadata = {"mimetype": mime_types.get(
-            file_extension, "application/octet-stream")}
+            file_extension.strip("."), "application/octet-stream")}
     else:
         if 'mimetype' not in metadata:
             metadata.update({"mimetype": mime_types.get(
-                file_extension, "application/octet-stream")})
+                file_extension.strip("."), "application/octet-stream")})
 
     filepath = "{}/{}/{}".format(
         journal, scielo_id, "{}{}".format(n_filename, file_extension)
