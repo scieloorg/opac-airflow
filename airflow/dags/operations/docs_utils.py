@@ -1,28 +1,23 @@
-import os
-import logging
 import hashlib
 import http.client
 import json
+import logging
+import mimetypes
+import os
 
-import requests
 import botocore
-from lxml import etree
-
-from common.sps_package import SPS_Package
 import common.hooks as hooks
-from common.mime import mime_types
-from operations.exceptions import (
-    DeleteDocFromKernelException,
-    DocumentToDeleteException,
-    PutXMLInObjectStoreException,
-    ObjectStoreError,
-    RegisterUpdateDocIntoKernelException,
-    LinkDocumentToDocumentsBundleException,
-    Pidv3Exception,
-    GetDocManifestFromKernelException,
-    GetSPSPackageFromDocManifestException,
-)
-
+import requests
+from common.sps_package import SPS_Package
+from lxml import etree
+from operations.exceptions import (DeleteDocFromKernelException,
+                                   DocumentToDeleteException,
+                                   GetDocManifestFromKernelException,
+                                   GetSPSPackageFromDocManifestException,
+                                   LinkDocumentToDocumentsBundleException,
+                                   ObjectStoreError, Pidv3Exception,
+                                   PutXMLInObjectStoreException,
+                                   RegisterUpdateDocIntoKernelException)
 
 Logger = logging.getLogger(__name__)
 
@@ -292,12 +287,12 @@ def put_object_in_object_store(file, journal, scielo_id, filename, metadata=None
     _, file_extension = os.path.splitext(filename)
 
     if not metadata:
-        metadata = {"mimetype": mime_types.get(
-            file_extension.strip("."), "application/octet-stream")}
+        metadata = {"mimetype": mimetypes.types_map.get(
+            file_extension, "application/octet-stream")}
     else:
         if 'mimetype' not in metadata:
-            metadata.update({"mimetype": mime_types.get(
-                file_extension.strip("."), "application/octet-stream")})
+            metadata.update({"mimetype": mimetypes.types_map.get(
+                file_extension, "application/octet-stream")})
 
     filepath = "{}/{}/{}".format(
         journal, scielo_id, "{}{}".format(n_filename, file_extension)
