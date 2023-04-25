@@ -8,3 +8,8 @@ git+https://github.com/scieloorg/xylose.git@1.35.8#egg=xylose
 git+https://github.com/scieloorg/opac_schema.git@v2.66#egg=opac_schema
 git+https://github.com/scieloorg/packtools.git@2.9.5#egg=packtools
 aiohttp==3.6.2
+certifi>=2022.12.7 # not directly required, pinned by Snyk to avoid a vulnerability
+flask-appbuilder>=2.2.3 # not directly required, pinned by Snyk to avoid a vulnerability
+mako>=1.2.2 # not directly required, pinned by Snyk to avoid a vulnerability
+pygments>=2.7.4 # not directly required, pinned by Snyk to avoid a vulnerability
+pyjwt>=2.4.0 # not directly required, pinned by Snyk to avoid a vulnerability
