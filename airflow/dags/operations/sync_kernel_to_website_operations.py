@@ -125,6 +125,9 @@ def ArticleFactory(
     # atualiza status
     article.is_public = True
 
+    # Garante que o campo de relacionamento com outro artigo esteja vazio.
+    article.related_articles = []
+
     # Dados principais
     article.title = _get_main_article_title(data)
     article.section = _nestget(data, "article_meta", 0, "pub_subject", 0)
