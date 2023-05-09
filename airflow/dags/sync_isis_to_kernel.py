@@ -374,11 +374,23 @@ def process_issues(**context):
     issues = json.loads(issues)
     issues = [Issue({"issue": data}) for data in issues]
     issues = filter_issues(issues)
-    issues_as_kernel = [issue_as_kernel(issue) for issue in issues]
+    issues_as_kernel = _issues_as_kernel(issues)
 
     for issue in issues_as_kernel:
         _id = issue.pop("_id")
         register_or_update(_id, issue, KERNEL_API_BUNDLES_ENDPOINT)
+
+
+def _issues_as_kernel(issues):
+    """
+    Replaces [issue_as_kernel(issue) for issue in issues]
+    to avoid `issue_as_kernel` raises exception and break the processing
+    """
+    for issue in issues:
+        try:
+            yield issue_as_kernel(issue)
+        except Exception as e:
+            logging.error(f"Unable to get issue as kernel {e} {issue.data}")
 
 
 def copy_mst_files_to_work_folder(**kwargs):
