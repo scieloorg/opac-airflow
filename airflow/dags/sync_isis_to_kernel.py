@@ -452,7 +452,13 @@ def mount_journals_issues_link(issues: List[dict]) -> dict:
     issues = filter_issues(issues)
 
     for issue in issues:
-        issue_to_link = issue_data_to_link(issue)
+        try:
+            issue_to_link = issue_data_to_link(issue)
+        except TypeError as e:
+            # pass para o próximo issue
+            logging.error(f"Unable to link issue {e} {issue.data}")
+            continue
+
         issue_to_link["order"] = issue.data["issue"]["v36"][0]["_"]
         journal_id = issue.data.get("issue").get("v35")[0]["_"]
         journal_issues.setdefault(journal_id, [])
