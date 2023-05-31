@@ -221,10 +221,13 @@ def ArticleFactory(
     def _get_languages(data: dict) -> List[str]:
         """Recupera a lista de idiomas em que o artigo foi publicado"""
 
+        translations_type = ["translation",]
+
         languages = [_get_original_language(data)]
 
         for sub_article in _nestget(data, "sub_article"):
-            languages.append(_nestget(sub_article, "article", 0, "lang", 0))
+            if _nestget(sub_article, "article", 0, "type", 0) in translations_type:
+                languages.append(_nestget(sub_article, "article", 0, "lang", 0))
 
         return languages
 
@@ -255,6 +258,8 @@ def ArticleFactory(
     def _get_translated_sections(data: dict) -> List[models.TranslatedSection]:
         """Recupera a lista de seções traduzidas a partir do document front"""
 
+        translations_type = ["translation",]
+
         sections = [
             models.TranslatedSection(
                 **{
@@ -265,16 +270,18 @@ def ArticleFactory(
         ]
 
         for sub_article in _nestget(data, "sub_article"):
-            sections.append(
-                models.TranslatedSection(
-                    **{
-                        "name": _nestget(
-                            sub_article, "article_meta", 0, "pub_subject", 0
-                        ),
-                        "language": _nestget(sub_article, "article", 0, "lang", 0),
-                    }
+            
+            if _nestget(sub_article, "article", 0, "type", 0) in translations_type:
+                sections.append(
+                    models.TranslatedSection(
+                        **{
+                            "name": _nestget(
+                                sub_article, "article_meta", 0, "pub_subject", 0
+                            ),
+                            "language": _nestget(sub_article, "article", 0, "lang", 0),
+                        }
+                    )
                 )
-            )
 
         return sections
 
