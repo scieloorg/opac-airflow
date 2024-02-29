@@ -8,3 +8,4 @@ git+https://github.com/scieloorg/xylose.git@1.35.8#egg=xylose
 git+https://github.com/scieloorg/opac_schema.git@v2.66#egg=opac_schema
 git+https://github.com/scieloorg/packtools.git@2.9.5#egg=packtools
 aiohttp==3.6.2
+flask-appbuilder>=4.3.11 # not directly required, pinned by Snyk to avoid a vulnerability
