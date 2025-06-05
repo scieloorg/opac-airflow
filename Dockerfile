@@ -12,9 +12,14 @@ USER root
 RUN chmod +x ${PROC_DIR}/*
 RUN pip install --upgrade pip
 
+# CORREÇÃO: Adicionar dependências lcms2 para Pillow > 6.0 (packtools >= 2.9.5) color management
+# Isso resolve o erro "_imagingcms ImportError" quando packtools processa imagens
 RUN apk add --no-cache --virtual .build-deps \
         make gcc g++ libstdc++ libxml2-dev libxslt-dev jpeg-dev zlib-dev \
-    && apk add libxml2 libxslt curl postgresql-dev tiff tiff-dev \
+        lcms2-dev freetype-dev openjpeg-dev tiff-dev libpng-dev \
+    && apk add --no-cache \
+        libxml2 libxslt curl postgresql-dev tiff tiff-dev \
+        lcms2 freetype openjpeg libpng \
     && pip install --no-cache-dir -r requirements.txt \
     && apk --purge del .build-deps
 
