@@ -597,7 +597,10 @@ def try_register_issues(
     orphans = []
 
     for issue_id in issues:
-        journal_id = get_journal_id(issue_id)
+        # journal_id = get_journal_id(issue_id)
+        if not issue_id:
+            continue
+        journal_id = issue_id[:9]
         logging.info('Registering issue "%s" to journal "%s"', issue_id, journal_id)
         data = fetch_data(issue_id)
         try:
