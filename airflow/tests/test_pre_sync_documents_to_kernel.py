@@ -97,6 +97,7 @@ class TestGetSPSPackages(TestCase):
             self.dir_source,
             self.dir_dest,
             self.id_proc_gerapadrao,
+            None,
         ]
         _sps_packages = ["package_01", "package_02", "package_03"]
         mk_get_sps_packages.return_value = _sps_packages
@@ -115,6 +116,7 @@ class TestGetSPSPackages(TestCase):
             self.dir_source,
             self.dir_dest,
             self.id_proc_gerapadrao,
+            None,
         ]
         mk_get_sps_packages.return_value = []
         _exec_start_sync_packages = get_sps_packages(**self.kwargs)
