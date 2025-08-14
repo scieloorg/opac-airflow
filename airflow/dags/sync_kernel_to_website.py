@@ -597,22 +597,26 @@ def try_register_issues(
     orphans = []
 
     for issue_id in issues:
-        # journal_id = get_journal_id(issue_id)
-        if not issue_id:
-            continue
-        journal_id = issue_id[:9]
+        journal_id = get_journal_id(issue_id)
+
+        try:
+            issue_order = None
+            if not journal_id:
+                journal_id, issue_order = fix_journal_id_is_none(issue_id)
+        except Exception as exc:
+            logging.exception(exc)
+
         logging.info('Registering issue "%s" to journal "%s"', issue_id, journal_id)
         data = fetch_data(issue_id)
         try:
             if not is_aop:
-                issue = issue_factory(data, journal_id, get_issue_order(issue_id))
+                issue = issue_factory(data, journal_id, issue_order or get_issue_order(issue_id))
             else:
                 # Não é necessário o campo de ordenação(order) no ahead
                 issue = issue_factory(data, journal_id, _type="ahead")
 
             # issue não tem documentos, então não deve ficar disponível
             issue.is_public = bool(data.get("items"))
-
             issue.save()
         except models.Journal.DoesNotExist:
             orphans.append(issue_id)
@@ -620,6 +624,39 @@ def try_register_issues(
             known_documents[issue_id] = data.get("items", [])
 
     return list(set(orphans)), known_documents
+
+
+def fix_journal_id_is_none(issue_id):
+    """
+    {
+      "_id": "0102-311X",
+      "id": "0102-311X",
+      "created": "2020-08-09T06:48:23.405048Z",
+      "updated": "2025-07-15T20:10:15.994109Z",
+      "items": [
+            {
+              "id": "0102-311X-1985-v1-n1",
+              "order": "19851",
+              "year": "1985",
+              "volume": "1",
+              "number": "1"
+            },
+        ]
+    }
+    """
+    issue_order = None
+    journal_id = None
+    try:
+        logging.error('Registering issue "%s" to journal "%s"', issue_id, journal_id)
+        journal_data = fetch_journal(issue_id[:9])
+        for item in reversed(journal_data["items"]):
+            if item["id"] == issue_id:
+                issue_order = int(item["order"])
+                journal_id = issue_id[:9]
+                break
+    except Exception as exc:
+        logging.exception(exc)
+    return journal_id, issue_order
 
 
 def register_issues(ds, **kwargs):
