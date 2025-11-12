@@ -935,7 +935,7 @@ def register_last_issues(ds, **kwargs):
             logging.info("Id do journal: %s" % journal._id)
             last_j_issue = (
                 models.Issue.objects.filter(
-                    journal=journal._id, is_public=True, number__ne="ahead")
+                    journal=journal._id, is_public=True, type__in=["regular", "volume_issue"])
                 .order_by("-year", "-order")
                 .first()
                 .select_related()
