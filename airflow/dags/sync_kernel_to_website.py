@@ -974,8 +974,12 @@ def register_last_issues(ds, **kwargs):
             if hasattr(last_j_issue, "suppl_text"):
                 last_issue["suppl_text"] = last_j_issue.suppl_text
 
+            if hasattr(last_j_issue, "url_segment"):
+                last_issue["url_segment"] = last_j_issue.url_segment
+
             journal.last_issue = models.LastIssue(**last_issue)
             journal.save()
+
         except AttributeError:
             logging.info("No issues are registered to models.Journal: %s " % journal)
 
