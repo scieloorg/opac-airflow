@@ -15,6 +15,8 @@ services:
           - AIRFLOW__SMTP__SMTP_MAIL_FROM=${AIRFLOW__SMTP__SMTP_MAIL_FROM}
           - AIRFLOW__SMTP__SMTP_SSL=${AIRFLOW__SMTP__SMTP_SSL}
           - AIRFLOW__SMTP__SMTP_PORT=${AIRFLOW__SMTP__SMTP_PORT}
+          - ENABLE_ORCID_PUSH=${ENABLE_ORCID_PUSH}
+          - ORCID_PUSH_URL=${ORCID_PUSH_URL}
           - POSTGRES_USER=postgres_user
           - POSTGRES_PASSWORD=postgres_pass
           - POSTGRES_HOST=postgres
