@@ -15,6 +15,7 @@ from operations.exceptions import InvalidOrderValueError
 from operations.docs_utils import (
     get_bundle_id,
 )
+from operations.orcid_operations import register_orcid
 
 from common.sps_package import (
     SPS_Package,
@@ -732,6 +733,16 @@ def try_register_documents(
             logging.info("ARTICLE saved %s %s" % (document_id, issue_id))
             logging.info(
                 "Link to article on OPAC: https://www.scielo.br/j/%s/a/%s" % (document.journal.acronym, document_id))
+
+            try:
+                if fetch_document_xml:
+                    document_xml = fetch_document_xml(document_id)
+                    register_orcid(document_id, document_xml)
+            except Exception as exc:
+                logging.error(
+                    "Could not register ORCID for document '%s': %s",
+                    document_id, exc,
+                )
 
             # Remove itens que estava com falha.
             if document_id in failed_documents:
