@@ -140,7 +140,7 @@ def optimize_sps_pkg_zip_file(sps_pkg_zip_file, new_sps_zip_dir):
         Logger.exception(
             "Failed to optimize %s: %s %s" % (sps_pkg_zip_file, type(e), e)
         )
-        return
+        return sps_pkg_zip_file
 
     if is_readable_pkg_file(new_sps_pkg_zip_file):
         Logger.debug("optimize_sps_pkg_zip_file OUT")

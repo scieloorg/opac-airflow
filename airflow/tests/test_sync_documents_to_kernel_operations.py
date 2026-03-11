@@ -1071,7 +1071,7 @@ class TestOptimizeSPPackage(TestCase):
     @patch("operations.sync_documents_to_kernel_operations.Logger")
     @patch("operations.sync_documents_to_kernel_operations.SPPackage")
     @patch("operations.sync_documents_to_kernel_operations.os.path.isfile")
-    def test_optimize_sps_pkg_zip_file_returns_none_when_optimise_raises_exception(
+    def test_optimize_sps_pkg_zip_file_returns_original_when_optimise_raises_exception(
         self,
         mock_isfile,
         MockSPPackage,
@@ -1089,7 +1089,7 @@ class TestOptimizeSPPackage(TestCase):
         new_sps_zip_dir = mkdtemp()
 
         ret = optimize_sps_pkg_zip_file("dir/destination/rba_v53n1.zip", new_sps_zip_dir)
-        self.assertIsNone(ret)
+        self.assertEqual(ret, "dir/destination/rba_v53n1.zip")
         mock_is_readable_pkg_file.assert_not_called()
 
     def test_is_readable_pkg_file_package_returns_false_file_does_not_exist(self):
