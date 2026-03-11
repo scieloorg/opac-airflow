@@ -33,7 +33,7 @@ class NonRetryableError(Exception):
     wait=wait_exponential(multiplier=1, min=1, max=5),
     stop=stop_after_attempt(5),
 )
-def post_data(url, data=None, headers=None, timeout=2, verify=True):
+def post_data(url, data=None, headers=None, timeout=10, verify=True):
     """
     Post data with HTTP.
 
@@ -125,6 +125,7 @@ def register_orcid(document_id, document_xml):
                 url=url,
                 data=json.dumps(payload),
                 headers=headers,
+                timeout=10,
             )
             logger.info(
                 "ORCID registration successful for document '%s', "

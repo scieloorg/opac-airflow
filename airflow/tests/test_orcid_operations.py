@@ -163,6 +163,7 @@ class RegisterOrcidTests(unittest.TestCase):
             url="https://orcid-push.scielo.org/works",
             data=json.dumps(payload),
             headers={"Content-Type": "application/json"},
+            timeout=10,
         )
 
     @patch("operations.orcid_operations.ENABLE_ORCID_PUSH", True)
@@ -179,6 +180,7 @@ class RegisterOrcidTests(unittest.TestCase):
             url="https://orcid-push.scielo.org/works",
             data=json.dumps(payload),
             headers={"Content-Type": "application/json"},
+            timeout=10,
         )
 
     @patch("operations.orcid_operations.ENABLE_ORCID_PUSH", True)
