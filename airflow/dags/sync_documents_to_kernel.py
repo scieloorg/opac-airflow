@@ -134,7 +134,9 @@ def register_update_documents(dag_run, **kwargs):
     for execution in executions:
         execution["dag_run"] = kwargs.get("run_id")
         execution["pre_sync_dag_run"] = dag_run.conf.get("pre_syn_dag_run_id")
-        execution["package_name"] = os.path.basename(_optimized_package)
+        execution["package_name"] = os.path.basename(
+            _optimized_package or dag_run.conf.get("sps_package") or ""
+        )
         add_execution_in_database(table="xml_documents", data=execution)
 
     if _documents:

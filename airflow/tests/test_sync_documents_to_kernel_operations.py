@@ -1066,6 +1066,32 @@ class TestOptimizeSPPackage(TestCase):
         ret = optimize_sps_pkg_zip_file("dir/destination/rba_v53n1.zip", new_sps_zip_dir)
         self.assertIsNone(ret)
 
+    @patch("operations.sync_documents_to_kernel_operations.is_readable_pkg_file")
+    @patch("operations.sync_documents_to_kernel_operations.ZipFile")
+    @patch("operations.sync_documents_to_kernel_operations.Logger")
+    @patch("operations.sync_documents_to_kernel_operations.SPPackage")
+    @patch("operations.sync_documents_to_kernel_operations.os.path.isfile")
+    def test_optimize_sps_pkg_zip_file_returns_original_when_optimise_raises_exception(
+        self,
+        mock_isfile,
+        MockSPPackage,
+        MockLogger,
+        MockZipFile,
+        mock_is_readable_pkg_file,
+    ):
+        mock_isfile.return_value = True
+        MockZipFile = mock_open
+        mock_optimise = Mock("optimise")
+        mock_optimise.side_effect = ValueError("image has wrong mode")
+        mock_package = Mock("package")
+        mock_package.optimise = mock_optimise
+        MockSPPackage.from_file.return_value = mock_package
+        new_sps_zip_dir = mkdtemp()
+
+        ret = optimize_sps_pkg_zip_file("dir/destination/rba_v53n1.zip", new_sps_zip_dir)
+        self.assertEqual(ret, "dir/destination/rba_v53n1.zip")
+        mock_is_readable_pkg_file.assert_not_called()
+
     def test_is_readable_pkg_file_package_returns_false_file_does_not_exist(self):
         ret = is_readable_pkg_file("/tmp/notfoundfile.zip")
         self.assertFalse(ret)
