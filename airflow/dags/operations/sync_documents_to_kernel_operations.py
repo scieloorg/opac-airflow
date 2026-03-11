@@ -131,10 +131,16 @@ def optimize_sps_pkg_zip_file(sps_pkg_zip_file, new_sps_zip_dir):
     new_sps_pkg_zip_file = os.path.join(new_sps_zip_dir, basename)
 
     package = SPPackage.from_file(sps_pkg_zip_file, mkdtemp())
-    package.optimise(
-        new_package_file_path=new_sps_pkg_zip_file,
-        preserve_files=False
-    )
+    try:
+        package.optimise(
+            new_package_file_path=new_sps_pkg_zip_file,
+            preserve_files=False
+        )
+    except Exception as e:
+        Logger.exception(
+            "Failed to optimize %s: %s %s" % (sps_pkg_zip_file, type(e), e)
+        )
+        return
 
     if is_readable_pkg_file(new_sps_pkg_zip_file):
         Logger.debug("optimize_sps_pkg_zip_file OUT")
