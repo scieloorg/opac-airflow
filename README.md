@@ -73,7 +73,7 @@ $ airflow webserver
 * Conn Type: `Amazon Web Service`
 * Schema: `http` ou `https`
 * Login: login do Object Store
-* Extra: `{"host": "<endpoint S3-compatible para upload>", "public_url": "<URL pública para leitura>"}`
+* Extra: `{"host": "<endpoint S3-compatible para upload>", "public_url": "<URL pública para leitura>", "upload_bucket": "<bucket de upload>", "upload_prefix": "<prefixo de upload>"}`
 
 Exemplo para ambientes onde o endpoint de escrita e a URL pública são
 diferentes:
@@ -82,14 +82,32 @@ diferentes:
 {
   "region_name": "us-east-1",
   "host": "https://ny-s3.storage.bunnycdn.com",
+  "upload_bucket": "minio",
+  "upload_prefix": "documentstore",
   "public_url": "https://minio.scielo.br"
 }
+```
+
+Nesse exemplo, o upload é feito em:
+
+```text
+bucket = minio
+key = documentstore/{journal}/{scielo_id}/{sha1}.{ext}
+```
+
+E a URL registrada no Kernel continua sendo:
+
+```text
+https://minio.scielo.br/documentstore/{journal}/{scielo_id}/{sha1}.{ext}
 ```
 
 No Airflow 1.10.12, o `S3Hook` usa `host` como `endpoint_url` do boto3. Por
 isso, `host` deve apontar para o endpoint usado no upload. Para compatibilidade
 com a configuração anterior, quando `public_url` não for informado, `host`
-continua sendo usado também para montar as URLs públicas.
+continua sendo usado também para montar as URLs públicas. Quando
+`upload_bucket` não for informado, o bucket usado no upload continua sendo
+`documentstore`. Quando `upload_prefix` não for informado, o objeto continua
+sendo gravado diretamente no bucket.
 
 Também é possível usar `public_host` em vez de `public_url`:
 
