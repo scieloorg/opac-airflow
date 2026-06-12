@@ -72,8 +72,23 @@ def kernel_connect(endpoint, method, data=None, headers=DEFAULT_HEADER, timeout=
 def object_store_connect(bytes_data, filepath, bucket_name):
     s3_hook = S3Hook(aws_conn_id="aws_default")
     s3_hook.load_bytes(bytes_data, key=filepath, bucket_name=bucket_name, replace=True)
-    s3_host = s3_hook.get_connection("aws_default").extra_dejson.get("host")
-    return "{}/{}/{}".format(s3_host, bucket_name, filepath)
+    connection = s3_hook.get_connection("aws_default")
+    object_store_public_url = get_object_store_public_url(connection)
+    return "{}/{}/{}".format(
+        object_store_public_url.rstrip("/"),
+        bucket_name.strip("/"),
+        filepath.lstrip("/"),
+    )
+
+
+def get_object_store_public_url(connection):
+    extra = connection.extra_dejson
+    return (
+        extra.get("public_url")
+        or extra.get("public_host")
+        or extra.get("host")
+        or extra.get("endpoint_url")
+    )
 
 
 @retry(wait=wait_exponential(), stop=stop_after_attempt(4))

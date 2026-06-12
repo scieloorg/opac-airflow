@@ -73,7 +73,33 @@ $ airflow webserver
 * Conn Type: `Amazon Web Service`
 * Schema: `http` ou `https`
 * Login: login do Object Store
-* Extra: `{"host": "<endereço do host:porta>"}`
+* Extra: `{"host": "<endpoint S3-compatible para upload>", "public_url": "<URL pública para leitura>"}`
+
+Exemplo para ambientes onde o endpoint de escrita e a URL pública são
+diferentes:
+
+```json
+{
+  "region_name": "us-east-1",
+  "host": "https://ny-s3.storage.bunnycdn.com",
+  "public_url": "https://minio.scielo.br"
+}
+```
+
+No Airflow 1.10.12, o `S3Hook` usa `host` como `endpoint_url` do boto3. Por
+isso, `host` deve apontar para o endpoint usado no upload. Para compatibilidade
+com a configuração anterior, quando `public_url` não for informado, `host`
+continua sendo usado também para montar as URLs públicas.
+
+Também é possível usar `public_host` em vez de `public_url`:
+
+```json
+{
+  "region_name": "us-east-1",
+  "host": "https://ny-s3.storage.bunnycdn.com",
+  "public_host": "https://minio.scielo.br"
+}
+```
 
 ## Variáveis:
 
