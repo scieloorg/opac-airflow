@@ -71,14 +71,47 @@ def kernel_connect(endpoint, method, data=None, headers=DEFAULT_HEADER, timeout=
 )
 def object_store_connect(bytes_data, filepath, bucket_name):
     s3_hook = S3Hook(aws_conn_id="aws_default")
-    s3_hook.load_bytes(bytes_data, key=filepath, bucket_name=bucket_name, replace=True)
     connection = s3_hook.get_connection("aws_default")
-    object_store_public_url = get_object_store_public_url(connection)
-    return "{}/{}/{}".format(
-        object_store_public_url.rstrip("/"),
-        bucket_name.strip("/"),
-        filepath.lstrip("/"),
+    object_store_bucket_name = get_object_store_upload_bucket(connection, bucket_name)
+    object_store_filepath = get_object_store_upload_filepath(connection, filepath)
+    s3_hook.load_bytes(
+        bytes_data,
+        key=object_store_filepath,
+        bucket_name=object_store_bucket_name,
+        replace=True,
     )
+    object_store_public_url = get_object_store_public_url(connection)
+    object_store_public_filepath = get_object_store_public_filepath(
+        connection,
+        bucket_name,
+        filepath,
+    )
+    return "{}/{}".format(
+        object_store_public_url.rstrip("/"),
+        object_store_public_filepath,
+    )
+
+
+def join_object_store_path(*parts):
+    return "/".join(
+        str(part).strip("/")
+        for part in parts
+        if part is not None and str(part).strip("/")
+    )
+
+
+def get_object_store_upload_bucket(connection, bucket_name):
+    return connection.extra_dejson.get("upload_bucket") or bucket_name
+
+
+def get_object_store_upload_filepath(connection, filepath):
+    upload_prefix = connection.extra_dejson.get("upload_prefix")
+    return join_object_store_path(upload_prefix, filepath)
+
+
+def get_object_store_public_filepath(connection, bucket_name, filepath):
+    public_prefix = connection.extra_dejson.get("public_prefix", bucket_name)
+    return join_object_store_path(public_prefix, filepath)
 
 
 def get_object_store_public_url(connection):
@@ -94,10 +127,16 @@ def get_object_store_public_url(connection):
 @retry(wait=wait_exponential(), stop=stop_after_attempt(4))
 def update_metadata_in_object_store(filepath, metadata, bucket_name):
     s3_hook = S3Hook(aws_conn_id="aws_default")
-    s3_object = s3_hook.get_key(key=filepath, bucket_name=bucket_name)
+    connection = s3_hook.get_connection("aws_default")
+    object_store_bucket_name = get_object_store_upload_bucket(connection, bucket_name)
+    object_store_filepath = get_object_store_upload_filepath(connection, filepath)
+    s3_object = s3_hook.get_key(
+        key=object_store_filepath,
+        bucket_name=object_store_bucket_name,
+    )
     s3_object.metadata.update(metadata)
     s3_object.copy_from(
-        CopySource={'Bucket': bucket_name, 'Key': filepath},
+        CopySource={'Bucket': object_store_bucket_name, 'Key': object_store_filepath},
         Metadata=s3_object.metadata,
         MetadataDirective='REPLACE'
     )
