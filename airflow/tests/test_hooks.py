@@ -1,5 +1,5 @@
 from unittest import TestCase
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 from common.hooks import (
     get_object_store_public_url,
@@ -92,6 +92,51 @@ class TestObjectStoreConnect(TestCase):
             result,
         )
 
+    @patch("common.hooks.S3Hook")
+    def test_object_store_connect_uploads_to_multiple_connections(
+        self, MockS3Hook
+    ):
+        default_s3_hook = Mock()
+        node01_s3_hook = Mock()
+        connection = Mock()
+        connection.extra_dejson = {
+            "host": "https://ny-s3.storage.bunnycdn.com",
+            "upload_locations": [
+                {"bucket": "minio", "prefix": "documentstore"},
+                {"conn_id": "aws_node01_minio", "bucket": "documentstore"},
+            ],
+            "public_url": "https://minio.scielo.br",
+        }
+        MockS3Hook.side_effect = [default_s3_hook, node01_s3_hook]
+        default_s3_hook.get_connection.return_value = connection
+
+        result = object_store_connect(
+            b"<xml/>",
+            "journal/scielo-id/hash.xml",
+            "documentstore",
+        )
+
+        MockS3Hook.assert_has_calls([
+            call(aws_conn_id="aws_default"),
+            call(aws_conn_id="aws_node01_minio"),
+        ])
+        default_s3_hook.load_bytes.assert_called_once_with(
+            b"<xml/>",
+            key="documentstore/journal/scielo-id/hash.xml",
+            bucket_name="minio",
+            replace=True,
+        )
+        node01_s3_hook.load_bytes.assert_called_once_with(
+            b"<xml/>",
+            key="journal/scielo-id/hash.xml",
+            bucket_name="documentstore",
+            replace=True,
+        )
+        self.assertEqual(
+            "https://minio.scielo.br/documentstore/journal/scielo-id/hash.xml",
+            result,
+        )
+
 
 class TestUpdateMetadataInObjectStore(TestCase):
     @patch("common.hooks.S3Hook")
@@ -123,6 +168,69 @@ class TestUpdateMetadataInObjectStore(TestCase):
             CopySource={
                 'Bucket': "minio",
                 'Key': "documentstore/journal/scielo-id/hash.xml",
+            },
+            Metadata={
+                "filename": "previous.xml",
+                "mimetype": "application/xml",
+            },
+            MetadataDirective='REPLACE',
+        )
+
+    @patch("common.hooks.S3Hook")
+    def test_update_metadata_uses_multiple_upload_connections(
+        self, MockS3Hook
+    ):
+        default_s3_hook = Mock()
+        node01_s3_hook = Mock()
+        connection = Mock()
+        connection.extra_dejson = {
+            "upload_locations": [
+                {"bucket": "minio", "prefix": "documentstore"},
+                {"conn_id": "aws_node01_minio", "bucket": "documentstore"},
+            ],
+        }
+        first_s3_object = Mock()
+        first_s3_object.metadata = {"filename": "previous.xml"}
+        second_s3_object = Mock()
+        second_s3_object.metadata = {"filename": "previous.xml"}
+        MockS3Hook.side_effect = [default_s3_hook, node01_s3_hook]
+        default_s3_hook.get_connection.return_value = connection
+        default_s3_hook.get_key.return_value = first_s3_object
+        node01_s3_hook.get_key.return_value = second_s3_object
+
+        update_metadata_in_object_store(
+            "journal/scielo-id/hash.xml",
+            {"mimetype": "application/xml"},
+            "documentstore",
+        )
+
+        MockS3Hook.assert_has_calls([
+            call(aws_conn_id="aws_default"),
+            call(aws_conn_id="aws_node01_minio"),
+        ])
+        default_s3_hook.get_key.assert_called_once_with(
+            key="documentstore/journal/scielo-id/hash.xml",
+            bucket_name="minio",
+        )
+        node01_s3_hook.get_key.assert_called_once_with(
+            key="journal/scielo-id/hash.xml",
+            bucket_name="documentstore",
+        )
+        first_s3_object.copy_from.assert_called_once_with(
+            CopySource={
+                'Bucket': "minio",
+                'Key': "documentstore/journal/scielo-id/hash.xml",
+            },
+            Metadata={
+                "filename": "previous.xml",
+                "mimetype": "application/xml",
+            },
+            MetadataDirective='REPLACE',
+        )
+        second_s3_object.copy_from.assert_called_once_with(
+            CopySource={
+                'Bucket': "documentstore",
+                'Key': "journal/scielo-id/hash.xml",
             },
             Metadata={
                 "filename": "previous.xml",
