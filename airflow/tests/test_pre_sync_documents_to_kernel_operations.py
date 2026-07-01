@@ -1,13 +1,182 @@
+import os
 import tempfile
 import shutil
 import pathlib
 import zipfile
 from unittest import TestCase, main
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, Mock, call
 
 from airflow import DAG
 
 from operations.pre_sync_documents_to_kernel_operations import get_sps_packages
+
+
+def _create_scilista_and_filenames(scilista_file_path, scilista_lines=None):
+    """
+    Cria uma scilista e 3 nomes de arquivos para cada item da scilista
+    """
+    scilista_lines = scilista_lines or ["rba v53n1", "rba 2019nahead", "rsp v10n4s1"]
+    source_filenames = []
+    scilista_file_path = pathlib.Path(scilista_file_path)
+    with scilista_file_path.open("w") as scilista_file:
+        for line in scilista_lines:
+            scilista_file.write(line + "\n")
+            source_filenames += [
+                "_".join([f"2020-01-01-00-0{i}-09-090901"] + line.split()) + ".zip"
+                for i in range(1, 4)
+            ]
+    return source_filenames
+
+
+def _create_zip(source_filenames, src_folder, zipfile_path):
+    files = []
+    for filename in source_filenames:
+        zip_filename = pathlib.Path(src_folder) / filename
+        files.append(str(zip_filename))
+        with zipfile.ZipFile(zip_filename, "w") as zip_file:
+            zip_file.write(zipfile_path)
+    return files
+
+
+@patch("operations.pre_sync_documents_to_kernel_operations.get_id_provider_functions")
+class TestGetSPSPackagesWithPidManager(TestCase):
+    def setUp(self):
+        self.xc_dir_name = tempfile.mkdtemp()
+        self.proc_dir_name = tempfile.mkdtemp()
+        self.kwargs = {
+            "scilista_file_path": str(pathlib.Path(self.xc_dir_name) / "scilista.lst"),
+            "xc_dir_name": self.xc_dir_name,
+            "proc_dir_name": self.proc_dir_name,
+            "id_provider_db_uri": 'db_uri'
+        }
+        self.test_filepath = pathlib.Path(self.xc_dir_name) / "test.txt"
+        with self.test_filepath.open("w") as test_file:
+            test_file.write("Text test file")
+        source_filenames = _create_scilista_and_filenames(self.kwargs["scilista_file_path"])
+        self.zipfiles = _create_zip(source_filenames, self.xc_dir_name, self.test_filepath)
+
+    def tearDown(self):
+        shutil.rmtree(self.xc_dir_name)
+        shutil.rmtree(self.proc_dir_name)
+
+    @patch("operations.pre_sync_documents_to_kernel_operations.move_package_to_proc_dir")
+    def test_get_sps_packages_calls_move_package_to_proc_dir_because_there_is_no_id_provider_db_uri(
+            self,
+            mk_move_package_to_proc_dir,
+            mk_id_provider_functions,
+            ):
+        """
+        Testa que move_package_to_proc_dir será executado porque as funções do
+        ID provider são None, None no lugar de `request_document_id`, `connect`
+        """
+        mk_request_id = MagicMock(name='request_id')
+        mk_connect = Mock(name='connect')
+
+        mk_id_provider_functions.return_value = {
+            "request_document_id": mk_request_id,
+            "connect": mk_connect
+        }
+        self.kwargs['id_provider_db_uri'] = None
+        get_sps_packages(**self.kwargs)
+
+        calls = mk_move_package_to_proc_dir.call_args_list
+        self.assertEqual(len(calls), 9)
+        for zipfile in self.zipfiles:
+            with self.subTest(zipfile):
+                self.assertIn(call(zipfile, self.proc_dir_name), calls)
+        mk_connect.assert_not_called()
+        mk_request_id.assert_not_called()
+
+    @patch("operations.pre_sync_documents_to_kernel_operations.move_package_to_proc_dir")
+    def test_get_sps_packages_calls_move_package_to_proc_dir(
+            self,
+            mk_move_package_to_proc_dir,
+            mk_id_provider_functions,
+            ):
+        """
+        Testa que move_package_to_proc_dir será executado porque as funções do
+        ID provider são None, None no lugar de `request_document_id`, `connect`
+        """
+        mk_id_provider_functions.return_value = {
+            "request_document_id": None,
+            "connect": None
+        }
+
+        get_sps_packages(**self.kwargs)
+
+        calls = mk_move_package_to_proc_dir.call_args_list
+        self.assertEqual(len(calls), 9)
+        for zipfile in self.zipfiles:
+            with self.subTest(zipfile):
+                self.assertIn(call(zipfile, self.proc_dir_name), calls)
+
+    @patch("operations.pre_sync_documents_to_kernel_operations.move_package_to_proc_dir")
+    def test_get_sps_packages_does_not_move_package_to_proc_dir_and_calls_connect_and_request_id(
+            self,
+            mk_move_package_to_proc_dir,
+            mk_id_provider_functions,
+            ):
+        """
+        Testa que move_package_to_proc_dir NÃO será executado porque
+        as funções `request_document_id`, `connect` do ID provider foram
+        carregadas
+        """
+        mk_request_id = MagicMock(name='request_id')
+        mk_connect = Mock(name='connect')
+
+        mk_id_provider_functions.return_value = {
+            "request_document_id": mk_request_id,
+            "connect": mk_connect
+        }
+        get_sps_packages(**self.kwargs)
+        mk_connect.assert_called_once_with("db_uri")
+
+        calls = mk_request_id.call_args_list
+        self.assertEqual(len(calls), 9)
+        for zipfile in self.zipfiles:
+            with self.subTest(zipfile):
+                _call = call(
+                    zipfile,
+                    os.path.join(self.proc_dir_name, os.path.basename(zipfile)),
+                    "airflow",
+                    "db_uri"
+                )
+                self.assertIn(_call, calls)
+        mk_move_package_to_proc_dir.assert_not_called()
+
+    @patch("operations.pre_sync_documents_to_kernel_operations.move_package_to_proc_dir")
+    def test_get_sps_packages_calls_move_package_to_proc_dir_because_request_id_raises_exception(
+            self,
+            mk_move_package_to_proc_dir,
+            mk_id_provider_functions,
+            ):
+        """
+        Testa que move_package_to_proc_dir será executado porque
+        as funções `request_document_id`, `connect` do ID provider foram
+        carregadas, mas request_document_id levantou uma exceção
+        """
+        mk_request_id = MagicMock(name='request_id', side_effect=Exception)
+        mk_connect = Mock(name='connect')
+
+        mk_id_provider_functions.return_value = {
+            "request_document_id": mk_request_id,
+            "connect": mk_connect
+        }
+        get_sps_packages(**self.kwargs)
+        mk_connect.assert_called_once_with("db_uri")
+
+        calls = mk_request_id.call_args_list
+        self.assertEqual(len(calls), 9)
+        for zipfile in self.zipfiles:
+            with self.subTest(zipfile):
+                _call = call(
+                    zipfile,
+                    os.path.join(self.proc_dir_name, os.path.basename(zipfile)),
+                    "airflow",
+                    "db_uri"
+                )
+                self.assertIn(_call, calls)
+        self.assertEqual(mk_move_package_to_proc_dir.call_count, 9)
 
 
 class TestGetSPSPackages(TestCase):

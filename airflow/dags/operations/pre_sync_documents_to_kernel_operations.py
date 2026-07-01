@@ -3,6 +3,16 @@ import logging
 import shutil
 from pathlib import Path
 
+
+def get_id_provider_functions():
+    try:
+        from scielo_core.id_provider.lib import request_document_id, connect
+    except ImportError:
+        request_document_id = None
+        connect = None
+    return {"request_document_id": request_document_id, "connect": connect}
+
+
 Logger = logging.getLogger(__name__)
 
 PREFIX_PATTERN = "[0-9]" * 4
@@ -10,7 +20,7 @@ PREFIX_PATTERN += ("-" + ("[0-9]" * 2)) * 5
 PREFIX_PATTERN += "-" + ("[0-9]" * 6)
 
 
-def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
+def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name, id_provider_db_uri=None):
     """
     Obtém Pacotes SPS através da Scilista, movendo os pacotes para o diretório de 
     processamento do Airflow e gera lista dos paths dos pacotes SPS no diretório de 
@@ -23,7 +33,18 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
     list sps_packages: lista com os paths dos pacotes SPS no diretório de
     processamento
     """
+    ID_PROVIDER_FUNCTIONS = get_id_provider_functions()
+    CONNECT = ID_PROVIDER_FUNCTIONS.get("connect")
+
     Logger.debug("get_sps_packages IN")
+    if id_provider_db_uri and CONNECT:
+        try:
+            CONNECT(id_provider_db_uri)
+        except Exception as e:
+            Logger.exception(
+                "Unable to connect %s %s %s" %
+                (type(e), e, id_provider_db_uri)
+            )
 
     xc_dir_path = Path(xc_dir_name)
     proc_dir_path = Path(proc_dir_name)
@@ -53,7 +74,7 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
                     Logger.info("Skip %s", str(item))
                     continue
 
-                insert_package_in_proc_dir(str(item), str(proc_dir_path))
+                insert_package_in_proc_dir(str(item), str(proc_dir_path), id_provider_db_uri)
 
             # verifica no destino
             acron_issue_list = []
@@ -76,8 +97,26 @@ def get_sps_packages(scilista_file_path, xc_dir_name, proc_dir_name):
     return sps_packages_list
 
 
-def insert_package_in_proc_dir(source_file_path, proc_path):
-    move_package_to_proc_dir(source_file_path, proc_path)
+def insert_package_in_proc_dir(source_file_path, proc_path, id_provider_db_uri):
+    ID_PROVIDER_FUNCTIONS = get_id_provider_functions()
+    REQUEST_DOCUMENT_ID = ID_PROVIDER_FUNCTIONS.get("request_document_id")
+    if REQUEST_DOCUMENT_ID and id_provider_db_uri:
+        try:
+            changed_pkg_file_path = os.path.join(proc_path, os.path.basename(source_file_path))
+            REQUEST_DOCUMENT_ID(
+                source_file_path,
+                changed_pkg_file_path,
+                "airflow",
+                id_provider_db_uri,
+            )
+        except Exception as e:
+            Logger.exception(
+                "Unable to request document id: %s %s %s" %
+                (type(e), e, source_file_path)
+            )
+            move_package_to_proc_dir(source_file_path, proc_path)
+    else:
+        move_package_to_proc_dir(source_file_path, proc_path)
 
 
 def move_package_to_proc_dir(source_file_path, proc_path):
